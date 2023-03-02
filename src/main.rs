@@ -126,73 +126,93 @@ fn run_repl(runtime: Runtime, client: Client, config: Config, role: Option<Strin
         .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
         .with_edit_mode(edit_mode);
     let prompt = DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty);
-
-    let send_line = |line: String| -> Result<()> {
+    let mut trigged_ctrlc = false;
+    let send_line = |line: String, trigged_ctrlc: &mut bool| -> Result<()> {
+        *trigged_ctrlc = false;
         if line.is_empty() {
             return Ok(());
         }
-        if let Err(err) = runtime.block_on(handle_input(&client, &config, &line)) {
-            dump(format!("error: {err}"));
-        }
-        Ok(())
-    };
-    let handle_line = |line_editor: &mut Reedline, line: String| -> Result<bool> {
-        if line.starts_with('.') {
-            let (name, args) = match line.split_once(' ') {
-                Some((head, tail)) => (head, Some(tail.trim())),
-                None => (line.as_str(), None),
-            };
-            match name {
-                ".exit" => {
-                    return Ok(true);
+        runtime.block_on(async {
+            tokio::select! {
+                ret = handle_input(&client, &config, &line) => {
+                    if let Err(err) = ret {
+                        dump(format!("error: {err}"));
+                    }
                 }
-                ".help" => {
-                    dump(get_repl_help());
-                }
-                ".clear" => {
-                    line_editor.clear_scrollback()?;
-                }
-                ".clear-history" => {
-                    let history = Box::new(line_editor.history_mut());
-                    history
-                        .clear()
-                        .map_err(|err| anyhow!("Failed to clear history, {err}"))?;
-                }
-                ".history" => {
-                    line_editor.print_history()?;
-                }
-                ".role" => match args {
-                    Some(name) => match config.roles.iter().find(|v| v.name == name) {
-                        Some(role) => {
-                            send_line(role.prompt.clone())?;
-                        }
-                        None => dump("Unknown role"),
-                    },
-                    None => dump("Usage: .role <name>"),
-                },
-                _ => {
-                    dump("Unknown command. Type \".help\" for more information.");
+                _ =  tokio::signal::ctrl_c() => {
+                    *trigged_ctrlc = true;
+                    dump(" Abort current session")
                 }
             }
-        } else {
-            send_line(line)?;
-        }
-        Ok(false)
+        });
+        Ok(())
     };
-    if let Some(name) = role {
-        handle_line(&mut line_editor, format!("role {name}"))?;
-    }
 
+    let handle_line =
+        |line_editor: &mut Reedline, line: String, trigged_ctrlc: &mut bool| -> Result<bool> {
+            if line.starts_with('.') {
+                let (name, args) = match line.split_once(' ') {
+                    Some((head, tail)) => (head, Some(tail.trim())),
+                    None => (line.as_str(), None),
+                };
+                match name {
+                    ".exit" => {
+                        return Ok(true);
+                    }
+                    ".help" => {
+                        dump(get_repl_help());
+                    }
+                    ".clear" => {
+                        line_editor.clear_scrollback()?;
+                    }
+                    ".clear-history" => {
+                        let history = Box::new(line_editor.history_mut());
+                        history
+                            .clear()
+                            .map_err(|err| anyhow!("Failed to clear history, {err}"))?;
+                    }
+                    ".history" => {
+                        line_editor.print_history()?;
+                    }
+                    ".role" => match args {
+                        Some(name) => match config.roles.iter().find(|v| v.name == name) {
+                            Some(role) => {
+                                send_line(role.prompt.clone(), trigged_ctrlc)?;
+                            }
+                            None => dump("Unknown role"),
+                        },
+                        None => dump("Usage: .role <name>"),
+                    },
+                    _ => {
+                        dump("Unknown command. Type \".help\" for more information.");
+                    }
+                }
+            } else {
+                send_line(line, trigged_ctrlc)?;
+            }
+            Ok(false)
+        };
+    if let Some(name) = role {
+        handle_line(&mut line_editor, format!("role {name}"), &mut trigged_ctrlc)?;
+    }
     loop {
         let sig = line_editor.read_line(&prompt);
         match sig {
             Ok(Signal::Success(line)) => {
-                let quit = handle_line(&mut line_editor, line)?;
+                let quit = handle_line(&mut line_editor, line, &mut trigged_ctrlc)?;
                 if quit {
                     break;
                 }
             }
-            Ok(Signal::CtrlD) | Ok(Signal::CtrlC) => {
+            Ok(Signal::CtrlC) => {
+                if !trigged_ctrlc {
+                    trigged_ctrlc = true;
+                    dump("(To exit, press Ctrl+C again or Ctrl+D or type .exit)");
+                } else {
+                    break;
+                }
+            }
+            Ok(Signal::CtrlD) => {
                 break;
             }
             Err(err) => {
@@ -338,5 +358,5 @@ fn get_repl_help() -> String {
         .map(|(name, desc)| format!("{name:<15} {desc}"))
         .collect::<Vec<String>>()
         .join("\n");
-    format!("{head}\n\nPress Ctrl+C/Ctrl+D to exit the REPL")
+    format!("{head}\n\nPress Ctrl+C to abort session, Ctrl+D to exit the REPL")
 }
