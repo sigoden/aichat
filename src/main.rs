@@ -15,13 +15,14 @@ use futures_util::StreamExt;
 use inquire::{Confirm, Text};
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultPrompt, DefaultPromptSegment,
-    Emacs, KeyCode, KeyModifiers, Reedline, ReedlineEvent, ReedlineMenu, Signal,
+    Emacs, FileBackedHistory, KeyCode, KeyModifiers, Reedline, ReedlineEvent, ReedlineMenu, Signal,
 };
 use reqwest::{Client, Proxy};
 use serde_json::{json, Value};
 use tokio::runtime::Runtime;
 
 const API_URL: &str = "https://api.openai.com/v1/chat/completions";
+const MODEL: &str = "gpt-3.5-turbo";
 const HELP: &str = r###".exit   Exit the REPL.
 .help   Print this help message.
 .role   Specify the role that the AI will play.
@@ -39,6 +40,11 @@ fn start() -> Result<()> {
     let matches = Command::new(env!("CARGO_CRATE_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .author(env!("CARGO_PKG_AUTHORS"))
+        .about(concat!(
+            env!("CARGO_PKG_DESCRIPTION"),
+            " - ",
+            env!("CARGO_PKG_REPOSITORY")
+        ))
         .arg(
             Arg::new("role")
                 .short('r')
@@ -148,9 +154,14 @@ fn run_repl(runtime: Runtime, client: Client, config: Config, role: Option<Strin
             ReedlineEvent::MenuNext,
         ]),
     );
+    let history = Box::new(
+        FileBackedHistory::with_file(1000, get_history_path()?)
+            .map_err(|err| anyhow!("Failed to setup history file, {err}"))?,
+    );
     let edit_mode = Box::new(Emacs::new(keybindings));
     let mut line_editor = Reedline::create()
         .with_completer(completer)
+        .with_history(history)
         .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
         .with_edit_mode(edit_mode);
     let prompt = DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty);
@@ -241,7 +252,7 @@ async fn acquire(client: &Client, config: &Config, content: &str) -> Result<Stri
         return Ok(content.to_string());
     }
     let body = json!({
-        "model": "gpt-3.5-turbo",
+        "model": MODEL,
         "messages": [{"role": "user", "content": content}]
     });
 
@@ -267,7 +278,7 @@ async fn acquire_stream(
     content: &str,
 ) -> Result<EventStream<impl Stream<Item = reqwest::Result<bytes::Bytes>>>> {
     let body = json!({
-        "model": "gpt-3.5-turbo",
+        "model": MODEL,
         "messages": [{"role": "user", "content": content}],
         "stream": true,
     });
@@ -292,4 +303,9 @@ fn dump<T: ToString>(text: T) {
 fn get_config_path() -> Result<PathBuf> {
     let config_dir = dirs::home_dir().ok_or_else(|| anyhow!("No home dir"))?;
     Ok(config_dir.join(format!(".{}.toml", env!("CARGO_CRATE_NAME"))))
+}
+
+fn get_history_path() -> Result<PathBuf> {
+    let config_dir = dirs::home_dir().ok_or_else(|| anyhow!("No home dir"))?;
+    Ok(config_dir.join(format!(".{}_history", env!("CARGO_CRATE_NAME"))))
 }
