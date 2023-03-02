@@ -23,11 +23,14 @@ use tokio::runtime::Runtime;
 
 const API_URL: &str = "https://api.openai.com/v1/chat/completions";
 const MODEL: &str = "gpt-3.5-turbo";
-const HELP: &str = r###".exit   Exit the REPL.
-.help   Print this help message.
-.role   Specify the role that the AI will play.
-
-Press Ctrl+C to abort current chat, Ctrl+D to exit the REPL"###;
+const REPL_COMMANDS: [(&str, &str); 6] = [
+    (".clear", "Clear the screen"),
+    (".clear-history", "Clear the history"),
+    (".exit", " Exit the REPL"),
+    (".help", "Print this help message"),
+    (".history", "Print the history"),
+    (".role", "Specify the role that the AI will play"),
+];
 
 fn main() {
     if let Err(err) = start() {
@@ -93,55 +96,13 @@ fn start() -> Result<()> {
 }
 
 fn run_repl(runtime: Runtime, client: Client, config: Config, role: Option<String>) -> Result<()> {
-    println!("Welcome to aichat {}", env!("CARGO_PKG_VERSION"));
-    println!("Type \".help\" for more information.");
-    let send_line = |line: String| -> Result<()> {
-        if line.is_empty() {
-            return Ok(());
-        }
-        if let Err(err) = runtime.block_on(handle_input(&client, &config, &line)) {
-            dump(format!("error: {err}"));
-        }
-        Ok(())
-    };
-
-    let handle_line = |line: String| -> Result<bool> {
-        if line.starts_with('.') {
-            let (name, args) = match line.split_once(' ') {
-                Some((head, tail)) => (head, Some(tail.trim())),
-                None => (line.as_str(), None),
-            };
-            match name {
-                ".exit" => {
-                    return Ok(true);
-                }
-                ".help" => {
-                    dump(HELP);
-                }
-                ".role" => match args {
-                    Some(name) => match config.roles.iter().find(|v| v.name == name) {
-                        Some(role) => {
-                            send_line(role.prompt.clone())?;
-                        }
-                        None => dump("Unknown role"),
-                    },
-                    None => dump("Usage: .role <name>"),
-                },
-                _ => {
-                    dump("Unknown command. Type \".help\" for more information.");
-                }
-            }
-        } else {
-            send_line(line)?;
-        }
-        Ok(false)
-    };
-    if let Some(name) = role {
-        handle_line(format!("role {name}"))?;
-    }
-    let mut commands = vec![".help".into(), ".exit".into(), ".role".into()];
+    print_repl_title();
+    let mut commands: Vec<String> = REPL_COMMANDS
+        .into_iter()
+        .map(|(v, _)| v.to_string())
+        .collect();
     commands.extend(config.roles.iter().map(|v| format!(".role {}", v.name)));
-    let mut completer = DefaultCompleter::with_inclusions(&['.']).set_min_word_len(2);
+    let mut completer = DefaultCompleter::with_inclusions(&['.', '-']).set_min_word_len(2);
     completer.insert(commands.clone());
     let completer = Box::new(completer);
     let completion_menu = Box::new(ColumnarMenu::default().with_name("completion_menu"));
@@ -166,11 +127,67 @@ fn run_repl(runtime: Runtime, client: Client, config: Config, role: Option<Strin
         .with_edit_mode(edit_mode);
     let prompt = DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty);
 
+    let send_line = |line: String| -> Result<()> {
+        if line.is_empty() {
+            return Ok(());
+        }
+        if let Err(err) = runtime.block_on(handle_input(&client, &config, &line)) {
+            dump(format!("error: {err}"));
+        }
+        Ok(())
+    };
+    let handle_line = |line_editor: &mut Reedline, line: String| -> Result<bool> {
+        if line.starts_with('.') {
+            let (name, args) = match line.split_once(' ') {
+                Some((head, tail)) => (head, Some(tail.trim())),
+                None => (line.as_str(), None),
+            };
+            match name {
+                ".exit" => {
+                    return Ok(true);
+                }
+                ".help" => {
+                    dump(get_repl_help());
+                }
+                ".clear" => {
+                    line_editor.clear_scrollback()?;
+                }
+                ".clear-history" => {
+                    let history = Box::new(line_editor.history_mut());
+                    history
+                        .clear()
+                        .map_err(|err| anyhow!("Failed to clear history, {err}"))?;
+                }
+                ".history" => {
+                    line_editor.print_history()?;
+                }
+                ".role" => match args {
+                    Some(name) => match config.roles.iter().find(|v| v.name == name) {
+                        Some(role) => {
+                            send_line(role.prompt.clone())?;
+                        }
+                        None => dump("Unknown role"),
+                    },
+                    None => dump("Usage: .role <name>"),
+                },
+                _ => {
+                    dump("Unknown command. Type \".help\" for more information.");
+                }
+            }
+        } else {
+            send_line(line)?;
+        }
+        Ok(false)
+    };
+    if let Some(name) = role {
+        handle_line(&mut line_editor, format!("role {name}"))?;
+    }
+
     loop {
         let sig = line_editor.read_line(&prompt);
         match sig {
             Ok(Signal::Success(line)) => {
-                let quit = handle_line(line)?;
+                let quit = handle_line(&mut line_editor, line)?;
                 if quit {
                     break;
                 }
@@ -308,4 +325,18 @@ fn get_config_path() -> Result<PathBuf> {
 fn get_history_path() -> Result<PathBuf> {
     let config_dir = dirs::home_dir().ok_or_else(|| anyhow!("No home dir"))?;
     Ok(config_dir.join(format!(".{}_history", env!("CARGO_CRATE_NAME"))))
+}
+
+fn print_repl_title() {
+    println!("Welcome to aichat {}", env!("CARGO_PKG_VERSION"));
+    println!("Type \".help\" for more information.");
+}
+
+fn get_repl_help() -> String {
+    let head = REPL_COMMANDS
+        .iter()
+        .map(|(name, desc)| format!("{name:<15} {desc}"))
+        .collect::<Vec<String>>()
+        .join("\n");
+    format!("{head}\n\nPress Ctrl+C/Ctrl+D to exit the REPL")
 }
