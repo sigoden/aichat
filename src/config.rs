@@ -7,6 +7,8 @@ use serde::Deserialize;
 pub struct Config {
     /// Openai api key
     pub api_key: String,
+    /// What sampling temperature to use, between 0 and 2
+    pub temperature: Option<f64>,
     /// Set proxy
     pub proxy: Option<String>,
     /// Used only for debugging

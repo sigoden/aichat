@@ -26,7 +26,7 @@ const MODEL: &str = "gpt-3.5-turbo";
 const REPL_COMMANDS: [(&str, &str); 6] = [
     (".clear", "Clear the screen"),
     (".clear-history", "Clear the history"),
-    (".exit", " Exit the REPL"),
+    (".exit", "Exit the REPL"),
     (".help", "Print this help message"),
     (".history", "Print the history"),
     (".role", "Specify the role that the AI will play"),
@@ -319,10 +319,15 @@ async fn acquire(client: &Client, config: &Config, content: &str) -> Result<Stri
     if config.dry_run {
         return Ok(content.to_string());
     }
-    let body = json!({
+    let mut body = json!({
         "model": MODEL,
         "messages": [{"role": "user", "content": content}]
     });
+
+    if let Some(v) = config.temperature {
+        body.as_object_mut()
+            .and_then(|m| m.insert("temperature".into(), json!(v)));
+    }
 
     let data: Value = client
         .post(API_URL)
@@ -345,11 +350,16 @@ async fn acquire_stream(
     config: &Config,
     content: &str,
 ) -> Result<EventStream<impl Stream<Item = reqwest::Result<bytes::Bytes>>>> {
-    let body = json!({
+    let mut body = json!({
         "model": MODEL,
         "messages": [{"role": "user", "content": content}],
         "stream": true,
     });
+
+    if let Some(v) = config.temperature {
+        body.as_object_mut()
+            .and_then(|m| m.insert("temperature".into(), json!(v)));
+    }
 
     let stream = client
         .post(API_URL)
