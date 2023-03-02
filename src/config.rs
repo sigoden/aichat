@@ -12,7 +12,7 @@ pub struct Config {
     /// Used only for debugging
     #[serde(default)]
     pub dry_run: bool,
-    /// Predefined rules
+    /// Predefined roles
     #[serde(default)]
     pub roles: Vec<Role>,
 }
@@ -31,7 +31,7 @@ impl Config {
 pub struct Role {
     /// Role name
     pub name: String,
-    /// Prompt text send to ai for setting up a rule
+    /// Prompt text send to ai for setting up a role
     pub prompt: String,
     /// First sentense will append to prompt
     pub first_sentense: String,

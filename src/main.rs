@@ -49,6 +49,13 @@ fn start() -> Result<()> {
             env!("CARGO_PKG_REPOSITORY")
         ))
         .arg(
+            Arg::new("list-roles")
+                .short('L')
+                .long("list-roles")
+                .action(ArgAction::SetTrue)
+                .help("List all roles"),
+        )
+        .arg(
             Arg::new("role")
                 .short('r')
                 .long("role")
@@ -81,6 +88,11 @@ fn start() -> Result<()> {
             .ok_or_else(|| anyhow!("Unknown role \"{name}\" "))?;
         text = Some(role.generate(text_));
     };
+
+    if matches.get_flag("list-roles") {
+        config.roles.iter().for_each(|v| println!("{}", v.name));
+        exit(1);
+    }
 
     let client = init_client(&config)?;
     let runtime = init_runtime()?;
