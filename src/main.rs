@@ -261,6 +261,7 @@ async fn handle_input(client: &Client, config: &Config, text: &str) -> Result<()
         return Ok(());
     }
     let mut stream = acquire_stream(client, config, text).await?;
+    let mut virgin = true;
     while let Some(part) = stream.next().await {
         let chunk = part?.data;
         if chunk == "[DONE]" {
@@ -272,7 +273,15 @@ async fn handle_input(client: &Client, config: &Config, text: &str) -> Result<()
             let text = data["choices"][0]["delta"]["content"]
                 .as_str()
                 .unwrap_or_default();
-
+            if text.is_empty() {
+                continue;
+            }
+            if virgin {
+                virgin = false;
+                if text == "\n\n" {
+                    continue;
+                }
+            }
             print!("{text}");
             stdout().flush().unwrap();
         }
