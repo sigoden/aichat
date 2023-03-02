@@ -2,6 +2,13 @@
 name = "aichat"
 version = "0.1.0"
 edition = "2021"
+authors = ["sigoden <sigoden@gmail.com>"]
+description = "Chat with OpenAI GPT-3.5 in the terminal."
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/sigoden/aichat"
+repository = "https://github.com/sigoden/aichat"
+categories = ["command-line-utilities"]
+keywords = ["chatgpt", "ai"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -12,10 +19,15 @@ clap = { version = "4.1.8", features = ["derive", "string"] }
 dirs = "4.0.0"
 eventsource-stream = "0.2.3"
 futures-util = "0.3.26"
-inquire = "0.5.3"
+inquire = { version = "0.5.3", features = ["editor"] }
 reedline = "0.16.0"
-reqwest = { version = "0.11.14", features = ["json", "stream"] }
+reqwest = { version = "0.11.14", features = ["json", "stream", "socks"] }
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.93"
 tokio = { version = "1.26.0", features = ["full"] }
 toml = "0.7.2"
+
+[profile.release]
+lto = true
+strip = true
+opt-level = "z"
