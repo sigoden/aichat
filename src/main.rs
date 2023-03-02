@@ -4,6 +4,7 @@ use std::io::{stdout, Write};
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::exit;
+use std::time::Duration;
 
 use config::{Config, Role};
 
@@ -21,6 +22,7 @@ use reqwest::{Client, Proxy};
 use serde_json::{json, Value};
 use tokio::runtime::Runtime;
 
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 const API_URL: &str = "https://api.openai.com/v1/chat/completions";
 const MODEL: &str = "gpt-3.5-turbo";
 const REPL_COMMANDS: [(&str, &str); 6] = [
@@ -145,27 +147,6 @@ fn run_repl(
     let prompt = DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty);
     let mut trigged_ctrlc = false;
     let mut role: Option<Role> = None;
-    let send_line = |line: String, trigged_ctrlc: &mut bool| -> Result<()> {
-        *trigged_ctrlc = false;
-        if line.is_empty() {
-            return Ok(());
-        }
-        runtime.block_on(async {
-            tokio::select! {
-                ret = handle_input(&client, &config, &line) => {
-                    if let Err(err) = ret {
-                        dump(format!("error: {err}"));
-                    }
-                }
-                _ =  tokio::signal::ctrl_c() => {
-                    *trigged_ctrlc = true;
-                    dump(" Abort current session.")
-                }
-            }
-        });
-        Ok(())
-    };
-
     let handle_line = |line: String,
                        line_editor: &mut Reedline,
                        trigged_ctrlc: &mut bool,
@@ -214,7 +195,23 @@ fn run_repl(
             } else {
                 line
             };
-            send_line(line, trigged_ctrlc)?;
+            *trigged_ctrlc = false;
+            if line.is_empty() {
+                return Ok(false);
+            }
+            runtime.block_on(async {
+                tokio::select! {
+                    ret = handle_input(&client, &config, &line) => {
+                        if let Err(err) = ret {
+                            dump(format!("error: {err}"));
+                        }
+                    }
+                    _ =  tokio::signal::ctrl_c() => {
+                        *trigged_ctrlc = true;
+                        dump(" Abort current session.")
+                    }
+                }
+            });
         }
         Ok(false)
     };
@@ -295,6 +292,7 @@ fn init_client(config: &Config) -> Result<Client> {
             builder.proxy(Proxy::all(proxy).map_err(|err| anyhow!("Invalid config.proxy, {err}"))?);
     }
     let client = builder
+        .connect_timeout(CONNECT_TIMEOUT)
         .build()
         .map_err(|err| anyhow!("Failed to init http client, {err}"))?;
     Ok(client)
@@ -348,7 +346,7 @@ async fn acquire(client: &Client, config: &Config, content: &str) -> Result<Stri
 
     let output = data["choices"][0]["message"]["content"]
         .as_str()
-        .ok_or_else(|| anyhow!("Unexpect response {data}"))?;
+        .ok_or_else(|| anyhow!("Unexpected response {data}"))?;
 
     Ok(output.to_string())
 }
