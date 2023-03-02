@@ -1,0 +1,179 @@
+name: Release
+
+on:
+  push:
+    tags:
+    - v[0-9]+.[0-9]+.[0-9]+*
+
+jobs:
+  release:
+    name: Publish to Github Release
+    permissions:
+      contents: write
+    outputs:
+      rc: ${{ steps.check-tag.outputs.rc }}
+
+    strategy:
+      matrix:
+        include:
+        - target: aarch64-unknown-linux-musl
+          os: ubuntu-latest
+          use-cross: true
+          cargo-flags: ""
+        - target: aarch64-apple-darwin
+          os: macos-latest
+          use-cross: true
+          cargo-flags: ""
+        # - target: aarch64-pc-windows-msvc
+        #   os: windows-latest
+        #   use-cross: true
+        #   cargo-flags: ""
+        - target: x86_64-apple-darwin
+          os: macos-latest
+          cargo-flags: ""
+        - target: x86_64-pc-windows-msvc
+          os: windows-latest
+          cargo-flags: ""
+        - target: x86_64-unknown-linux-musl
+          os: ubuntu-latest
+          use-cross: true
+          cargo-flags: ""
+        - target: i686-unknown-linux-musl
+          os: ubuntu-latest
+          use-cross: true
+          cargo-flags: ""
+        - target: i686-pc-windows-msvc
+          os: windows-latest
+          use-cross: true
+          cargo-flags: ""
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Check Tag
+      id: check-tag
+      shell: bash
+      run: |
+        tag=${GITHUB_REF##*/}
+        echo "::set-output name=version::$tag"
+        if [[ "$tag" =~ [0-9]+.[0-9]+.[0-9]+$ ]]; then
+          echo "::set-output name=rc::false"
+        else
+          echo "::set-output name=rc::true"
+        fi
+
+
+    - name: Install Rust Toolchain Components
+      uses: actions-rs/toolchain@v1
+      with:
+        override: true
+        target: ${{ matrix.target }}
+        toolchain: stable
+        profile: minimal # minimal component installation (ie, no documentation)
+  
+    - name: Show Version Information (Rust, cargo, GCC)
+      shell: bash
+      run: |
+        gcc --version || true
+        rustup -V
+        rustup toolchain list
+        rustup default
+        cargo -V
+        rustc -V
+      
+    - name: Build
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: ${{ matrix.use-cross }}
+        command: build
+        args: --locked --release --target=${{ matrix.target }} ${{ matrix.cargo-flags }}
+
+    - name: Build Archive
+      shell: bash
+      id: package
+      env:
+        target: ${{ matrix.target }}
+        version:  ${{ steps.check-tag.outputs.version }}
+      run: |
+        set -euxo pipefail
+
+        bin=${GITHUB_REPOSITORY##*/}
+        src=`pwd`
+        dist=$src/dist
+        name=$bin-$version-$target
+        executable=target/$target/release/$bin
+
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          executable=$executable.exe
+        fi
+
+        mkdir $dist
+        cp $executable $dist
+        cd $dist
+
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+            archive=$dist/$name.zip
+            7z a $archive *
+            echo "::set-output name=archive::`pwd -W`/$name.zip"
+        else
+            archive=$dist/$name.tar.gz
+            tar czf $archive *
+            echo "::set-output name=archive::$archive"
+        fi
+
+    - name: Publish Archive
+      uses: softprops/action-gh-release@v0.1.5
+      if: ${{ startsWith(github.ref, 'refs/tags/') }}
+      with:
+        draft: false
+        files: ${{ steps.package.outputs.archive }}
+        prerelease: ${{ steps.check-tag.outputs.rc == 'true' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    name: Publish to Docker Hub
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            REPO=${{ github.repository }}
+            VER=${{ github.ref_name }}
+          platforms: |
+            linux/amd64
+            linux/arm64
+            linux/386
+          push: ${{ needs.release.outputs.rc == 'false' }}
+          tags: ${{ github.repository }}:latest, ${{ github.repository }}:${{ github.ref_name }}
+
+  publish-crate:
+    name: Publish to crates.io
+    if: ${{ needs.release.outputs.rc == 'false' }}
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - name: Publish
+
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_API_TOKEN }}
+        run: cargo publish
