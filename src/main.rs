@@ -99,7 +99,7 @@ fn start() -> Result<()> {
     match text {
         Some(text) => {
             let output = runtime.block_on(async move { acquire(&client, &config, &text).await })?;
-            println!("{output}");
+            println!("{}", output.trim());
         }
         None => run_repl(runtime, client, config, role_name)?,
     }
@@ -159,7 +159,7 @@ fn run_repl(
                 }
                 _ =  tokio::signal::ctrl_c() => {
                     *trigged_ctrlc = true;
-                    dump(" Abort current session")
+                    dump(" Abort current session.")
                 }
             }
         });
@@ -200,9 +200,9 @@ fn run_repl(
                         Some(role_) => {
                             *role = Some(role_.clone());
                         }
-                        None => dump("Unknown role"),
+                        None => dump("Unknown role."),
                     },
-                    None => dump("Usage: .role <name>"),
+                    None => dump("Usage: .role <name>."),
                 },
                 _ => {
                     dump("Unknown command. Type \".help\" for more information.");
@@ -265,8 +265,7 @@ async fn handle_input(client: &Client, config: &Config, text: &str) -> Result<()
     while let Some(part) = stream.next().await {
         let chunk = part?.data;
         if chunk == "[DONE]" {
-            println!();
-            stdout().flush().unwrap();
+            dump("\n");
             break;
         } else {
             let data: Value = serde_json::from_str(&chunk)?;
