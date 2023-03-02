@@ -5,7 +5,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::exit;
 
-use config::Config;
+use config::{Config, Role};
 
 use anyhow::{anyhow, Result};
 use clap::{Arg, ArgAction, Command};
@@ -79,8 +79,8 @@ fn start() -> Result<()> {
     }
     let config = Config::init(&config_path)?;
 
-    let role = matches.get_one::<String>("role").cloned();
-    if let (Some(name), Some(text_)) = (role.as_ref(), text.as_ref()) {
+    let role_name = matches.get_one::<String>("role").cloned();
+    if let (Some(name), Some(text_)) = (role_name.as_ref(), text.as_ref()) {
         let role = config
             .roles
             .iter()
@@ -101,13 +101,18 @@ fn start() -> Result<()> {
             let output = runtime.block_on(async move { acquire(&client, &config, &text).await })?;
             println!("{output}");
         }
-        None => run_repl(runtime, client, config, role)?,
+        None => run_repl(runtime, client, config, role_name)?,
     }
 
     Ok(())
 }
 
-fn run_repl(runtime: Runtime, client: Client, config: Config, role: Option<String>) -> Result<()> {
+fn run_repl(
+    runtime: Runtime,
+    client: Client,
+    config: Config,
+    role_name: Option<String>,
+) -> Result<()> {
     print_repl_title();
     let mut commands: Vec<String> = REPL_COMMANDS
         .into_iter()
@@ -139,6 +144,7 @@ fn run_repl(runtime: Runtime, client: Client, config: Config, role: Option<Strin
         .with_edit_mode(edit_mode);
     let prompt = DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty);
     let mut trigged_ctrlc = false;
+    let mut role: Option<Role> = None;
     let send_line = |line: String, trigged_ctrlc: &mut bool| -> Result<()> {
         *trigged_ctrlc = false;
         if line.is_empty() {
@@ -160,58 +166,71 @@ fn run_repl(runtime: Runtime, client: Client, config: Config, role: Option<Strin
         Ok(())
     };
 
-    let handle_line =
-        |line_editor: &mut Reedline, line: String, trigged_ctrlc: &mut bool| -> Result<bool> {
-            if line.starts_with('.') {
-                let (name, args) = match line.split_once(' ') {
-                    Some((head, tail)) => (head, Some(tail.trim())),
-                    None => (line.as_str(), None),
-                };
-                match name {
-                    ".exit" => {
-                        return Ok(true);
-                    }
-                    ".help" => {
-                        dump(get_repl_help());
-                    }
-                    ".clear" => {
-                        line_editor.clear_scrollback()?;
-                    }
-                    ".clear-history" => {
-                        let history = Box::new(line_editor.history_mut());
-                        history
-                            .clear()
-                            .map_err(|err| anyhow!("Failed to clear history, {err}"))?;
-                    }
-                    ".history" => {
-                        line_editor.print_history()?;
-                    }
-                    ".role" => match args {
-                        Some(name) => match config.roles.iter().find(|v| v.name == name) {
-                            Some(role) => {
-                                send_line(role.prompt.clone(), trigged_ctrlc)?;
-                            }
-                            None => dump("Unknown role"),
-                        },
-                        None => dump("Usage: .role <name>"),
-                    },
-                    _ => {
-                        dump("Unknown command. Type \".help\" for more information.");
-                    }
+    let handle_line = |line: String,
+                       line_editor: &mut Reedline,
+                       trigged_ctrlc: &mut bool,
+                       role: &mut Option<Role>|
+     -> Result<bool> {
+        if line.starts_with('.') {
+            let (name, args) = match line.split_once(' ') {
+                Some((head, tail)) => (head, Some(tail.trim())),
+                None => (line.as_str(), None),
+            };
+            match name {
+                ".exit" => {
+                    return Ok(true);
                 }
-            } else {
-                send_line(line, trigged_ctrlc)?;
+                ".help" => {
+                    dump(get_repl_help());
+                }
+                ".clear" => {
+                    line_editor.clear_scrollback()?;
+                }
+                ".clear-history" => {
+                    let history = Box::new(line_editor.history_mut());
+                    history
+                        .clear()
+                        .map_err(|err| anyhow!("Failed to clear history, {err}"))?;
+                }
+                ".history" => {
+                    line_editor.print_history()?;
+                }
+                ".role" => match args {
+                    Some(name) => match config.roles.iter().find(|v| v.name == name) {
+                        Some(role_) => {
+                            *role = Some(role_.clone());
+                        }
+                        None => dump("Unknown role"),
+                    },
+                    None => dump("Usage: .role <name>"),
+                },
+                _ => {
+                    dump("Unknown command. Type \".help\" for more information.");
+                }
             }
-            Ok(false)
-        };
-    if let Some(name) = role {
-        handle_line(&mut line_editor, format!("role {name}"), &mut trigged_ctrlc)?;
+        } else {
+            let line = if let Some(role) = role.take() {
+                role.generate(&line)
+            } else {
+                line
+            };
+            send_line(line, trigged_ctrlc)?;
+        }
+        Ok(false)
+    };
+    if let Some(name) = role_name {
+        handle_line(
+            format!(".role {name}"),
+            &mut line_editor,
+            &mut trigged_ctrlc,
+            &mut role,
+        )?;
     }
     loop {
         let sig = line_editor.read_line(&prompt);
         match sig {
             Ok(Signal::Success(line)) => {
-                let quit = handle_line(&mut line_editor, line, &mut trigged_ctrlc)?;
+                let quit = handle_line(line, &mut line_editor, &mut trigged_ctrlc, &mut role)?;
                 if quit {
                     break;
                 }
