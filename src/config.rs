@@ -1,10 +1,13 @@
 use std::{
     env,
-    fs::{self, read_to_string},
+    fs::{create_dir_all, read_to_string, File, OpenOptions},
+    io::Write,
     path::{Path, PathBuf},
+    process::exit,
 };
 
 use anyhow::{anyhow, Result};
+use inquire::{Confirm, Text};
 use serde::Deserialize;
 
 const CONFIG_FILE_NAME: &str = "config.yaml";
@@ -32,13 +35,21 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn init(path: &Path) -> Result<Config> {
-        let content = read_to_string(path)
-            .map_err(|err| anyhow!("Failed to load config at {}, {err}", path.display()))?;
+    pub fn init(is_interactive: bool) -> Result<Config> {
+        let config_path = Config::config_file()?;
+        if is_interactive && !config_path.exists() {
+            create_config_file(&config_path)?;
+        }
+        let content = read_to_string(&config_path)
+            .map_err(|err| anyhow!("Failed to load config at {}, {err}", config_path.display()))?;
         let mut config: Config =
             serde_yaml::from_str(&content).map_err(|err| anyhow!("Invalid config, {err}"))?;
         config.load_roles()?;
         Ok(config)
+    }
+
+    pub fn find_role(&self, name: &str) -> Option<Role> {
+        self.roles.iter().find(|v| v.name == name).cloned()
     }
 
     pub fn local_file(name: &str) -> Result<PathBuf> {
@@ -52,12 +63,43 @@ impl Config {
         };
         path.push(env!("CARGO_CRATE_NAME"));
         if !path.exists() {
-            fs::create_dir_all(&path).map_err(|err| {
+            create_dir_all(&path).map_err(|err| {
                 anyhow!("Failed to create config dir at {}, {err}", path.display())
             })?;
         }
         path.push(name);
         Ok(path)
+    }
+
+    pub fn open_message_file(&self) -> Result<Option<File>> {
+        if !self.save {
+            return Ok(None);
+        }
+        let path = Config::messages_file()?;
+        let file: Option<File> = if self.save {
+            let file = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&path)
+                .map_err(|err| anyhow!("Failed to create/append {}, {err}", path.display()))?;
+            Some(file)
+        } else {
+            None
+        };
+        Ok(file)
+    }
+
+    pub fn save_message(file: Option<&mut File>, input: &str, output: &str) {
+        if let (false, Some(file)) = (output.is_empty(), file) {
+            let _ = file.write_all(
+                format!(
+                    "AICHAT: {}\n\n--------\n{}\n--------\n\n",
+                    input.trim(),
+                    output.trim(),
+                )
+                .as_bytes(),
+            );
+        }
     }
 
     pub fn config_file() -> Result<PathBuf> {
@@ -72,7 +114,7 @@ impl Config {
         Self::local_file(HISTORY_FILE_NAME)
     }
 
-    pub fn messages_file() -> Result<PathBuf> {
+    fn messages_file() -> Result<PathBuf> {
         Self::local_file(MESSAGE_FILE_NAME)
     }
 
@@ -98,8 +140,39 @@ pub struct Role {
     pub prompt: String,
 }
 
-impl Role {
-    pub fn generate(&self, text: &str) -> String {
-        format!("{} {}", self.prompt, text)
+fn create_config_file(config_path: &Path) -> Result<()> {
+    let confirm_map_err = |_| anyhow!("Error with questionnaire, try again later");
+    let text_map_err = |_| anyhow!("An error happened when asking for your key, try again later.");
+    let ans = Confirm::new("No config file, create a new one?")
+        .with_default(true)
+        .prompt()
+        .map_err(confirm_map_err)?;
+    if !ans {
+        exit(0);
     }
+    let api_key = Text::new("Openai API Key:")
+        .prompt()
+        .map_err(text_map_err)?;
+    let mut raw_config = format!("api_key: {api_key}\n");
+
+    let ans = Confirm::new("Use proxy?")
+        .with_default(false)
+        .prompt()
+        .map_err(confirm_map_err)?;
+    if ans {
+        let proxy = Text::new("Set proxy:").prompt().map_err(text_map_err)?;
+        raw_config.push_str(&format!("proxy: {proxy}\n"));
+    }
+
+    let ans = Confirm::new("Save chat messages")
+        .with_default(false)
+        .prompt()
+        .map_err(confirm_map_err)?;
+    if ans {
+        raw_config.push_str("save: true\n");
+    }
+
+    std::fs::write(config_path, raw_config)
+        .map_err(|err| anyhow!("Failed to write to config file, {err}"))?;
+    Ok(())
 }
