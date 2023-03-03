@@ -1,6 +1,7 @@
 mod cli;
 mod client;
 mod config;
+mod render;
 mod repl;
 
 use std::process::exit;
@@ -52,8 +53,9 @@ fn start_directive(
 ) -> Result<()> {
     let mut file = config.open_message_file()?;
     let output = client.acquire(input, role.map(|v| v.prompt))?;
-    println!("{}", output.trim());
-    Config::save_message(file.as_mut(), input, &output);
+    let output = output.trim();
+    render::print(output, config.highlight);
+    Config::save_message(file.as_mut(), input, output);
     Ok(())
 }
 

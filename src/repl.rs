@@ -1,5 +1,6 @@
 use crate::client::ChatGptClient;
 use crate::config::{Config, Role};
+use crate::render;
 use anyhow::{anyhow, Result};
 use inquire::Editor;
 use reedline::{
@@ -11,7 +12,10 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io::{stdout, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::channel;
+use std::sync::mpsc::Sender;
 use std::sync::Arc;
+use std::thread::spawn;
 
 const REPL_COMMANDS: [(&str, &str); 8] = [
     (".clear", "Clear the screen"),
@@ -92,7 +96,6 @@ impl Repl {
                 }
             }
         }
-        // tx.send(ReplCmd::Quit).unwrap();
         Ok(())
     }
 
@@ -215,7 +218,6 @@ impl ReplCmdHandler {
     fn handle(&self, cmd: ReplCmd) -> Result<()> {
         match cmd {
             ReplCmd::Input(input) => {
-                let mut output = String::new();
                 if input.is_empty() {
                     self.state.borrow_mut().output.clear();
                     return Ok(());
@@ -226,16 +228,25 @@ impl ReplCmdHandler {
                 } else {
                     Some(prompt)
                 };
-                self.client.acquire_stream(
+                let mut receiver = if self.config.highlight {
+                    let (tx, rx) = channel();
+                    let ctrlc = self.ctrlc.clone();
+                    spawn(move || render::run(rx, ctrlc));
+                    ReplyReceiver::new(Some(tx))
+                } else {
+                    ReplyReceiver::new(None)
+                };
+                self.client
+                    .acquire_stream(&input, prompt, &mut receiver, self.ctrlc.clone())?;
+                receiver.done();
+                Config::save_message(
+                    self.state.borrow_mut().save_file.as_mut(),
                     &input,
-                    prompt,
-                    &mut output,
-                    dump_and_collect,
-                    self.ctrlc.clone(),
-                )?;
-                dump_and_collect(&mut output, "\n\n");
-                Config::save_message(self.state.borrow_mut().save_file.as_mut(), &input, &output);
-                self.state.borrow_mut().output = output;
+                    &receiver.output,
+                );
+                render::print(&receiver.output, self.config.highlight);
+                dump("", 1);
+                self.state.borrow_mut().output = receiver.output;
             }
             ReplCmd::View => {
                 let output = self.state.borrow().output.to_string();
@@ -265,11 +276,40 @@ impl ReplCmdHandler {
     }
 }
 
-pub enum ReplCmd {
-    View,
-    UnsetRole,
-    Input(String),
-    SetRole(String),
+pub struct ReplyReceiver {
+    output: String,
+    sender: Option<Sender<ReplyEvent>>,
+}
+
+impl ReplyReceiver {
+    pub fn new(sender: Option<Sender<ReplyEvent>>) -> Self {
+        Self {
+            output: String::new(),
+            sender,
+        }
+    }
+    pub fn text(&mut self, text: &str) {
+        match self.sender.as_ref() {
+            Some(tx) => tx.send(ReplyEvent::Text(text.to_string())).unwrap(),
+            None => {
+                dump(text, 0);
+            }
+        }
+        self.output.push_str(text);
+    }
+    pub fn done(&mut self) {
+        match self.sender.as_ref() {
+            Some(tx) => tx.send(ReplyEvent::Done).unwrap(),
+            None => {
+                dump("", 2);
+            }
+        }
+    }
+}
+
+pub enum ReplyEvent {
+    Text(String),
+    Done,
 }
 
 pub fn dump<T: ToString>(text: T, newlines: usize) {
@@ -277,9 +317,11 @@ pub fn dump<T: ToString>(text: T, newlines: usize) {
     stdout().flush().unwrap();
 }
 
-fn dump_and_collect(output: &mut String, reply: &str) {
-    output.push_str(reply);
-    dump(reply, 0);
+enum ReplCmd {
+    View,
+    UnsetRole,
+    Input(String),
+    SetRole(String),
 }
 
 fn dump_repl_help() {
