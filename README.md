@@ -21,7 +21,17 @@ Download from [Github Releases](https://github.com/sigoden/aichat/releases), unz
 
 ## Config
 
-When starting for the first time, aichat will prompt to set `api_key`, after setting, it will automatically create the configuration file. Of course, you can also manually set the configuration file. 
+On first launch, aichat will guide you through configuration.
+
+```
+> No config file, create a new one? Yes
+> Openai API Key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+> Use proxy? Yes
+> Set proxy: socks5://127.0.0.1:1080
+> Save chat messages Yes
+```
+
+After setting, it will automatically create the configuration file. Of course, you can also manually set the configuration file. 
 
 ```yaml
 api_key: "<YOUR SECRET API KEY>"        # Request via https://platform.openai.com/account/api-keys
@@ -30,29 +40,33 @@ save: true                              # optional, If set to true, aichat will 
 proxy: "socks5://127.0.0.1:1080"        # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
 ```
 
-The default config dir is as follows, You can override config dir with `AICHAT_CONFIG_DIR` environment variable.
+The default config dir is as follows, You can override config dir with `$AICHAT_CONFIG_DIR`.
 
 - Linux:   `/home/alice/.config/aichat`
 - Windows: `C:\Users\Alice\AppData\Roaming\aichat`
 - MacOS:   `/Users/Alice/Library/Application Support`
 
-Depending on your configuration, aichat may generate the following files in the config dir:
+aichat may generate the following files in the config dir:
 
 - `config.yaml`: the config file.
 - `roles.yaml`: the roles definition file.
 - `history.txt`: the repl history file.
 - `messages.md`: the chat messages storage file.
 
-## Roles
+### Roles
 
 We can let ChatGPT play a certain role through `prompt` to make it better generate what we want. See [awesome-chatgpt-prompts](https://github.com/f/awesome-chatgpt-prompts) for details.
 
-In aichat, we can predefine a batch of roles in `rules.yaml`. For example, we define a javascript-console role as follows.
+We can predefine a batch of roles in `rules.yaml`. For example, we define a javascript-console role as follows.
 
 ```yaml
 - name: javascript-console
   prompt: > 
-    I want you to act as a javascript console. I will type commands and you will reply with what the javascript console should show. I want you to only reply with the terminal output inside one unique code block, and nothing else. do not write explanations. do not type commands unless I instruct you to do so. when i need to tell you something in english, i will do so by putting text inside curly brackets {like this}. My first command is:
+    I want you to act as a javascript console. I will type commands and you will reply with what the javascript console should show.
+    I want you to only reply with the terminal output inside one unique code block, and nothing else.
+    do not write explanations. do not type commands unless I instruct you to do so. 
+    when i need to tell you something in english, i will do so by putting text inside curly brackets {like this}.
+    My first command is:
 ```
 
 Let ChaGPT answer questions in the role of a javascript-console.
