@@ -3,11 +3,10 @@ mod config;
 use std::fs::{File, OpenOptions};
 use std::io::{stdout, Write};
 use std::path::Path;
-use std::path::PathBuf;
 use std::process::exit;
 use std::time::Duration;
 
-use config::{Config, Role};
+use config::{Config, Role, CONFIG_FILE_NAME, HISTORY_FILE_NAME, MESSAGE_FILE_NAME};
 
 use anyhow::{anyhow, Result};
 use clap::{Arg, ArgAction, Command};
@@ -77,7 +76,7 @@ fn start() -> Result<()> {
             .collect::<Vec<String>>()
             .join(" ")
     });
-    let config_path = get_config_path()?;
+    let config_path = Config::local_file(CONFIG_FILE_NAME)?;
     if !config_path.exists() && text.is_none() {
         create_config_file(&config_path)?;
     }
@@ -137,7 +136,7 @@ fn run_repl(
         ]),
     );
     let history = Box::new(
-        FileBackedHistory::with_file(1000, get_history_path()?)
+        FileBackedHistory::with_file(1000, Config::local_file(HISTORY_FILE_NAME)?)
             .map_err(|err| anyhow!("Failed to setup history file, {err}"))?,
     );
     let edit_mode = Box::new(Emacs::new(keybindings));
@@ -150,17 +149,12 @@ fn run_repl(
     let mut trigged_ctrlc = false;
     let mut output = String::new();
     let mut role: Option<Role> = None;
-    let mut save_file: Option<File> = if let Some(path) = &config.save_path {
+    let mut save_file: Option<File> = if config.save {
         let file = OpenOptions::new()
             .create(true)
             .append(true)
-            .open(path)
-            .map_err(|err| {
-                anyhow!(
-                    "Failed to create/append save_file at {}, {err}",
-                    path.display()
-                )
-            })?;
+            .open(Config::local_file(MESSAGE_FILE_NAME)?)
+            .map_err(|err| anyhow!("Failed to create/append save_file, {err}"))?;
         Some(file)
     } else {
         None
@@ -438,16 +432,6 @@ async fn acquire_stream(
 fn dump<T: ToString>(text: T, newlines: usize) {
     print!("{}{}", text.to_string(), "\n".repeat(newlines));
     stdout().flush().unwrap();
-}
-
-fn get_config_path() -> Result<PathBuf> {
-    let config_dir = dirs::home_dir().ok_or_else(|| anyhow!("No home dir"))?;
-    Ok(config_dir.join(format!(".{}.toml", env!("CARGO_CRATE_NAME"))))
-}
-
-fn get_history_path() -> Result<PathBuf> {
-    let config_dir = dirs::home_dir().ok_or_else(|| anyhow!("No home dir"))?;
-    Ok(config_dir.join(format!(".{}_history", env!("CARGO_CRATE_NAME"))))
 }
 
 fn print_repl_title() {

@@ -21,27 +21,38 @@ Download from [Github Releases](https://github.com/sigoden/aichat/releases), unz
 
 ## Config
 
-When starting for the first time, aichat will prompt to set `api_key`, after setting, it will automatically create the configuration file at `$HOME/.aichat.toml`. Of course, you can also manually set the configuration file. 
+When starting for the first time, aichat will prompt to set `api_key`, after setting, it will automatically create the configuration file. Of course, you can also manually set the configuration file. 
 
-```toml
-api_key = "<YOUR SECRET API KEY>"        # Request via https://platform.openai.com/account/api-keys
-temperature = 1.0                        # optional, see https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
-save_path = "/tmp/AICHAT.md"             # optional, Specify a file path to save chat messages to
-proxy = "socks5://127.0.0.1:1080"        # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
+```yaml
+api_key: "<YOUR SECRET API KEY>"        # Request via https://platform.openai.com/account/api-keys
+temperature: 1.0                        # optional, see https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
+save: true                              # optional, If set to true, aichat will save chat messages to message.md
+proxy: "socks5://127.0.0.1:1080"        # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
 ```
 
-> We provide a [sample configuration file](.aichat.example.toml). 
+The default config dir is as follows, You can override config dir with `AICHAT_CONFIG_DIR` environment variable.
+
+- Linux:   `/home/alice/.config/aichat`
+- Windows: `C:\Users\Alice\AppData\Roaming\aichat`
+- MacOS:   `/Users/Alice/Library/Application Support`
+
+Depending on your configuration, aichat may generate the following files in the config dir:
+
+- `config.yaml`: the config file.
+- `roles.yaml`: the roles definition file.
+- `history.txt`: the repl history file.
+- `messages.md`: the chat messages storage file.
 
 ## Roles
 
 We can let ChatGPT play a certain role through `prompt` to make it better generate what we want. See [awesome-chatgpt-prompts](https://github.com/f/awesome-chatgpt-prompts) for details.
 
-In aichat, we can predefine a batch of roles in the configuration. For example, we define a javascript-console role as follows.
+In aichat, we can predefine a batch of roles in `rules.yaml`. For example, we define a javascript-console role as follows.
 
-```toml
-[[roles]]
-name = "javascript-console"
-prompt = "I want you to act as a javascript console. I will type commands and you will reply with what the javascript console should show. I want you to only reply with the terminal output inside one unique code block, and nothing else. do not write explanations. do not type commands unless I instruct you to do so. when i need to tell you something in english, i will do so by putting text inside curly brackets {like this}. My first command is:"
+```yaml
+- name: javascript-console
+  prompt: > 
+    I want you to act as a javascript console. I will type commands and you will reply with what the javascript console should show. I want you to only reply with the terminal output inside one unique code block, and nothing else. do not write explanations. do not type commands unless I instruct you to do so. when i need to tell you something in english, i will do so by putting text inside curly brackets {like this}. My first command is:
 ```
 
 Let ChaGPT answer questions in the role of a javascript-console.
