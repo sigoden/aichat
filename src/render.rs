@@ -36,19 +36,25 @@ pub fn render_stream(
     let mut output = String::new();
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+
+    fn clear(stdout: &mut impl Write) -> io::Result<()> {
+        queue!(
+            stdout,
+            style::ResetColor,
+            terminal::Clear(ClearType::All),
+            cursor::Hide,
+            cursor::MoveTo(0, 0)
+        )
+    }
+
+    clear(&mut stdout)?;
+
     while let Ok(ev) = rx.recv() {
         if ctrlc.load(Ordering::SeqCst) {
             break;
         }
         match ev {
             ReplyEvent::Text(text) => {
-                queue!(
-                    stdout,
-                    style::ResetColor,
-                    terminal::Clear(ClearType::All),
-                    cursor::Hide,
-                    cursor::MoveTo(0, 0)
-                )?;
                 output.push_str(&text);
                 let rows = size()?.1 as usize;
                 let lines: Vec<&str> = output.split('\n').collect();
@@ -73,8 +79,20 @@ pub fn render_stream(
                     }
                 };
                 let content = selected_lines.join("\n");
-                for line in markdown_render.render(&content)?.split('\n') {
-                    queue!(stdout, style::Print(line), cursor::MoveToNextLine(1))?;
+                let markdown = markdown_render.render(&content)?;
+                if text.contains('\n') {
+                    clear(&mut stdout)?;
+                    for line in markdown.split('\n') {
+                        queue!(stdout, style::Print(line), cursor::MoveToNextLine(1))?;
+                    }
+                } else if let Some(line) = markdown.split('\n').last() {
+                    queue!(
+                        stdout,
+                        style::ResetColor,
+                        terminal::Clear(ClearType::CurrentLine),
+                        cursor::MoveToColumn(0),
+                        style::Print(line)
+                    )?;
                 }
 
                 stdout.flush()?;

@@ -235,7 +235,9 @@ impl ReplCmdHandler {
                 let mut receiver = if let Some(markdown_render) = self.render.clone() {
                     let (tx, rx) = channel();
                     let ctrlc = self.ctrlc.clone();
-                    spawn(move || render::render_stream(rx, ctrlc, markdown_render));
+                    spawn(move || {
+                        let _ = render::render_stream(rx, ctrlc, markdown_render);
+                    });
                     ReplyReceiver::new(Some(tx))
                 } else {
                     ReplyReceiver::new(None)
@@ -289,7 +291,9 @@ impl ReplyReceiver {
     }
     pub fn text(&mut self, text: &str) {
         match self.sender.as_ref() {
-            Some(tx) => tx.send(ReplyEvent::Text(text.to_string())).unwrap(),
+            Some(tx) => {
+                let _ = tx.send(ReplyEvent::Text(text.to_string()));
+            }
             None => {
                 dump(text, 0);
             }
@@ -298,7 +302,9 @@ impl ReplyReceiver {
     }
     pub fn done(&mut self) {
         match self.sender.as_ref() {
-            Some(tx) => tx.send(ReplyEvent::Done).unwrap(),
+            Some(tx) => {
+                let _ = tx.send(ReplyEvent::Done);
+            }
             None => {
                 dump("", 2);
             }
@@ -313,7 +319,7 @@ pub enum ReplyEvent {
 
 pub fn dump<T: ToString>(text: T, newlines: usize) {
     print!("{}{}", text.to_string(), "\n".repeat(newlines));
-    stdout().flush().unwrap();
+    let _ = stdout().flush();
 }
 
 enum ReplCmd {
