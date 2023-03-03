@@ -35,12 +35,10 @@ pub struct Role {
     pub name: String,
     /// Prompt text send to ai for setting up a role
     pub prompt: String,
-    /// First sentense will append to prompt
-    pub first_sentense: String,
 }
 
 impl Role {
     pub fn generate(&self, text: &str) -> String {
-        format!("{} {} {}", self.prompt, self.first_sentense, text)
+        format!("{} {}", self.prompt, text)
     }
 }
