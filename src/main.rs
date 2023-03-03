@@ -356,17 +356,38 @@ fn init_runtime() -> Result<Runtime> {
 }
 
 fn create_config_file(config_path: &Path) -> Result<()> {
+    let confirm_map_err = |_| anyhow!("Error with questionnaire, try again later");
+    let text_map_err = |_| anyhow!("An error happened when asking for your key, try again later.");
     let ans = Confirm::new("No config file, create a new one?")
         .with_default(true)
         .prompt()
-        .map_err(|_| anyhow!("Error with questionnaire, try again later"))?;
+        .map_err(confirm_map_err)?;
     if !ans {
         exit(0);
     }
     let api_key = Text::new("Openai API Key:")
         .prompt()
-        .map_err(|_| anyhow!("An error happened when asking for your key, try again later."))?;
-    std::fs::write(config_path, format!("api_key = \"{api_key}\"\n"))
+        .map_err(text_map_err)?;
+    let mut raw_config = format!("api_key: {api_key}\n");
+
+    let ans = Confirm::new("Use proxy?")
+        .with_default(false)
+        .prompt()
+        .map_err(confirm_map_err)?;
+    if ans {
+        let proxy = Text::new("Set proxy:").prompt().map_err(text_map_err)?;
+        raw_config.push_str(&format!("proxy: {proxy}\n"));
+    }
+
+    let ans = Confirm::new("Save chat messages")
+        .with_default(false)
+        .prompt()
+        .map_err(confirm_map_err)?;
+    if ans {
+        raw_config.push_str("save: true\n");
+    }
+
+    std::fs::write(config_path, raw_config)
         .map_err(|err| anyhow!("Failed to write to config file, {err}"))?;
     Ok(())
 }
