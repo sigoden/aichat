@@ -2,6 +2,7 @@ use crate::client::ChatGptClient;
 use crate::config::{Config, Role};
 use crate::render::{self, MarkdownRender};
 use anyhow::{anyhow, Result};
+use crossbeam::sync::WaitGroup;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultPrompt, DefaultPromptSegment,
     Emacs, FileBackedHistory, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent,
@@ -88,10 +89,7 @@ impl Repl {
                 Ok(Signal::CtrlD) => {
                     break;
                 }
-                Err(err) => {
-                    dump(format!("{err:?}"), 1);
-                    break;
-                }
+                _ => {}
             }
         }
         Ok(())
@@ -232,11 +230,14 @@ impl ReplCmdHandler {
                 } else {
                     Some(prompt)
                 };
+                let wg = WaitGroup::new();
                 let mut receiver = if let Some(markdown_render) = self.render.clone() {
                     let (tx, rx) = channel();
                     let ctrlc = self.ctrlc.clone();
+                    let wg = wg.clone();
                     spawn(move || {
                         let _ = render::render_stream(rx, ctrlc, markdown_render);
+                        drop(wg);
                     });
                     ReplyReceiver::new(Some(tx))
                 } else {
@@ -249,6 +250,7 @@ impl ReplCmdHandler {
                     &input,
                     &receiver.output,
                 );
+                wg.wait();
                 match self.render.clone() {
                     Some(markdown_render) => {
                         markdown_render.print(&receiver.output)?;

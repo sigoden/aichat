@@ -1,7 +1,7 @@
 use anyhow::Result;
 use crossterm::{
     cursor,
-    event::{DisableMouseCapture, EnableMouseCapture},
+    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
     execute, queue, style,
     terminal::{
         self, disable_raw_mode, enable_raw_mode, size, ClearType, EnterAlternateScreen,
@@ -21,6 +21,8 @@ use std::{
         mpsc::Receiver,
         Arc,
     },
+    thread,
+    time::Duration,
 };
 use syntect::parsing::SyntaxSet;
 
@@ -31,11 +33,47 @@ pub fn render_stream(
     ctrlc: Arc<AtomicBool>,
     markdown_render: Arc<MarkdownRender>,
 ) -> Result<()> {
+    let ctrlc_clone = ctrlc.clone();
+    let stream_done = Arc::new(AtomicBool::new(false));
+    let stream_done_clone = stream_done.clone();
+    thread::spawn(move || {
+        let _ = listen_ctrl_c(ctrlc_clone, stream_done_clone);
+    });
+    let ret = render_stream_inner(rx, ctrlc, markdown_render);
+    stream_done.store(true, Ordering::SeqCst);
+    ret
+}
+
+fn listen_ctrl_c(ctrlc: Arc<AtomicBool>, stream_done: Arc<AtomicBool>) -> Result<()> {
+    loop {
+        if ctrlc.load(Ordering::SeqCst) || stream_done.load(Ordering::SeqCst) {
+            return Ok(());
+        }
+        if event::poll(Duration::from_millis(100))? {
+            if let Event::Key(KeyEvent {
+                code: KeyCode::Char('c'),
+                modifiers: KeyModifiers::CONTROL,
+                ..
+            }) = event::read()?
+            {
+                ctrlc.store(true, Ordering::SeqCst);
+                break;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn render_stream_inner(
+    rx: Receiver<ReplyEvent>,
+    ctrlc: Arc<AtomicBool>,
+    markdown_render: Arc<MarkdownRender>,
+) -> Result<()> {
     // setup terminal
     enable_raw_mode()?;
     let mut output = String::new();
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    execute!(stdout, EnterAlternateScreen)?;
 
     fn clear(stdout: &mut impl Write) -> io::Result<()> {
         queue!(
@@ -107,7 +145,7 @@ pub fn render_stream(
 
     // restore terminal
     disable_raw_mode()?;
-    execute!(stdout, LeaveAlternateScreen, DisableMouseCapture)?;
+    execute!(stdout, LeaveAlternateScreen)?;
 
     Ok(())
 }

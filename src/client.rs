@@ -55,7 +55,7 @@ impl ChatGptClient {
     ) -> Result<()> {
         self.runtime.block_on(async {
             tokio::select! {
-                ret = self.acquire_stream_inner(input, prompt, receiver) => {
+                ret = self.acquire_stream_inner(input, prompt, receiver, ctrlc.clone()) => {
                     receiver.done();
                     ret
                 }
@@ -88,6 +88,7 @@ impl ChatGptClient {
         content: &str,
         prompt: Option<String>,
         receiver: &mut ReplyReceiver,
+        ctrlc: Arc<AtomicBool>,
     ) -> Result<()> {
         let content = combine(content, prompt);
         if self.config.dry_run {
@@ -98,6 +99,9 @@ impl ChatGptClient {
         let mut stream = builder.send().await?.bytes_stream().eventsource();
         let mut virgin = true;
         while let Some(part) = stream.next().await {
+            if ctrlc.load(Ordering::SeqCst) {
+                break;
+            }
             let chunk = part?.data;
             if chunk == "[DONE]" {
                 break;
