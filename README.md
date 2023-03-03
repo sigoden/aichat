@@ -3,7 +3,7 @@
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 
-Chat with OpenAI GPT-3.5 in the terminal.
+Chat with ChatGPT-3.5 in the terminal.
 
 ![demo](https://user-images.githubusercontent.com/4012553/222600858-3fb60051-2bf2-4505-92ff-649356cdb1f6.gif)
 
@@ -18,6 +18,16 @@ cargo install --force aichat
 ### Binaries on macOS, Linux, Windows
 
 Download from [Github Releases](https://github.com/sigoden/aichat/releases), unzip and add opscan to your $PATH.
+
+## Features
+
+- Compared to the browser, the terminal starts faster and needs less resources.
+- Support command mode and interactive mode.
+- Support proxy.
+- Predefine prompts for role playing.
+- History query/completion.
+- Persist chat messages
+- Written in rust, single executable file, cross-platform.
 
 ## Config
 
