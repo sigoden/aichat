@@ -7,10 +7,10 @@ use std::{
 use anyhow::{anyhow, Result};
 use serde::Deserialize;
 
-pub const CONFIG_FILE_NAME: &str = "config.yaml";
-pub const ROLES_FILE_NAME: &str = "roles.yaml";
-pub const HISTORY_FILE_NAME: &str = "history.txt";
-pub const MESSAGE_FILE_NAME: &str = "messages.md";
+const CONFIG_FILE_NAME: &str = "config.yaml";
+const ROLES_FILE_NAME: &str = "roles.yaml";
+const HISTORY_FILE_NAME: &str = "history.txt";
+const MESSAGE_FILE_NAME: &str = "messages.md";
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
@@ -40,6 +40,7 @@ impl Config {
         config.load_roles()?;
         Ok(config)
     }
+
     pub fn local_file(name: &str) -> Result<PathBuf> {
         let env_name = format!(
             "{}_CONFIG_DIR",
@@ -58,8 +59,25 @@ impl Config {
         path.push(name);
         Ok(path)
     }
+
+    pub fn config_file() -> Result<PathBuf> {
+        Self::local_file(CONFIG_FILE_NAME)
+    }
+
+    pub fn roles_file() -> Result<PathBuf> {
+        Self::local_file(ROLES_FILE_NAME)
+    }
+
+    pub fn history_file() -> Result<PathBuf> {
+        Self::local_file(HISTORY_FILE_NAME)
+    }
+
+    pub fn messages_file() -> Result<PathBuf> {
+        Self::local_file(MESSAGE_FILE_NAME)
+    }
+
     fn load_roles(&mut self) -> Result<()> {
-        let path = Self::local_file(ROLES_FILE_NAME)?;
+        let path = Self::roles_file()?;
         if !path.exists() {
             return Ok(());
         }

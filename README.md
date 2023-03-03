@@ -67,7 +67,7 @@ aichat may generate the following files in the config dir:
 
 We can let ChatGPT play a certain role through `prompt` to make it better generate what we want. See [awesome-chatgpt-prompts](https://github.com/f/awesome-chatgpt-prompts) for details.
 
-We can predefine a batch of roles in `rules.yaml`. For example, we define a javascript-console role as follows.
+We can predefine a batch of roles in `roles.yaml`. For example, we define a javascript-console role as follows.
 
 ```yaml
 - name: javascript-console

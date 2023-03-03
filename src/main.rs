@@ -6,7 +6,7 @@ use std::path::Path;
 use std::process::exit;
 use std::time::Duration;
 
-use config::{Config, Role, CONFIG_FILE_NAME, HISTORY_FILE_NAME, MESSAGE_FILE_NAME};
+use config::{Config, Role};
 
 use anyhow::{anyhow, Result};
 use clap::{Arg, ArgAction, Command};
@@ -76,7 +76,7 @@ fn start() -> Result<()> {
             .collect::<Vec<String>>()
             .join(" ")
     });
-    let config_path = Config::local_file(CONFIG_FILE_NAME)?;
+    let config_path = Config::config_file()?;
     if !config_path.exists() && text.is_none() {
         create_config_file(&config_path)?;
     }
@@ -136,7 +136,7 @@ fn run_repl(
         ]),
     );
     let history = Box::new(
-        FileBackedHistory::with_file(1000, Config::local_file(HISTORY_FILE_NAME)?)
+        FileBackedHistory::with_file(1000, Config::history_file()?)
             .map_err(|err| anyhow!("Failed to setup history file, {err}"))?,
     );
     let edit_mode = Box::new(Emacs::new(keybindings));
@@ -153,7 +153,7 @@ fn run_repl(
         let file = OpenOptions::new()
             .create(true)
             .append(true)
-            .open(Config::local_file(MESSAGE_FILE_NAME)?)
+            .open(Config::messages_file()?)
             .map_err(|err| anyhow!("Failed to create/append save_file, {err}"))?;
         Some(file)
     } else {
@@ -211,9 +211,7 @@ fn run_repl(
                     },
                     None => dump("Usage: .role <name>.", 2),
                 },
-                _ => {
-                    dump("Unknown command. Type \".help\" for more information.", 2);
-                }
+                _ => unknown_command(),
             }
         } else {
             let input = if let Some(role) = role.take() {
@@ -448,6 +446,10 @@ async fn acquire_stream(
         .eventsource();
 
     Ok(stream)
+}
+
+fn unknown_command() {
+    dump("Unknown command. Type \".help\" for more information.", 2);
 }
 
 fn dump<T: ToString>(text: T, newlines: usize) {
