@@ -22,11 +22,12 @@ Download from [Github Releases](https://github.com/sigoden/aichat/releases), unz
 ## Features
 
 - Compared to the browser, the terminal starts faster and needs less resources.
-- Support command mode and interactive mode.
-- Support proxy.
+- Support directive and interactive modes
+- Support markdown highlighting.
 - Predefine prompts for role playing.
 - History query/completion.
-- Persist chat messages
+- Persist chat messages.
+- Support proxy.
 - Written in rust, single executable file, cross-platform.
 
 ## Config
