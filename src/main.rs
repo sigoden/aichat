@@ -1,5 +1,6 @@
 mod config;
 
+use std::fs::{File, OpenOptions};
 use std::io::{stdout, Write};
 use std::path::Path;
 use std::path::PathBuf;
@@ -149,11 +150,27 @@ fn run_repl(
     let mut trigged_ctrlc = false;
     let mut output = String::new();
     let mut role: Option<Role> = None;
+    let mut save_file: Option<File> = if let Some(path) = &config.save_path {
+        let file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .map_err(|err| {
+                anyhow!(
+                    "Failed to create/append save_file at {}, {err}",
+                    path.display()
+                )
+            })?;
+        Some(file)
+    } else {
+        None
+    };
     let handle_line = |line: String,
                        line_editor: &mut Reedline,
                        trigged_ctrlc: &mut bool,
                        role: &mut Option<Role>,
-                       output: &mut String|
+                       output: &mut String,
+                       save_file: &mut Option<File>|
      -> Result<bool> {
         if line.starts_with('.') {
             let (name, args) = match line.split_once(' ') {
@@ -228,6 +245,13 @@ fn run_repl(
                     }
                 }
             });
+            if !output.is_empty() {
+                if let Some(file) = save_file.as_mut() {
+                    let _ = file.write_all(
+                        format!("AICHAT: {input}\n\n--------\n{output}\n--------\n\n").as_bytes(),
+                    );
+                }
+            }
         }
         Ok(false)
     };
@@ -238,6 +262,7 @@ fn run_repl(
             &mut trigged_ctrlc,
             &mut role,
             &mut output,
+            &mut save_file,
         )?;
     }
     loop {
@@ -250,6 +275,7 @@ fn run_repl(
                     &mut trigged_ctrlc,
                     &mut role,
                     &mut output,
+                    &mut save_file,
                 )?;
                 if quit {
                     break;

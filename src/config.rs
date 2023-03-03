@@ -1,4 +1,7 @@
-use std::{fs::read_to_string, path::Path};
+use std::{
+    fs::read_to_string,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{anyhow, Result};
 use serde::Deserialize;
@@ -9,6 +12,8 @@ pub struct Config {
     pub api_key: String,
     /// What sampling temperature to use, between 0 and 2
     pub temperature: Option<f64>,
+    /// Specify a file path to save chat messages to
+    pub save_path: Option<PathBuf>,
     /// Set proxy
     pub proxy: Option<String>,
     /// Used only for debugging

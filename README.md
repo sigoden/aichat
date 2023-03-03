@@ -26,6 +26,7 @@ When starting for the first time, aichat will prompt to set `api_key`, after set
 ```toml
 api_key = "<YOUR SECRET API KEY>"        # Request via https://platform.openai.com/account/api-keys
 temperature = 1.0                        # optional, see https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
+save_path = "/tmp/AICHAT.md"             # optional, Specify a file path to save chat messages to
 proxy = "socks5://127.0.0.1:1080"        # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
 ```
 
@@ -53,6 +54,7 @@ In interactive mode, we do this:
 
 ```
 〉.role javascript-console
+
 〉console.log("Hello world")
 ```
 
