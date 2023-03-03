@@ -1,6 +1,11 @@
 # AIChat
 
+[![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
+[![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
+
 Chat with OpenAI GPT-3.5 in the terminal.
+
+![demo](https://user-images.githubusercontent.com/4012553/222600858-3fb60051-2bf2-4505-92ff-649356cdb1f6.gif)
 
 ## Install
 

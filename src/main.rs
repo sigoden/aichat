@@ -194,7 +194,7 @@ fn run_repl(
                     Some(name) => match config.roles.iter().find(|v| v.name == name) {
                         Some(role_) => {
                             *role = Some(role_.clone());
-							dump("", 1);
+                            dump("", 1);
                         }
                         None => dump("Unknown role.", 2),
                     },
