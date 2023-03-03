@@ -1,3 +1,4 @@
+use anyhow::Result;
 use crossterm::{
     cursor,
     event::{DisableMouseCapture, EnableMouseCapture},
@@ -7,7 +8,12 @@ use crossterm::{
         LeaveAlternateScreen,
     },
 };
-use is_terminal::IsTerminal;
+use mdcat::{
+    push_tty,
+    terminal::{TerminalProgram, TerminalSize},
+    Environment, ResourceAccess, Settings,
+};
+use pulldown_cmark::Parser;
 use std::{
     io::{self, Write},
     sync::{
@@ -16,10 +22,15 @@ use std::{
         Arc,
     },
 };
+use syntect::parsing::SyntaxSet;
 
-use crate::repl::ReplyEvent;
+use crate::repl::{dump, ReplyEvent};
 
-pub fn run(rx: Receiver<ReplyEvent>, ctrlc: Arc<AtomicBool>) -> anyhow::Result<()> {
+pub fn render_stream(
+    rx: Receiver<ReplyEvent>,
+    ctrlc: Arc<AtomicBool>,
+    markdown_render: Arc<MarkdownRender>,
+) -> Result<()> {
     // setup terminal
     enable_raw_mode()?;
     let mut output = String::new();
@@ -45,21 +56,24 @@ pub fn run(rx: Receiver<ReplyEvent>, ctrlc: Arc<AtomicBool>) -> anyhow::Result<(
                 let skip = if len > rows { len - rows } else { 0 };
                 let mut selected_lines = vec![];
                 let mut count_begin_code = 0;
+                let mut code = None;
                 for (index, line) in lines.iter().enumerate() {
                     if index < skip {
                         if line.starts_with("```") {
                             count_begin_code += 1;
+                            code = Some(*line);
                         }
                     } else {
                         selected_lines.push(*line);
                     }
                 }
-                let mut md = selected_lines.join("\n");
                 if count_begin_code % 2 == 1 {
-                    md = format!("```{md}");
+                    if let Some(code) = code {
+                        selected_lines[0] = code
+                    }
                 };
-                let md = termimad::inline(&md).to_string();
-                for line in md.split('\n') {
+                let content = selected_lines.join("\n");
+                for line in markdown_render.render(&content)?.split('\n') {
                     queue!(stdout, style::Print(line), cursor::MoveToNextLine(1))?;
                 }
 
@@ -80,11 +94,35 @@ pub fn run(rx: Receiver<ReplyEvent>, ctrlc: Arc<AtomicBool>) -> anyhow::Result<(
     Ok(())
 }
 
-pub fn print(output: &str, is_render: bool) {
-    if is_render && io::stdout().is_terminal() {
-        termimad::print_inline(output);
-        println!()
-    } else {
-        println!("{output}");
+pub struct MarkdownRender {
+    env: Environment,
+    settings: Settings,
+}
+
+impl MarkdownRender {
+    pub fn init() -> Result<Self> {
+        let terminal = TerminalProgram::detect();
+        let env =
+            Environment::for_local_directory(&std::env::current_dir().expect("Working directory"))?;
+        let settings = Settings {
+            resource_access: ResourceAccess::LocalOnly,
+            syntax_set: SyntaxSet::load_defaults_newlines(),
+            terminal_capabilities: terminal.capabilities(),
+            terminal_size: TerminalSize::default(),
+        };
+        Ok(Self { env, settings })
+    }
+
+    pub fn print(&self, input: &str) -> Result<()> {
+        let markdown = self.render(input)?;
+        dump(markdown, 0);
+        Ok(())
+    }
+
+    pub fn render(&self, input: &str) -> Result<String> {
+        let source = Parser::new(input);
+        let mut sink = Vec::new();
+        push_tty(&self.settings, &self.env, &mut sink, source)?;
+        Ok(String::from_utf8_lossy(&sink).into())
     }
 }

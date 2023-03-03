@@ -1,8 +1,7 @@
 use crate::client::ChatGptClient;
 use crate::config::{Config, Role};
-use crate::render;
+use crate::render::{self, MarkdownRender};
 use anyhow::{anyhow, Result};
-use inquire::Editor;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultPrompt, DefaultPromptSegment,
     Emacs, FileBackedHistory, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent,
@@ -17,7 +16,7 @@ use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::thread::spawn;
 
-const REPL_COMMANDS: [(&str, &str); 8] = [
+const REPL_COMMANDS: [(&str, &str); 7] = [
     (".clear", "Clear the screen"),
     (".clear-history", "Clear the history"),
     (".clear-role", "Clear the role status"),
@@ -25,7 +24,6 @@ const REPL_COMMANDS: [(&str, &str); 8] = [
     (".help", "Print this help message"),
     (".history", "Print the history"),
     (".role", "Specify the role that the AI will play"),
-    (".view", "Use an external editor to view the AI reply"),
 ];
 
 const MENU_NAME: &str = "completion_menu";
@@ -106,7 +104,6 @@ impl Repl {
                 None => (line.as_str(), None),
             };
             match cmd {
-                ".view" => handler.handle(ReplCmd::View)?,
                 ".exit" => {
                     return Ok(true);
                 }
@@ -190,6 +187,7 @@ pub struct ReplCmdHandler {
     config: Arc<Config>,
     state: RefCell<ReplCmdHandlerState>,
     ctrlc: Arc<AtomicBool>,
+    render: Option<Arc<MarkdownRender>>,
 }
 
 struct ReplCmdHandlerState {
@@ -200,6 +198,11 @@ struct ReplCmdHandlerState {
 
 impl ReplCmdHandler {
     pub fn init(client: ChatGptClient, config: Arc<Config>, role: Option<Role>) -> Result<Self> {
+        let render = if config.highlight {
+            Some(Arc::new(MarkdownRender::init()?))
+        } else {
+            None
+        };
         let prompt = role.map(|v| v.prompt).unwrap_or_default();
         let save_file = config.open_message_file()?;
         let ctrlc = Arc::new(AtomicBool::new(false));
@@ -211,8 +214,9 @@ impl ReplCmdHandler {
         Ok(Self {
             client,
             config,
-            ctrlc,
             state,
+            ctrlc,
+            render,
         })
     }
     fn handle(&self, cmd: ReplCmd) -> Result<()> {
@@ -228,36 +232,31 @@ impl ReplCmdHandler {
                 } else {
                     Some(prompt)
                 };
-                let mut receiver = if self.config.highlight {
+                let mut receiver = if let Some(markdown_render) = self.render.clone() {
                     let (tx, rx) = channel();
                     let ctrlc = self.ctrlc.clone();
-                    spawn(move || render::run(rx, ctrlc));
+                    spawn(move || render::render_stream(rx, ctrlc, markdown_render));
                     ReplyReceiver::new(Some(tx))
                 } else {
                     ReplyReceiver::new(None)
                 };
                 self.client
                     .acquire_stream(&input, prompt, &mut receiver, self.ctrlc.clone())?;
-                receiver.done();
                 Config::save_message(
                     self.state.borrow_mut().save_file.as_mut(),
                     &input,
                     &receiver.output,
                 );
-                render::print(&receiver.output, self.config.highlight);
-                dump("", 1);
-                self.state.borrow_mut().output = receiver.output;
-            }
-            ReplCmd::View => {
-                let output = self.state.borrow().output.to_string();
-                if output.is_empty() {
-                    return Ok(());
+                match self.render.clone() {
+                    Some(markdown_render) => {
+                        markdown_render.print(&receiver.output)?;
+                        dump("", 1);
+                    }
+                    None => {
+                        dump(&receiver.output, 2);
+                    }
                 }
-                let _ = Editor::new("view ai reply with an external editor")
-                    .with_file_extension(".md")
-                    .with_predefined_text(&output)
-                    .prompt()?;
-                dump("", 1);
+                self.state.borrow_mut().output = receiver.output;
             }
             ReplCmd::SetRole(name) => match self.config.find_role(&name) {
                 Some(v) => {
@@ -318,7 +317,6 @@ pub fn dump<T: ToString>(text: T, newlines: usize) {
 }
 
 enum ReplCmd {
-    View,
     UnsetRole,
     Input(String),
     SetRole(String),

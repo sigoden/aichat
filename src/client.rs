@@ -56,6 +56,7 @@ impl ChatGptClient {
         self.runtime.block_on(async {
             tokio::select! {
                 ret = self.acquire_stream_inner(input, prompt, receiver) => {
+                    receiver.done();
                     ret
                 }
                 _ =  tokio::signal::ctrl_c() => {
