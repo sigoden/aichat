@@ -80,7 +80,7 @@ We can predefine a batch of roles in `roles.yaml`. For example, we define a emoj
     My first sentence is:
 ```
 
-Let ChaGPT answer questions in the role of a emoji translator
+Let ChatGPT answer questions in the role of a emoji translator
 
 ```
 $ aichat --role emoji I am very angry
