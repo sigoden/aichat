@@ -71,31 +71,23 @@ mod render_stream_tui {
     ) -> Result<()> {
         let mut last_tick = Instant::now();
         let tick_rate = Duration::from_millis(250);
-        let mut count_evt = 0;
-        let mut count_done = 0;
 
         loop {
+            terminal.draw(|f| ui(f, &mut app))?;
+
             if app.ctrlc.load(Ordering::SeqCst) {
                 return Ok(());
             }
 
             if let Ok(evt) = rx.try_recv() {
-                count_evt += 1;
-                app.handle(evt)?;
-                if count_evt <= 16 {
+                let want_to_flush = app.handle(evt)?;
+                if !want_to_flush {
                     continue;
-                } else {
-                    count_evt = 0;
                 }
             }
 
-            terminal.draw(|f| ui(f, &mut app))?;
-
-            if app.no_interrupt && app.done {
-                count_done += 1;
-                if count_done >= 5 {
-                    return Ok(());
-                }
+            if app.is_done() {
+                return Ok(());
             }
 
             let timeout = tick_rate
@@ -103,26 +95,20 @@ mod render_stream_tui {
                 .unwrap_or_else(|| Duration::from_secs(0));
             if crossterm::event::poll(timeout)? {
                 match event::read()? {
-                    Event::Key(key) => {
-                        app.no_interrupt = false;
-                        match key.code {
-                            KeyCode::Char('c') if key.modifiers == KeyModifiers::CONTROL => {
-                                app.quit();
-                                return Ok(());
-                            }
-                            KeyCode::Down => app.next(),
-                            KeyCode::Up => app.previous(),
-                            _ => {}
+                    Event::Key(key) => match key.code {
+                        KeyCode::Char('c') if key.modifiers == KeyModifiers::CONTROL => {
+                            app.quit();
+                            return Ok(());
                         }
-                    }
-                    Event::Mouse(ev) => {
-                        app.no_interrupt = false;
-                        match ev.kind {
-                            MouseEventKind::ScrollDown => app.next(),
-                            MouseEventKind::ScrollUp => app.previous(),
-                            _ => {}
-                        }
-                    }
+                        KeyCode::Down => app.next(),
+                        KeyCode::Up => app.previous(),
+                        _ => {}
+                    },
+                    Event::Mouse(ev) => match ev.kind {
+                        MouseEventKind::ScrollDown => app.next(),
+                        MouseEventKind::ScrollUp => app.previous(),
+                        _ => {}
+                    },
                     _ => {}
                 }
             }
@@ -137,11 +123,12 @@ mod render_stream_tui {
         buffer: String,
         items: Vec<String>,
         list_state: ListState,
-        done: bool,
+        finish_at: Option<Instant>,
         ctrlc: Arc<AtomicBool>,
         markdown_render: Arc<MarkdownRender>,
-        no_interrupt: bool,
+        auoscroll: bool,
         num_rows: usize,
+        num_cols: usize,
         entry_index: usize,
     }
 
@@ -150,18 +137,19 @@ mod render_stream_tui {
             Self {
                 buffer: String::new(),
                 ctrlc,
-                done: false,
+                finish_at: None,
                 markdown_render,
                 num_rows: 0,
-                no_interrupt: true,
+                num_cols: 0,
+                auoscroll: true,
                 entry_index: 0,
                 items: vec![],
                 list_state: ListState::default(),
             }
         }
 
-        pub fn handle(&mut self, evt: RenderStreamEvent) -> Result<()> {
-            match evt {
+        pub fn handle(&mut self, evt: RenderStreamEvent) -> Result<bool> {
+            let want_to_flush = match evt {
                 RenderStreamEvent::Start(question) => {
                     let mut buf = Vec::with_capacity(8);
                     execute!(
@@ -172,33 +160,50 @@ mod render_stream_tui {
                     )?;
                     let indicator = String::from_utf8_lossy(&buf);
                     self.buffer.push_str(&format!("{indicator}{question}\n"));
+                    true
                 }
                 RenderStreamEvent::Text(text) => {
                     self.buffer.push_str(&text);
+                    text.contains('\n')
                 }
                 RenderStreamEvent::Done => {
-                    self.done = true;
+                    self.finish_at = Some(Instant::now());
+                    true
                 }
-            }
-
-            let markdown = self.markdown_render.render(&self.buffer)?;
+            };
+            let wrapped_buffer = textwrap::wrap(&self.buffer, self.num_cols).join("\n");
+            let markdown = self.markdown_render.render(&wrapped_buffer)?;
             self.items = markdown.split('\n').map(|v| v.to_string()).collect();
-            if self.no_interrupt {
-                self.end();
+
+            if self.auoscroll {
+                self.scroll_to_end();
             }
 
-            Ok(())
+            Ok(want_to_flush)
         }
 
         pub fn quit(&mut self) {
             self.ctrlc.store(true, Ordering::SeqCst);
         }
 
-        pub fn set_rows(&mut self, rows: u16) {
+        pub fn is_done(&mut self) -> bool {
+            if self.auoscroll {
+                if let Some(finish_at) = self.finish_at {
+                    if finish_at.elapsed() >= Duration::from_secs(1) {
+                        return true;
+                    }
+                }
+            }
+            false
+        }
+
+        pub fn set_size(&mut self, rows: u16, cols: u16) {
             self.num_rows = rows as usize;
+            self.num_cols = cols as usize;
         }
 
         pub fn next(&mut self) {
+            self.auoscroll = false;
             let index = if self.entry_index < self.num_rows {
                 self.num_rows.min(self.items.len() - 1)
             } else {
@@ -209,6 +214,7 @@ mod render_stream_tui {
         }
 
         pub fn previous(&mut self) {
+            self.auoscroll = false;
             let index = self
                 .entry_index
                 .saturating_sub(1)
@@ -217,7 +223,7 @@ mod render_stream_tui {
             self.list_state.select(Some(index));
         }
 
-        pub fn end(&mut self) {
+        pub fn scroll_to_end(&mut self) {
             let len = self.items.len();
             self.entry_index = if len < self.num_rows {
                 0
@@ -246,9 +252,11 @@ mod render_stream_tui {
             })
             .collect();
 
-        app.set_rows(chunks[0].height);
+        let area = chunks[0];
+
+        app.set_size(area.height, area.width);
         let items = List::new(items).highlight_style(Style::default());
-        f.render_stateful_widget(items, chunks[0], &mut app.list_state);
+        f.render_stateful_widget(items, area, &mut app.list_state);
     }
 }
 
