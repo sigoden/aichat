@@ -1,4 +1,5 @@
 use anyhow::Result;
+use crossbeam::sync::WaitGroup;
 use crossterm::{
     cursor,
     event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
@@ -33,14 +34,18 @@ pub fn render_stream(
     ctrlc: Arc<AtomicBool>,
     markdown_render: Arc<MarkdownRender>,
 ) -> Result<()> {
+    let wg = WaitGroup::new();
     let ctrlc_clone = ctrlc.clone();
     let stream_done = Arc::new(AtomicBool::new(false));
     let stream_done_clone = stream_done.clone();
+    let wg_clone = wg.clone();
     thread::spawn(move || {
         let _ = detect_ctrlc(ctrlc_clone, stream_done_clone);
+        drop(wg_clone);
     });
     let ret = render_stream_inner(rx, ctrlc, markdown_render);
     stream_done.store(true, Ordering::SeqCst);
+    wg.wait();
     ret
 }
 
