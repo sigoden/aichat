@@ -13,19 +13,21 @@ use reedline::{
 };
 use std::cell::RefCell;
 use std::fs::File;
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::spawn;
 
-const REPL_COMMANDS: [(&str, &str); 9] = [
+const REPL_COMMANDS: [(&str, &str); 10] = [
     (".clear", "Clear the screen"),
     (".clear-history", "Clear the history"),
-    (".clear-role", "Clear the role status"),
+    (".clear-role", "Clear the currently selected role"),
     (".copy", "Copy last reply message"),
     (".editor", "Enter multiline editor"),
     (".exit", "Exit the REPL"),
     (".help", "Print this help message"),
     (".history", "Print the history"),
+    (".info", "Print the information"),
     (".role", "Specify the role that the AI will play"),
 ];
 
@@ -47,7 +49,9 @@ impl Repl {
             .with_completer(Box::new(completer))
             .with_history(history)
             .with_menu(menu)
-            .with_edit_mode(edit_mode);
+            .with_edit_mode(edit_mode)
+            .with_quick_completions(true)
+            .with_partial_completions(true);
         let prompt = Self::create_prompt();
         Ok(Self { editor, prompt })
     }
@@ -150,6 +154,10 @@ impl Repl {
                         dump("Pasted", 1);
                     }
                 }
+                ".info" => {
+                    handler.handle(ReplCmd::Info)?;
+                    dump("", 1);
+                }
                 _ => dump_unknown_command(),
             }
         } else {
@@ -209,8 +217,8 @@ pub struct ReplCmdHandler {
 }
 
 struct ReplCmdHandlerState {
-    prompt: String,
     reply: String,
+    role: Option<Role>,
     save_file: Option<File>,
 }
 
@@ -221,11 +229,10 @@ impl ReplCmdHandler {
         } else {
             Some(Arc::new(MarkdownRender::init()?))
         };
-        let prompt = role.map(|v| v.prompt).unwrap_or_default();
         let save_file = config.open_message_file()?;
         let ctrlc = Arc::new(AtomicBool::new(false));
         let state = RefCell::new(ReplCmdHandlerState {
-            prompt,
+            role,
             save_file,
             reply: String::new(),
         });
@@ -244,7 +251,13 @@ impl ReplCmdHandler {
                     self.state.borrow_mut().reply.clear();
                     return Ok(());
                 }
-                let prompt = self.state.borrow().prompt.to_string();
+                let prompt = self
+                    .state
+                    .borrow()
+                    .role
+                    .as_ref()
+                    .map(|v| v.prompt.to_string())
+                    .unwrap_or_default();
                 let prompt = if prompt.is_empty() {
                     None
                 } else {
@@ -274,8 +287,8 @@ impl ReplCmdHandler {
                 self.state.borrow_mut().reply = receiver.output;
             }
             ReplCmd::SetRole(name) => match self.config.find_role(&name) {
-                Some(v) => {
-                    self.state.borrow_mut().prompt = v.prompt;
+                Some(role) => {
+                    self.state.borrow_mut().role = Some(role);
                     dump("", 1);
                 }
                 None => {
@@ -283,7 +296,42 @@ impl ReplCmdHandler {
                 }
             },
             ReplCmd::UnsetRole => {
-                self.state.borrow_mut().prompt = String::new();
+                self.state.borrow_mut().role = None;
+            }
+            ReplCmd::Info => {
+                let state = self.state.borrow();
+                let file_info = |path: &Path| {
+                    let state = if path.exists() { "" } else { " [not found]" };
+                    format!("{}{state}", path.display())
+                };
+                let items = vec![
+                    ("config file", file_info(&Config::config_file()?)),
+                    ("roles file", file_info(&Config::roles_file()?)),
+                    ("messages file", file_info(&Config::messages_file()?)),
+                    (
+                        "current role",
+                        state
+                            .role
+                            .as_ref()
+                            .map(|v| v.name.to_string())
+                            .unwrap_or_default(),
+                    ),
+                    (
+                        "proxy",
+                        self.config
+                            .proxy
+                            .as_ref()
+                            .map(|v| v.to_string())
+                            .unwrap_or_default(),
+                    ),
+                    ("save messages", self.config.save.to_string()),
+                    ("highlight", (!self.config.no_highlight).to_string()),
+                ];
+                let mut info = String::new();
+                for (name, value) in items {
+                    info.push_str(&format!("{name:<20}{value}\n"));
+                }
+                dump(info, 0);
             }
         }
         Ok(())
@@ -340,6 +388,7 @@ enum ReplCmd {
     UnsetRole,
     Input(String),
     SetRole(String),
+    Info,
 }
 
 fn dump_repl_help() {

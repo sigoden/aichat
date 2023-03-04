@@ -55,7 +55,7 @@ impl Config {
         self.roles.iter().find(|v| v.name == name).cloned()
     }
 
-    pub fn local_file(name: &str) -> Result<PathBuf> {
+    pub fn config_dir() -> Result<PathBuf> {
         let env_name = format!(
             "{}_CONFIG_DIR",
             env!("CARGO_CRATE_NAME").to_ascii_uppercase()
@@ -70,6 +70,11 @@ impl Config {
                 anyhow!("Failed to create config dir at {}, {err}", path.display())
             })?;
         }
+        Ok(path)
+    }
+
+    pub fn local_file(name: &str) -> Result<PathBuf> {
+        let mut path = Self::config_dir()?;
         path.push(name);
         Ok(path)
     }
@@ -117,7 +122,7 @@ impl Config {
         Self::local_file(HISTORY_FILE_NAME)
     }
 
-    fn messages_file() -> Result<PathBuf> {
+    pub fn messages_file() -> Result<PathBuf> {
         Self::local_file(MESSAGE_FILE_NAME)
     }
 

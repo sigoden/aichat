@@ -52,18 +52,17 @@ no_highlight: false                     # optional, Whether to disable highlight
 proxy: "socks5://127.0.0.1:1080"        # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
 ```
 
-The default config dir is as follows, You can override config dir with `$AICHAT_CONFIG_DIR`.
-
-- Linux:   `/home/alice/.config/aichat`
-- Windows: `C:\Users\Alice\AppData\Roaming\aichat`
-- MacOS:   `/Users/Alice/Library/Application Support`
-
-aichat may generate the following files in the config dir:
-
-- `config.yaml`: configuration file.
-- `roles.yaml`: role definition file.
-- `history.txt`: repl history file.
-- `messages.md`: chat messages file.
+Use `.info` command to view the configuration file path.
+```
+〉.info
+config file         /home/alice/.config/aichat/config.yaml
+roles file          /home/alice/.config/aichat/roles.yaml
+messages file       /home/alice/.config/aichat/messages.md
+current role        
+proxy               
+save messages       true
+highlight           true
+```
 
 ### Roles
 
