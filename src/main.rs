@@ -36,7 +36,7 @@ fn start() -> Result<()> {
         Some(name) => Some(
             config
                 .find_role(name)
-                .ok_or_else(|| anyhow!("Uknown role '{name}'"))?,
+                .ok_or_else(|| anyhow!("Unknown role '{name}'"))?,
         ),
         None => None,
     };

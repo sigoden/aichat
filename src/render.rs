@@ -126,7 +126,7 @@ mod render_stream_tui {
         finish_at: Option<Instant>,
         ctrlc: Arc<AtomicBool>,
         markdown_render: Arc<MarkdownRender>,
-        auoscroll: bool,
+        auto_scroll: bool,
         num_rows: usize,
         num_cols: usize,
         entry_index: usize,
@@ -141,7 +141,7 @@ mod render_stream_tui {
                 markdown_render,
                 num_rows: 0,
                 num_cols: 0,
-                auoscroll: true,
+                auto_scroll: true,
                 entry_index: 0,
                 items: vec![],
                 list_state: ListState::default(),
@@ -175,7 +175,7 @@ mod render_stream_tui {
             let markdown = self.markdown_render.render(&wrapped_buffer)?;
             self.items = markdown.split('\n').map(|v| v.to_string()).collect();
 
-            if self.auoscroll {
+            if self.auto_scroll {
                 self.scroll_to_end();
             }
 
@@ -187,7 +187,7 @@ mod render_stream_tui {
         }
 
         pub fn is_done(&mut self) -> bool {
-            if self.auoscroll {
+            if self.auto_scroll {
                 if let Some(finish_at) = self.finish_at {
                     if finish_at.elapsed() >= Duration::from_secs(1) {
                         return true;
@@ -203,7 +203,7 @@ mod render_stream_tui {
         }
 
         pub fn next(&mut self) {
-            self.auoscroll = false;
+            self.auto_scroll = false;
             let index = if self.entry_index < self.num_rows {
                 self.num_rows.min(self.items.len() - 1)
             } else {
@@ -214,7 +214,7 @@ mod render_stream_tui {
         }
 
         pub fn previous(&mut self) {
-            self.auoscroll = false;
+            self.auto_scroll = false;
             let index = self
                 .entry_index
                 .saturating_sub(1)
