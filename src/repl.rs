@@ -134,7 +134,6 @@ impl Repl {
                 },
                 ".clear-role" => {
                     handler.handle(ReplCmd::UnsetRole)?;
-                    dump("", 1);
                 }
                 ".editor" => {
                     dump(
@@ -156,7 +155,6 @@ impl Repl {
                 }
                 ".info" => {
                     handler.handle(ReplCmd::Info)?;
-                    dump("", 1);
                 }
                 _ => dump_unknown_command(),
             }
@@ -295,8 +293,9 @@ impl ReplCmdHandler {
             }
             ReplCmd::SetRole(name) => match self.config.find_role(&name) {
                 Some(role) => {
+                    let output = format!("{}>> {}", role.name, role.prompt.trim());
                     self.state.borrow_mut().role = Some(role);
-                    dump("", 1);
+                    dump(output, 2);
                 }
                 None => {
                     dump("Unknown role", 2);
@@ -304,6 +303,7 @@ impl ReplCmdHandler {
             },
             ReplCmd::UnsetRole => {
                 self.state.borrow_mut().role = None;
+                dump("Clear the current selected role", 1);
             }
             ReplCmd::Info => {
                 let state = self.state.borrow();
@@ -338,7 +338,7 @@ impl ReplCmdHandler {
                 for (name, value) in items {
                     info.push_str(&format!("{name:<20}{value}\n"));
                 }
-                dump(info, 0);
+                dump(info, 1);
             }
         }
         Ok(())
