@@ -73,46 +73,42 @@ mod render_stream_tui {
         let tick_rate = Duration::from_millis(250);
 
         loop {
+            terminal.draw(|f| ui(f, &mut app))?;
+
             if app.ctrlc.load(Ordering::SeqCst) {
                 return Ok(());
             }
 
             if let Ok(evt) = rx.try_recv() {
                 let want_to_flush = app.handle(evt)?;
-				if !want_to_flush {
-					continue;
-				}
+                if !want_to_flush {
+                    continue;
+                }
             }
 
-            terminal.draw(|f| ui(f, &mut app))?;
-
-			if app.is_done() {
-				return Ok(());
-			}
+            if app.is_done() {
+                return Ok(());
+            }
 
             let timeout = tick_rate
                 .checked_sub(last_tick.elapsed())
                 .unwrap_or_else(|| Duration::from_secs(0));
             if crossterm::event::poll(timeout)? {
                 match event::read()? {
-                    Event::Key(key) => {
-                        match key.code {
-                            KeyCode::Char('c') if key.modifiers == KeyModifiers::CONTROL => {
-                                app.quit();
-                                return Ok(());
-                            }
-                            KeyCode::Down => app.next(),
-                            KeyCode::Up => app.previous(),
-                            _ => {}
+                    Event::Key(key) => match key.code {
+                        KeyCode::Char('c') if key.modifiers == KeyModifiers::CONTROL => {
+                            app.quit();
+                            return Ok(());
                         }
-                    }
-                    Event::Mouse(ev) => {
-                        match ev.kind {
-                            MouseEventKind::ScrollDown => app.next(),
-                            MouseEventKind::ScrollUp => app.previous(),
-                            _ => {}
-                        }
-                    }
+                        KeyCode::Down => app.next(),
+                        KeyCode::Up => app.previous(),
+                        _ => {}
+                    },
+                    Event::Mouse(ev) => match ev.kind {
+                        MouseEventKind::ScrollDown => app.next(),
+                        MouseEventKind::ScrollUp => app.previous(),
+                        _ => {}
+                    },
                     _ => {}
                 }
             }
@@ -127,11 +123,12 @@ mod render_stream_tui {
         buffer: String,
         items: Vec<String>,
         list_state: ListState,
-		finish_at: Option<Instant>,
+        finish_at: Option<Instant>,
         ctrlc: Arc<AtomicBool>,
         markdown_render: Arc<MarkdownRender>,
         auoscroll: bool,
         num_rows: usize,
+        num_cols: usize,
         entry_index: usize,
     }
 
@@ -143,6 +140,7 @@ mod render_stream_tui {
                 finish_at: None,
                 markdown_render,
                 num_rows: 0,
+                num_cols: 0,
                 auoscroll: true,
                 entry_index: 0,
                 items: vec![],
@@ -162,19 +160,19 @@ mod render_stream_tui {
                     )?;
                     let indicator = String::from_utf8_lossy(&buf);
                     self.buffer.push_str(&format!("{indicator}{question}\n"));
-					true	
+                    true
                 }
                 RenderStreamEvent::Text(text) => {
                     self.buffer.push_str(&text);
-					text.contains('\n')
+                    text.contains('\n')
                 }
                 RenderStreamEvent::Done => {
                     self.finish_at = Some(Instant::now());
-					true
+                    true
                 }
             };
-
-            let markdown = self.markdown_render.render(&self.buffer)?;
+            let wrapped_buffer = textwrap::wrap(&self.buffer, self.num_cols).join("\n");
+            let markdown = self.markdown_render.render(&wrapped_buffer)?;
             self.items = markdown.split('\n').map(|v| v.to_string()).collect();
 
             if self.auoscroll {
@@ -188,23 +186,24 @@ mod render_stream_tui {
             self.ctrlc.store(true, Ordering::SeqCst);
         }
 
-		pub fn is_done(&mut self) -> bool {
-            if self.auoscroll { 
-				if let Some(finish_at) = self.finish_at {
-					if finish_at.elapsed() >= Duration::from_secs(1) {
-						return true;
-					}
-				}
+        pub fn is_done(&mut self) -> bool {
+            if self.auoscroll {
+                if let Some(finish_at) = self.finish_at {
+                    if finish_at.elapsed() >= Duration::from_secs(1) {
+                        return true;
+                    }
+                }
             }
-			false
-		}
+            false
+        }
 
-        pub fn set_rows(&mut self, rows: u16) {
+        pub fn set_size(&mut self, rows: u16, cols: u16) {
             self.num_rows = rows as usize;
+            self.num_cols = cols as usize;
         }
 
         pub fn next(&mut self) {
-			self.auoscroll = false;
+            self.auoscroll = false;
             let index = if self.entry_index < self.num_rows {
                 self.num_rows.min(self.items.len() - 1)
             } else {
@@ -215,7 +214,7 @@ mod render_stream_tui {
         }
 
         pub fn previous(&mut self) {
-			self.auoscroll = false;
+            self.auoscroll = false;
             let index = self
                 .entry_index
                 .saturating_sub(1)
@@ -253,9 +252,11 @@ mod render_stream_tui {
             })
             .collect();
 
-        app.set_rows(chunks[0].height);
+        let area = chunks[0];
+
+        app.set_size(area.height, area.width);
         let items = List::new(items).highlight_style(Style::default());
-        f.render_stateful_widget(items, chunks[0], &mut app.list_state);
+        f.render_stateful_widget(items, area, &mut app.list_state);
     }
 }
 
