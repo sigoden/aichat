@@ -1,13 +1,10 @@
 use anyhow::Result;
-use crossbeam::sync::WaitGroup;
+use crossbeam::channel::Receiver;
 use crossterm::{
-    cursor,
-    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
-    execute, queue, style,
-    terminal::{
-        self, disable_raw_mode, enable_raw_mode, size, ClearType, EnterAlternateScreen,
-        LeaveAlternateScreen,
-    },
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
+    execute,
+    style::{self, Color},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use mdcat::{
     push_tty,
@@ -16,143 +13,243 @@ use mdcat::{
 };
 use pulldown_cmark::Parser;
 use std::{
-    io::{self, Write},
+    io,
     sync::{
         atomic::{AtomicBool, Ordering},
-        mpsc::Receiver,
         Arc,
     },
-    thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 use syntect::parsing::SyntaxSet;
 
-use crate::repl::{dump, ReplyEvent};
+use crate::repl::{dump, RenderStreamEvent};
 
 pub fn render_stream(
-    rx: Receiver<ReplyEvent>,
-    ctrlc: Arc<AtomicBool>,
-    markdown_render: Arc<MarkdownRender>,
-) -> Result<()> {
-    let wg = WaitGroup::new();
-    let ctrlc_clone = ctrlc.clone();
-    let stream_done = Arc::new(AtomicBool::new(false));
-    let stream_done_clone = stream_done.clone();
-    let wg_clone = wg.clone();
-    thread::spawn(move || {
-        let _ = detect_ctrlc(ctrlc_clone, stream_done_clone);
-        drop(wg_clone);
-    });
-    let ret = render_stream_inner(rx, ctrlc, markdown_render);
-    stream_done.store(true, Ordering::SeqCst);
-    wg.wait();
-    ret
-}
-
-fn detect_ctrlc(ctrlc: Arc<AtomicBool>, stream_done: Arc<AtomicBool>) -> Result<()> {
-    loop {
-        if ctrlc.load(Ordering::SeqCst) || stream_done.load(Ordering::SeqCst) {
-            return Ok(());
-        }
-        if event::poll(Duration::from_millis(100))? {
-            if let Event::Key(KeyEvent {
-                code: KeyCode::Char('c'),
-                modifiers: KeyModifiers::CONTROL,
-                ..
-            }) = event::read()?
-            {
-                ctrlc.store(true, Ordering::SeqCst);
-                break;
-            }
-        }
-    }
-    Ok(())
-}
-
-fn render_stream_inner(
-    rx: Receiver<ReplyEvent>,
+    rx: Receiver<RenderStreamEvent>,
     ctrlc: Arc<AtomicBool>,
     markdown_render: Arc<MarkdownRender>,
 ) -> Result<()> {
     // setup terminal
     enable_raw_mode()?;
-    let mut output = String::new();
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen)?;
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    let backend = tui::backend::CrosstermBackend::new(stdout);
+    let mut terminal = tui::Terminal::new(backend)?;
 
-    fn clear(stdout: &mut impl Write) -> io::Result<()> {
-        queue!(
-            stdout,
-            style::ResetColor,
-            terminal::Clear(ClearType::All),
-            cursor::Hide,
-            cursor::MoveTo(0, 0)
-        )
-    }
-
-    clear(&mut stdout)?;
-
-    while let Ok(ev) = rx.recv() {
-        if ctrlc.load(Ordering::SeqCst) {
-            break;
-        }
-        match ev {
-            ReplyEvent::Text(text) => {
-                output.push_str(&text);
-                let rows = size()?.1 as usize;
-                let lines: Vec<&str> = output.split('\n').collect();
-                let len = lines.len();
-                let skip = if len > rows { len - rows } else { 0 };
-                let mut selected_lines = vec![];
-                let mut count_begin_code = 0;
-                let mut code = None;
-                for (index, line) in lines.iter().enumerate() {
-                    if index < skip {
-                        if line.starts_with("```") {
-                            count_begin_code += 1;
-                            code = Some(*line);
-                        }
-                    } else {
-                        selected_lines.push(*line);
-                    }
-                }
-                if count_begin_code % 2 == 1 {
-                    if let Some(code) = code {
-                        selected_lines[0] = code
-                    }
-                };
-                let content = selected_lines.join("\n");
-                let markdown = markdown_render.render(&content)?;
-                if text.contains('\n') {
-                    clear(&mut stdout)?;
-                    for line in markdown.split('\n') {
-                        queue!(stdout, style::Print(line), cursor::MoveToNextLine(1))?;
-                    }
-                } else if let Some(line) = markdown.split('\n').last() {
-                    queue!(
-                        stdout,
-                        style::ResetColor,
-                        terminal::Clear(ClearType::CurrentLine),
-                        cursor::MoveToColumn(0),
-                        style::Print(line)
-                    )?;
-                }
-
-                stdout.flush()?;
-            }
-            ReplyEvent::Done => {
-                break;
-            }
-        }
-    }
-
-    execute!(stdout, style::ResetColor, cursor::Show)?;
+    // create app and run it
+    let app = render_stream_tui::App::new(ctrlc, markdown_render);
+    let res = render_stream_tui::run(&mut terminal, app, rx);
 
     // restore terminal
     disable_raw_mode()?;
-    execute!(stdout, LeaveAlternateScreen)?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
+    terminal.show_cursor()?;
 
-    Ok(())
+    res
+}
+
+mod render_stream_tui {
+    use super::*;
+    use ansi_to_tui::IntoText;
+    use crossterm::event::MouseEventKind;
+    use tui::{
+        backend::Backend,
+        layout::{Constraint, Direction, Layout},
+        style::Style,
+        widgets::{List, ListItem, ListState},
+        Frame, Terminal,
+    };
+
+    pub fn run<B: Backend>(
+        terminal: &mut Terminal<B>,
+        mut app: App,
+        rx: Receiver<RenderStreamEvent>,
+    ) -> Result<()> {
+        let mut last_tick = Instant::now();
+        let tick_rate = Duration::from_millis(250);
+        let mut count_evt = 0;
+        let mut count_done = 0;
+
+        loop {
+            if app.ctrlc.load(Ordering::SeqCst) {
+                return Ok(());
+            }
+
+            if let Ok(evt) = rx.try_recv() {
+                count_evt += 1;
+                app.handle(evt)?;
+                if count_evt <= 16 {
+                    continue;
+                } else {
+                    count_evt = 0;
+                }
+            }
+
+            terminal.draw(|f| ui(f, &mut app))?;
+
+            if app.no_interrupt && app.done {
+                count_done += 1;
+                if count_done >= 5 {
+                    return Ok(());
+                }
+            }
+
+            let timeout = tick_rate
+                .checked_sub(last_tick.elapsed())
+                .unwrap_or_else(|| Duration::from_secs(0));
+            if crossterm::event::poll(timeout)? {
+                match event::read()? {
+                    Event::Key(key) => {
+                        app.no_interrupt = false;
+                        match key.code {
+                            KeyCode::Char('c') if key.modifiers == KeyModifiers::CONTROL => {
+                                app.quit();
+                                return Ok(());
+                            }
+                            KeyCode::Down => app.next(),
+                            KeyCode::Up => app.previous(),
+                            _ => {}
+                        }
+                    }
+                    Event::Mouse(ev) => {
+                        app.no_interrupt = false;
+                        match ev.kind {
+                            MouseEventKind::ScrollDown => app.next(),
+                            MouseEventKind::ScrollUp => app.previous(),
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            if last_tick.elapsed() >= tick_rate {
+                app.on_tick();
+                last_tick = Instant::now();
+            }
+        }
+    }
+
+    pub struct App {
+        buffer: String,
+        items: Vec<String>,
+        list_state: ListState,
+        done: bool,
+        ctrlc: Arc<AtomicBool>,
+        markdown_render: Arc<MarkdownRender>,
+        no_interrupt: bool,
+        num_rows: usize,
+        entry_index: usize,
+    }
+
+    impl App {
+        pub fn new(ctrlc: Arc<AtomicBool>, markdown_render: Arc<MarkdownRender>) -> Self {
+            Self {
+                buffer: String::new(),
+                ctrlc,
+                done: false,
+                markdown_render,
+                num_rows: 0,
+                no_interrupt: true,
+                entry_index: 0,
+                items: vec![],
+                list_state: ListState::default(),
+            }
+        }
+
+        pub fn handle(&mut self, evt: RenderStreamEvent) -> Result<()> {
+            match evt {
+                RenderStreamEvent::Start(question) => {
+                    let mut buf = Vec::with_capacity(8);
+                    execute!(
+                        buf,
+                        style::SetForegroundColor(Color::Cyan),
+                        style::Print("〉"),
+                        style::ResetColor
+                    )?;
+                    let indicator = String::from_utf8_lossy(&buf);
+                    self.buffer.push_str(&format!("{indicator}{question}\n"));
+                }
+                RenderStreamEvent::Text(text) => {
+                    self.buffer.push_str(&text);
+                }
+                RenderStreamEvent::Done => {
+                    self.done = true;
+                }
+            }
+
+            let markdown = self.markdown_render.render(&self.buffer)?;
+            self.items = markdown.split('\n').map(|v| v.to_string()).collect();
+            if self.no_interrupt {
+                self.end();
+            }
+
+            Ok(())
+        }
+
+        pub fn quit(&mut self) {
+            self.ctrlc.store(true, Ordering::SeqCst);
+        }
+
+        pub fn set_rows(&mut self, rows: u16) {
+            self.num_rows = rows as usize;
+        }
+
+        pub fn next(&mut self) {
+            let index = if self.entry_index < self.num_rows {
+                self.num_rows.min(self.items.len() - 1)
+            } else {
+                self.entry_index + 1
+            };
+            self.entry_index = index;
+            self.list_state.select(Some(index));
+        }
+
+        pub fn previous(&mut self) {
+            let index = self
+                .entry_index
+                .saturating_sub(1)
+                .min(self.items.len().saturating_sub(self.num_rows + 1));
+            self.entry_index = index;
+            self.list_state.select(Some(index));
+        }
+
+        pub fn end(&mut self) {
+            let len = self.items.len();
+            self.entry_index = if len < self.num_rows {
+                0
+            } else {
+                len - self.num_rows
+            };
+            self.list_state.select(Some(len - 1))
+        }
+
+        pub fn on_tick(&mut self) {}
+    }
+
+    fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+        // Create two chunks with equal horizontal screen space
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Percentage(100)].as_ref())
+            .split(f.size());
+
+        let items: Vec<ListItem> = app
+            .items
+            .iter()
+            .map(|line| {
+                let text = line.into_text().unwrap_or_default();
+                ListItem::new(text)
+            })
+            .collect();
+
+        app.set_rows(chunks[0].height);
+        let items = List::new(items).highlight_style(Style::default());
+        f.render_stateful_widget(items, chunks[0], &mut app.list_state);
+    }
 }
 
 pub struct MarkdownRender {

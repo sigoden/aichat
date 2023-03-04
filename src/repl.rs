@@ -2,6 +2,7 @@ use crate::client::ChatGptClient;
 use crate::config::{Config, Role};
 use crate::render::{self, MarkdownRender};
 use anyhow::{anyhow, Result};
+use crossbeam::channel::{unbounded, Sender};
 use crossbeam::sync::WaitGroup;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultPrompt, DefaultPromptSegment,
@@ -12,8 +13,6 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io::{stdout, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::channel;
-use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::thread::spawn;
 
@@ -232,7 +231,7 @@ impl ReplCmdHandler {
                 };
                 let wg = WaitGroup::new();
                 let mut receiver = if let Some(markdown_render) = self.render.clone() {
-                    let (tx, rx) = channel();
+                    let (tx, rx) = unbounded();
                     let ctrlc = self.ctrlc.clone();
                     let wg = wg.clone();
                     spawn(move || {
@@ -243,6 +242,7 @@ impl ReplCmdHandler {
                 } else {
                     ReplyReceiver::new(None)
                 };
+                receiver.start(&input);
                 self.client
                     .acquire_stream(&input, prompt, &mut receiver, self.ctrlc.clone())?;
                 Config::save_message(
@@ -281,20 +281,32 @@ impl ReplCmdHandler {
 
 pub struct ReplyReceiver {
     output: String,
-    sender: Option<Sender<ReplyEvent>>,
+    sender: Option<Sender<RenderStreamEvent>>,
 }
 
 impl ReplyReceiver {
-    pub fn new(sender: Option<Sender<ReplyEvent>>) -> Self {
+    pub fn new(sender: Option<Sender<RenderStreamEvent>>) -> Self {
         Self {
             output: String::new(),
             sender,
         }
     }
+
+    fn start(&self, input: &str) {
+        match self.sender.as_ref() {
+            Some(tx) => {
+                let _ = tx.send(RenderStreamEvent::Start(input.to_string()));
+            }
+            None => {
+                dump("", 2);
+            }
+        }
+    }
+
     pub fn text(&mut self, text: &str) {
         match self.sender.as_ref() {
             Some(tx) => {
-                let _ = tx.send(ReplyEvent::Text(text.to_string()));
+                let _ = tx.send(RenderStreamEvent::Text(text.to_string()));
             }
             None => {
                 dump(text, 0);
@@ -302,10 +314,11 @@ impl ReplyReceiver {
         }
         self.output.push_str(text);
     }
+
     pub fn done(&mut self) {
         match self.sender.as_ref() {
             Some(tx) => {
-                let _ = tx.send(ReplyEvent::Done);
+                let _ = tx.send(RenderStreamEvent::Done);
             }
             None => {
                 dump("", 2);
@@ -314,7 +327,8 @@ impl ReplyReceiver {
     }
 }
 
-pub enum ReplyEvent {
+pub enum RenderStreamEvent {
+    Start(String),
     Text(String),
     Done,
 }
