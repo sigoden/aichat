@@ -56,7 +56,7 @@ fn start_directive(
     let mut file = config.open_message_file()?;
     let output = client.acquire(input, role.map(|v| v.prompt))?;
     let output = output.trim();
-    if config.highlight && stdout().is_terminal() {
+    if !config.no_highlight && stdout().is_terminal() {
         let markdown_render = MarkdownRender::init()?;
         markdown_render.print(output)?;
     } else {
