@@ -2,6 +2,7 @@ use crate::client::ChatGptClient;
 use crate::config::{Config, Role};
 use crate::render::{self, MarkdownRender};
 use anyhow::{anyhow, Result};
+use crossbeam::channel::{unbounded, Sender};
 use crossbeam::sync::WaitGroup;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultPrompt, DefaultPromptSegment,
@@ -12,8 +13,6 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io::{stdout, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::channel;
-use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::thread::spawn;
 
@@ -232,7 +231,7 @@ impl ReplCmdHandler {
                 };
                 let wg = WaitGroup::new();
                 let mut receiver = if let Some(markdown_render) = self.render.clone() {
-                    let (tx, rx) = channel();
+                    let (tx, rx) = unbounded();
                     let ctrlc = self.ctrlc.clone();
                     let wg = wg.clone();
                     spawn(move || {
