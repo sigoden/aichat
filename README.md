@@ -60,10 +60,10 @@ The default config dir is as follows, You can override config dir with `$AICHAT_
 
 aichat may generate the following files in the config dir:
 
-- `config.yaml`: the config file.
-- `roles.yaml`: the roles definition file.
-- `history.txt`: the repl history file.
-- `messages.md`: the chat messages storage file.
+- `config.yaml`: configuration file.
+- `roles.yaml`: role definition file.
+- `history.txt`: repl history file.
+- `messages.md`: chat messages file.
 
 ### Roles
 

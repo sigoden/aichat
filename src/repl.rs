@@ -251,15 +251,6 @@ impl ReplCmdHandler {
                     &receiver.output,
                 );
                 wg.wait();
-                match self.render.clone() {
-                    Some(markdown_render) => {
-                        markdown_render.print(&receiver.output)?;
-                        dump("", 1);
-                    }
-                    None => {
-                        dump(&receiver.output, 2);
-                    }
-                }
                 self.state.borrow_mut().output = receiver.output;
             }
             ReplCmd::SetRole(name) => match self.config.find_role(&name) {

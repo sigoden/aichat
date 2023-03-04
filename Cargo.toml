@@ -16,7 +16,6 @@ keywords = ["chatgpt", "ai"]
 anyhow = "1.0.69"
 bytes = "1.4.0"
 clap = { version = "4.1.8", features = ["derive", "string"] }
-crossterm = "0.26.1"
 dirs = "4.0.0"
 eventsource-stream = "0.2.3"
 futures-util = "0.3.26"
@@ -31,9 +30,6 @@ tokio = { version = "1.26.0", features = ["full"] }
 mdcat = { version =  "1.1.0", default_features = false, features =["static"] }
 pulldown-cmark = { version = "0.9.2", default-features = false, features = ['simd'] }
 crossbeam = "0.8.2"
-tui = "0.19.0"
-ansi-to-tui = "2.0.0"
-textwrap = "0.16.0"
 
 [dependencies.syntect]
 version = "5.0.0"
