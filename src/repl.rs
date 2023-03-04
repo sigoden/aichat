@@ -2,6 +2,7 @@ use crate::client::ChatGptClient;
 use crate::config::{Config, Role};
 use crate::editor;
 use crate::render::{self, MarkdownRender};
+use crate::utils::{copy, dump};
 use anyhow::{anyhow, Result};
 use crossbeam::channel::{unbounded, Sender};
 use crossbeam::sync::WaitGroup;
@@ -12,15 +13,15 @@ use reedline::{
 };
 use std::cell::RefCell;
 use std::fs::File;
-use std::io::{stdout, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::spawn;
 
-const REPL_COMMANDS: [(&str, &str); 8] = [
+const REPL_COMMANDS: [(&str, &str); 9] = [
     (".clear", "Clear the screen"),
     (".clear-history", "Clear the history"),
     (".clear-role", "Clear the role status"),
+    (".copy", "Copy last reply message"),
     (".editor", "Enter multiline editor"),
     (".exit", "Exit the REPL"),
     (".help", "Print this help message"),
@@ -140,6 +141,15 @@ impl Repl {
                     dump("", 1);
                     handler.handle(ReplCmd::Input(content))?;
                 }
+                ".copy" => {
+                    let reply = handler.get_reply();
+                    if reply.is_empty() {
+                        dump("No reply messages that can be copied", 1)
+                    } else {
+                        copy(&reply)?;
+                        dump("Pasted", 1);
+                    }
+                }
                 _ => dump_unknown_command(),
             }
         } else {
@@ -200,7 +210,7 @@ pub struct ReplCmdHandler {
 
 struct ReplCmdHandlerState {
     prompt: String,
-    output: String,
+    reply: String,
     save_file: Option<File>,
 }
 
@@ -217,7 +227,7 @@ impl ReplCmdHandler {
         let state = RefCell::new(ReplCmdHandlerState {
             prompt,
             save_file,
-            output: String::new(),
+            reply: String::new(),
         });
         Ok(Self {
             client,
@@ -231,7 +241,7 @@ impl ReplCmdHandler {
         match cmd {
             ReplCmd::Input(input) => {
                 if input.is_empty() {
-                    self.state.borrow_mut().output.clear();
+                    self.state.borrow_mut().reply.clear();
                     return Ok(());
                 }
                 let prompt = self.state.borrow().prompt.to_string();
@@ -261,7 +271,7 @@ impl ReplCmdHandler {
                     &receiver.output,
                 );
                 wg.wait();
-                self.state.borrow_mut().output = receiver.output;
+                self.state.borrow_mut().reply = receiver.output;
             }
             ReplCmd::SetRole(name) => match self.config.find_role(&name) {
                 Some(v) => {
@@ -277,6 +287,10 @@ impl ReplCmdHandler {
             }
         }
         Ok(())
+    }
+
+    fn get_reply(&self) -> String {
+        self.state.borrow().reply.to_string()
     }
 }
 
@@ -320,11 +334,6 @@ impl ReplyReceiver {
 pub enum RenderStreamEvent {
     Text(String),
     Done,
-}
-
-pub fn dump<T: ToString>(text: T, newlines: usize) {
-    print!("{}{}", text.to_string(), "\n".repeat(newlines));
-    let _ = stdout().flush();
 }
 
 enum ReplCmd {

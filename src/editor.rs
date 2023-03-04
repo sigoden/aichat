@@ -1,7 +1,6 @@
 use std::io::{self, Stdout, Write};
 
-use anyhow::{anyhow, Result};
-use copypasta::{ClipboardContext, ClipboardProvider};
+use anyhow::Result;
 
 use crossterm::{
     cursor,
@@ -9,6 +8,8 @@ use crossterm::{
     queue, style,
     terminal::{self, disable_raw_mode, enable_raw_mode},
 };
+
+use crate::utils::paste;
 
 pub fn edit() -> Result<String> {
     enable_raw_mode()?;
@@ -106,9 +107,4 @@ impl<'a, T: Write> Session<'a, T> {
         }
         Ok(())
     }
-}
-
-fn paste() -> Result<String> {
-    let mut ctx = ClipboardContext::new().map_err(|err| anyhow!("{err}"))?;
-    ctx.get_contents().map_err(|err| anyhow!("{err}"))
 }
