@@ -278,10 +278,17 @@ impl ReplCmdHandler {
                 };
                 self.client
                     .acquire_stream(&input, prompt, &mut receiver, self.ctrlc.clone())?;
+                let role = self
+                    .state
+                    .borrow_mut()
+                    .role
+                    .as_ref()
+                    .map(|v| v.name.to_string());
                 Config::save_message(
                     self.state.borrow_mut().save_file.as_mut(),
                     &input,
                     &receiver.output,
+                    &role,
                 );
                 wg.wait();
                 self.state.borrow_mut().reply = receiver.output;

@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use chrono::prelude::*;
 use copypasta::{ClipboardContext, ClipboardProvider};
 use std::io::{stdout, Write};
 
@@ -16,4 +17,9 @@ pub fn copy(src: &str) -> Result<()> {
 pub fn paste() -> Result<String> {
     let mut ctx = ClipboardContext::new().map_err(|err| anyhow!("{err}"))?;
     ctx.get_contents().map_err(|err| anyhow!("{err}"))
+}
+
+pub fn now() -> String {
+    let now = Local::now();
+    now.to_rfc3339_opts(SecondsFormat::Secs, false)
 }
