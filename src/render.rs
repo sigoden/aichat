@@ -71,17 +71,31 @@ mod render_stream_tui {
     ) -> Result<()> {
         let mut last_tick = Instant::now();
         let tick_rate = Duration::from_millis(250);
+        let mut count_evt = 0;
+        let mut count_done = 0;
 
         loop {
-            if app.should_exit() {
+            if app.ctrlc.load(Ordering::SeqCst) {
                 return Ok(());
+            }
+
+            if let Ok(evt) = rx.try_recv() {
+                count_evt += 1;
+                app.handle(evt)?;
+                if count_evt <= 16 {
+                    continue;
+                } else {
+                    count_evt = 0;
+                }
             }
 
             terminal.draw(|f| ui(f, &mut app))?;
 
-            if let Ok(evt) = rx.try_recv() {
-                app.handle(evt)?;
-                continue;
+            if app.no_interrupt && app.done {
+                count_done += 1;
+                if count_done >= 5 {
+                    return Ok(());
+                }
             }
 
             let timeout = tick_rate
@@ -174,10 +188,6 @@ mod render_stream_tui {
             }
 
             Ok(())
-        }
-
-        pub fn should_exit(&self) -> bool {
-            self.ctrlc.load(Ordering::SeqCst) || (self.no_interrupt && self.done)
         }
 
         pub fn quit(&mut self) {
