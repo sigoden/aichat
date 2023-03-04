@@ -5,7 +5,7 @@
 
 Chat with ChatGPT-3.5 in the terminal.
 
-![demo](https://user-images.githubusercontent.com/4012553/222600858-3fb60051-2bf2-4505-92ff-649356cdb1f6.gif)
+![demo](https://user-images.githubusercontent.com/4012553/222897111-dd5015a0-abc1-4c65-a0fb-d491aba3c427.gif)
 
 ## Install
 
@@ -22,8 +22,8 @@ Download from [Github Releases](https://github.com/sigoden/aichat/releases), unz
 ## Features
 
 - Compared to the browser, the terminal starts faster and needs less resources.
-- Support directive and interactive modes
-- Support markdown highlighting.
+- Interactive chat and imperative query.
+- Support highlight.
 - Predefine prompts for role playing.
 - History query/completion.
 - Persist chat messages.
@@ -69,30 +69,30 @@ aichat may generate the following files in the config dir:
 
 We can let ChatGPT play a certain role through `prompt` to make it better generate what we want. See [awesome-chatgpt-prompts](https://github.com/f/awesome-chatgpt-prompts) for details.
 
-We can predefine a batch of roles in `roles.yaml`. For example, we define a javascript-console role as follows.
+We can predefine a batch of roles in `roles.yaml`. For example, we define a emoji translator as follows.
 
 ```yaml
-- name: javascript-console
-  prompt: > 
-    I want you to act as a javascript console. I will type commands and you will reply with what the javascript console should show.
-    I want you to only reply with the terminal output inside one unique code block, and nothing else.
-    do not write explanations. do not type commands unless I instruct you to do so. 
-    when i need to tell you something in english, i will do so by putting text inside curly brackets {like this}.
-    My first command is:
+- name: emoji
+  prompt: >
+    I want you to translate the sentences I wrote into emojis. I will write the sentence, and you will express it with emojis.
+    I just want you to express it with emojis. I don't want you to reply with anything but emoji.
+    When I need to tell you something in English, I will do it by wrapping it in curly brackets like {like this}.
+    My first sentence is:
 ```
 
-Let ChaGPT answer questions in the role of a javascript-console.
+Let ChaGPT answer questions in the role of a emoji translator
 
 ```
-aichat --role javascript-console console.log("Hello World")
+$ aichat --role emoji I am very angry
+😠💢👿
 ```
 
-In interactive mode, we do this:
+In interactive chat, we do this:
 
 ```
-〉.role javascript-console
+〉.role emoji
 
-〉console.log("Hello world")
+〉I am very angry
 ```
 
 ## License
