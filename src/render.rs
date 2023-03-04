@@ -141,7 +141,7 @@ mod render_stream_tui {
                 num_rows: 0,
                 no_interrupt: true,
                 entry_index: 0,
-                items: (1..100).map(|i| format!("Line {i}")).collect(),
+                items: vec![],
                 list_state: ListState::default(),
             }
         }
