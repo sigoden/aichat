@@ -1,3 +1,4 @@
+use crate::{repl::RenderStreamEvent, utils::dump};
 use anyhow::Result;
 use crossbeam::channel::Receiver;
 use mdcat::{
@@ -11,8 +12,6 @@ use std::sync::{
     Arc,
 };
 use syntect::parsing::SyntaxSet;
-
-use crate::repl::{dump, RenderStreamEvent};
 
 pub fn render_stream(
     rx: Receiver<RenderStreamEvent>,

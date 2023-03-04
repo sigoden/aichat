@@ -4,6 +4,7 @@ mod config;
 mod editor;
 mod render;
 mod repl;
+mod utils;
 
 use std::sync::Arc;
 use std::{io::stdout, process::exit};
