@@ -16,16 +16,26 @@ keywords = ["chatgpt", "ai"]
 anyhow = "1.0.69"
 bytes = "1.4.0"
 clap = { version = "4.1.8", features = ["derive", "string"] }
+crossterm = "0.26.1"
 dirs = "4.0.0"
 eventsource-stream = "0.2.3"
 futures-util = "0.3.26"
-inquire = { version = "0.5.3", features = ["editor"] }
+inquire = "0.5.3"
+is-terminal = "0.4.4"
 reedline = "0.16.0"
 reqwest = { version = "0.11.14", features = ["json", "stream", "socks", "rustls-tls"], default-features = false}
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.93"
 serde_yaml = "0.9.17"
 tokio = { version = "1.26.0", features = ["full"] }
+mdcat = { version =  "1.1.0", default_features = false, features =["static"] }
+pulldown-cmark = { version = "0.9.2", default-features = false, features = ['simd'] }
+crossbeam = "0.8.2"
+
+[dependencies.syntect]
+version = "5.0.0"
+default-features = false
+features = ["parsing", "regex-fancy", "default-themes", "default-syntaxes"]
 
 [profile.release]
 lto = true

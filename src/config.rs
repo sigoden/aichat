@@ -24,6 +24,9 @@ pub struct Config {
     /// Whether to persistently save chat messages
     #[serde(default)]
     pub save: bool,
+    /// Whether to highlight reply message
+    #[serde(default)]
+    pub highlight: bool,
     /// Set proxy
     pub proxy: Option<String>,
     /// Used only for debugging
@@ -170,6 +173,14 @@ fn create_config_file(config_path: &Path) -> Result<()> {
         .map_err(confirm_map_err)?;
     if ans {
         raw_config.push_str("save: true\n");
+    }
+
+    let ans = Confirm::new("Whether to highlight reply message?")
+        .with_default(true)
+        .prompt()
+        .map_err(confirm_map_err)?;
+    if ans {
+        raw_config.push_str("highlight: true\n");
     }
 
     std::fs::write(config_path, raw_config)

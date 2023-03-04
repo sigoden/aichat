@@ -1,7 +1,8 @@
 use crate::client::ChatGptClient;
 use crate::config::{Config, Role};
+use crate::render::{self, MarkdownRender};
 use anyhow::{anyhow, Result};
-use inquire::Editor;
+use crossbeam::sync::WaitGroup;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultPrompt, DefaultPromptSegment,
     Emacs, FileBackedHistory, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent,
@@ -11,9 +12,12 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io::{stdout, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::channel;
+use std::sync::mpsc::Sender;
 use std::sync::Arc;
+use std::thread::spawn;
 
-const REPL_COMMANDS: [(&str, &str); 8] = [
+const REPL_COMMANDS: [(&str, &str); 7] = [
     (".clear", "Clear the screen"),
     (".clear-history", "Clear the history"),
     (".clear-role", "Clear the role status"),
@@ -21,7 +25,6 @@ const REPL_COMMANDS: [(&str, &str); 8] = [
     (".help", "Print this help message"),
     (".history", "Print the history"),
     (".role", "Specify the role that the AI will play"),
-    (".view", "Use an external editor to view the AI reply"),
 ];
 
 const MENU_NAME: &str = "completion_menu";
@@ -86,13 +89,9 @@ impl Repl {
                 Ok(Signal::CtrlD) => {
                     break;
                 }
-                Err(err) => {
-                    dump(format!("{err:?}"), 1);
-                    break;
-                }
+                _ => {}
             }
         }
-        // tx.send(ReplCmd::Quit).unwrap();
         Ok(())
     }
 
@@ -103,7 +102,6 @@ impl Repl {
                 None => (line.as_str(), None),
             };
             match cmd {
-                ".view" => handler.handle(ReplCmd::View)?,
                 ".exit" => {
                     return Ok(true);
                 }
@@ -187,6 +185,7 @@ pub struct ReplCmdHandler {
     config: Arc<Config>,
     state: RefCell<ReplCmdHandlerState>,
     ctrlc: Arc<AtomicBool>,
+    render: Option<Arc<MarkdownRender>>,
 }
 
 struct ReplCmdHandlerState {
@@ -197,6 +196,11 @@ struct ReplCmdHandlerState {
 
 impl ReplCmdHandler {
     pub fn init(client: ChatGptClient, config: Arc<Config>, role: Option<Role>) -> Result<Self> {
+        let render = if config.highlight {
+            Some(Arc::new(MarkdownRender::init()?))
+        } else {
+            None
+        };
         let prompt = role.map(|v| v.prompt).unwrap_or_default();
         let save_file = config.open_message_file()?;
         let ctrlc = Arc::new(AtomicBool::new(false));
@@ -208,14 +212,14 @@ impl ReplCmdHandler {
         Ok(Self {
             client,
             config,
-            ctrlc,
             state,
+            ctrlc,
+            render,
         })
     }
     fn handle(&self, cmd: ReplCmd) -> Result<()> {
         match cmd {
             ReplCmd::Input(input) => {
-                let mut output = String::new();
                 if input.is_empty() {
                     self.state.borrow_mut().output.clear();
                     return Ok(());
@@ -226,27 +230,37 @@ impl ReplCmdHandler {
                 } else {
                     Some(prompt)
                 };
-                self.client.acquire_stream(
+                let wg = WaitGroup::new();
+                let mut receiver = if let Some(markdown_render) = self.render.clone() {
+                    let (tx, rx) = channel();
+                    let ctrlc = self.ctrlc.clone();
+                    let wg = wg.clone();
+                    spawn(move || {
+                        let _ = render::render_stream(rx, ctrlc, markdown_render);
+                        drop(wg);
+                    });
+                    ReplyReceiver::new(Some(tx))
+                } else {
+                    ReplyReceiver::new(None)
+                };
+                self.client
+                    .acquire_stream(&input, prompt, &mut receiver, self.ctrlc.clone())?;
+                Config::save_message(
+                    self.state.borrow_mut().save_file.as_mut(),
                     &input,
-                    prompt,
-                    &mut output,
-                    dump_and_collect,
-                    self.ctrlc.clone(),
-                )?;
-                dump_and_collect(&mut output, "\n\n");
-                Config::save_message(self.state.borrow_mut().save_file.as_mut(), &input, &output);
-                self.state.borrow_mut().output = output;
-            }
-            ReplCmd::View => {
-                let output = self.state.borrow().output.to_string();
-                if output.is_empty() {
-                    return Ok(());
+                    &receiver.output,
+                );
+                wg.wait();
+                match self.render.clone() {
+                    Some(markdown_render) => {
+                        markdown_render.print(&receiver.output)?;
+                        dump("", 1);
+                    }
+                    None => {
+                        dump(&receiver.output, 2);
+                    }
                 }
-                let _ = Editor::new("view ai reply with an external editor")
-                    .with_file_extension(".md")
-                    .with_predefined_text(&output)
-                    .prompt()?;
-                dump("", 1);
+                self.state.borrow_mut().output = receiver.output;
             }
             ReplCmd::SetRole(name) => match self.config.find_role(&name) {
                 Some(v) => {
@@ -265,21 +279,55 @@ impl ReplCmdHandler {
     }
 }
 
-pub enum ReplCmd {
-    View,
-    UnsetRole,
-    Input(String),
-    SetRole(String),
+pub struct ReplyReceiver {
+    output: String,
+    sender: Option<Sender<ReplyEvent>>,
+}
+
+impl ReplyReceiver {
+    pub fn new(sender: Option<Sender<ReplyEvent>>) -> Self {
+        Self {
+            output: String::new(),
+            sender,
+        }
+    }
+    pub fn text(&mut self, text: &str) {
+        match self.sender.as_ref() {
+            Some(tx) => {
+                let _ = tx.send(ReplyEvent::Text(text.to_string()));
+            }
+            None => {
+                dump(text, 0);
+            }
+        }
+        self.output.push_str(text);
+    }
+    pub fn done(&mut self) {
+        match self.sender.as_ref() {
+            Some(tx) => {
+                let _ = tx.send(ReplyEvent::Done);
+            }
+            None => {
+                dump("", 2);
+            }
+        }
+    }
+}
+
+pub enum ReplyEvent {
+    Text(String),
+    Done,
 }
 
 pub fn dump<T: ToString>(text: T, newlines: usize) {
     print!("{}{}", text.to_string(), "\n".repeat(newlines));
-    stdout().flush().unwrap();
+    let _ = stdout().flush();
 }
 
-fn dump_and_collect(output: &mut String, reply: &str) {
-    output.push_str(reply);
-    dump(reply, 0);
+enum ReplCmd {
+    UnsetRole,
+    Input(String),
+    SetRole(String),
 }
 
 fn dump_repl_help() {

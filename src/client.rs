@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::repl::ReplyReceiver;
 
 use anyhow::{anyhow, Result};
 use eventsource_stream::Eventsource;
@@ -8,6 +9,7 @@ use serde_json::{json, Value};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{sync::Arc, time::Duration};
 use tokio::runtime::Runtime;
+use tokio::time::sleep;
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 const API_URL: &str = "https://api.openai.com/v1/chat/completions";
@@ -45,22 +47,31 @@ impl ChatGptClient {
             .block_on(async { self.acquire_inner(input, prompt).await })
     }
 
-    pub fn acquire_stream<T>(
+    pub fn acquire_stream(
         &self,
         input: &str,
         prompt: Option<String>,
-        output: &mut String,
-        handler: T,
+        receiver: &mut ReplyReceiver,
         ctrlc: Arc<AtomicBool>,
-    ) -> Result<()>
-    where
-        T: FnOnce(&mut String, &str) + Copy,
-    {
+    ) -> Result<()> {
+        async fn watch_ctrlc(ctrlc: Arc<AtomicBool>) {
+            loop {
+                if ctrlc.load(Ordering::SeqCst) {
+                    break;
+                }
+                sleep(Duration::from_millis(100)).await;
+            }
+        }
         self.runtime.block_on(async {
             tokio::select! {
-                ret = self.acquire_stream_inner(input, prompt, handler, output) => {
+                ret = self.acquire_stream_inner(input, prompt, receiver) => {
+                    receiver.done();
                     ret
                 }
+                _ = watch_ctrlc(ctrlc.clone()) => {
+                    receiver.done();
+                    Ok(())
+                 },
                 _ =  tokio::signal::ctrl_c() => {
                     ctrlc.store(true, Ordering::SeqCst);
                     Ok(())
@@ -85,19 +96,15 @@ impl ChatGptClient {
         Ok(output.to_string())
     }
 
-    async fn acquire_stream_inner<T>(
+    async fn acquire_stream_inner(
         &self,
         content: &str,
         prompt: Option<String>,
-        handler: T,
-        output: &mut String,
-    ) -> Result<()>
-    where
-        T: FnOnce(&mut String, &str) + Copy,
-    {
+        receiver: &mut ReplyReceiver,
+    ) -> Result<()> {
         let content = combine(content, prompt);
         if self.config.dry_run {
-            handler(output, &content);
+            receiver.text(&content);
             return Ok(());
         }
         let builder = self.request_builder(&content, true);
@@ -121,7 +128,7 @@ impl ChatGptClient {
                         continue;
                     }
                 }
-                handler(output, text);
+                receiver.text(text);
             }
         }
 

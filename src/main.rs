@@ -1,17 +1,20 @@
 mod cli;
 mod client;
 mod config;
+mod render;
 mod repl;
 
-use std::process::exit;
 use std::sync::Arc;
+use std::{io::stdout, process::exit};
 
 use cli::Cli;
 use client::ChatGptClient;
 use config::{Config, Role};
+use is_terminal::IsTerminal;
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
+use render::MarkdownRender;
 use repl::{Repl, ReplCmdHandler};
 
 fn main() {
@@ -52,8 +55,15 @@ fn start_directive(
 ) -> Result<()> {
     let mut file = config.open_message_file()?;
     let output = client.acquire(input, role.map(|v| v.prompt))?;
-    println!("{}", output.trim());
-    Config::save_message(file.as_mut(), input, &output);
+    let output = output.trim();
+    if config.highlight && stdout().is_terminal() {
+        let markdown_render = MarkdownRender::init()?;
+        markdown_render.print(output)?;
+    } else {
+        println!("{output}");
+    }
+
+    Config::save_message(file.as_mut(), input, output);
     Ok(())
 }
 
