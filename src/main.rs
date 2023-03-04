@@ -1,6 +1,7 @@
 mod cli;
 mod client;
 mod config;
+mod editor;
 mod render;
 mod repl;
 

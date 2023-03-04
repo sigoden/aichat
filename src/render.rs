@@ -27,7 +27,6 @@ pub fn render_stream(
         }
         if let Ok(evt) = rx.try_recv() {
             match evt {
-                RenderStreamEvent::Start(_) => {}
                 RenderStreamEvent::Text(text) => {
                     buffer.push_str(&text);
                     if text.contains('\n') {
