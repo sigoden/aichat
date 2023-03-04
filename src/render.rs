@@ -37,14 +37,14 @@ pub fn render_stream(
     let stream_done = Arc::new(AtomicBool::new(false));
     let stream_done_clone = stream_done.clone();
     thread::spawn(move || {
-        let _ = listen_ctrl_c(ctrlc_clone, stream_done_clone);
+        let _ = detect_ctrlc(ctrlc_clone, stream_done_clone);
     });
     let ret = render_stream_inner(rx, ctrlc, markdown_render);
     stream_done.store(true, Ordering::SeqCst);
     ret
 }
 
-fn listen_ctrl_c(ctrlc: Arc<AtomicBool>, stream_done: Arc<AtomicBool>) -> Result<()> {
+fn detect_ctrlc(ctrlc: Arc<AtomicBool>, stream_done: Arc<AtomicBool>) -> Result<()> {
     loop {
         if ctrlc.load(Ordering::SeqCst) || stream_done.load(Ordering::SeqCst) {
             return Ok(());
