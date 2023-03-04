@@ -48,7 +48,7 @@ After setting, it will automatically create the configuration file. Of course, y
 api_key: "<YOUR SECRET API KEY>"        # Request via https://platform.openai.com/account/api-keys
 temperature: 1.0                        # optional, see https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
 save: true                              # optional, If set to true, aichat will save chat messages to message.md
-highlight: true                         # optional, Whether to highlight reply message.
+no_highlight: false                     # optional, Whether to disable highlight
 proxy: "socks5://127.0.0.1:1080"        # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
 ```
 

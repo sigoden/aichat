@@ -196,10 +196,10 @@ struct ReplCmdHandlerState {
 
 impl ReplCmdHandler {
     pub fn init(client: ChatGptClient, config: Arc<Config>, role: Option<Role>) -> Result<Self> {
-        let render = if config.highlight {
-            Some(Arc::new(MarkdownRender::init()?))
-        } else {
+        let render = if config.no_highlight {
             None
+        } else {
+            Some(Arc::new(MarkdownRender::init()?))
         };
         let prompt = role.map(|v| v.prompt).unwrap_or_default();
         let save_file = config.open_message_file()?;
