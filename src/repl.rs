@@ -1,5 +1,6 @@
 use crate::client::ChatGptClient;
 use crate::config::{Config, Role};
+use crate::editor;
 use crate::render::{self, MarkdownRender};
 use anyhow::{anyhow, Result};
 use crossbeam::channel::{unbounded, Sender};
@@ -16,10 +17,11 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::spawn;
 
-const REPL_COMMANDS: [(&str, &str); 7] = [
+const REPL_COMMANDS: [(&str, &str); 8] = [
     (".clear", "Clear the screen"),
     (".clear-history", "Clear the history"),
     (".clear-role", "Clear the role status"),
+    (".editor", "Enter multiline editor"),
     (".exit", "Exit the REPL"),
     (".help", "Print this help message"),
     (".history", "Print the history"),
@@ -128,6 +130,15 @@ impl Repl {
                 ".clear-role" => {
                     handler.handle(ReplCmd::UnsetRole)?;
                     dump("", 1);
+                }
+                ".editor" => {
+                    dump(
+                        "// Entering editor mode (Ctrl+D to finish, Ctrl+C to cancel)",
+                        1,
+                    );
+                    let content = editor::edit()?;
+                    dump("", 1);
+                    handler.handle(ReplCmd::Input(content))?;
                 }
                 _ => dump_unknown_command(),
             }
@@ -242,7 +253,6 @@ impl ReplCmdHandler {
                 } else {
                     ReplyReceiver::new(None)
                 };
-                receiver.start(&input);
                 self.client
                     .acquire_stream(&input, prompt, &mut receiver, self.ctrlc.clone())?;
                 Config::save_message(
@@ -283,17 +293,6 @@ impl ReplyReceiver {
         }
     }
 
-    fn start(&self, input: &str) {
-        match self.sender.as_ref() {
-            Some(tx) => {
-                let _ = tx.send(RenderStreamEvent::Start(input.to_string()));
-            }
-            None => {
-                dump("", 2);
-            }
-        }
-    }
-
     pub fn text(&mut self, text: &str) {
         match self.sender.as_ref() {
             Some(tx) => {
@@ -319,7 +318,6 @@ impl ReplyReceiver {
 }
 
 pub enum RenderStreamEvent {
-    Start(String),
     Text(String),
     Done,
 }
