@@ -243,6 +243,7 @@ impl ReplCmdHandler {
                 } else {
                     ReplyReceiver::new(None)
                 };
+                receiver.start(&input);
                 self.client
                     .acquire_stream(&input, prompt, &mut receiver, self.ctrlc.clone())?;
                 Config::save_message(
@@ -281,20 +282,32 @@ impl ReplCmdHandler {
 
 pub struct ReplyReceiver {
     output: String,
-    sender: Option<Sender<ReplyEvent>>,
+    sender: Option<Sender<RenderStreamEvent>>,
 }
 
 impl ReplyReceiver {
-    pub fn new(sender: Option<Sender<ReplyEvent>>) -> Self {
+    pub fn new(sender: Option<Sender<RenderStreamEvent>>) -> Self {
         Self {
             output: String::new(),
             sender,
         }
     }
+
+    fn start(&self, input: &str) {
+        match self.sender.as_ref() {
+            Some(tx) => {
+                let _ = tx.send(RenderStreamEvent::Start(input.to_string()));
+            }
+            None => {
+                dump("", 2);
+            }
+        }
+    }
+
     pub fn text(&mut self, text: &str) {
         match self.sender.as_ref() {
             Some(tx) => {
-                let _ = tx.send(ReplyEvent::Text(text.to_string()));
+                let _ = tx.send(RenderStreamEvent::Text(text.to_string()));
             }
             None => {
                 dump(text, 0);
@@ -302,10 +315,11 @@ impl ReplyReceiver {
         }
         self.output.push_str(text);
     }
+
     pub fn done(&mut self) {
         match self.sender.as_ref() {
             Some(tx) => {
-                let _ = tx.send(ReplyEvent::Done);
+                let _ = tx.send(RenderStreamEvent::Done);
             }
             None => {
                 dump("", 2);
@@ -314,7 +328,8 @@ impl ReplyReceiver {
     }
 }
 
-pub enum ReplyEvent {
+pub enum RenderStreamEvent {
+    Start(String),
     Text(String),
     Done,
 }

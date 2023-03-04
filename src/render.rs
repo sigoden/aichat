@@ -3,7 +3,8 @@ use crossbeam::sync::WaitGroup;
 use crossterm::{
     cursor,
     event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
-    execute, queue, style,
+    execute, queue,
+    style::{self, Color},
     terminal::{
         self, disable_raw_mode, enable_raw_mode, size, ClearType, EnterAlternateScreen,
         LeaveAlternateScreen,
@@ -27,10 +28,10 @@ use std::{
 };
 use syntect::parsing::SyntaxSet;
 
-use crate::repl::{dump, ReplyEvent};
+use crate::repl::{dump, RenderStreamEvent};
 
 pub fn render_stream(
-    rx: Receiver<ReplyEvent>,
+    rx: Receiver<RenderStreamEvent>,
     ctrlc: Arc<AtomicBool>,
     markdown_render: Arc<MarkdownRender>,
 ) -> Result<()> {
@@ -70,7 +71,7 @@ fn detect_ctrlc(ctrlc: Arc<AtomicBool>, stream_done: Arc<AtomicBool>) -> Result<
 }
 
 fn render_stream_inner(
-    rx: Receiver<ReplyEvent>,
+    rx: Receiver<RenderStreamEvent>,
     ctrlc: Arc<AtomicBool>,
     markdown_render: Arc<MarkdownRender>,
 ) -> Result<()> {
@@ -97,7 +98,22 @@ fn render_stream_inner(
             break;
         }
         match ev {
-            ReplyEvent::Text(text) => {
+            RenderStreamEvent::Start(question) => {
+                clear(&mut stdout)?;
+                for (index, line) in question.split('\n').enumerate() {
+                    if index == 0 {
+                        queue!(
+                            stdout,
+                            style::SetForegroundColor(Color::Cyan),
+                            style::Print("〉"),
+                            style::ResetColor
+                        )?;
+                    }
+                    queue!(stdout, style::Print(line), cursor::MoveToNextLine(1))?;
+                }
+                stdout.flush()?;
+            }
+            RenderStreamEvent::Text(text) => {
                 output.push_str(&text);
                 let rows = size()?.1 as usize;
                 let lines: Vec<&str> = output.split('\n').collect();
@@ -140,7 +156,7 @@ fn render_stream_inner(
 
                 stdout.flush()?;
             }
-            ReplyEvent::Done => {
+            RenderStreamEvent::Done => {
                 break;
             }
         }
