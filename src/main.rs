@@ -56,7 +56,9 @@ fn start_directive(
     input: &str,
 ) -> Result<()> {
     let mut file = config.open_message_file()?;
-    let output = client.acquire(input, role.map(|v| v.prompt))?;
+    let prompt = role.as_ref().map(|v| v.prompt.to_string());
+    let role_name = role.as_ref().map(|v| v.name.to_string());
+    let output = client.acquire(input, prompt)?;
     let output = output.trim();
     if !config.no_highlight && stdout().is_terminal() {
         let markdown_render = MarkdownRender::init()?;
@@ -65,7 +67,7 @@ fn start_directive(
         println!("{output}");
     }
 
-    Config::save_message(file.as_mut(), input, output);
+    Config::save_message(file.as_mut(), input, output, &role_name);
     Ok(())
 }
 

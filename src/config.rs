@@ -10,6 +10,8 @@ use anyhow::{anyhow, Result};
 use inquire::{Confirm, Text};
 use serde::Deserialize;
 
+use crate::utils::now;
+
 const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
 const HISTORY_FILE_NAME: &str = "history.txt";
@@ -97,11 +99,21 @@ impl Config {
         Ok(file)
     }
 
-    pub fn save_message(file: Option<&mut File>, input: &str, output: &str) {
+    pub fn save_message(
+        file: Option<&mut File>,
+        input: &str,
+        output: &str,
+        role_name: &Option<String>,
+    ) {
+        let role_name = match role_name {
+            Some(v) => format!("({v})"),
+            None => String::new(),
+        };
+        let timestamp = format!("[{}]", now());
         if let (false, Some(file)) = (output.is_empty(), file) {
             let _ = file.write_all(
                 format!(
-                    "AICHAT: {}\n\n--------\n{}\n--------\n\n",
+                    "# CHAT:{timestamp} {role_name}\n{}\n\n--------\n{}\n--------\n\n",
                     input.trim(),
                     output.trim(),
                 )
