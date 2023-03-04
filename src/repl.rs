@@ -137,6 +137,7 @@ impl Repl {
                         1,
                     );
                     let content = editor::edit()?;
+                    dump("", 1);
                     handler.handle(ReplCmd::Input(content))?;
                 }
                 _ => dump_unknown_command(),

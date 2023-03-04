@@ -1,6 +1,7 @@
 use std::io::{self, Stdout, Write};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use copypasta::{ClipboardContext, ClipboardProvider};
 
 use crossterm::{
     cursor,
@@ -37,7 +38,8 @@ fn edit_inner(writer: &mut Stdout) -> Result<String> {
                     return Ok(session.buffer);
                 }
                 KeyCode::Char('v') if key.modifiers == KeyModifiers::CONTROL => {
-                    // TODO: paste
+                    let content = paste()?;
+                    session.push_str(&content)?;
                 }
                 KeyCode::Char(c)
                     if matches!(key.modifiers, KeyModifiers::NONE | KeyModifiers::SHIFT) =>
@@ -50,12 +52,14 @@ fn edit_inner(writer: &mut Stdout) -> Result<String> {
                 _ => {}
             }
         }
+        session.flush()?;
     }
 }
 
 struct Session<'a, T: Write> {
     writer: &'a mut T,
     buffer: String,
+    dirty: bool,
 }
 
 impl<'a, T: Write> Session<'a, T> {
@@ -63,22 +67,48 @@ impl<'a, T: Write> Session<'a, T> {
         Self {
             buffer: String::new(),
             writer,
+            dirty: false,
         }
     }
     fn push(&mut self, ch: char) -> io::Result<()> {
         if ch == '\n' {
-            let (_, y) = cursor::position()?;
-            let (_, h) = terminal::size()?;
-            if y == h - 1 {
-                queue!(self.writer, terminal::ScrollUp(1), cursor::MoveTo(0, y))?;
-            } else {
-                queue!(self.writer, cursor::MoveToNextLine(1))?;
-            }
+            self.new_line()?;
         } else {
             queue!(self.writer, style::Print(ch))?;
         }
         self.buffer.push(ch);
-        self.writer.flush()?;
+        self.dirty = true;
         Ok(())
     }
+    fn push_str(&mut self, text: &str) -> io::Result<()> {
+        for line in text.lines() {
+            if !line.is_empty() {
+                queue!(self.writer, style::Print(line))?;
+            }
+            self.new_line()?;
+        }
+
+        Ok(())
+    }
+    fn new_line(&mut self) -> io::Result<()> {
+        let (_, y) = cursor::position()?;
+        let (_, h) = terminal::size()?;
+        if y == h - 1 {
+            queue!(self.writer, terminal::ScrollUp(1), cursor::MoveTo(0, y))?;
+        } else {
+            queue!(self.writer, cursor::MoveToNextLine(1))?;
+        }
+        Ok(())
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        if self.dirty {
+            return self.writer.flush();
+        }
+        Ok(())
+    }
+}
+
+fn paste() -> Result<String> {
+    let mut ctx = ClipboardContext::new().map_err(|err| anyhow!("{err}"))?;
+    ctx.get_contents().map_err(|err| anyhow!("{err}"))
 }
