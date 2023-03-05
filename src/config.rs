@@ -119,20 +119,34 @@ impl Config {
             return;
         }
         if let Some(file) = file {
-            let role_name = self
-                .role
-                .as_ref()
-                .map(|v| format!("({})", v.name))
-                .unwrap_or_default();
-            let timestamp = format!("[{}]", now());
-            let _ = file.write_all(
-                format!(
-                    "# CHAT:{timestamp} {role_name}\n{}\n\n--------\n{}\n--------\n\n",
-                    input.trim(),
-                    output.trim(),
-                )
-                .as_bytes(),
-            );
+            let timestamp = now();
+            let output = match self.role.as_ref() {
+                None => {
+                    format!(
+                        "# CHAT:[{timestamp}]\n{}\n\n--------\n{}\n--------\n\n",
+                        input.trim(),
+                        output.trim(),
+                    )
+                }
+                Some(v) => {
+                    if v.name.is_empty() {
+                        format!(
+                            "# CHAT:[{timestamp}]\n{}\n{}\n\n--------\n{}\n--------\n\n",
+                            v.prompt,
+                            input.trim(),
+                            output.trim(),
+                        )
+                    } else {
+                        format!(
+                            "# CHAT:[{timestamp}] ({})\n{}\n\n--------\n{}\n--------\n\n",
+                            v.name,
+                            input.trim(),
+                            output.trim(),
+                        )
+                    }
+                }
+            };
+            let _ = file.write_all(output.as_bytes());
         }
     }
 
@@ -161,6 +175,14 @@ impl Config {
             }
             None => "Unknown role".into(),
         }
+    }
+
+    pub fn set_prompt(&mut self, prompt: &str) -> String {
+        self.role = Some(Role {
+            name: "".into(),
+            prompt: prompt.into(),
+        });
+        "Done".into()
     }
 
     pub fn get_prompt(&self) -> Option<String> {
