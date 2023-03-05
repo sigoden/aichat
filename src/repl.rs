@@ -19,16 +19,16 @@ use std::sync::Arc;
 use std::thread::spawn;
 
 const REPL_COMMANDS: [(&str, &str); 10] = [
-    (".clear", "Clear the screen"),
-    (".clear-history", "Clear the history"),
-    (".clear-role", "Clear the currently selected role"),
+    (".role", "Specifies the role the AI will play"),
+    (".clear role", "Clear the currently selected role"),
+    (".editor", "Enter editor mode"),
     (".copy", "Copy last reply message"),
-    (".editor", "Enter multiline editor"),
-    (".exit", "Exit the REPL"),
-    (".help", "Print this help message"),
     (".history", "Print the history"),
+    (".clear history", "Clear the history"),
     (".info", "Print the information"),
-    (".role", "Specify the role that the AI will play"),
+    (".help", "Print this help message"),
+    (".exit", "Exit the REPL"),
+    (".clear screen", "Clear the screen"),
 ];
 
 const MENU_NAME: &str = "completion_menu";
@@ -114,16 +114,18 @@ impl Repl {
                 ".help" => {
                     dump_repl_help();
                 }
-                ".clear" => {
-                    self.editor.clear_scrollback()?;
-                }
-                ".clear-history" => {
-                    let history = Box::new(self.editor.history_mut());
-                    history
-                        .clear()
-                        .map_err(|err| anyhow!("Failed to clear history, {err}"))?;
-                    dump("", 1);
-                }
+                ".clear" => match args {
+                    Some("screen") => self.editor.clear_scrollback()?,
+                    Some("history") => {
+                        let history = Box::new(self.editor.history_mut());
+                        history
+                            .clear()
+                            .map_err(|err| anyhow!("Failed to clear history, {err}"))?;
+                        dump("", 1);
+                    }
+                    Some("role") => handler.handle(ReplCmd::ClearRole)?,
+                    _ => dump_unknown_command(),
+                },
                 ".history" => {
                     self.editor.print_history()?;
                     dump("", 1);
@@ -132,9 +134,6 @@ impl Repl {
                     Some(name) => handler.handle(ReplCmd::SetRole(name.to_string()))?,
                     None => dump("Usage: .role <name>", 2),
                 },
-                ".clear-role" => {
-                    handler.handle(ReplCmd::UnsetRole)?;
-                }
                 ".editor" => {
                     dump(
                         "// Entering editor mode (Ctrl+D to finish, Ctrl+C to cancel)",
@@ -142,7 +141,7 @@ impl Repl {
                     );
                     let content = editor::edit()?;
                     dump("", 1);
-                    handler.handle(ReplCmd::Input(content))?;
+                    handler.handle(ReplCmd::Submit(content))?;
                 }
                 ".copy" => {
                     let reply = handler.get_reply();
@@ -159,7 +158,7 @@ impl Repl {
                 _ => dump_unknown_command(),
             }
         } else {
-            handler.handle(ReplCmd::Input(line))?;
+            handler.handle(ReplCmd::Submit(line))?;
         }
 
         Ok(false)
@@ -244,7 +243,7 @@ impl ReplCmdHandler {
     }
     fn handle(&self, cmd: ReplCmd) -> Result<()> {
         match cmd {
-            ReplCmd::Input(input) => {
+            ReplCmd::Submit(input) => {
                 if input.is_empty() {
                     self.state.borrow_mut().reply.clear();
                     return Ok(());
@@ -301,9 +300,9 @@ impl ReplCmdHandler {
                     dump("Unknown role", 2);
                 }
             },
-            ReplCmd::UnsetRole => {
+            ReplCmd::ClearRole => {
                 self.state.borrow_mut().role = None;
-                dump("Clear the current selected role", 1);
+                dump("Done", 2);
             }
             ReplCmd::Info => {
                 let state = self.state.borrow();
@@ -392,9 +391,9 @@ pub enum RenderStreamEvent {
 }
 
 enum ReplCmd {
-    UnsetRole,
-    Input(String),
+    Submit(String),
     SetRole(String),
+    ClearRole,
     Info,
 }
 
