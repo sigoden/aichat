@@ -5,7 +5,7 @@
 
 Chat with ChatGPT-3.5 in the terminal.
 
-![demo](https://user-images.githubusercontent.com/4012553/222897111-dd5015a0-abc1-4c65-a0fb-d491aba3c427.gif)
+![demo](https://user-images.githubusercontent.com/4012553/222935716-33dc37df-f58d-4a66-8917-f741fd69682d.gif)
 
 ## Install
 
@@ -22,11 +22,9 @@ Download from [Github Releases](https://github.com/sigoden/aichat/releases), unz
 ## Features
 
 - Compared to the browser, the terminal starts faster and needs less resources.
-- Interactive chat and imperative query.
-- Support highlight.
-- Predefine prompts for role playing.
-- History query/completion.
-- Persist chat messages.
+- Highlight chat message and stream.
+- Define roles and let AI play them.
+- Save chat messages.
 - Support proxy.
 - Written in rust, single executable file, cross-platform.
 
@@ -81,16 +79,45 @@ We can predefine a batch of roles in `roles.yaml`. For example, we define a emoj
 Let ChatGPT answer questions in the role of a emoji translator
 
 ```
-$ aichat --role emoji I am very angry
-😠💢👿
-```
-
-In interactive chat, we do this:
-
-```
 〉.role emoji
 
 〉I am very angry
+😠💢👿
+```
+
+## CLI
+
+```
+Chat with OpenAI GPT-3.5 in the terminal.
+
+Usage: aichat [OPTIONS] [TEXT]...
+
+Arguments:
+  [TEXT]...  Input text, if no input text, enter interactive mode
+
+Options:
+  -L, --list-roles   List all roles
+  -r, --role <ROLE>  Specify the role that the AI will play
+  -h, --help         Print help
+  -V, --version      Print version
+```
+
+Interactive chat if no text input:
+```
+$ aichat
+Welcome to aichat x.x.x
+Type ".help" for more information.
+〉
+```
+
+Imperative request data:
+```
+aichat --role emoji I am very angry
+```
+
+Accept pipe:
+```
+cat text | aichat
 ```
 
 ## License

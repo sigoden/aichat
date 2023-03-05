@@ -33,6 +33,7 @@ crossbeam = "0.8.2"
 crossterm = "0.26.1"
 copypasta = "0.8.2"
 chrono = "0.4.23"
+atty = "0.2.14"
 
 [dependencies.syntect]
 version = "5.0.0"
