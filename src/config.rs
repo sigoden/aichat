@@ -18,6 +18,7 @@ const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
 const HISTORY_FILE_NAME: &str = "history.txt";
 const MESSAGE_FILE_NAME: &str = "messages.md";
+const TEMP_ROLE: &str = "%TEMP%";
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
@@ -119,20 +120,34 @@ impl Config {
             return;
         }
         if let Some(file) = file {
-            let role_name = self
-                .role
-                .as_ref()
-                .map(|v| format!("({})", v.name))
-                .unwrap_or_default();
-            let timestamp = format!("[{}]", now());
-            let _ = file.write_all(
-                format!(
-                    "# CHAT:{timestamp} {role_name}\n{}\n\n--------\n{}\n--------\n\n",
-                    input.trim(),
-                    output.trim(),
-                )
-                .as_bytes(),
-            );
+            let timestamp = now();
+            let output = match self.role.as_ref() {
+                None => {
+                    format!(
+                        "# CHAT:[{timestamp}]\n{}\n\n--------\n{}\n--------\n\n",
+                        input.trim(),
+                        output.trim(),
+                    )
+                }
+                Some(v) => {
+                    if v.name == TEMP_ROLE {
+                        format!(
+                            "# CHAT:[{timestamp}]\n{}\n{}\n\n--------\n{}\n--------\n\n",
+                            v.prompt,
+                            input.trim(),
+                            output.trim(),
+                        )
+                    } else {
+                        format!(
+                            "# CHAT:[{timestamp}] ({})\n{}\n\n--------\n{}\n--------\n\n",
+                            v.name,
+                            input.trim(),
+                            output.trim(),
+                        )
+                    }
+                }
+            };
+            let _ = file.write_all(output.as_bytes());
         }
     }
 
@@ -161,6 +176,14 @@ impl Config {
             }
             None => "Unknown role".into(),
         }
+    }
+
+    pub fn create_temp_role(&mut self, prompt: &str) -> String {
+        self.role = Some(Role {
+            name: TEMP_ROLE.into(),
+            prompt: prompt.into(),
+        });
+        "Done".into()
     }
 
     pub fn get_prompt(&self) -> Option<String> {

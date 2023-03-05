@@ -17,9 +17,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::spawn;
 
-const REPL_COMMANDS: [(&str, &str); 11] = [
+const REPL_COMMANDS: [(&str, &str); 12] = [
     (".role", "Specifies the role the AI will play"),
     (".clear role", "Clear the currently selected role"),
+    (".prompt", "Add prompt, aka create a temporary role"),
     (".history", "Print the history"),
     (".clear history", "Clear the history"),
     (".multiline", "Enter multiline editor mode"),
@@ -52,7 +53,9 @@ impl Repl {
             .with_edit_mode(edit_mode)
             .with_quick_completions(true)
             .with_partial_completions(true)
-            .with_validator(Box::new(ReplValidator))
+            .with_validator(Box::new(ReplValidator {
+                multiline_cmds: [".multiline", ".prompt"].to_vec(),
+            }))
             .with_ansi_colors(true);
         let prompt = Self::create_prompt();
         Ok(Self { editor, prompt })
@@ -138,11 +141,14 @@ impl Repl {
                     handler.handle(ReplCmd::Info)?;
                 }
                 ".multiline" => {
-                    let text = args.unwrap_or_default().to_string();
-                    if text.starts_with('{') && text.ends_with('}') {
-                        handler.handle(ReplCmd::Submit(text))?;
+                    let mut text = args.unwrap_or_default().to_string();
+                    if text.is_empty() {
+                        dump("Usage: .multiline { <your multiline content> }", 2);
                     } else {
-                        dump("Usage: .multiline { put your content here }", 2);
+                        if text.starts_with('{') && text.ends_with('}') {
+                            text = text[1..text.len() - 1].to_string()
+                        }
+                        handler.handle(ReplCmd::Submit(text))?;
                     }
                 }
                 ".copy" => {
@@ -156,6 +162,17 @@ impl Repl {
                 }
                 ".set" => {
                     handler.handle(ReplCmd::UpdateConfig(args.unwrap_or_default().to_string()))?
+                }
+                ".prompt" => {
+                    let mut text = args.unwrap_or_default().to_string();
+                    if text.is_empty() {
+                        dump("Usage: .prompt { <your multiline content> }.", 2);
+                    } else {
+                        if text.starts_with('{') && text.ends_with('}') {
+                            text = text[1..text.len() - 1].to_string()
+                        }
+                        handler.handle(ReplCmd::Prompt(text))?;
+                    }
                 }
                 _ => dump_unknown_command(),
             }
@@ -219,11 +236,13 @@ impl Repl {
         ))
     }
 }
-pub struct ReplValidator;
+pub struct ReplValidator {
+    multiline_cmds: Vec<&'static str>,
+}
 
 impl Validator for ReplValidator {
     fn validate(&self, line: &str) -> ValidationResult {
-        if line.split('"').count() % 2 == 0 || incomplete_brackets(line) {
+        if line.split('"').count() % 2 == 0 || incomplete_brackets(line, &self.multiline_cmds) {
             ValidationResult::Incomplete
         } else {
             ValidationResult::Complete
@@ -231,9 +250,10 @@ impl Validator for ReplValidator {
     }
 }
 
-fn incomplete_brackets(line: &str) -> bool {
+fn incomplete_brackets(line: &str, multiline_cmds: &[&str]) -> bool {
     let mut balance: Vec<char> = Vec::new();
-    if !line.trim_start().starts_with(".multiline") {
+    let line = line.trim_start();
+    if !multiline_cmds.iter().any(|v| line.starts_with(v)) {
         return false;
     }
 
@@ -323,6 +343,10 @@ impl ReplCmdHandler {
                 self.config.borrow_mut().role = None;
                 dump("Done", 2);
             }
+            ReplCmd::Prompt(prompt) => {
+                let output = self.config.borrow_mut().create_temp_role(&prompt);
+                dump(output.trim(), 2);
+            }
             ReplCmd::Info => {
                 let output = self.config.borrow().info()?;
                 dump(output.trim(), 2);
@@ -386,6 +410,7 @@ enum ReplCmd {
     Submit(String),
     SetRole(String),
     UpdateConfig(String),
+    Prompt(String),
     ClearRole,
     Info,
 }
