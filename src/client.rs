@@ -1,7 +1,7 @@
 use crate::config::Config;
 use crate::repl::ReplyReceiver;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use eventsource_stream::Eventsource;
 use futures_util::StreamExt;
 use reqwest::{Client, Proxy, RequestBuilder};
@@ -26,13 +26,12 @@ impl ChatGptClient {
     pub fn init(config: Arc<Config>) -> Result<Self> {
         let mut builder = Client::builder();
         if let Some(proxy) = config.proxy.as_ref() {
-            builder = builder
-                .proxy(Proxy::all(proxy).map_err(|err| anyhow!("Invalid config.proxy, {err}"))?);
+            builder = builder.proxy(Proxy::all(proxy).with_context(|| "Invalid config.proxy")?);
         }
         let client = builder
             .connect_timeout(CONNECT_TIMEOUT)
             .build()
-            .map_err(|err| anyhow!("Failed to init http client, {err}"))?;
+            .with_context(|| "Failed to init http client")?;
 
         let runtime = init_runtime()?;
         Ok(Self {
@@ -181,5 +180,5 @@ fn init_runtime() -> Result<Runtime> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
-        .map_err(|err| anyhow!("Failed to init tokio, {err}"))
+        .with_context(|| "Failed to init tokio")
 }

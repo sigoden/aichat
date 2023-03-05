@@ -3,7 +3,7 @@ use crate::config::{Config, Role};
 use crate::render::{self, MarkdownRender};
 use crate::term;
 use crate::utils::{copy, dump};
-use anyhow::{anyhow, Result};
+use anyhow::{Context, Result};
 use crossbeam::channel::{unbounded, Sender};
 use crossbeam::sync::WaitGroup;
 use reedline::{
@@ -69,8 +69,7 @@ impl Repl {
                 handler.ctrlc.store(false, Ordering::SeqCst);
                 current_ctrlc = true
             }
-            let sig = self.editor.read_line(&self.prompt);
-            match sig {
+            match self.editor.read_line(&self.prompt) {
                 Ok(Signal::Success(line)) => {
                     current_ctrlc = false;
                     match self.handle_line(handler.clone(), line) {
@@ -80,7 +79,8 @@ impl Repl {
                             }
                         }
                         Err(err) => {
-                            dump(format!("{err:?}"), 1);
+                            let err = format!("{err:?}");
+                            dump(err.trim(), 2);
                         }
                     }
                 }
@@ -118,9 +118,7 @@ impl Repl {
                     Some("screen") => term::clear_screen(0)?,
                     Some("history") => {
                         let history = Box::new(self.editor.history_mut());
-                        history
-                            .clear()
-                            .map_err(|err| anyhow!("Failed to clear history, {err}"))?;
+                        history.clear().with_context(|| "Failed to clear history")?;
                         dump("", 1);
                     }
                     Some("role") => handler.handle(ReplCmd::ClearRole)?,
@@ -205,7 +203,7 @@ impl Repl {
     fn create_history() -> Result<Box<FileBackedHistory>> {
         Ok(Box::new(
             FileBackedHistory::with_file(1000, Config::history_file()?)
-                .map_err(|err| anyhow!("Failed to setup history file, {err}"))?,
+                .with_context(|| "Failed to setup history file")?,
         ))
     }
 }

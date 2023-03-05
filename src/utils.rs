@@ -9,14 +9,15 @@ pub fn dump<T: ToString>(text: T, newlines: usize) {
 }
 
 pub fn copy(src: &str) -> Result<()> {
-    let mut ctx = ClipboardContext::new().map_err(|err| anyhow!("{err}"))?;
-    ctx.set_contents(src.to_string())
-        .map_err(|err| anyhow!("{err}"))
+    ClipboardContext::new()
+        .and_then(|mut ctx| ctx.set_contents(src.to_string()))
+        .map_err(|err| anyhow!("Failed to copy, {err}"))
 }
 
 pub fn paste() -> Result<String> {
-    let mut ctx = ClipboardContext::new().map_err(|err| anyhow!("{err}"))?;
-    ctx.get_contents().map_err(|err| anyhow!("{err}"))
+    ClipboardContext::new()
+        .and_then(|mut ctx| ctx.get_contents())
+        .map_err(|err| anyhow!("Failed to paste, {err}"))
 }
 
 pub fn now() -> String {

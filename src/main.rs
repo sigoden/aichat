@@ -20,14 +20,7 @@ use clap::Parser;
 use render::MarkdownRender;
 use repl::{Repl, ReplCmdHandler};
 
-fn main() {
-    if let Err(err) = start() {
-        eprintln!("error: {err}");
-        exit(1);
-    }
-}
-
-fn start() -> Result<()> {
+fn main() -> Result<()> {
     let cli = Cli::parse();
     let text = cli.text();
     let config = Arc::new(Config::init(text.is_none())?);

@@ -6,7 +6,7 @@ use std::{
     process::exit,
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use inquire::{Confirm, Text};
 use serde::Deserialize;
 
@@ -46,9 +46,9 @@ impl Config {
             create_config_file(&config_path)?;
         }
         let content = read_to_string(&config_path)
-            .map_err(|err| anyhow!("Failed to load config at {}, {err}", config_path.display()))?;
-        let mut config: Config =
-            serde_yaml::from_str(&content).map_err(|err| anyhow!("Invalid config, {err}"))?;
+            .with_context(|| format!("Failed to load config at {}", config_path.display()))?;
+        let mut config: Config = serde_yaml::from_str(&content)
+            .with_context(|| format!("Invalid config at {}", config_path.display()))?;
         config.load_roles()?;
         Ok(config)
     }
@@ -91,7 +91,7 @@ impl Config {
                 .create(true)
                 .append(true)
                 .open(&path)
-                .map_err(|err| anyhow!("Failed to create/append {}, {err}", path.display()))?;
+                .with_context(|| format!("Failed to create/append {}", path.display()))?;
             Some(file)
         } else {
             None
@@ -144,9 +144,9 @@ impl Config {
             return Ok(());
         }
         let content = read_to_string(&path)
-            .map_err(|err| anyhow!("Failed to load roles at {}, {err}", path.display()))?;
+            .with_context(|| format!("Failed to load roles at {}", path.display()))?;
         let roles: Vec<Role> =
-            serde_yaml::from_str(&content).map_err(|err| anyhow!("Invalid roles config, {err}"))?;
+            serde_yaml::from_str(&content).with_context(|| "Invalid roles config")?;
         self.roles = roles;
         Ok(())
     }
@@ -192,7 +192,6 @@ fn create_config_file(config_path: &Path) -> Result<()> {
         raw_config.push_str("save: true\n");
     }
 
-    std::fs::write(config_path, raw_config)
-        .map_err(|err| anyhow!("Failed to write to config file, {err}"))?;
+    std::fs::write(config_path, raw_config).with_context(|| "Failed to write to config file")?;
     Ok(())
 }
