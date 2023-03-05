@@ -6,6 +6,7 @@ mod repl;
 mod term;
 mod utils;
 
+use std::io::{stdin, Read};
 use std::sync::Arc;
 use std::{io::stdout, process::exit};
 
@@ -43,9 +44,15 @@ fn start() -> Result<()> {
         None => None,
     };
     let client = ChatGptClient::init(config.clone())?;
-    match text {
-        Some(text) => start_directive(client, config, role, &text),
-        None => start_interactive(client, config, role),
+    if atty::isnt(atty::Stream::Stdin) {
+        let mut text = String::new();
+        stdin().read_to_string(&mut text)?;
+        start_directive(client, config, role, &text)
+    } else {
+        match text {
+            Some(text) => start_directive(client, config, role, &text),
+            None => start_interactive(client, config, role),
+        }
     }
 }
 
