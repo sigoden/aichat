@@ -37,8 +37,11 @@ pub struct Config {
     #[serde(default)]
     pub dry_run: bool,
     /// Predefined roles
-    #[serde(default, skip_serializing)]
+    #[serde(default, skip)]
     pub roles: Vec<Role>,
+    /// Current selected role
+    #[serde(default, skip)]
+    pub role: Option<Role>,
 }
 
 pub type SharedConfig = Arc<RefCell<Config>>;
@@ -111,21 +114,16 @@ impl Config {
         Ok(file)
     }
 
-    pub fn save_message(
-        &self,
-        file: Option<&mut File>,
-        input: &str,
-        output: &str,
-        role_name: &Option<String>,
-    ) {
+    pub fn save_message(&self, file: Option<&mut File>, input: &str, output: &str) {
         if output.is_empty() || !self.save {
             return;
         }
         if let Some(file) = file {
-            let role_name = match role_name {
-                Some(v) => format!("({v})"),
-                None => String::new(),
-            };
+            let role_name = self
+                .role
+                .as_ref()
+                .map(|v| format!("({})", v.name))
+                .unwrap_or_default();
             let timestamp = format!("[{}]", now());
             let _ = file.write_all(
                 format!(
@@ -154,7 +152,28 @@ impl Config {
         Self::local_file(MESSAGE_FILE_NAME)
     }
 
-    pub fn info(&self, current_role: String) -> Result<String> {
+    pub fn change_role(&mut self, name: &str) -> String {
+        match self.find_role(name) {
+            Some(role) => {
+                let output = format!("{}>> {}", role.name, role.prompt.trim());
+                self.role = Some(role);
+                output
+            }
+            None => "Unknown role".into(),
+        }
+    }
+
+    pub fn get_prompt(&self) -> Option<String> {
+        self.role.as_ref().and_then(|v| {
+            if v.prompt.is_empty() {
+                None
+            } else {
+                Some(v.prompt.to_string())
+            }
+        })
+    }
+
+    pub fn info(&self) -> Result<String> {
         let file_info = |path: &Path| {
             let state = if path.exists() { "" } else { " ⚠️" };
             format!("{}{state}", path.display())
@@ -168,11 +187,16 @@ impl Config {
             .temperature
             .map(|v| v.to_string())
             .unwrap_or("-".into());
+        let role_name = self
+            .role
+            .as_ref()
+            .map(|v| v.name.to_string())
+            .unwrap_or("-".into());
         let items = vec![
             ("config_file", file_info(&Config::config_file()?)),
             ("roles_file", file_info(&Config::roles_file()?)),
             ("messages_file", file_info(&Config::messages_file()?)),
-            ("role", current_role),
+            ("role", role_name),
             ("api_key", self.api_key.clone()),
             ("temperature", temperature),
             ("save", self.save.to_string()),

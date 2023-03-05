@@ -1,5 +1,5 @@
 use crate::client::ChatGptClient;
-use crate::config::{Config, Role, SharedConfig};
+use crate::config::{Config, SharedConfig};
 use crate::render::{self, MarkdownRender};
 use crate::term;
 use crate::utils::{copy, dump};
@@ -262,17 +262,15 @@ pub struct ReplCmdHandler {
 
 struct ReplCmdHandlerState {
     reply: String,
-    role: Option<Role>,
     save_file: Option<File>,
 }
 
 impl ReplCmdHandler {
-    pub fn init(client: ChatGptClient, config: SharedConfig, role: Option<Role>) -> Result<Self> {
+    pub fn init(client: ChatGptClient, config: SharedConfig) -> Result<Self> {
         let render = Arc::new(MarkdownRender::init()?);
         let save_file = config.as_ref().borrow().open_message_file()?;
         let ctrlc = Arc::new(AtomicBool::new(false));
         let state = RefCell::new(ReplCmdHandlerState {
-            role,
             save_file,
             reply: String::new(),
         });
@@ -291,20 +289,9 @@ impl ReplCmdHandler {
                     self.state.borrow_mut().reply.clear();
                     return Ok(());
                 }
-                let prompt = self
-                    .state
-                    .borrow()
-                    .role
-                    .as_ref()
-                    .map(|v| v.prompt.to_string())
-                    .unwrap_or_default();
-                let prompt = if prompt.is_empty() {
-                    None
-                } else {
-                    Some(prompt)
-                };
+                let prompt = self.config.borrow().get_prompt();
                 let wg = WaitGroup::new();
-                let highlight = self.config.as_ref().borrow().highlight;
+                let highlight = self.config.borrow().highlight;
                 let mut receiver = if highlight {
                     let (tx, rx) = unbounded();
                     let ctrlc = self.ctrlc.clone();
@@ -320,48 +307,28 @@ impl ReplCmdHandler {
                 };
                 self.client
                     .acquire_stream(&input, prompt, &mut receiver, self.ctrlc.clone())?;
-                let role = self
-                    .state
-                    .borrow_mut()
-                    .role
-                    .as_ref()
-                    .map(|v| v.name.to_string());
-                self.config.as_ref().borrow().save_message(
+                self.config.borrow().save_message(
                     self.state.borrow_mut().save_file.as_mut(),
                     &input,
                     &receiver.output,
-                    &role,
                 );
                 wg.wait();
                 self.state.borrow_mut().reply = receiver.output;
             }
-            ReplCmd::SetRole(name) => match self.config.as_ref().borrow().find_role(&name) {
-                Some(role) => {
-                    let output = format!("{}>> {}", role.name, role.prompt.trim());
-                    self.state.borrow_mut().role = Some(role);
-                    dump(output, 2);
-                }
-                None => {
-                    dump("Unknown role", 2);
-                }
-            },
+            ReplCmd::SetRole(name) => {
+                let output = self.config.borrow_mut().change_role(&name);
+                dump(output.trim(), 2);
+            }
             ReplCmd::ClearRole => {
-                self.state.borrow_mut().role = None;
+                self.config.borrow_mut().role = None;
                 dump("Done", 2);
             }
             ReplCmd::Info => {
-                let role = self
-                    .state
-                    .borrow()
-                    .role
-                    .as_ref()
-                    .map(|v| v.name.to_string())
-                    .unwrap_or("-".into());
-                let output = self.config.as_ref().borrow().info(role)?;
+                let output = self.config.borrow().info()?;
                 dump(output.trim(), 2);
             }
             ReplCmd::UpdateConfig(input) => {
-                let output = self.config.as_ref().borrow_mut().update(&input)?;
+                let output = self.config.borrow_mut().update(&input)?;
                 dump(output.trim(), 2);
             }
         }

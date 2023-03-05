@@ -13,7 +13,7 @@ use std::{io::stdout, process::exit};
 
 use cli::Cli;
 use client::ChatGptClient;
-use config::{Config, Role, SharedConfig};
+use config::{Config, SharedConfig};
 use is_terminal::IsTerminal;
 
 use anyhow::{anyhow, Result};
@@ -42,28 +42,23 @@ fn main() -> Result<()> {
         ),
         None => None,
     };
+    config.borrow_mut().role = role;
     let client = ChatGptClient::init(config.clone())?;
     if atty::isnt(atty::Stream::Stdin) {
         let mut text = String::new();
         stdin().read_to_string(&mut text)?;
-        start_directive(client, config, role, &text)
+        start_directive(client, config, &text)
     } else {
         match text {
-            Some(text) => start_directive(client, config, role, &text),
-            None => start_interactive(client, config, role),
+            Some(text) => start_directive(client, config, &text),
+            None => start_interactive(client, config),
         }
     }
 }
 
-fn start_directive(
-    client: ChatGptClient,
-    config: SharedConfig,
-    role: Option<Role>,
-    input: &str,
-) -> Result<()> {
+fn start_directive(client: ChatGptClient, config: SharedConfig, input: &str) -> Result<()> {
     let mut file = config.borrow().open_message_file()?;
-    let prompt = role.as_ref().map(|v| v.prompt.to_string());
-    let role_name = role.as_ref().map(|v| v.name.to_string());
+    let prompt = config.borrow().get_prompt();
     let output = client.acquire(input, prompt)?;
     let output = output.trim();
     if config.borrow().highlight && stdout().is_terminal() {
@@ -73,18 +68,12 @@ fn start_directive(
         println!("{output}");
     }
 
-    config
-        .borrow()
-        .save_message(file.as_mut(), input, output, &role_name);
+    config.borrow().save_message(file.as_mut(), input, output);
     Ok(())
 }
 
-fn start_interactive(
-    client: ChatGptClient,
-    config: SharedConfig,
-    role: Option<Role>,
-) -> Result<()> {
+fn start_interactive(client: ChatGptClient, config: SharedConfig) -> Result<()> {
     let mut repl = Repl::init(config.clone())?;
-    let handler = ReplCmdHandler::init(client, config, role)?;
+    let handler = ReplCmdHandler::init(client, config)?;
     repl.run(handler)
 }
