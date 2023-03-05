@@ -9,7 +9,7 @@ use crossbeam::sync::WaitGroup;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultPrompt, DefaultPromptSegment,
     Emacs, FileBackedHistory, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent,
-    ReedlineMenu, Signal,
+    ReedlineMenu, Signal, ValidationResult, Validator,
 };
 use std::cell::RefCell;
 use std::fs::File;
@@ -21,10 +21,10 @@ use std::thread::spawn;
 const REPL_COMMANDS: [(&str, &str); 10] = [
     (".role", "Specifies the role the AI will play"),
     (".clear role", "Clear the currently selected role"),
-    (".editor", "Enter editor mode"),
-    (".copy", "Copy last reply message"),
     (".history", "Print the history"),
     (".clear history", "Clear the history"),
+    (".multiline", "Enter multiline editor mode"),
+    (".copy", "Copy last reply message"),
     (".info", "Print the information"),
     (".help", "Print this help message"),
     (".exit", "Exit the REPL"),
@@ -51,7 +51,9 @@ impl Repl {
             .with_menu(menu)
             .with_edit_mode(edit_mode)
             .with_quick_completions(true)
-            .with_partial_completions(true);
+            .with_partial_completions(true)
+            .with_validator(Box::new(ReplValidator))
+            .with_ansi_colors(true);
         let prompt = Self::create_prompt();
         Ok(Self { editor, prompt })
     }
@@ -132,14 +134,16 @@ impl Repl {
                     Some(name) => handler.handle(ReplCmd::SetRole(name.to_string()))?,
                     None => dump("Usage: .role <name>", 2),
                 },
-                ".editor" => {
-                    dump(
-                        "// Entering editor mode (Ctrl+D to finish, Ctrl+C to cancel)",
-                        1,
-                    );
-                    let content = term::edit()?;
-                    dump("", 1);
-                    handler.handle(ReplCmd::Submit(content))?;
+                ".info" => {
+                    handler.handle(ReplCmd::Info)?;
+                }
+                ".multiline" => {
+                    let text = args.unwrap_or_default().to_string();
+                    if text.starts_with('{') && text.ends_with('}') {
+                        handler.handle(ReplCmd::Submit(text))?;
+                    } else {
+                        dump("Usage: .multiline { put your content here }", 2);
+                    }
                 }
                 ".copy" => {
                     let reply = handler.get_reply();
@@ -147,11 +151,8 @@ impl Repl {
                         dump("No reply messages that can be copied", 1)
                     } else {
                         copy(&reply)?;
-                        dump("Pasted", 1);
+                        dump("Copied", 1);
                     }
-                }
-                ".info" => {
-                    handler.handle(ReplCmd::Info)?;
                 }
                 _ => dump_unknown_command(),
             }
@@ -206,6 +207,38 @@ impl Repl {
                 .with_context(|| "Failed to setup history file")?,
         ))
     }
+}
+pub struct ReplValidator;
+
+impl Validator for ReplValidator {
+    fn validate(&self, line: &str) -> ValidationResult {
+        if line.split('"').count() % 2 == 0 || incomplete_brackets(line) {
+            ValidationResult::Incomplete
+        } else {
+            ValidationResult::Complete
+        }
+    }
+}
+
+fn incomplete_brackets(line: &str) -> bool {
+    let mut balance: Vec<char> = Vec::new();
+    if !line.trim_start().starts_with(".multiline") {
+        return false;
+    }
+
+    for c in line.chars() {
+        if c == '{' {
+            balance.push('}');
+        } else if c == '}' {
+            if let Some(last) = balance.last() {
+                if last == &c {
+                    balance.pop();
+                }
+            }
+        }
+    }
+
+    !balance.is_empty()
 }
 
 pub struct ReplCmdHandler {
