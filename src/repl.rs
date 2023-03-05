@@ -344,7 +344,7 @@ impl ReplCmdHandler {
                 dump("Done", 2);
             }
             ReplCmd::Prompt(prompt) => {
-                let output = self.config.borrow_mut().set_prompt(&prompt);
+                let output = self.config.borrow_mut().create_temp_role(&prompt);
                 dump(output.trim(), 2);
             }
             ReplCmd::Info => {

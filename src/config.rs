@@ -18,6 +18,7 @@ const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
 const HISTORY_FILE_NAME: &str = "history.txt";
 const MESSAGE_FILE_NAME: &str = "messages.md";
+const TEMP_ROLE: &str = "%TEMP%";
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
@@ -129,7 +130,7 @@ impl Config {
                     )
                 }
                 Some(v) => {
-                    if v.name.is_empty() {
+                    if v.name == TEMP_ROLE {
                         format!(
                             "# CHAT:[{timestamp}]\n{}\n{}\n\n--------\n{}\n--------\n\n",
                             v.prompt,
@@ -177,9 +178,9 @@ impl Config {
         }
     }
 
-    pub fn set_prompt(&mut self, prompt: &str) -> String {
+    pub fn create_temp_role(&mut self, prompt: &str) -> String {
         self.role = Some(Role {
-            name: "".into(),
+            name: TEMP_ROLE.into(),
             prompt: prompt.into(),
         });
         "Done".into()
