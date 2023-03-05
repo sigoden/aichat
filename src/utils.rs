@@ -14,12 +14,6 @@ pub fn copy(src: &str) -> Result<()> {
         .map_err(|err| anyhow!("Failed to copy, {err}"))
 }
 
-pub fn paste() -> Result<String> {
-    ClipboardContext::new()
-        .and_then(|mut ctx| ctx.get_contents())
-        .map_err(|err| anyhow!("Failed to paste, {err}"))
-}
-
 pub fn now() -> String {
     let now = Local::now();
     now.to_rfc3339_opts(SecondsFormat::Secs, false)
