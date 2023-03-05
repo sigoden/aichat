@@ -1,5 +1,5 @@
 use crate::config::SharedConfig;
-use crate::repl::ReplyReceiver;
+use crate::repl::ReplyStreamHandler;
 
 use anyhow::{anyhow, Context, Result};
 use eventsource_stream::Eventsource;
@@ -38,8 +38,7 @@ impl ChatGptClient {
         &self,
         input: &str,
         prompt: Option<String>,
-        receiver: &mut ReplyReceiver,
-        ctrlc: Arc<AtomicBool>,
+        handler: &mut ReplyStreamHandler,
     ) -> Result<()> {
         async fn watch_ctrlc(ctrlc: Arc<AtomicBool>) {
             loop {
@@ -49,14 +48,15 @@ impl ChatGptClient {
                 sleep(Duration::from_millis(100)).await;
             }
         }
+        let ctrlc = handler.get_ctrlc();
         self.runtime.block_on(async {
             tokio::select! {
-                ret = self.acquire_stream_inner(input, prompt, receiver) => {
-                    receiver.done();
+                ret = self.acquire_stream_inner(input, prompt, handler) => {
+                    handler.done();
                     ret
                 }
                 _ = watch_ctrlc(ctrlc.clone()) => {
-                    receiver.done();
+                    handler.done();
                     Ok(())
                  },
                 _ =  tokio::signal::ctrl_c() => {
@@ -86,10 +86,10 @@ impl ChatGptClient {
         &self,
         content: &str,
         prompt: Option<String>,
-        receiver: &mut ReplyReceiver,
+        handler: &mut ReplyStreamHandler,
     ) -> Result<()> {
         if self.config.borrow().dry_run {
-            receiver.text(&combine(content, prompt));
+            handler.text(&combine(content, prompt));
             return Ok(());
         }
         let builder = self.request_builder(content, prompt, true)?;
@@ -113,7 +113,7 @@ impl ChatGptClient {
                         continue;
                     }
                 }
-                receiver.text(text);
+                handler.text(text);
             }
         }
 

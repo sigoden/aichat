@@ -1,6 +1,8 @@
 mod handler;
 mod init;
 
+use crate::client::ChatGptClient;
+use crate::config::SharedConfig;
 use crate::term;
 use crate::utils::{copy, dump};
 
@@ -32,7 +34,8 @@ pub struct Repl {
 }
 
 impl Repl {
-    pub fn run(&mut self, handler: ReplCmdHandler) -> Result<()> {
+    pub fn run(&mut self, client: ChatGptClient, config: SharedConfig) -> Result<()> {
+        let handler = ReplCmdHandler::init(client, config)?;
         dump(
             format!("Welcome to aichat {}", env!("CARGO_PKG_VERSION")),
             1,

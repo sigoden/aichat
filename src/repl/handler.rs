@@ -62,7 +62,7 @@ impl ReplCmdHandler {
                 let prompt = self.config.borrow().get_prompt();
                 let wg = WaitGroup::new();
                 let highlight = self.config.borrow().highlight;
-                let mut receiver = if highlight {
+                let mut stream_handler = if highlight {
                     let (tx, rx) = unbounded();
                     let ctrlc = self.ctrlc.clone();
                     let wg = wg.clone();
@@ -71,19 +71,20 @@ impl ReplCmdHandler {
                         let _ = render::render_stream(rx, ctrlc, render);
                         drop(wg);
                     });
-                    ReplyReceiver::new(Some(tx))
+                    ReplyStreamHandler::new(Some(tx), self.ctrlc.clone())
                 } else {
-                    ReplyReceiver::new(None)
+                    ReplyStreamHandler::new(None, self.ctrlc.clone())
                 };
                 self.client
-                    .acquire_stream(&input, prompt, &mut receiver, self.ctrlc.clone())?;
+                    .acquire_stream(&input, prompt, &mut stream_handler)?;
+                let buffer = stream_handler.get_buffer();
                 self.config.borrow().save_message(
                     self.state.borrow_mut().save_file.as_mut(),
                     &input,
-                    &receiver.output,
+                    buffer,
                 )?;
                 wg.wait();
-                self.state.borrow_mut().reply = receiver.output;
+                self.state.borrow_mut().reply = buffer.to_string();
             }
             ReplCmd::SetRole(name) => {
                 let output = self.config.borrow_mut().change_role(&name);
@@ -118,44 +119,54 @@ impl ReplCmdHandler {
     }
 }
 
-pub struct ReplyReceiver {
-    output: String,
-    sender: Option<Sender<RenderStreamEvent>>,
+pub struct ReplyStreamHandler {
+    sender: Option<Sender<ReplyStreamEvent>>,
+    buffer: String,
+    ctrlc: Arc<AtomicBool>,
 }
 
-impl ReplyReceiver {
-    pub fn new(sender: Option<Sender<RenderStreamEvent>>) -> Self {
+impl ReplyStreamHandler {
+    pub fn new(sender: Option<Sender<ReplyStreamEvent>>, ctrlc: Arc<AtomicBool>) -> Self {
         Self {
-            output: String::new(),
             sender,
+            ctrlc,
+            buffer: String::new(),
         }
     }
 
     pub fn text(&mut self, text: &str) {
         match self.sender.as_ref() {
             Some(tx) => {
-                let _ = tx.send(RenderStreamEvent::Text(text.to_string()));
+                let _ = tx.send(ReplyStreamEvent::Text(text.to_string()));
             }
             None => {
                 dump(text, 0);
             }
         }
-        self.output.push_str(text);
+        self.buffer.push_str(text);
     }
 
     pub fn done(&mut self) {
         match self.sender.as_ref() {
             Some(tx) => {
-                let _ = tx.send(RenderStreamEvent::Done);
+                let _ = tx.send(ReplyStreamEvent::Done);
             }
             None => {
                 dump("", 2);
             }
         }
     }
+
+    pub fn get_buffer(&self) -> &str {
+        &self.buffer
+    }
+
+    pub fn get_ctrlc(&self) -> Arc<AtomicBool> {
+        self.ctrlc.clone()
+    }
 }
 
-pub enum RenderStreamEvent {
+pub enum ReplyStreamEvent {
     Text(String),
     Done,
 }

@@ -1,4 +1,4 @@
-use crate::{repl::RenderStreamEvent, utils::dump};
+use crate::{repl::ReplyStreamEvent, utils::dump};
 use anyhow::Result;
 use crossbeam::channel::Receiver;
 use mdcat::{
@@ -14,7 +14,7 @@ use std::sync::{
 use syntect::parsing::SyntaxSet;
 
 pub fn render_stream(
-    rx: Receiver<RenderStreamEvent>,
+    rx: Receiver<ReplyStreamEvent>,
     ctrlc: Arc<AtomicBool>,
     markdown_render: Arc<MarkdownRender>,
 ) -> Result<()> {
@@ -26,7 +26,7 @@ pub fn render_stream(
         }
         if let Ok(evt) = rx.try_recv() {
             match evt {
-                RenderStreamEvent::Text(text) => {
+                ReplyStreamEvent::Text(text) => {
                     buffer.push_str(&text);
                     if text.contains('\n') {
                         let markdown = markdown_render.render(&buffer)?;
@@ -40,7 +40,7 @@ pub fn render_stream(
                         }
                     }
                 }
-                RenderStreamEvent::Done => {
+                ReplyStreamEvent::Done => {
                     let markdown = markdown_render.render(&buffer)?;
                     let tail = markdown
                         .lines()

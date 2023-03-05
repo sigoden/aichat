@@ -19,7 +19,7 @@ use is_terminal::IsTerminal;
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use render::MarkdownRender;
-use repl::{Repl, ReplCmdHandler};
+use repl::Repl;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -73,6 +73,5 @@ fn start_directive(client: ChatGptClient, config: SharedConfig, input: &str) -> 
 
 fn start_interactive(client: ChatGptClient, config: SharedConfig) -> Result<()> {
     let mut repl = Repl::init(config.clone())?;
-    let handler = ReplCmdHandler::init(client, config)?;
-    repl.run(handler)
+    repl.run(client, config)
 }
