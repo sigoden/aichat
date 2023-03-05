@@ -60,7 +60,7 @@ fn start_directive(
     let role_name = role.as_ref().map(|v| v.name.to_string());
     let output = client.acquire(input, prompt)?;
     let output = output.trim();
-    if !config.no_highlight && stdout().is_terminal() {
+    if config.highlight && stdout().is_terminal() {
         let markdown_render = MarkdownRender::init()?;
         markdown_render.print(output)?;
     } else {
