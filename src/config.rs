@@ -1,9 +1,11 @@
 use std::{
+    cell::RefCell,
     env,
     fs::{create_dir_all, read_to_string, File, OpenOptions},
     io::Write,
     path::{Path, PathBuf},
     process::exit,
+    sync::Arc,
 };
 
 use anyhow::{anyhow, Context, Result};
@@ -35,11 +37,24 @@ pub struct Config {
     #[serde(default)]
     pub dry_run: bool,
     /// Predefined roles
-    #[serde(default, skip_serializing)]
+    #[serde(default, skip)]
     pub roles: Vec<Role>,
+    /// Current selected role
+    #[serde(default, skip)]
+    pub role: Option<Role>,
 }
 
+pub type SharedConfig = Arc<RefCell<Config>>;
+
 impl Config {
+    pub const UPDATE_KEYS: [&str; 6] = [
+        "api_key",
+        "temperature",
+        "save",
+        "highlight",
+        "proxy",
+        "dry_run",
+    ];
     pub fn init(is_interactive: bool) -> Result<Config> {
         let config_path = Config::config_file()?;
         if is_interactive && !config_path.exists() {
@@ -99,18 +114,17 @@ impl Config {
         Ok(file)
     }
 
-    pub fn save_message(
-        file: Option<&mut File>,
-        input: &str,
-        output: &str,
-        role_name: &Option<String>,
-    ) {
-        let role_name = match role_name {
-            Some(v) => format!("({v})"),
-            None => String::new(),
-        };
-        let timestamp = format!("[{}]", now());
-        if let (false, Some(file)) = (output.is_empty(), file) {
+    pub fn save_message(&self, file: Option<&mut File>, input: &str, output: &str) {
+        if output.is_empty() || !self.save {
+            return;
+        }
+        if let Some(file) = file {
+            let role_name = self
+                .role
+                .as_ref()
+                .map(|v| format!("({})", v.name))
+                .unwrap_or_default();
+            let timestamp = format!("[{}]", now());
             let _ = file.write_all(
                 format!(
                     "# CHAT:{timestamp} {role_name}\n{}\n\n--------\n{}\n--------\n\n",
@@ -136,6 +150,118 @@ impl Config {
 
     pub fn messages_file() -> Result<PathBuf> {
         Self::local_file(MESSAGE_FILE_NAME)
+    }
+
+    pub fn change_role(&mut self, name: &str) -> String {
+        match self.find_role(name) {
+            Some(role) => {
+                let output = format!("{}>> {}", role.name, role.prompt.trim());
+                self.role = Some(role);
+                output
+            }
+            None => "Unknown role".into(),
+        }
+    }
+
+    pub fn get_prompt(&self) -> Option<String> {
+        self.role.as_ref().and_then(|v| {
+            if v.prompt.is_empty() {
+                None
+            } else {
+                Some(v.prompt.to_string())
+            }
+        })
+    }
+
+    pub fn info(&self) -> Result<String> {
+        let file_info = |path: &Path| {
+            let state = if path.exists() { "" } else { " ⚠️" };
+            format!("{}{state}", path.display())
+        };
+        let proxy = self
+            .proxy
+            .as_ref()
+            .map(|v| v.to_string())
+            .unwrap_or("-".into());
+        let temperature = self
+            .temperature
+            .map(|v| v.to_string())
+            .unwrap_or("-".into());
+        let role_name = self
+            .role
+            .as_ref()
+            .map(|v| v.name.to_string())
+            .unwrap_or("-".into());
+        let items = vec![
+            ("config_file", file_info(&Config::config_file()?)),
+            ("roles_file", file_info(&Config::roles_file()?)),
+            ("messages_file", file_info(&Config::messages_file()?)),
+            ("role", role_name),
+            ("api_key", self.api_key.clone()),
+            ("temperature", temperature),
+            ("save", self.save.to_string()),
+            ("highlight", self.highlight.to_string()),
+            ("proxy", proxy),
+            ("dry_run", self.dry_run.to_string()),
+        ];
+        let mut output = String::new();
+        for (name, value) in items {
+            output.push_str(&format!("{name:<20}{value}\n"));
+        }
+        Ok(output)
+    }
+
+    pub fn update(&mut self, data: &str) -> Result<String> {
+        let parts: Vec<&str> = data.split_whitespace().collect();
+        if parts.len() != 2 {
+            return Ok("Usage: .set <key> <value>. If value is null, unset key.".into());
+        }
+        let key = parts[0];
+        let value = parts[1];
+        let unset = value == "null";
+        match key {
+            "api_key" => {
+                if unset {
+                    return Ok("Not allowd".into());
+                } else {
+                    self.api_key = value.to_string();
+                }
+            }
+            "temperature" => {
+                if unset {
+                    self.temperature = None;
+                } else {
+                    let value = value.parse().with_context(|| "Invalid value")?;
+                    self.temperature = Some(value);
+                }
+            }
+            "save" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                self.save = value;
+            }
+            "highlight" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                self.highlight = value;
+            }
+            "proxy" => {
+                if unset {
+                    self.proxy = None;
+                } else {
+                    self.proxy = Some(value.to_string());
+                }
+            }
+            "dry_run" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                self.dry_run = value;
+            }
+            _ => {
+                return Ok(format!(
+                    "Unknown key, valid keys are {}",
+                    Config::UPDATE_KEYS.join(", ")
+                ))
+            }
+        }
+        Ok("Done".into())
     }
 
     fn load_roles(&mut self) -> Result<()> {

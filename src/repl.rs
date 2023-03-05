@@ -1,5 +1,5 @@
 use crate::client::ChatGptClient;
-use crate::config::{Config, Role};
+use crate::config::{Config, SharedConfig};
 use crate::render::{self, MarkdownRender};
 use crate::term;
 use crate::utils::{copy, dump};
@@ -13,12 +13,11 @@ use reedline::{
 };
 use std::cell::RefCell;
 use std::fs::File;
-use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::spawn;
 
-const REPL_COMMANDS: [(&str, &str); 10] = [
+const REPL_COMMANDS: [(&str, &str); 11] = [
     (".role", "Specifies the role the AI will play"),
     (".clear role", "Clear the currently selected role"),
     (".history", "Print the history"),
@@ -26,6 +25,7 @@ const REPL_COMMANDS: [(&str, &str); 10] = [
     (".multiline", "Enter multiline editor mode"),
     (".copy", "Copy last reply message"),
     (".info", "Print the information"),
+    (".set", "Modify the configuration temporarily"),
     (".help", "Print this help message"),
     (".exit", "Exit the REPL"),
     (".clear screen", "Clear the screen"),
@@ -39,7 +39,7 @@ pub struct Repl {
 }
 
 impl Repl {
-    pub fn init(config: Arc<Config>) -> Result<Self> {
+    pub fn init(config: SharedConfig) -> Result<Self> {
         let completer = Self::create_completer(config);
         let keybindings = Self::create_keybindings();
         let history = Self::create_history()?;
@@ -154,6 +154,9 @@ impl Repl {
                         dump("Copied", 1);
                     }
                 }
+                ".set" => {
+                    handler.handle(ReplCmd::UpdateConfig(args.unwrap_or_default().to_string()))?
+                }
                 _ => dump_unknown_command(),
             }
         } else {
@@ -167,13 +170,21 @@ impl Repl {
         DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty)
     }
 
-    fn create_completer(config: Arc<Config>) -> DefaultCompleter {
+    fn create_completer(config: SharedConfig) -> DefaultCompleter {
         let mut commands: Vec<String> = REPL_COMMANDS
             .into_iter()
             .map(|(v, _)| v.to_string())
             .collect();
-        commands.extend(config.roles.iter().map(|v| format!(".role {}", v.name)));
-        let mut completer = DefaultCompleter::with_inclusions(&['.', '-']).set_min_word_len(2);
+        commands.extend(
+            config
+                .as_ref()
+                .borrow()
+                .roles
+                .iter()
+                .map(|v| format!(".role {}", v.name)),
+        );
+        commands.extend(Config::UPDATE_KEYS.map(|v| format!(".set {v}")));
+        let mut completer = DefaultCompleter::with_inclusions(&['.', '-', '_']).set_min_word_len(2);
         completer.insert(commands.clone());
         completer
     }
@@ -243,29 +254,23 @@ fn incomplete_brackets(line: &str) -> bool {
 
 pub struct ReplCmdHandler {
     client: ChatGptClient,
-    config: Arc<Config>,
+    config: SharedConfig,
     state: RefCell<ReplCmdHandlerState>,
     ctrlc: Arc<AtomicBool>,
-    render: Option<Arc<MarkdownRender>>,
+    render: Arc<MarkdownRender>,
 }
 
 struct ReplCmdHandlerState {
     reply: String,
-    role: Option<Role>,
     save_file: Option<File>,
 }
 
 impl ReplCmdHandler {
-    pub fn init(client: ChatGptClient, config: Arc<Config>, role: Option<Role>) -> Result<Self> {
-        let render = if config.highlight {
-            Some(Arc::new(MarkdownRender::init()?))
-        } else {
-            None
-        };
-        let save_file = config.open_message_file()?;
+    pub fn init(client: ChatGptClient, config: SharedConfig) -> Result<Self> {
+        let render = Arc::new(MarkdownRender::init()?);
+        let save_file = config.as_ref().borrow().open_message_file()?;
         let ctrlc = Arc::new(AtomicBool::new(false));
         let state = RefCell::new(ReplCmdHandlerState {
-            role,
             save_file,
             reply: String::new(),
         });
@@ -284,25 +289,16 @@ impl ReplCmdHandler {
                     self.state.borrow_mut().reply.clear();
                     return Ok(());
                 }
-                let prompt = self
-                    .state
-                    .borrow()
-                    .role
-                    .as_ref()
-                    .map(|v| v.prompt.to_string())
-                    .unwrap_or_default();
-                let prompt = if prompt.is_empty() {
-                    None
-                } else {
-                    Some(prompt)
-                };
+                let prompt = self.config.borrow().get_prompt();
                 let wg = WaitGroup::new();
-                let mut receiver = if let Some(markdown_render) = self.render.clone() {
+                let highlight = self.config.borrow().highlight;
+                let mut receiver = if highlight {
                     let (tx, rx) = unbounded();
                     let ctrlc = self.ctrlc.clone();
                     let wg = wg.clone();
+                    let render = self.render.clone();
                     spawn(move || {
-                        let _ = render::render_stream(rx, ctrlc, markdown_render);
+                        let _ = render::render_stream(rx, ctrlc, render);
                         drop(wg);
                     });
                     ReplyReceiver::new(Some(tx))
@@ -311,69 +307,29 @@ impl ReplCmdHandler {
                 };
                 self.client
                     .acquire_stream(&input, prompt, &mut receiver, self.ctrlc.clone())?;
-                let role = self
-                    .state
-                    .borrow_mut()
-                    .role
-                    .as_ref()
-                    .map(|v| v.name.to_string());
-                Config::save_message(
+                self.config.borrow().save_message(
                     self.state.borrow_mut().save_file.as_mut(),
                     &input,
                     &receiver.output,
-                    &role,
                 );
                 wg.wait();
                 self.state.borrow_mut().reply = receiver.output;
             }
-            ReplCmd::SetRole(name) => match self.config.find_role(&name) {
-                Some(role) => {
-                    let output = format!("{}>> {}", role.name, role.prompt.trim());
-                    self.state.borrow_mut().role = Some(role);
-                    dump(output, 2);
-                }
-                None => {
-                    dump("Unknown role", 2);
-                }
-            },
+            ReplCmd::SetRole(name) => {
+                let output = self.config.borrow_mut().change_role(&name);
+                dump(output.trim(), 2);
+            }
             ReplCmd::ClearRole => {
-                self.state.borrow_mut().role = None;
+                self.config.borrow_mut().role = None;
                 dump("Done", 2);
             }
             ReplCmd::Info => {
-                let state = self.state.borrow();
-                let file_info = |path: &Path| {
-                    let state = if path.exists() { "" } else { " [not found]" };
-                    format!("{}{state}", path.display())
-                };
-                let items = vec![
-                    ("config file", file_info(&Config::config_file()?)),
-                    ("roles file", file_info(&Config::roles_file()?)),
-                    ("messages file", file_info(&Config::messages_file()?)),
-                    (
-                        "current role",
-                        state
-                            .role
-                            .as_ref()
-                            .map(|v| v.name.to_string())
-                            .unwrap_or_default(),
-                    ),
-                    (
-                        "proxy",
-                        self.config
-                            .proxy
-                            .as_ref()
-                            .map(|v| v.to_string())
-                            .unwrap_or_default(),
-                    ),
-                    ("save messages", self.config.save.to_string()),
-                    ("highlight", (self.config.highlight).to_string()),
-                ];
-                let mut info = String::new();
-                for (name, value) in items {
-                    info.push_str(&format!("{name:<20}{value}\n"));
-                }
-                dump(info, 1);
+                let output = self.config.borrow().info()?;
+                dump(output.trim(), 2);
+            }
+            ReplCmd::UpdateConfig(input) => {
+                let output = self.config.borrow_mut().update(&input)?;
+                dump(output.trim(), 2);
             }
         }
         Ok(())
@@ -429,6 +385,7 @@ pub enum RenderStreamEvent {
 enum ReplCmd {
     Submit(String),
     SetRole(String),
+    UpdateConfig(String),
     ClearRole,
     Info,
 }

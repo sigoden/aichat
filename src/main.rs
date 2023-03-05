@@ -6,13 +6,14 @@ mod repl;
 mod term;
 mod utils;
 
+use std::cell::RefCell;
 use std::io::{stdin, Read};
 use std::sync::Arc;
 use std::{io::stdout, process::exit};
 
 use cli::Cli;
 use client::ChatGptClient;
-use config::{Config, Role};
+use config::{Config, SharedConfig};
 use is_terminal::IsTerminal;
 
 use anyhow::{anyhow, Result};
@@ -23,56 +24,56 @@ use repl::{Repl, ReplCmdHandler};
 fn main() -> Result<()> {
     let cli = Cli::parse();
     let text = cli.text();
-    let config = Arc::new(Config::init(text.is_none())?);
+    let config = Arc::new(RefCell::new(Config::init(text.is_none())?));
     if cli.list_roles {
-        config.roles.iter().for_each(|v| println!("{}", v.name));
+        config
+            .borrow()
+            .roles
+            .iter()
+            .for_each(|v| println!("{}", v.name));
         exit(0);
     }
     let role = match &cli.role {
         Some(name) => Some(
             config
+                .borrow()
                 .find_role(name)
                 .ok_or_else(|| anyhow!("Unknown role '{name}'"))?,
         ),
         None => None,
     };
+    config.borrow_mut().role = role;
     let client = ChatGptClient::init(config.clone())?;
     if atty::isnt(atty::Stream::Stdin) {
         let mut text = String::new();
         stdin().read_to_string(&mut text)?;
-        start_directive(client, config, role, &text)
+        start_directive(client, config, &text)
     } else {
         match text {
-            Some(text) => start_directive(client, config, role, &text),
-            None => start_interactive(client, config, role),
+            Some(text) => start_directive(client, config, &text),
+            None => start_interactive(client, config),
         }
     }
 }
 
-fn start_directive(
-    client: ChatGptClient,
-    config: Arc<Config>,
-    role: Option<Role>,
-    input: &str,
-) -> Result<()> {
-    let mut file = config.open_message_file()?;
-    let prompt = role.as_ref().map(|v| v.prompt.to_string());
-    let role_name = role.as_ref().map(|v| v.name.to_string());
+fn start_directive(client: ChatGptClient, config: SharedConfig, input: &str) -> Result<()> {
+    let mut file = config.borrow().open_message_file()?;
+    let prompt = config.borrow().get_prompt();
     let output = client.acquire(input, prompt)?;
     let output = output.trim();
-    if config.highlight && stdout().is_terminal() {
+    if config.borrow().highlight && stdout().is_terminal() {
         let markdown_render = MarkdownRender::init()?;
         markdown_render.print(output)?;
     } else {
         println!("{output}");
     }
 
-    Config::save_message(file.as_mut(), input, output, &role_name);
+    config.borrow().save_message(file.as_mut(), input, output);
     Ok(())
 }
 
-fn start_interactive(client: ChatGptClient, config: Arc<Config>, role: Option<Role>) -> Result<()> {
+fn start_interactive(client: ChatGptClient, config: SharedConfig) -> Result<()> {
     let mut repl = Repl::init(config.clone())?;
-    let handler = ReplCmdHandler::init(client, config, role)?;
+    let handler = ReplCmdHandler::init(client, config)?;
     repl.run(handler)
 }
