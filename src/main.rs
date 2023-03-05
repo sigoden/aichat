@@ -68,8 +68,7 @@ fn start_directive(client: ChatGptClient, config: SharedConfig, input: &str) -> 
         println!("{output}");
     }
 
-    config.borrow().save_message(file.as_mut(), input, output);
-    Ok(())
+    config.borrow().save_message(file.as_mut(), input, output)
 }
 
 fn start_interactive(client: ChatGptClient, config: SharedConfig) -> Result<()> {

@@ -18,7 +18,26 @@ const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
 const HISTORY_FILE_NAME: &str = "history.txt";
 const MESSAGE_FILE_NAME: &str = "messages.md";
-const TEMP_ROLE: &str = "%TEMP%";
+const TEMP_ROLE_NAME: &str = "%TEMP%";
+const UPDATE_KEYS: [&str; 6] = [
+    "api_key",
+    "temperature",
+    "save",
+    "highlight",
+    "proxy",
+    "dry_run",
+];
+const SET_COMPLETIONS: [&str; 9] = [
+    ".set api_key",
+    ".set temperature",
+    ".set save true",
+    ".set save false",
+    ".set highlight true",
+    ".set highlight false",
+    ".set proxy",
+    ".set dry_run true",
+    ".set dry_run false",
+];
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
@@ -48,14 +67,6 @@ pub struct Config {
 pub type SharedConfig = Arc<RefCell<Config>>;
 
 impl Config {
-    pub const UPDATE_KEYS: [&str; 6] = [
-        "api_key",
-        "temperature",
-        "save",
-        "highlight",
-        "proxy",
-        "dry_run",
-    ];
     pub fn init(is_interactive: bool) -> Result<Config> {
         let config_path = Config::config_file()?;
         if is_interactive && !config_path.exists() {
@@ -115,40 +126,40 @@ impl Config {
         Ok(file)
     }
 
-    pub fn save_message(&self, file: Option<&mut File>, input: &str, output: &str) {
-        if output.is_empty() || !self.save {
-            return;
+    pub fn save_message(&self, file: Option<&mut File>, input: &str, output: &str) -> Result<()> {
+        if output.is_empty() || !self.save || file.is_none() {
+            return Ok(());
         }
-        if let Some(file) = file {
-            let timestamp = now();
-            let output = match self.role.as_ref() {
-                None => {
+        let file = file.unwrap();
+        let timestamp = now();
+        let output = match self.role.as_ref() {
+            None => {
+                format!(
+                    "# CHAT:[{timestamp}]\n{}\n\n--------\n{}\n--------\n\n",
+                    input.trim(),
+                    output.trim(),
+                )
+            }
+            Some(v) => {
+                if v.name == TEMP_ROLE_NAME {
                     format!(
-                        "# CHAT:[{timestamp}]\n{}\n\n--------\n{}\n--------\n\n",
+                        "# CHAT:[{timestamp}]\n{}\n{}\n\n--------\n{}\n--------\n\n",
+                        v.prompt,
+                        input.trim(),
+                        output.trim(),
+                    )
+                } else {
+                    format!(
+                        "# CHAT:[{timestamp}] ({})\n{}\n\n--------\n{}\n--------\n\n",
+                        v.name,
                         input.trim(),
                         output.trim(),
                     )
                 }
-                Some(v) => {
-                    if v.name == TEMP_ROLE {
-                        format!(
-                            "# CHAT:[{timestamp}]\n{}\n{}\n\n--------\n{}\n--------\n\n",
-                            v.prompt,
-                            input.trim(),
-                            output.trim(),
-                        )
-                    } else {
-                        format!(
-                            "# CHAT:[{timestamp}] ({})\n{}\n\n--------\n{}\n--------\n\n",
-                            v.name,
-                            input.trim(),
-                            output.trim(),
-                        )
-                    }
-                }
-            };
-            let _ = file.write_all(output.as_bytes());
-        }
+            }
+        };
+        file.write_all(output.as_bytes())
+            .with_context(|| "Failed to save message")
     }
 
     pub fn config_file() -> Result<PathBuf> {
@@ -180,7 +191,7 @@ impl Config {
 
     pub fn create_temp_role(&mut self, prompt: &str) -> String {
         self.role = Some(Role {
-            name: TEMP_ROLE.into(),
+            name: TEMP_ROLE_NAME.into(),
             prompt: prompt.into(),
         });
         "Done".into()
@@ -234,6 +245,17 @@ impl Config {
         Ok(output)
     }
 
+    pub fn repl_completions(&self) -> Vec<String> {
+        let mut completion: Vec<String> = self
+            .roles
+            .iter()
+            .map(|v| format!(".role {}", v.name))
+            .collect();
+
+        completion.extend(SET_COMPLETIONS.map(|v| v.to_string()));
+        completion
+    }
+
     pub fn update(&mut self, data: &str) -> Result<String> {
         let parts: Vec<&str> = data.split_whitespace().collect();
         if parts.len() != 2 {
@@ -280,7 +302,7 @@ impl Config {
             _ => {
                 return Ok(format!(
                     "Unknown key, valid keys are {}",
-                    Config::UPDATE_KEYS.join(", ")
+                    UPDATE_KEYS.join(", ")
                 ))
             }
         }
