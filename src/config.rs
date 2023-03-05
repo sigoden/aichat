@@ -27,8 +27,8 @@ pub struct Config {
     #[serde(default)]
     pub save: bool,
     /// Whether to disable highlight
-    #[serde(default)]
-    pub no_highlight: bool,
+    #[serde(default = "highlight_value")]
+    pub highlight: bool,
     /// Set proxy
     pub proxy: Option<String>,
     /// Used only for debugging
@@ -194,4 +194,8 @@ fn create_config_file(config_path: &Path) -> Result<()> {
 
     std::fs::write(config_path, raw_config).with_context(|| "Failed to write to config file")?;
     Ok(())
+}
+
+fn highlight_value() -> bool {
+    true
 }

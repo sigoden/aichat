@@ -257,10 +257,10 @@ struct ReplCmdHandlerState {
 
 impl ReplCmdHandler {
     pub fn init(client: ChatGptClient, config: Arc<Config>, role: Option<Role>) -> Result<Self> {
-        let render = if config.no_highlight {
-            None
-        } else {
+        let render = if config.highlight {
             Some(Arc::new(MarkdownRender::init()?))
+        } else {
+            None
         };
         let save_file = config.open_message_file()?;
         let ctrlc = Arc::new(AtomicBool::new(false));
@@ -367,7 +367,7 @@ impl ReplCmdHandler {
                             .unwrap_or_default(),
                     ),
                     ("save messages", self.config.save.to_string()),
-                    ("highlight", (!self.config.no_highlight).to_string()),
+                    ("highlight", (self.config.highlight).to_string()),
                 ];
                 let mut info = String::new();
                 for (name, value) in items {
