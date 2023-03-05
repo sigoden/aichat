@@ -1,9 +1,9 @@
 mod cli;
 mod client;
 mod config;
-mod editor;
 mod render;
 mod repl;
+mod term;
 mod utils;
 
 use std::sync::Arc;

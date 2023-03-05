@@ -1,7 +1,7 @@
 use crate::client::ChatGptClient;
 use crate::config::{Config, Role};
-use crate::editor;
 use crate::render::{self, MarkdownRender};
+use crate::term;
 use crate::utils::{copy, dump};
 use anyhow::{anyhow, Result};
 use crossbeam::channel::{unbounded, Sender};
@@ -115,7 +115,7 @@ impl Repl {
                     dump_repl_help();
                 }
                 ".clear" => match args {
-                    Some("screen") => self.editor.clear_scrollback()?,
+                    Some("screen") => term::clear_screen(0)?,
                     Some("history") => {
                         let history = Box::new(self.editor.history_mut());
                         history
@@ -139,7 +139,7 @@ impl Repl {
                         "// Entering editor mode (Ctrl+D to finish, Ctrl+C to cancel)",
                         1,
                     );
-                    let content = editor::edit()?;
+                    let content = term::edit()?;
                     dump("", 1);
                     handler.handle(ReplCmd::Submit(content))?;
                 }
@@ -188,6 +188,11 @@ impl Repl {
                 ReedlineEvent::Menu(MENU_NAME.to_string()),
                 ReedlineEvent::MenuNext,
             ]),
+        );
+        keybindings.add_binding(
+            KeyModifiers::CONTROL,
+            KeyCode::Char('l'),
+            ReedlineEvent::ExecuteHostCommand(".clear screen".into()),
         );
         keybindings
     }
