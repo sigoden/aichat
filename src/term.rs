@@ -6,7 +6,7 @@ use crossterm::{
     cursor,
     event::{self, Event, KeyCode, KeyModifiers},
     queue, style,
-    terminal::{self, disable_raw_mode, enable_raw_mode},
+    terminal::{self, disable_raw_mode, enable_raw_mode, ClearType},
 };
 
 use crate::utils::paste;
@@ -107,4 +107,30 @@ impl<'a, T: Write> Session<'a, T> {
         }
         Ok(())
     }
+}
+
+pub fn clear_screen(keep_lines: u16) -> Result<()> {
+    enable_raw_mode()?;
+    let mut stdout = io::stdout();
+
+    let ret = clear_screen_inner(&mut stdout, keep_lines);
+
+    // restore terminal
+    disable_raw_mode()?;
+
+    ret
+}
+
+fn clear_screen_inner(writer: &mut Stdout, keep_lines: u16) -> Result<()> {
+    let (_, h) = terminal::size()?;
+    queue!(
+        writer,
+        style::Print("\n".repeat((h - 2).into())),
+        terminal::ScrollUp(2),
+        cursor::MoveTo(0, 0),
+        terminal::Clear(ClearType::FromCursorDown),
+        terminal::ScrollUp(keep_lines),
+    )?;
+    writer.flush()?;
+    Ok(())
 }
