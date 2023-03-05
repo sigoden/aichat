@@ -19,16 +19,16 @@ use std::sync::Arc;
 use std::thread::spawn;
 
 const REPL_COMMANDS: [(&str, &str); 10] = [
-    (".clear screen", "Clear the screen"),
-    (".clear history", "Clear the history"),
+    (".role", "Specifies the role the AI will play"),
     (".clear role", "Clear the currently selected role"),
-    (".copy", "Copy last reply message"),
     (".editor", "Enter editor mode"),
-    (".exit", "Exit the REPL"),
-    (".help", "Print this help message"),
+    (".copy", "Copy last reply message"),
     (".history", "Print the history"),
+    (".clear history", "Clear the history"),
     (".info", "Print the information"),
-    (".role", "Specify the role that the AI will play"),
+    (".help", "Print this help message"),
+    (".exit", "Exit the REPL"),
+    (".clear screen", "Clear the screen"),
 ];
 
 const MENU_NAME: &str = "completion_menu";
