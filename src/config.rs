@@ -89,11 +89,14 @@ impl Config {
             "{}_CONFIG_DIR",
             env!("CARGO_CRATE_NAME").to_ascii_uppercase()
         );
-        let mut path = match env::var(env_name) {
+        let path = match env::var(env_name) {
             Ok(v) => PathBuf::from(v),
-            Err(_) => dirs::config_dir().ok_or_else(|| anyhow!("Not found config dir"))?,
+            Err(_) => {
+                let mut dir = dirs::config_dir().ok_or_else(|| anyhow!("Not found config dir"))?;
+                dir.push(env!("CARGO_CRATE_NAME"));
+                dir
+            }
         };
-        path.push(env!("CARGO_CRATE_NAME"));
         if !path.exists() {
             create_dir_all(&path).map_err(|err| {
                 anyhow!("Failed to create config dir at {}, {err}", path.display())
