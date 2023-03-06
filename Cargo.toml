@@ -3,14 +3,12 @@ name = "aichat"
 version = "0.4.0"
 edition = "2021"
 authors = ["sigoden <sigoden@gmail.com>"]
-description = "A powerful ChatGPT command line tool that allows easy chat with ChatGPT-3.5 in a terminal."
+description = "A powerful chatgpt cli."
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/sigoden/aichat"
 repository = "https://github.com/sigoden/aichat"
 categories = ["command-line-utilities"]
-keywords = ["chatgpt", "ai"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+keywords = ["chatgpt", "ai", "gpt-3.5", "repl"]
 
 [dependencies]
 anyhow = "1.0.69"
