@@ -65,7 +65,7 @@ fn main() -> Result<()> {
 fn start_directive(client: ChatGptClient, config: SharedConfig, input: &str) -> Result<()> {
     let mut file = config.borrow().open_message_file()?;
     let prompt = config.borrow().get_prompt();
-    let output = client.acquire(input, prompt)?;
+    let output = client.send_message(input, prompt)?;
     let output = output.trim();
     if config.borrow().highlight && stdout().is_terminal() {
         let markdown_render = MarkdownRender::init()?;

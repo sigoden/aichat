@@ -76,7 +76,7 @@ impl ReplCmdHandler {
                     ReplyStreamHandler::new(None, self.ctrlc.clone())
                 };
                 self.client
-                    .acquire_stream(&input, prompt, &mut stream_handler)?;
+                    .send_message_streaming(&input, prompt, &mut stream_handler)?;
                 let buffer = stream_handler.get_buffer();
                 self.config.borrow().save_message(
                     self.state.borrow_mut().save_file.as_mut(),

@@ -29,12 +29,15 @@ impl ChatGptClient {
         Ok(s)
     }
 
-    pub fn acquire(&self, input: &str, prompt: Option<String>) -> Result<String> {
-        self.runtime
-            .block_on(async { self.acquire_inner(input, prompt).await })
+    pub fn send_message(&self, input: &str, prompt: Option<String>) -> Result<String> {
+        self.runtime.block_on(async {
+            self.send_message_inner(input, prompt)
+                .await
+                .with_context(|| "Failed to send message")
+        })
     }
 
-    pub fn acquire_stream(
+    pub fn send_message_streaming(
         &self,
         input: &str,
         prompt: Option<String>,
@@ -51,9 +54,9 @@ impl ChatGptClient {
         let ctrlc = handler.get_ctrlc();
         self.runtime.block_on(async {
             tokio::select! {
-                ret = self.acquire_stream_inner(input, prompt, handler) => {
+                ret = self.send_message_streaming_inner(input, prompt, handler) => {
                     handler.done();
-                    ret
+                    ret.with_context(|| "Failed to send message streaming")
                 }
                 _ = watch_ctrlc(ctrlc.clone()) => {
                     handler.done();
@@ -67,7 +70,7 @@ impl ChatGptClient {
         })
     }
 
-    async fn acquire_inner(&self, content: &str, prompt: Option<String>) -> Result<String> {
+    async fn send_message_inner(&self, content: &str, prompt: Option<String>) -> Result<String> {
         if self.config.borrow().dry_run {
             return Ok(combine(content, prompt));
         }
@@ -82,7 +85,7 @@ impl ChatGptClient {
         Ok(output.to_string())
     }
 
-    async fn acquire_stream_inner(
+    async fn send_message_streaming_inner(
         &self,
         content: &str,
         prompt: Option<String>,
