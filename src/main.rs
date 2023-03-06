@@ -43,10 +43,12 @@ fn main() -> Result<()> {
         None => None,
     };
     config.borrow_mut().role = role;
+    if cli.no_highlight {
+        config.borrow_mut().highlight = false;
+    }
     let client = ChatGptClient::init(config.clone())?;
     if atty::isnt(atty::Stream::Stdin) {
         let mut input = String::new();
-        config.borrow_mut().highlight = false;
         stdin().read_to_string(&mut input)?;
         if let Some(text) = text {
             input = format!("{text}\n{input}");

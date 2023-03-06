@@ -16,7 +16,7 @@ pub use self::handler::*;
 pub const REPL_COMMANDS: [(&str, &str, bool); 12] = [
     (".info", "Print the information", false),
     (".set", "Modify the configuration temporarily", false),
-    (".role", "Specifies the role the AI will play", false),
+    (".role", "Select a role", false),
     (".clear role", "Clear the currently selected role", false),
     (".prompt", "Add prompt, aka create a temporary role", true),
     (".history", "Print the history", false),
