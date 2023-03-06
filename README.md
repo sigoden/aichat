@@ -22,14 +22,14 @@ Download from [Github Releases](https://github.com/sigoden/aichat/releases), unz
 
 ## Features
 
-- [x] Powerful REPL
-- [x] Predefine AI roles
-- [x] Add GPT prompt
-- [x] Markdown highlight
-- [x] Stream output
-- [x] Multiline input
-- [x] Proxy support
-- [x] Save chat messages
+- Predefine AI [roles](#roles)
+- Use GPT prompt easily
+- Powerful [Chat REPL](#chat-repl)
+- Markdown highlight
+- Stream output
+- Multiline input
+- Proxy support
+- Save chat messages
 
 ## Config
 
@@ -53,23 +53,7 @@ highlight: true                   # optional, Set false to turn highlight
 proxy: "socks5://127.0.0.1:1080"  # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
 ```
 
-> You can customize the configuration directory through `$AICHAT_CONFIG_DIR`
-
-Use the `.info` command to get current configuration information.
-
-```
-〉.info
-config_file         /home/alice/.config/aichat/config.yaml
-roles_file          /home/alice/.config/aichat/roles.yaml
-messages_file       /home/alice/.config/aichat/messages.md
-role                -
-api_key             sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-temperature         -
-save                true
-highlight           true
-proxy               -
-dry_run             false
-```
+> You can specify the configuration directory through `$AICHAT_CONFIG_DIR`
 
 ### Roles
 
@@ -122,7 +106,7 @@ aichat calculate 25.6 + 32.5
 ```
 
 ```sh
-aichat -r bash flip the image horizontally
+aichat -r shell flip the image horizontally
 ```
 
 Enter Chat REPL if no text input.
@@ -173,6 +157,23 @@ Type ".help" for more information.
 
 Press Ctrl+C to abort session, Ctrl+D to exit the REPL
 ```
+
+- View current configuration information.
+
+```
+〉.info
+config_file         /home/alice/.config/aichat/config.yaml
+roles_file          /home/alice/.config/aichat/roles.yaml
+messages_file       /home/alice/.config/aichat/messages.md
+role                -
+api_key             sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+temperature         -
+save                true
+highlight           true
+proxy               -
+dry_run             false
+```
+
 
 - Modify the configuration temporarily
 
