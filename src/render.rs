@@ -1,25 +1,18 @@
 use crate::{repl::ReplyStreamEvent, utils::dump};
 use anyhow::Result;
 use crossbeam::channel::Receiver;
-use mdcat::{
-    push_tty,
-    terminal::{TerminalProgram, TerminalSize},
-    Environment, ResourceAccess, Settings,
-};
-use pulldown_cmark::Parser;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
+use syntect::highlighting::{Theme, ThemeSet};
 use syntect::parsing::SyntaxSet;
+use syntect::util::as_24_bit_terminal_escaped;
+use syntect::{easy::HighlightLines, parsing::SyntaxReference};
 
-pub fn render_stream(
-    rx: Receiver<ReplyStreamEvent>,
-    ctrlc: Arc<AtomicBool>,
-    markdown_render: Arc<MarkdownRender>,
-) -> Result<()> {
+pub fn render_stream(rx: Receiver<ReplyStreamEvent>, ctrlc: Arc<AtomicBool>) -> Result<()> {
     let mut buffer = String::new();
-    let mut line_index = 0;
+    let mut markdown_render = MarkdownRender::new();
     loop {
         if ctrlc.load(Ordering::SeqCst) {
             return Ok(());
@@ -27,27 +20,19 @@ pub fn render_stream(
         if let Ok(evt) = rx.try_recv() {
             match evt {
                 ReplyStreamEvent::Text(text) => {
-                    buffer.push_str(&text);
                     if text.contains('\n') {
-                        let markdown = markdown_render.render(&buffer)?;
-                        let lines: Vec<&str> = markdown.lines().collect();
-                        let (_, print_lines) = lines.split_at(line_index);
-                        let mut print_lines = print_lines.to_vec();
-                        print_lines.pop();
-                        if !print_lines.is_empty() {
-                            line_index += print_lines.len();
-                            dump(print_lines.join("\n").to_string(), 1);
-                        }
+                        let text = format!("{buffer}{text}");
+                        let mut lines: Vec<&str> = text.split('\n').collect();
+                        buffer = lines.pop().unwrap_or_default().to_string();
+                        let output = lines.join("\n");
+                        dump(markdown_render.render(&output), 1);
+                    } else {
+                        buffer = format!("{buffer}{text}");
                     }
                 }
                 ReplyStreamEvent::Done => {
-                    let markdown = markdown_render.render(&buffer)?;
-                    let tail = markdown
-                        .lines()
-                        .skip(line_index)
-                        .collect::<Vec<&str>>()
-                        .join("\n");
-                    dump(tail, 2);
+                    let output = markdown_render.render(&buffer);
+                    dump(output, 2);
                     break;
                 }
             }
@@ -58,34 +43,103 @@ pub fn render_stream(
 }
 
 pub struct MarkdownRender {
-    env: Environment,
-    settings: Settings,
+    syntax_set: SyntaxSet,
+    theme: Theme,
+    md_syntax: SyntaxReference,
+    code_syntax: Option<SyntaxReference>,
+    code_block: bool,
 }
 
 impl MarkdownRender {
-    pub fn init() -> Result<Self> {
-        let terminal = TerminalProgram::detect();
-        let env =
-            Environment::for_local_directory(&std::env::current_dir().expect("Working directory"))?;
-        let settings = Settings {
-            resource_access: ResourceAccess::LocalOnly,
-            syntax_set: SyntaxSet::load_defaults_newlines(),
-            terminal_capabilities: terminal.capabilities(),
-            terminal_size: TerminalSize::default(),
-        };
-        Ok(Self { env, settings })
+    pub fn new() -> Self {
+        let syntax_set = SyntaxSet::load_defaults_newlines();
+        let theme = ThemeSet::load_defaults().themes["Solarized (dark)"].clone();
+        let md_syntax = syntax_set.find_syntax_by_extension("md").unwrap().clone();
+        Self {
+            syntax_set,
+            theme,
+            md_syntax,
+            code_syntax: None,
+            code_block: false,
+        }
     }
 
-    pub fn print(&self, input: &str) -> Result<()> {
-        let markdown = self.render(input)?;
-        dump(markdown, 0);
-        Ok(())
+    pub fn render(&mut self, src: &str) -> String {
+        src.split('\n')
+            .map(|line| self.render_line(line).unwrap_or_else(|| line.to_string()))
+            .collect::<Vec<String>>()
+            .join("\n")
     }
 
-    pub fn render(&self, input: &str) -> Result<String> {
-        let source = Parser::new(input);
-        let mut sink = Vec::new();
-        push_tty(&self.settings, &self.env, &mut sink, source)?;
-        Ok(String::from_utf8_lossy(&sink).into())
+    pub fn render_line(&mut self, line: &str) -> Option<String> {
+        if let Some(lang) = detect_code_block(line) {
+            if self.code_block {
+                self.code_block = false;
+                self.code_syntax = None;
+            } else {
+                self.code_block = true;
+                if !lang.is_empty() {
+                    self.code_syntax = self.find_syntax(&lang).cloned();
+                }
+            }
+            self.render_line_inner(line, &self.md_syntax)
+        } else if self.code_block {
+            self.code_syntax
+                .as_ref()
+                .and_then(|syntax| self.render_line_inner(line, syntax))
+        } else {
+            self.render_line_inner(line, &self.md_syntax)
+        }
     }
+
+    fn render_line_inner(&self, line: &str, syntax: &SyntaxReference) -> Option<String> {
+        let mut highlighter = HighlightLines::new(syntax, &self.theme);
+        let ranges = highlighter.highlight_line(line, &self.syntax_set).ok()?;
+        Some(as_24_bit_terminal_escaped(&ranges[..], false))
+    }
+
+    fn find_syntax(&self, lang: &str) -> Option<&SyntaxReference> {
+        self.syntax_set.find_syntax_by_extension(lang).or_else(|| {
+            LANGEGUATE_NAME_EXTS
+                .iter()
+                .find(|(name, _)| *name == lang.to_lowercase())
+                .and_then(|(_, ext)| self.syntax_set.find_syntax_by_extension(ext))
+        })
+    }
+}
+
+const LANGEGUATE_NAME_EXTS: [(&str, &str); 21] = [
+    ("asp", "asa"),
+    ("actionscript", "as"),
+    ("c#", "cs"),
+    ("clojure", "clj"),
+    ("erlang", "erl"),
+    ("haskell", "hs"),
+    ("javascript", "js"),
+    ("bibtex", "bib"),
+    ("latex", "tex"),
+    ("tex", "sty"),
+    ("ocaml", "ml"),
+    ("ocamllex", "mll"),
+    ("ocamlyacc", "mly"),
+    ("objective-c++", "mm"),
+    ("objective-c", "m"),
+    ("pascal", "pas"),
+    ("perl", "pl"),
+    ("python", "py"),
+    ("restructuredtext", "rst"),
+    ("ruby", "rb"),
+    ("rust", "rs"),
+];
+
+fn detect_code_block(line: &str) -> Option<String> {
+    if !line.starts_with("```") {
+        return None;
+    }
+    let lang = line
+        .chars()
+        .skip(3)
+        .take_while(|v| v.is_alphanumeric())
+        .collect();
+    Some(lang)
 }
