@@ -6,9 +6,12 @@ pub struct Cli {
     /// List all roles
     #[clap(short = 'L', long)]
     pub list_roles: bool,
-    /// Specify the role that the AI will play
+    /// Select a role
     #[clap(short, long)]
     pub role: Option<String>,
+    /// Turn off highlight
+    #[clap(short = 'H', long)]
+    pub no_highlight: bool,
     /// Input text, if no input text, enter interactive mode
     text: Vec<String>,
 }
