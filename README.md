@@ -3,7 +3,7 @@
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 
-A powerful chatgpt cli.
+A powerful ChatGPT command line tool that allows easy chat with ChatGPT-3.5 in a terminal.
 
 ![demo](https://user-images.githubusercontent.com/4012553/223005945-3450cbde-b383-434b-9049-d61877f76a4f.gif)
 
