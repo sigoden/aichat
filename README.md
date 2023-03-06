@@ -53,6 +53,8 @@ highlight: true                   # optional, Set false to turn highlight
 proxy: "socks5://127.0.0.1:1080"  # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
 ```
 
+> You can customize the configuration directory through `$AICHAT_CONFIG_DIR`
+
 Use the `.info` command to get current configuration information.
 
 ```
