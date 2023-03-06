@@ -45,9 +45,13 @@ fn main() -> Result<()> {
     config.borrow_mut().role = role;
     let client = ChatGptClient::init(config.clone())?;
     if atty::isnt(atty::Stream::Stdin) {
-        let mut text = String::new();
-        stdin().read_to_string(&mut text)?;
-        start_directive(client, config, &text)
+        let mut input = String::new();
+        config.borrow_mut().highlight = false;
+        stdin().read_to_string(&mut input)?;
+        if let Some(text) = text {
+            input = format!("{text}\n{input}");
+        }
+        start_directive(client, config, &input)
     } else {
         match text {
             Some(text) => start_directive(client, config, &text),
