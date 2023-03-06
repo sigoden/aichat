@@ -267,7 +267,7 @@ impl Config {
         match key {
             "api_key" => {
                 if unset {
-                    return Ok("Not allowd".into());
+                    return Ok("Not allowed".into());
                 } else {
                     self.api_key = value.to_string();
                 }

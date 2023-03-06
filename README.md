@@ -3,9 +3,10 @@
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 
-Chat with ChatGPT-3.5 in the terminal.
+A powerful chatgpt cli.
 
-![demo](https://user-images.githubusercontent.com/4012553/222935716-33dc37df-f58d-4a66-8917-f741fd69682d.gif)
+![demo](https://user-images.githubusercontent.com/4012553/223005945-3450cbde-b383-434b-9049-d61877f76a4f.gif)
+
 
 ## Install
 
@@ -21,12 +22,14 @@ Download from [Github Releases](https://github.com/sigoden/aichat/releases), unz
 
 ## Features
 
-- Compared to the browser, the terminal starts faster and needs less resources.
-- Highlight chat message and stream.
-- Define roles and let AI play them.
-- Save chat messages.
-- Support proxy.
-- Written in rust, single executable file, cross-platform.
+- [x] Powerful REPL
+- [x] Predefine AI roles
+- [x] Add GPT prompt
+- [x] Markdown highlight
+- [x] Stream output
+- [x] Multiline input
+- [x] Proxy support
+- [x] Save chat messages
 
 ## Config
 
@@ -43,82 +46,183 @@ On first launch, aichat will guide you through configuration.
 After setting, it will automatically create the configuration file. Of course, you can also manually set the configuration file. 
 
 ```yaml
-api_key: "<YOUR SECRET API KEY>"        # Request via https://platform.openai.com/account/api-keys
-temperature: 1.0                        # optional, see https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
-save: true                              # optional, If set to true, aichat will save chat messages to message.md
-no_highlight: false                     # optional, Whether to disable highlight
-proxy: "socks5://127.0.0.1:1080"        # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
+api_key: "<YOUR SECRET API KEY>"  # Request via https://platform.openai.com/account/api-keys
+temperature: 1.0                  # optional, see https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
+save: true                        # optional, If set to true, aichat will save chat messages to message.md
+highlight: true                   # optional, Set false to turn highlight
+proxy: "socks5://127.0.0.1:1080"  # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
 ```
 
-Use `.info` command to view the configuration file path.
+Use the `.info` command to get current configuration information.
+
 ```
 〉.info
-config file         /home/alice/.config/aichat/config.yaml
-roles file          /home/alice/.config/aichat/roles.yaml
-messages file       /home/alice/.config/aichat/messages.md
-current role        
-proxy               
-save messages       true
+config_file         /home/alice/.config/aichat/config.yaml
+roles_file          /home/alice/.config/aichat/roles.yaml
+messages_file       /home/alice/.config/aichat/messages.md
+role                -
+api_key             sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+temperature         -
+save                true
 highlight           true
+proxy               -
+dry_run             false
 ```
 
 ### Roles
 
-We can let ChatGPT play a certain role through `prompt` to make it better generate what we want. See [awesome-chatgpt-prompts](https://github.com/f/awesome-chatgpt-prompts) for details.
+We can let ChatGPT play a certain role through `prompt` to make it better generate what we want.
 
-We can predefine a batch of roles in `roles.yaml`. For example, we define a emoji translator as follows.
+We can predefine a batch of roles in `roles.yaml`.
+
+For example, we define a role.
 
 ```yaml
-- name: emoji
+- name: shell
   prompt: >
-    I want you to translate the sentences I wrote into emojis. I will write the sentence, and you will express it with emojis.
-    I just want you to express it with emojis. I don't want you to reply with anything but emoji.
-    When I need to tell you something in English, I will do it by wrapping it in curly brackets like {like this}.
+    I want you to act as a linux shell expert.
+    I want you to answer only with bash code.
+    Do not write explanations.
 ```
 
-Let ChatGPT answer questions in the role of a emoji translator
+Let ChatGPT answer questions in the role of a linux shell expert.
 
 ```
-〉.role emoji
+〉.role shell
 
-〉I am very angry
-😠💢👿
+〉resize app.png to 256x256
+convert app.png -resize 256x256 app.png
+
+〉 extract password protected app.zip to /tmp/app
+unzip -P password app.zip -d /tmp/app
 ```
 
 ## CLI
 
 ```
-Chat with OpenAI GPT-3.5 in the terminal.
+A powerful chatgpt cli.
 
 Usage: aichat [OPTIONS] [TEXT]...
 
 Arguments:
-  [TEXT]...  Input text, if no input text, enter interactive mode
+  [TEXT]...  Input text
 
 Options:
-  -L, --list-roles   List all roles
-  -r, --role <ROLE>  Specify the role that the AI will play
-  -h, --help         Print help
-  -V, --version      Print version
+  -H, --no-highlight  Turn off highlight
+  -L, --list-roles    List all roles
+  -r, --role <ROLE>   Select a role
+  -h, --help          Print help
+  -V, --version       Print version
 ```
 
-Interactive chat if no text input:
+```sh
+aichat calculate 25.6 + 32.5
+```
+
+```sh
+aichat -r bash flip the image horizontally
+```
+
+Enter Chat REPL if no text input.
 ```
 $ aichat
-Welcome to aichat x.x.x
+Welcome to aichat 0.4.0
 Type ".help" for more information.
 〉
 ```
 
-Imperative request data:
-```
-aichat --role emoji I am very angry
+aichat can accept pipe.
+```sh
+# convert toml to json
+cat Cargo.toml | aichat -H turn toml below to json
 ```
 
-Accept pipe:
+## Chat REPL
+
+aichat has a powerful Chat REPL.
+
+Tle Chat REPL supports:
+- emacs keybinding
+- command autocompletion
+- history search
+- fish-style history autosuggestion hints
+- mulitline input
+- undo support
+- clipboard integration
+
+Chat REPL also provide many commands.
+
 ```
-cat text | aichat
+Welcome to aichat 0.4.0
+Type ".help" for more information.
+〉.help
+.info           Print the information
+.set            Modify the configuration temporarily
+.role           Select a role
+.clear role     Clear the currently selected role
+.prompt         Add prompt, aka create a temporary role
+.history        Print the history
+.clear history  Clear the history
+.clear screen   Clear the screen
+.multiline      Enter multiline editor mode
+.copy           Copy last reply message
+.help           Print this help message
+.exit           Exit the REPL
+
+Press Ctrl+C to abort session, Ctrl+D to exit the REPL
 ```
+
+- Modify the configuration temporarily
+
+```
+〉.set highlight false
+〉.set save false
+〉.set temperature 1.2
+```
+
+- Input multiline text
+
+```
+〉.multiline {convert json below to toml
+::: {
+:::   "an": [
+:::     "arbitrarily",
+:::     "nested"
+:::   ],
+:::   "data": "structure"
+::: }
+::: }
+```
+
+- Use GPT Prompt
+
+When you set up a prompt, every message sent later will carry the prompt.
+
+```
+〉.prompt {
+:::     I want you to translate the sentences I wrote into emojis.
+:::     I will write the sentence, and you will express it with emojis.
+:::     I don't want you to reply with anything but emoji.
+::: }
+Done
+
+〉You are a genius
+👉🧠💡👨‍🎓
+
+〉I'm embarrassed
+🙈😳
+```
+
+`.prompt` actually creates a temporary role called `%TEMP%` internally, so you run `.clear role` to clear the prompt.
+
+When you are satisfied with the prompt, add it to `roles.yaml` for later use.
+
+- Copy last reply message
+
+The message may be highlighted, and when copied, you will find that they are different from the original Markdown text.
+
+At this point you need to use `.copy` to copy the original text to the clipboard.
+
 
 ## License
 

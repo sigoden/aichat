@@ -12,7 +12,7 @@ pub struct Cli {
     /// Select a role
     #[clap(short, long)]
     pub role: Option<String>,
-	/// Input text
+    /// Input text
     text: Vec<String>,
 }
 
