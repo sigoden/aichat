@@ -3,16 +3,16 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
+    /// Turn off highlight
+    #[clap(short = 'H', long)]
+    pub no_highlight: bool,
     /// List all roles
     #[clap(short = 'L', long)]
     pub list_roles: bool,
     /// Select a role
     #[clap(short, long)]
     pub role: Option<String>,
-    /// Turn off highlight
-    #[clap(short = 'H', long)]
-    pub no_highlight: bool,
-    /// Input text, if no input text, enter interactive mode
+	/// Input text
     text: Vec<String>,
 }
 
