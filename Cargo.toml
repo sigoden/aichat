@@ -34,7 +34,7 @@ atty = "0.2.14"
 [dependencies.syntect]
 version = "5.0.0"
 default-features = false
-features = ["parsing", "regex-fancy", "default-themes", "default-syntaxes"]
+features = ["parsing", "regex-fancy", "default-syntaxes"]
 
 [profile.release]
 lto = true

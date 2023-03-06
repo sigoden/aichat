@@ -1,46 +1,9 @@
-use crate::{repl::ReplyStreamEvent, utils::dump};
-use anyhow::Result;
-use crossbeam::channel::Receiver;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
-};
-use syntect::highlighting::{Theme, ThemeSet};
+use syntect::highlighting::Theme;
 use syntect::parsing::SyntaxSet;
 use syntect::util::as_24_bit_terminal_escaped;
 use syntect::{easy::HighlightLines, parsing::SyntaxReference};
 
-pub fn render_stream(rx: Receiver<ReplyStreamEvent>, ctrlc: Arc<AtomicBool>) -> Result<()> {
-    let mut buffer = String::new();
-    let mut markdown_render = MarkdownRender::new();
-    loop {
-        if ctrlc.load(Ordering::SeqCst) {
-            return Ok(());
-        }
-        if let Ok(evt) = rx.try_recv() {
-            match evt {
-                ReplyStreamEvent::Text(text) => {
-                    if text.contains('\n') {
-                        let text = format!("{buffer}{text}");
-                        let mut lines: Vec<&str> = text.split('\n').collect();
-                        buffer = lines.pop().unwrap_or_default().to_string();
-                        let output = lines.join("\n");
-                        dump(markdown_render.render(&output), 1);
-                    } else {
-                        buffer = format!("{buffer}{text}");
-                    }
-                }
-                ReplyStreamEvent::Done => {
-                    let output = markdown_render.render(&buffer);
-                    dump(output, 2);
-                    break;
-                }
-            }
-        }
-    }
-
-    Ok(())
-}
+const THEME: &[u8] = include_bytes!("theme.yaml");
 
 pub struct MarkdownRender {
     syntax_set: SyntaxSet,
@@ -53,7 +16,7 @@ pub struct MarkdownRender {
 impl MarkdownRender {
     pub fn new() -> Self {
         let syntax_set = SyntaxSet::load_defaults_newlines();
-        let theme = ThemeSet::load_defaults().themes["Solarized (dark)"].clone();
+        let theme: Theme = serde_yaml::from_slice(THEME).unwrap();
         let md_syntax = syntax_set.find_syntax_by_extension("md").unwrap().clone();
         Self {
             syntax_set,
