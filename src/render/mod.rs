@@ -67,7 +67,7 @@ pub fn render_stream_inner(
                         )?;
                     } else {
                         buffer = format!("{buffer}{text}");
-						let output = markdown_render.render_line_stateless(&buffer);
+                        let output = markdown_render.render_line_stateless(&buffer);
                         queue!(writer, style::Print(&output))?;
                     }
                     writer.flush()?;
