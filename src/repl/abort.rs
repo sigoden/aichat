@@ -1,0 +1,51 @@
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
+
+pub type SharedAbortSignal = Arc<AbortSignal>;
+
+pub struct AbortSignal {
+    ctrlc: AtomicBool,
+    ctrld: AtomicBool,
+}
+
+impl AbortSignal {
+    pub fn new() -> SharedAbortSignal {
+        Arc::new(Self {
+            ctrlc: AtomicBool::new(false),
+            ctrld: AtomicBool::new(false),
+        })
+    }
+
+    pub fn aborted(&self) -> bool {
+        if self.aborted_ctrlc() {
+            return true;
+        }
+        if self.aborted_ctrld() {
+            return true;
+        }
+        false
+    }
+
+    pub fn aborted_ctrlc(&self) -> bool {
+        self.ctrlc.load(Ordering::SeqCst)
+    }
+
+    pub fn aborted_ctrld(&self) -> bool {
+        self.ctrld.load(Ordering::SeqCst)
+    }
+
+    pub fn reset(&self) {
+        self.ctrlc.store(false, Ordering::SeqCst);
+        self.ctrld.store(false, Ordering::SeqCst);
+    }
+
+    pub fn set_ctrlc(&self) {
+        self.ctrlc.store(true, Ordering::SeqCst);
+    }
+
+    pub fn set_ctrld(&self) {
+        self.ctrld.store(true, Ordering::SeqCst);
+    }
+}

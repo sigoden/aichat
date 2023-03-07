@@ -1,13 +1,12 @@
 use crate::config::SharedConfig;
-use crate::repl::ReplyStreamHandler;
+use crate::repl::{ReplyStreamHandler, SharedAbortSignal};
 
 use anyhow::{anyhow, Context, Result};
 use eventsource_stream::Eventsource;
 use futures_util::StreamExt;
 use reqwest::{Client, Proxy, RequestBuilder};
 use serde_json::{json, Value};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 use tokio::runtime::Runtime;
 use tokio::time::sleep;
 
@@ -43,27 +42,27 @@ impl ChatGptClient {
         prompt: Option<String>,
         handler: &mut ReplyStreamHandler,
     ) -> Result<()> {
-        async fn watch_ctrlc(ctrlc: Arc<AtomicBool>) {
+        async fn watch_abort(abort: SharedAbortSignal) {
             loop {
-                if ctrlc.load(Ordering::SeqCst) {
+                if abort.aborted() {
                     break;
                 }
                 sleep(Duration::from_millis(100)).await;
             }
         }
-        let ctrlc = handler.get_ctrlc();
+        let abort = handler.get_abort();
         self.runtime.block_on(async {
             tokio::select! {
                 ret = self.send_message_streaming_inner(input, prompt, handler) => {
                     handler.done();
                     ret.with_context(|| "Failed to send message streaming")
                 }
-                _ = watch_ctrlc(ctrlc.clone()) => {
+                _ = watch_abort(abort.clone()) => {
                     handler.done();
                     Ok(())
                  },
                 _ =  tokio::signal::ctrl_c() => {
-                    ctrlc.store(true, Ordering::SeqCst);
+                    abort.set_ctrlc();
                     Ok(())
                 }
             }
