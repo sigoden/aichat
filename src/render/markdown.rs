@@ -3,7 +3,10 @@ use syntect::parsing::SyntaxSet;
 use syntect::util::as_24_bit_terminal_escaped;
 use syntect::{easy::HighlightLines, parsing::SyntaxReference};
 
-const THEME: &[u8] = include_bytes!("theme.yaml");
+/// Comms from https://github.com/jonschlinkert/sublime-monokai-extended/tree/0ca4e75291515c4d47e2d455e598e03e0dc53745
+const THEME: &[u8] = include_bytes!("../../assets/theme.yaml");
+/// Comes from https://github.com/sharkdp/bat/raw/5e77ca37e89c873e4490b42ff556370dc5c6ba4f/assets/syntaxes.bin
+const SYNTAXES: &[u8] = include_bytes!("../../assets/syntaxes.bin");
 
 pub struct MarkdownRender {
     syntax_set: SyntaxSet,
@@ -16,7 +19,8 @@ pub struct MarkdownRender {
 
 impl MarkdownRender {
     pub fn new() -> Self {
-        let syntax_set = SyntaxSet::load_defaults_newlines();
+        let syntax_set: SyntaxSet =
+            bincode::deserialize_from(SYNTAXES).expect("invalid syntaxes.bin");
         let theme: Theme = serde_yaml::from_slice(THEME).unwrap();
         let md_syntax = syntax_set.find_syntax_by_extension("md").unwrap().clone();
         let txt_syntax = syntax_set.find_syntax_by_extension("txt").unwrap().clone();
@@ -96,12 +100,9 @@ impl MarkdownRender {
     }
 
     fn find_syntax(&self, lang: &str) -> Option<&SyntaxReference> {
-        self.syntax_set.find_syntax_by_extension(lang).or_else(|| {
-            LANGEGUATE_NAME_EXTS
-                .iter()
-                .find(|(name, _)| *name == lang.to_lowercase())
-                .and_then(|(_, ext)| self.syntax_set.find_syntax_by_extension(ext))
-        })
+        self.syntax_set
+            .find_syntax_by_token(lang)
+            .or_else(|| self.syntax_set.find_syntax_by_extension(lang))
     }
 }
 
@@ -113,30 +114,6 @@ enum LineType {
     CodeEnd,
 }
 
-const LANGEGUATE_NAME_EXTS: [(&str, &str); 21] = [
-    ("asp", "asa"),
-    ("actionscript", "as"),
-    ("c#", "cs"),
-    ("clojure", "clj"),
-    ("erlang", "erl"),
-    ("haskell", "hs"),
-    ("javascript", "js"),
-    ("bibtex", "bib"),
-    ("latex", "tex"),
-    ("tex", "sty"),
-    ("ocaml", "ml"),
-    ("ocamllex", "mll"),
-    ("ocamlyacc", "mly"),
-    ("objective-c++", "mm"),
-    ("objective-c", "m"),
-    ("pascal", "pas"),
-    ("perl", "pl"),
-    ("python", "py"),
-    ("restructuredtext", "rst"),
-    ("ruby", "rb"),
-    ("rust", "rs"),
-];
-
 fn detect_code_block(line: &str) -> Option<String> {
     if !line.starts_with("```") {
         return None;
@@ -147,4 +124,10 @@ fn detect_code_block(line: &str) -> Option<String> {
         .take_while(|v| v.is_alphanumeric())
         .collect();
     Some(lang)
+}
+
+#[test]
+fn feature() {
+    let syntax_set: SyntaxSet = bincode::deserialize_from(SYNTAXES).expect("invalid syntaxes.bin");
+    assert!(syntax_set.find_syntax_by_extension("md").is_some());
 }

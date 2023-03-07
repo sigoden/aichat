@@ -36,7 +36,7 @@ pub fn render_stream_inner(
     writer: &mut Stdout,
 ) -> Result<()> {
     let mut last_tick = Instant::now();
-    let tick_rate = Duration::from_millis(200);
+    let tick_rate = Duration::from_millis(100);
     let mut buffer = String::new();
     let mut markdown_render = MarkdownRender::new();
     let terminal_columns = terminal::size()?.0;
@@ -55,12 +55,15 @@ pub fn render_stream_inner(
                         let mut lines: Vec<&str> = text.split('\n').collect();
                         buffer = lines.pop().unwrap_or_default().to_string();
                         let output = markdown_render.render(&lines.join("\n"));
-                        queue!(
-                            writer,
-                            style::Print(output),
-                            style::Print("\n"),
-                            style::Print(&buffer),
-                        )?;
+                        for line in output.split('\n') {
+                            queue!(
+                                writer,
+                                style::Print(line),
+                                style::Print("\n"),
+                                cursor::MoveLeft(terminal_columns),
+                            )?;
+                        }
+                        queue!(writer, style::Print(&buffer),)?;
                     } else {
                         buffer = format!("{buffer}{text}");
                         let output = markdown_render.render_line_stateless(&buffer);
@@ -107,7 +110,9 @@ pub fn render_stream_inner(
 fn recover_cursor(writer: &mut Stdout, terminal_columns: u16, buffer: &str) -> Result<()> {
     let buffer_rows = (buffer.width() as u16 + terminal_columns - 1) / terminal_columns;
     let (_, row) = cursor::position()?;
-    if row + 1 >= buffer_rows {
+    if buffer_rows == 0 {
+        queue!(writer, cursor::MoveTo(0, row))?;
+    } else if row + 1 >= buffer_rows {
         queue!(writer, cursor::MoveTo(0, row + 1 - buffer_rows))?;
     } else {
         queue!(
