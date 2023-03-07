@@ -14,12 +14,13 @@ use std::{io::stdout, process::exit};
 use cli::Cli;
 use client::ChatGptClient;
 use config::{Config, SharedConfig};
+use crossbeam::sync::WaitGroup;
 use is_terminal::IsTerminal;
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
-use render::MarkdownRender;
-use repl::Repl;
+use render::{render_stream, MarkdownRender};
+use repl::{AbortSignal, Repl};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -46,6 +47,7 @@ fn main() -> Result<()> {
     if cli.no_highlight {
         config.borrow_mut().highlight = false;
     }
+    let no_stream = cli.no_stream;
     let client = ChatGptClient::init(config.clone())?;
     if atty::isnt(atty::Stream::Stdin) {
         let mut input = String::new();
@@ -53,28 +55,46 @@ fn main() -> Result<()> {
         if let Some(text) = text {
             input = format!("{text}\n{input}");
         }
-        start_directive(client, config, &input)
+        start_directive(client, config, &input, no_stream)
     } else {
         match text {
-            Some(text) => start_directive(client, config, &text),
+            Some(text) => start_directive(client, config, &text, no_stream),
             None => start_interactive(client, config),
         }
     }
 }
 
-fn start_directive(client: ChatGptClient, config: SharedConfig, input: &str) -> Result<()> {
+fn start_directive(
+    client: ChatGptClient,
+    config: SharedConfig,
+    input: &str,
+    no_stream: bool,
+) -> Result<()> {
     let mut file = config.borrow().open_message_file()?;
     let prompt = config.borrow().get_prompt();
-    let output = client.send_message(input, prompt)?;
-    let output = output.trim();
-    if config.borrow().highlight && stdout().is_terminal() {
-        let mut markdown_render = MarkdownRender::new();
-        println!("{}", markdown_render.render(output))
+    let highlight = config.borrow().highlight && stdout().is_terminal();
+    let output = if no_stream {
+        let output = client.send_message(input, prompt)?;
+        if highlight {
+            let mut markdown_render = MarkdownRender::new();
+            println!("{}", markdown_render.render(&output));
+        } else {
+            println!("{output}");
+        }
+        output
     } else {
-        println!("{output}");
-    }
-
-    config.borrow().save_message(file.as_mut(), input, output)
+        let wg = WaitGroup::new();
+        let abort = AbortSignal::new();
+        let abort_clone = abort.clone();
+        ctrlc::set_handler(move || {
+            abort_clone.set_ctrlc();
+        })
+        .expect("Error setting Ctrl-C handler");
+        let output = render_stream(input, None, &client, highlight, false, abort, wg.clone())?;
+        wg.wait();
+        output
+    };
+    config.borrow().save_message(file.as_mut(), input, &output)
 }
 
 fn start_interactive(client: ChatGptClient, config: SharedConfig) -> Result<()> {

@@ -4,11 +4,10 @@ use crate::render::render_stream;
 use crate::utils::dump;
 
 use anyhow::Result;
-use crossbeam::channel::{unbounded, Sender};
+use crossbeam::channel::Sender;
 use crossbeam::sync::WaitGroup;
 use std::cell::RefCell;
 use std::fs::File;
-use std::thread::spawn;
 
 use super::abort::SharedAbortSignal;
 
@@ -59,23 +58,26 @@ impl ReplCmdHandler {
                     self.state.borrow_mut().reply.clear();
                     return Ok(());
                 }
-                let wg = WaitGroup::new();
                 let highlight = self.config.borrow().highlight;
-                let stream_handler = if highlight {
-                    let (tx, rx) = unbounded();
-                    let abort = self.abort.clone();
-                    let wg = wg.clone();
-                    spawn(move || {
-                        let _ = render_stream(rx, abort);
-                        drop(wg);
-                    });
-                    ReplyStreamHandler::new(Some(tx), self.abort.clone())
-                } else {
-                    ReplyStreamHandler::new(None, self.abort.clone())
-                };
-                let ret = self.handle_send_stream(&input, stream_handler);
+                let prompt = self.config.borrow().get_prompt();
+                let wg = WaitGroup::new();
+                let ret = render_stream(
+                    &input,
+                    prompt,
+                    &self.client,
+                    highlight,
+                    true,
+                    self.abort.clone(),
+                    wg.clone(),
+                );
                 wg.wait();
-                self.state.borrow_mut().reply = ret?;
+                let buffer = ret?;
+                self.config.borrow().save_message(
+                    self.state.borrow_mut().save_file.as_mut(),
+                    &input,
+                    &buffer,
+                )?;
+                self.state.borrow_mut().reply = buffer;
             }
             ReplCmd::SetRole(name) => {
                 let output = self.config.borrow_mut().change_role(&name);
@@ -99,23 +101,6 @@ impl ReplCmdHandler {
             }
         }
         Ok(())
-    }
-
-    fn handle_send_stream(
-        &self,
-        input: &str,
-        mut stream_handler: ReplyStreamHandler,
-    ) -> Result<String> {
-        let prompt = self.config.borrow().get_prompt();
-        self.client
-            .send_message_streaming(input, prompt, &mut stream_handler)?;
-        let buffer = stream_handler.get_buffer();
-        self.config.borrow().save_message(
-            self.state.borrow_mut().save_file.as_mut(),
-            input,
-            buffer,
-        )?;
-        Ok(buffer.to_string())
     }
 }
 
