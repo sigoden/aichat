@@ -10,7 +10,7 @@ pub struct Cli {
     #[clap(short = 'S', long)]
     pub no_stream: bool,
     /// List all roles
-    #[clap(short = 'L', long)]
+    #[clap(long)]
     pub list_roles: bool,
     /// Select a role
     #[clap(short, long)]
