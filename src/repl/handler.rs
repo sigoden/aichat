@@ -8,9 +8,9 @@ use crossbeam::channel::{unbounded, Sender};
 use crossbeam::sync::WaitGroup;
 use std::cell::RefCell;
 use std::fs::File;
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
 use std::thread::spawn;
+
+use super::abort::SharedAbortSignal;
 
 pub enum ReplCmd {
     Submit(String),
@@ -25,7 +25,7 @@ pub struct ReplCmdHandler {
     client: ChatGptClient,
     config: SharedConfig,
     state: RefCell<ReplCmdHandlerState>,
-    ctrlc: Arc<AtomicBool>,
+    abort: SharedAbortSignal,
 }
 
 pub struct ReplCmdHandlerState {
@@ -34,9 +34,12 @@ pub struct ReplCmdHandlerState {
 }
 
 impl ReplCmdHandler {
-    pub fn init(client: ChatGptClient, config: SharedConfig) -> Result<Self> {
+    pub fn init(
+        client: ChatGptClient,
+        config: SharedConfig,
+        abort: SharedAbortSignal,
+    ) -> Result<Self> {
         let save_file = config.as_ref().borrow().open_message_file()?;
-        let ctrlc = Arc::new(AtomicBool::new(false));
         let state = RefCell::new(ReplCmdHandlerState {
             save_file,
             reply: String::new(),
@@ -45,7 +48,7 @@ impl ReplCmdHandler {
             client,
             config,
             state,
-            ctrlc,
+            abort,
         })
     }
 
@@ -61,15 +64,15 @@ impl ReplCmdHandler {
                 let highlight = self.config.borrow().highlight;
                 let mut stream_handler = if highlight {
                     let (tx, rx) = unbounded();
-                    let ctrlc = self.ctrlc.clone();
+                    let abort = self.abort.clone();
                     let wg = wg.clone();
                     spawn(move || {
-                        let _ = render_stream(rx, ctrlc);
+                        let _ = render_stream(rx, abort);
                         drop(wg);
                     });
-                    ReplyStreamHandler::new(Some(tx), self.ctrlc.clone())
+                    ReplyStreamHandler::new(Some(tx), self.abort.clone())
                 } else {
-                    ReplyStreamHandler::new(None, self.ctrlc.clone())
+                    ReplyStreamHandler::new(None, self.abort.clone())
                 };
                 self.client
                     .send_message_streaming(&input, prompt, &mut stream_handler)?;
@@ -109,23 +112,19 @@ impl ReplCmdHandler {
     pub fn get_reply(&self) -> String {
         self.state.borrow().reply.to_string()
     }
-
-    pub fn get_ctrlc(&self) -> Arc<AtomicBool> {
-        self.ctrlc.clone()
-    }
 }
 
 pub struct ReplyStreamHandler {
     sender: Option<Sender<ReplyStreamEvent>>,
     buffer: String,
-    ctrlc: Arc<AtomicBool>,
+    abort: SharedAbortSignal,
 }
 
 impl ReplyStreamHandler {
-    pub fn new(sender: Option<Sender<ReplyStreamEvent>>, ctrlc: Arc<AtomicBool>) -> Self {
+    pub fn new(sender: Option<Sender<ReplyStreamEvent>>, abort: SharedAbortSignal) -> Self {
         Self {
             sender,
-            ctrlc,
+            abort,
             buffer: String::new(),
         }
     }
@@ -157,8 +156,8 @@ impl ReplyStreamHandler {
         &self.buffer
     }
 
-    pub fn get_ctrlc(&self) -> Arc<AtomicBool> {
-        self.ctrlc.clone()
+    pub fn get_abort(&self) -> SharedAbortSignal {
+        self.abort.clone()
     }
 }
 

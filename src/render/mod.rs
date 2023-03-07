@@ -1,7 +1,7 @@
 mod markdown;
 
 pub use self::markdown::MarkdownRender;
-use crate::repl::ReplyStreamEvent;
+use crate::repl::{ReplyStreamEvent, SharedAbortSignal};
 
 use anyhow::Result;
 use crossbeam::channel::Receiver;
@@ -13,20 +13,16 @@ use crossterm::{
 };
 use std::{
     io::{self, Stdout, Write},
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
     time::{Duration, Instant},
 };
 use unicode_width::UnicodeWidthStr;
 
-pub fn render_stream(rx: Receiver<ReplyStreamEvent>, ctrlc: Arc<AtomicBool>) -> Result<()> {
+pub fn render_stream(rx: Receiver<ReplyStreamEvent>, abort: SharedAbortSignal) -> Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     queue!(stdout, event::DisableMouseCapture)?;
 
-    let ret = render_stream_inner(rx, ctrlc, &mut stdout);
+    let ret = render_stream_inner(rx, abort, &mut stdout);
 
     queue!(stdout, event::DisableMouseCapture)?;
     disable_raw_mode()?;
@@ -36,7 +32,7 @@ pub fn render_stream(rx: Receiver<ReplyStreamEvent>, ctrlc: Arc<AtomicBool>) -> 
 
 pub fn render_stream_inner(
     rx: Receiver<ReplyStreamEvent>,
-    ctrlc: Arc<AtomicBool>,
+    abort: SharedAbortSignal,
     writer: &mut Stdout,
 ) -> Result<()> {
     let mut last_tick = Instant::now();
@@ -45,7 +41,7 @@ pub fn render_stream_inner(
     let mut markdown_render = MarkdownRender::new();
     let terminal_columns = terminal::size()?.0;
     loop {
-        if ctrlc.load(Ordering::SeqCst) {
+        if abort.aborted() {
             return Ok(());
         }
 
@@ -89,7 +85,11 @@ pub fn render_stream_inner(
             if let Event::Key(key) = event::read()? {
                 match key.code {
                     KeyCode::Char('c') if key.modifiers == KeyModifiers::CONTROL => {
-                        ctrlc.store(true, Ordering::SeqCst);
+                        abort.set_ctrlc();
+                        return Ok(());
+                    }
+                    KeyCode::Char('d') if key.modifiers == KeyModifiers::CONTROL => {
+                        abort.set_ctrld();
                         return Ok(());
                     }
                     _ => {}

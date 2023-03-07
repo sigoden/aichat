@@ -1,3 +1,4 @@
+mod abort;
 mod handler;
 mod init;
 
@@ -8,9 +9,9 @@ use crate::utils::{copy, dump};
 
 use anyhow::{Context, Result};
 use reedline::{DefaultPrompt, Reedline, Signal};
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
+pub use self::abort::*;
 pub use self::handler::*;
 
 pub const REPL_COMMANDS: [(&str, &str, bool); 12] = [
@@ -35,23 +36,27 @@ pub struct Repl {
 
 impl Repl {
     pub fn run(&mut self, client: ChatGptClient, config: SharedConfig) -> Result<()> {
-        let handler = ReplCmdHandler::init(client, config)?;
+        let abort = AbortSignal::new();
+        let handler = ReplCmdHandler::init(client, config, abort.clone())?;
         dump(
             format!("Welcome to aichat {}", env!("CARGO_PKG_VERSION")),
             1,
         );
         dump("Type \".help\" for more information.", 1);
-        let mut current_ctrlc = false;
+        let mut already_ctrlc = false;
         let handler = Arc::new(handler);
         loop {
-            let handler_ctrlc = handler.get_ctrlc();
-            if handler_ctrlc.load(Ordering::SeqCst) {
-                handler_ctrlc.store(false, Ordering::SeqCst);
-                current_ctrlc = true
+            if abort.aborted_ctrld() {
+                break;
             }
-            match self.editor.read_line(&self.prompt) {
+            if abort.aborted_ctrlc() && !already_ctrlc {
+                already_ctrlc = true;
+            }
+            let sig = self.editor.read_line(&self.prompt);
+            match sig {
                 Ok(Signal::Success(line)) => {
-                    current_ctrlc = false;
+                    already_ctrlc = false;
+                    abort.reset();
                     match self.handle_line(handler.clone(), line) {
                         Ok(quit) => {
                             if quit {
@@ -65,14 +70,16 @@ impl Repl {
                     }
                 }
                 Ok(Signal::CtrlC) => {
-                    if !current_ctrlc {
-                        current_ctrlc = true;
+                    abort.set_ctrlc();
+                    if !already_ctrlc {
+                        already_ctrlc = true;
                         dump("(To exit, press Ctrl+C again or Ctrl+D or type .exit)", 2);
                     } else {
                         break;
                     }
                 }
                 Ok(Signal::CtrlD) => {
+                    abort.set_ctrld();
                     break;
                 }
                 _ => {}
