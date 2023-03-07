@@ -1,6 +1,6 @@
 use crate::client::ChatGptClient;
 use crate::config::SharedConfig;
-use crate::render::{self, MarkdownRender};
+use crate::render::render_stream;
 use crate::utils::dump;
 
 use anyhow::Result;
@@ -26,7 +26,6 @@ pub struct ReplCmdHandler {
     config: SharedConfig,
     state: RefCell<ReplCmdHandlerState>,
     ctrlc: Arc<AtomicBool>,
-    render: Arc<MarkdownRender>,
 }
 
 pub struct ReplCmdHandlerState {
@@ -36,7 +35,6 @@ pub struct ReplCmdHandlerState {
 
 impl ReplCmdHandler {
     pub fn init(client: ChatGptClient, config: SharedConfig) -> Result<Self> {
-        let render = Arc::new(MarkdownRender::init()?);
         let save_file = config.as_ref().borrow().open_message_file()?;
         let ctrlc = Arc::new(AtomicBool::new(false));
         let state = RefCell::new(ReplCmdHandlerState {
@@ -48,7 +46,6 @@ impl ReplCmdHandler {
             config,
             state,
             ctrlc,
-            render,
         })
     }
 
@@ -66,9 +63,8 @@ impl ReplCmdHandler {
                     let (tx, rx) = unbounded();
                     let ctrlc = self.ctrlc.clone();
                     let wg = wg.clone();
-                    let render = self.render.clone();
                     spawn(move || {
-                        let _ = render::render_stream(rx, ctrlc, render);
+                        let _ = render_stream(rx, ctrlc);
                         drop(wg);
                     });
                     ReplyStreamHandler::new(Some(tx), self.ctrlc.clone())

@@ -1,0 +1,2846 @@
+---
+name: Monokai Extended
+author: github.com/jonschlinkert
+settings:
+  foreground:
+    r: 248
+    g: 248
+    b: 242
+    a: 255
+  background:
+    r: 34
+    g: 34
+    b: 34
+    a: 255
+  caret:
+    r: 248
+    g: 248
+    b: 240
+    a: 255
+  line_highlight:
+    r: 51
+    g: 51
+    b: 51
+    a: 255
+  misspelling: ~
+  minimap_border: ~
+  accent: ~
+  popup_css: ~
+  phantom_css: ~
+  bracket_contents_foreground:
+    r: 248
+    g: 248
+    b: 242
+    a: 165
+  bracket_contents_options: Underline
+  brackets_foreground:
+    r: 248
+    g: 248
+    b: 242
+    a: 165
+  brackets_background: ~
+  brackets_options: Underline
+  tags_foreground: ~
+  tags_options: StippledUnderline
+  highlight: ~
+  find_highlight:
+    r: 255
+    g: 231
+    b: 146
+    a: 255
+  find_highlight_foreground:
+    r: 0
+    g: 0
+    b: 0
+    a: 255
+  gutter: ~
+  gutter_foreground: ~
+  selection:
+    r: 68
+    g: 68
+    b: 68
+    a: 255
+  selection_foreground: ~
+  selection_border:
+    r: 28
+    g: 28
+    b: 28
+    a: 255
+  inactive_selection: ~
+  inactive_selection_foreground: ~
+  guide: ~
+  active_guide:
+    r: 157
+    g: 85
+    b: 15
+    a: 176
+  stack_guide: ~
+  shadow: ~
+scopes:
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - comment
+          excludes: []
+    style:
+      foreground:
+        r: 117
+        g: 113
+        b: 94
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - string
+          excludes: []
+    style:
+      foreground:
+        r: 230
+        g: 219
+        b: 116
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - constant.numeric
+          excludes: []
+    style:
+      foreground:
+        r: 190
+        g: 132
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - constant.language
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.preprocessor
+          excludes: []
+    style:
+      foreground:
+        r: 190
+        g: 132
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - constant.character
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - constant.other
+          excludes: []
+    style:
+      foreground:
+        r: 190
+        g: 132
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.language
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.other
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword
+          excludes: []
+    style:
+      foreground:
+        r: 249
+        g: 38
+        b: 114
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - storage
+          excludes: []
+    style:
+      foreground:
+        r: 249
+        g: 38
+        b: 114
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - storage.type
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style:
+        bits: 4
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.name.class
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style:
+        bits: 2
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.other.inherited-class
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 6
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.name.function
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.parameter
+          excludes: []
+    style:
+      foreground:
+        r: 253
+        g: 151
+        b: 31
+        a: 255
+      background: ~
+      font_style:
+        bits: 4
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.name.tag
+          excludes: []
+    style:
+      foreground:
+        r: 249
+        g: 38
+        b: 114
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.other.attribute-name
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - support.function
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - support.constant
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - support.type
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - support.class
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 4
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - support.other.variable
+          excludes: []
+    style:
+      foreground: ~
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - string
+              - constant
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - string.regexp
+          excludes: []
+    style:
+      foreground:
+        r: 246
+        g: 170
+        b: 17
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - string
+              - variable
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.variable
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.tag.sgml.doctype.xml
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - declaration.sgml.html
+              - declaration.doctype
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - declaration.sgml.html
+              - declaration.doctype
+              - entity
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - declaration.sgml.html
+              - declaration.doctype
+              - string
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - declaration.xml-processing
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - declaration.xml-processing
+              - entity
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - declaration.xml-processing
+              - string
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - doctype
+          excludes: []
+    style:
+      foreground:
+        r: 200
+        g: 206
+        b: 204
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - comment.block.html
+          excludes: []
+    style:
+      foreground:
+        r: 124
+        g: 120
+        b: 101
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.name.tag.script.html
+          excludes: []
+    style:
+      foreground: ~
+      background: ~
+      font_style:
+        bits: 4
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - text.html.basic
+              - meta.tag.other.html
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - text.html.basic
+              - meta.tag.any.html
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - text.html.basic
+              - meta.tag.block.any
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - text.html.basic
+              - meta.tag.inline.any
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - text.html.basic
+              - meta.tag.structure.any.html
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - text.html.basic
+              - source.js.embedded.html
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.separator.key-value.html
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - text.html.basic
+              - entity.other.attribute-name.html
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - text.html.basic
+              - meta.tag.structure.any.html
+              - punctuation.definition.string.begin.html
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.string.begin.html
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.string.end.html
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.tag.end
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.tag.begin
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.tag
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.parameter.handlebars
+          excludes: []
+    style:
+      foreground:
+        r: 246
+        g: 170
+        b: 17
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - support.constant.handlebars
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.function.block.start.handlebars
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.preprocessor.at-rule
+              - keyword.control.at-rule
+          excludes: []
+    style:
+      foreground:
+        r: 246
+        g: 170
+        b: 17
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.selector.css
+              - entity.other.attribute-name.id
+          excludes: []
+    style:
+      foreground:
+        r: 246
+        g: 170
+        b: 17
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.selector.css
+              - entity.other.attribute-name.class
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - support.type.property-name.css
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.constructor.argument.css
+          excludes: []
+    style:
+      foreground:
+        r: 246
+        g: 170
+        b: 17
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.section.property-list.css
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.tag.css
+          excludes: []
+    style:
+      foreground:
+        r: 249
+        g: 38
+        b: 114
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.separator.key-value.css
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.terminator.rule.css
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.other.attribute-name.pseudo-element.css
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.other.attribute-name.pseudo-class.css
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.other.attribute-name.pseudo-selector.css
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.other.less
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.other.less.mixin
+          excludes: []
+    style:
+      foreground:
+        r: 224
+        g: 253
+        b: 206
+        a: 255
+      background: ~
+      font_style:
+        bits: 4
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.other.attribute-name.pseudo-element.less
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 145
+        b: 23
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.instance.constructor
+              - meta.function-call.constructor.js
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.template.expression.js
+              - punctuation.definition.template-expression.begin.js
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.template.expression.js
+              - punctuation.definition.template-expression.end.js
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.template.expression.js
+              - punctuation.accessor
+          excludes: []
+    style:
+      foreground:
+        r: 175
+        g: 241
+        b: 50
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.function.js
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.name.function.js
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - support.function.dom.js
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - source.js
+              - meta.function.js
+              - punctuation.separator.parameter.function.js
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.property.object.js
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword.operator.accessor.js
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - source.js
+              - meta.group.braces.curly
+              - constant.other.object.key.js
+              - punctuation.separator.key-value.js
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - source.js
+              - meta.group.braces.curly
+              - constant.other.object.key.js
+              - string.unquoted.label.js
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - support.type.object.module.js
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - source.js
+              - meta.function.declaration.js
+              - support.class.js
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - support.type.object.module.js
+              - support.type.object.module.js
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - storage.type.js
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style:
+        bits: 4
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - text.html.basic
+              - source.js.embedded.html
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - storage.type.function.js
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style:
+        bits: 4
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - constant.numeric.js
+          excludes: []
+    style:
+      foreground:
+        r: 174
+        g: 129
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.language.arguments.js
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.language.super.js
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.language.this.js
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.language.self.js
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.language.proto.js
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.language.constructor.js
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.language.prototype.js
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style:
+        bits: 4
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.brace.square.js
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.brace.round
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.parameters.begin.js
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.parameters.end.js
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.group
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.brace.curly.js
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.object-literal.js
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.mapping.key.json
+              - string.quoted.double.json
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.separator.sequence.csv
+          excludes: []
+    style:
+      foreground:
+        r: 253
+        g: 151
+        b: 31
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.section.embedded.coffee
+          excludes: []
+    style:
+      foreground:
+        r: 230
+        g: 159
+        b: 102
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword.operator.index-start.php
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword.operator.index-end.php
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.array.php
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.array.php
+              - support.function.construct.php
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.array.empty.php
+              - support.function.construct.php
+          excludes: []
+    style:
+      foreground:
+        r: 228
+        g: 46
+        b: 112
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - support.function.construct.php
+          excludes: []
+    style:
+      foreground:
+        r: 228
+        g: 46
+        b: 112
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - storage.type.function.php
+          excludes: []
+    style:
+      foreground:
+        r: 249
+        g: 38
+        b: 114
+        a: 221
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - constant.numeric.php
+          excludes: []
+    style:
+      foreground:
+        r: 190
+        g: 132
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword.other.new.php
+          excludes: []
+    style:
+      foreground:
+        r: 246
+        g: 170
+        b: 17
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - support.class.php
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.other.property.php
+          excludes: []
+    style:
+      foreground:
+        r: 246
+        g: 170
+        b: 17
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - storage.modifier.extends.php
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - storage.type.class.php
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword.operator.class.php
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.other.inherited-class.php
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - storage.type.php
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.name.function.php
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - support.function.construct.php
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.name.type.class.php
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.function-call.php
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.function-call.static.php
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.function-call.object.php
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword.other.phpdoc
+          excludes: []
+    style:
+      foreground:
+        r: 124
+        g: 120
+        b: 101
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - source.php.embedded.block.html
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - invalid
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.error
+          excludes: []
+    style:
+      foreground:
+        r: 248
+        g: 248
+        b: 240
+        a: 255
+      background:
+        r: 249
+        g: 38
+        b: 114
+        a: 255
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - invalid.deprecated
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.warning
+          excludes: []
+    style:
+      foreground:
+        r: 248
+        g: 248
+        b: 240
+        a: 255
+      background:
+        r: 174
+        g: 129
+        b: 255
+        a: 255
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.diff
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.diff.header
+          excludes: []
+    style:
+      foreground:
+        r: 117
+        g: 113
+        b: 94
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.deleted
+          excludes: []
+    style:
+      foreground:
+        r: 249
+        g: 38
+        b: 114
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.inserted
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.changed
+          excludes: []
+    style:
+      foreground:
+        r: 230
+        g: 219
+        b: 116
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.diff
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.diff.range
+          excludes: []
+    style:
+      foreground:
+        r: 59
+        g: 192
+        b: 240
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - storage.type.class.python
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - storage.type.function.python
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - storage.modifier.global.python
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword.control.import.python
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword.control.import.from.python
+          excludes: []
+    style:
+      foreground:
+        r: 249
+        g: 38
+        b: 114
+        a: 221
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - support.type.exception.python
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.variable.perl
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.other.readwrite.global.perl
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.other.predefined.perl
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword.operator.comparison.perl
+          excludes: []
+    style:
+      foreground:
+        r: 228
+        g: 46
+        b: 112
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - support.function.perl
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - comment.line.number-sign.perl
+          excludes: []
+    style:
+      foreground:
+        r: 117
+        g: 113
+        b: 94
+        a: 255
+      background: ~
+      font_style:
+        bits: 4
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.string.begin.perl
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.string.end.perl
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - constant.character.escape.perl
+          excludes: []
+    style:
+      foreground:
+        r: 220
+        g: 50
+        b: 47
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - constant.language.ruby
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - constant.numeric.ruby
+          excludes: []
+    style:
+      foreground:
+        r: 174
+        g: 129
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.variable.ruby
+          excludes: []
+    style:
+      foreground:
+        r: 246
+        g: 170
+        b: 17
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.function.method.with-arguments.ruby
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.language.ruby
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.name.function.ruby
+          excludes: []
+    style:
+      foreground:
+        r: 246
+        g: 170
+        b: 17
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword.control.ruby
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword.control.def.ruby
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 1
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword.control.class.ruby
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.class.ruby
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.name.type.class.ruby
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword.control.ruby
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - support.class.ruby
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword.other.special-method.ruby
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.other.constant.ruby
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - constant.other.symbol.ruby
+          excludes: []
+    style:
+      foreground:
+        r: 246
+        g: 240
+        b: 128
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.section.embedded.ruby
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.string.begin.ruby
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.string.end.ruby
+          excludes: []
+    style:
+      foreground:
+        r: 249
+        g: 38
+        b: 114
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - keyword.other.special-method.ruby
+          excludes: []
+    style:
+      foreground:
+        r: 228
+        g: 46
+        b: 112
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - text.html.markdown
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - text.html.markdown
+              - markup.raw.inline
+          excludes: []
+    style:
+      foreground:
+        r: 236
+        g: 53
+        b: 51
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - text.html.markdown
+              - meta.dummy.line-break
+          excludes: []
+    style:
+      foreground:
+        r: 224
+        g: 237
+        b: 221
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markdown.heading
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.heading
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.heading
+              - entity.name
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.heading.markdown
+              - punctuation.definition.heading.markdown
+          excludes: []
+    style:
+      foreground:
+        r: 253
+        g: 151
+        b: 31
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.italic
+          excludes: []
+    style:
+      foreground:
+        r: 228
+        g: 46
+        b: 112
+        a: 255
+      background: ~
+      font_style:
+        bits: 4
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.bold
+          excludes: []
+    style:
+      foreground:
+        r: 249
+        g: 38
+        b: 114
+        a: 255
+      background: ~
+      font_style:
+        bits: 1
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.underline
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 2
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.strike
+          excludes: []
+    style:
+      foreground:
+        r: 204
+        g: 66
+        b: 115
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.quote
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.blockquote.markdown
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style:
+        bits: 4
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.quote
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style:
+        bits: 4
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - string.other.link.title.markdown
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style:
+        bits: 2
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.raw.block
+          excludes: []
+    style:
+      foreground:
+        r: 174
+        g: 129
+        b: 255
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.list_item.markdown
+          excludes: []
+    style:
+      foreground:
+        r: 119
+        g: 119
+        b: 119
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.raw.block.fenced.markdown
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background:
+        r: 2
+        g: 2
+        b: 2
+        a: 255
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.fenced.markdown
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.language.fenced.markdown
+          excludes: []
+    style:
+      foreground:
+        r: 99
+        g: 96
+        b: 80
+        a: 255
+      background:
+        r: 34
+        g: 34
+        b: 34
+        a: 255
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.language.fenced.markdown
+          excludes: []
+    style:
+      foreground:
+        r: 124
+        g: 120
+        b: 101
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.separator
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 51
+      background:
+        r: 255
+        g: 255
+        b: 255
+        a: 15
+      font_style:
+        bits: 1
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.table
+          excludes: []
+    style:
+      foreground:
+        r: 180
+        g: 42
+        b: 29
+        a: 255
+      background:
+        r: 255
+        g: 58
+        b: 40
+        a: 26
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.other.math.tex
+          excludes: []
+    style:
+      foreground:
+        r: 230
+        g: 219
+        b: 116
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - other.package.exclude
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - other.remove
+          excludes: []
+    style:
+      foreground:
+        r: 211
+        g: 32
+        b: 31
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - support.function.builtin.shell
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.other.normal.shell
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - source.shell
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.scope.for-in-loop.shell
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.other.loop.shell
+          excludes: []
+    style:
+      foreground:
+        r: 253
+        g: 151
+        b: 31
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.name.function.shell
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.string.end.shell
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.string.begin.shell
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.scope.case-block.shell
+          excludes: []
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.scope.case-body.shell
+          excludes: []
+    style:
+      foreground:
+        r: 253
+        g: 151
+        b: 31
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.logical-expression.shell
+          excludes: []
+    style:
+      foreground:
+        r: 255
+        g: 255
+        b: 255
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - comment.line.number-sign.shell
+          excludes: []
+    style:
+      foreground:
+        r: 124
+        g: 120
+        b: 101
+        a: 255
+      background: ~
+      font_style:
+        bits: 4
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - comment.line.number-sign.makefile
+          excludes: []
+    style:
+      foreground:
+        r: 124
+        g: 120
+        b: 101
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - punctuation.definition.comment.makefile
+          excludes: []
+    style:
+      foreground:
+        r: 124
+        g: 120
+        b: 101
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - variable.other.makefile
+          excludes: []
+    style:
+      foreground:
+        r: 249
+        g: 38
+        b: 114
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - entity.name.function.makefile
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - meta.function.makefile
+          excludes: []
+    style:
+      foreground:
+        r: 102
+        g: 217
+        b: 239
+        a: 255
+      background: ~
+      font_style:
+        bits: 0
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.deleted.git_gutter
+          excludes: []
+    style:
+      foreground:
+        r: 249
+        g: 38
+        b: 114
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.inserted.git_gutter
+          excludes: []
+    style:
+      foreground:
+        r: 166
+        g: 226
+        b: 46
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.changed.git_gutter
+          excludes: []
+    style:
+      foreground:
+        r: 252
+        g: 149
+        b: 30
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.ignored.git_gutter
+          excludes: []
+    style:
+      foreground:
+        r: 86
+        g: 86
+        b: 86
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - markup.untracked.git_gutter
+          excludes: []
+    style:
+      foreground:
+        r: 86
+        g: 86
+        b: 86
+        a: 255
+      background: ~
+      font_style: ~
+  - scope:
+      selectors:
+        - path:
+            clear_stack: []
+            scopes:
+              - string.other.path.nginx
+          excludes: []
+    style:
+      foreground:
+        r: 252
+        g: 149
+        b: 30
+        a: 255
+      background: ~
+      font_style: ~
+
