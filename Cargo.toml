@@ -31,11 +31,12 @@ copypasta = "0.8.2"
 chrono = "0.4.23"
 atty = "0.2.14"
 unicode-width = "0.1.10"
+bincode = "1.3.3"
 
 [dependencies.syntect]
 version = "5.0.0"
 default-features = false
-features = ["parsing", "regex-fancy", "default-syntaxes"]
+features = ["parsing", "regex-onig"]
 
 [profile.release]
 lto = true
