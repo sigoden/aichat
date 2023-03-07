@@ -6,6 +6,9 @@ pub struct Cli {
     /// Turn off highlight
     #[clap(short = 'H', long)]
     pub no_highlight: bool,
+    /// No stream output
+    #[clap(short = 'S', long)]
+    pub no_stream: bool,
     /// List all roles
     #[clap(short = 'L', long)]
     pub list_roles: bool,
