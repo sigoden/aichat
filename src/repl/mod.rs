@@ -5,7 +5,7 @@ mod init;
 use crate::client::ChatGptClient;
 use crate::config::SharedConfig;
 use crate::term;
-use crate::utils::{copy, dump};
+use crate::utils::dump;
 
 use anyhow::{Context, Result};
 use reedline::{DefaultPrompt, Reedline, Signal};
@@ -14,17 +14,15 @@ use std::sync::Arc;
 pub use self::abort::*;
 pub use self::handler::*;
 
-pub const REPL_COMMANDS: [(&str, &str, bool); 12] = [
+pub const REPL_COMMANDS: [(&str, &str, bool); 10] = [
     (".info", "Print the information", false),
     (".set", "Modify the configuration temporarily", false),
+    (".prompt", "Add a GPT prompt", true),
     (".role", "Select a role", false),
     (".clear role", "Clear the currently selected role", false),
-    (".prompt", "Add prompt, aka create a temporary role", true),
     (".history", "Print the history", false),
     (".clear history", "Clear the history", false),
-    (".clear screen", "Clear the screen", false),
-    (".multiline", "Enter multiline editor mode", true),
-    (".copy", "Copy last reply message", false),
+    (".editor", "Enter editor mode for multiline input", true),
     (".help", "Print this help message", false),
     (".exit", "Exit the REPL", false),
 ];
@@ -122,24 +120,15 @@ impl Repl {
                 ".info" => {
                     handler.handle(ReplCmd::Info)?;
                 }
-                ".multiline" => {
+                ".editor" => {
                     let mut text = args.unwrap_or_default().to_string();
                     if text.is_empty() {
-                        dump("Usage: .multiline { <your multiline content> }", 2);
+                        dump("Usage: .editor { <your multiline/paste content> }", 2);
                     } else {
                         if text.starts_with('{') && text.ends_with('}') {
                             text = text[1..text.len() - 1].to_string()
                         }
                         handler.handle(ReplCmd::Submit(text))?;
-                    }
-                }
-                ".copy" => {
-                    let reply = handler.get_reply();
-                    if reply.is_empty() {
-                        dump("No reply messages that can be copied", 1)
-                    } else {
-                        copy(&reply)?;
-                        dump("Copied", 1);
                     }
                 }
                 ".set" => {
@@ -148,7 +137,7 @@ impl Repl {
                 ".prompt" => {
                     let mut text = args.unwrap_or_default().to_string();
                     if text.is_empty() {
-                        dump("Usage: .prompt { <your multiline content> }.", 2);
+                        dump("Usage: .prompt { <your multiline/paste content> }.", 2);
                     } else {
                         if text.starts_with('{') && text.ends_with('}') {
                             text = text[1..text.len() - 1].to_string()
@@ -167,7 +156,10 @@ impl Repl {
 }
 
 fn dump_unknown_command() {
-    dump("Unknown command. Type \".help\" for more information.", 2);
+    dump(
+        "Error: Unknown command. Type \".help\" for more information.",
+        2,
+    );
 }
 
 fn dump_repl_help() {

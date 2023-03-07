@@ -69,7 +69,7 @@ fn start_directive(client: ChatGptClient, config: SharedConfig, input: &str) -> 
     let output = output.trim();
     if config.borrow().highlight && stdout().is_terminal() {
         let mut markdown_render = MarkdownRender::new();
-        markdown_render.render(output);
+        println!("{}", markdown_render.render(output))
     } else {
         println!("{output}");
     }

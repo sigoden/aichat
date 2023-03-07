@@ -59,10 +59,9 @@ impl ReplCmdHandler {
                     self.state.borrow_mut().reply.clear();
                     return Ok(());
                 }
-                let prompt = self.config.borrow().get_prompt();
                 let wg = WaitGroup::new();
                 let highlight = self.config.borrow().highlight;
-                let mut stream_handler = if highlight {
+                let stream_handler = if highlight {
                     let (tx, rx) = unbounded();
                     let abort = self.abort.clone();
                     let wg = wg.clone();
@@ -74,43 +73,49 @@ impl ReplCmdHandler {
                 } else {
                     ReplyStreamHandler::new(None, self.abort.clone())
                 };
-                self.client
-                    .send_message_streaming(&input, prompt, &mut stream_handler)?;
-                let buffer = stream_handler.get_buffer();
-                self.config.borrow().save_message(
-                    self.state.borrow_mut().save_file.as_mut(),
-                    &input,
-                    buffer,
-                )?;
+                let ret = self.handle_send_stream(&input, stream_handler);
                 wg.wait();
-                self.state.borrow_mut().reply = buffer.to_string();
+                self.state.borrow_mut().reply = ret?;
             }
             ReplCmd::SetRole(name) => {
                 let output = self.config.borrow_mut().change_role(&name);
-                dump(output.trim(), 2);
+                dump(output, 1);
             }
             ReplCmd::ClearRole => {
                 self.config.borrow_mut().role = None;
-                dump("Done", 2);
+                dump("", 1);
             }
             ReplCmd::Prompt(prompt) => {
-                let output = self.config.borrow_mut().create_temp_role(&prompt);
-                dump(output.trim(), 2);
+                self.config.borrow_mut().create_temp_role(&prompt);
+                dump("", 1);
             }
             ReplCmd::Info => {
                 let output = self.config.borrow().info()?;
-                dump(output.trim(), 2);
+                dump(output, 1);
             }
             ReplCmd::UpdateConfig(input) => {
                 let output = self.config.borrow_mut().update(&input)?;
-                dump(output.trim(), 2);
+                dump(output, 1);
             }
         }
         Ok(())
     }
 
-    pub fn get_reply(&self) -> String {
-        self.state.borrow().reply.to_string()
+    fn handle_send_stream(
+        &self,
+        input: &str,
+        mut stream_handler: ReplyStreamHandler,
+    ) -> Result<String> {
+        let prompt = self.config.borrow().get_prompt();
+        self.client
+            .send_message_streaming(input, prompt, &mut stream_handler)?;
+        let buffer = stream_handler.get_buffer();
+        self.config.borrow().save_message(
+            self.state.borrow_mut().save_file.as_mut(),
+            input,
+            buffer,
+        )?;
+        Ok(buffer.to_string())
     }
 }
 

@@ -19,14 +19,6 @@ const ROLES_FILE_NAME: &str = "roles.yaml";
 const HISTORY_FILE_NAME: &str = "history.txt";
 const MESSAGE_FILE_NAME: &str = "messages.md";
 const TEMP_ROLE_NAME: &str = "%TEMP%";
-const UPDATE_KEYS: [&str; 6] = [
-    "api_key",
-    "temperature",
-    "save",
-    "highlight",
-    "proxy",
-    "dry_run",
-];
 const SET_COMPLETIONS: [&str; 9] = [
     ".set api_key",
     ".set temperature",
@@ -186,18 +178,17 @@ impl Config {
             Some(role) => {
                 let output = format!("{}>> {}", role.name, role.prompt.trim());
                 self.role = Some(role);
-                output
+                format!("{}\n", output.trim())
             }
-            None => "Unknown role".into(),
+            None => "Error: Unknown role\n".into(),
         }
     }
 
-    pub fn create_temp_role(&mut self, prompt: &str) -> String {
+    pub fn create_temp_role(&mut self, prompt: &str) {
         self.role = Some(Role {
             name: TEMP_ROLE_NAME.into(),
             prompt: prompt.into(),
         });
-        "Done".into()
     }
 
     pub fn get_prompt(&self) -> Option<String> {
@@ -302,14 +293,9 @@ impl Config {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.dry_run = value;
             }
-            _ => {
-                return Ok(format!(
-                    "Unknown key, valid keys are {}",
-                    UPDATE_KEYS.join(", ")
-                ))
-            }
+            _ => return Ok(format!("Error: Unknown key `{key}`\n")),
         }
-        Ok("Done".into())
+        Ok("".into())
     }
 
     fn load_roles(&mut self) -> Result<()> {
