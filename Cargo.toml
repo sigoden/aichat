@@ -27,7 +27,6 @@ serde_yaml = "0.9.17"
 tokio = { version = "1.26.0", features = ["full"] }
 crossbeam = "0.8.2"
 crossterm = "0.26.1"
-copypasta = "0.8.2"
 chrono = "0.4.23"
 atty = "0.2.14"
 unicode-width = "0.1.10"
