@@ -41,6 +41,7 @@ dependencies = [
  "serde_yaml",
  "syntect",
  "tokio",
+ "unicode-width",
 ]
 
 [[package]]
