@@ -1,6 +1,6 @@
 [package]
 name = "aichat"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["sigoden <sigoden@gmail.com>"]
 description = "A powerful chatgpt cli."
@@ -20,7 +20,6 @@ futures-util = "0.3.26"
 inquire = "0.5.3"
 is-terminal = "0.4.4"
 reedline = "0.16.0"
-reqwest = { version = "0.11.14", features = ["json", "stream", "socks", "rustls-tls"], default-features = false}
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.93"
 serde_yaml = "0.9.17"
@@ -32,6 +31,11 @@ atty = "0.2.14"
 unicode-width = "0.1.10"
 bincode = "1.3.3"
 ctrlc = "3.2.5"
+
+[dependencies.reqwest]
+version = "0.11.14"
+features = ["json", "stream", "socks", "rustls-tls", "rustls-tls-native-roots"]
+default-features = false
 
 [dependencies.syntect]
 version = "5.0.0"

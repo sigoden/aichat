@@ -5,8 +5,7 @@
 
 A powerful ChatGPT command line tool that allows easy chat with ChatGPT-3.5 in a terminal.
 
-![demo](https://user-images.githubusercontent.com/4012553/223005945-3450cbde-b383-434b-9049-d61877f76a4f.gif)
-
+![demo](https://user-images.githubusercontent.com/4012553/223645914-f397b95f-1a30-4eda-a6a8-5bd0c2903add.gif)
 
 ## Install
 
@@ -25,9 +24,9 @@ Download from [Github Releases](https://github.com/sigoden/aichat/releases), unz
 - Predefine AI [roles](#roles)
 - Use GPT prompt easily
 - Powerful [Chat REPL](#chat-repl)
-- Markdown highlight
-- Stream output
-- Multiline input
+- syntax highlighting markdown and other 200 languages.
+- Stream output with hand typing effect
+- Multiline input support and emacs-like editing experience
 - Proxy support
 - Save chat messages
 
@@ -69,6 +68,7 @@ For example, we define a role.
     I want you to act as a linux shell expert.
     I want you to answer only with bash code.
     Do not write explanations.
+  # temperature: 0.3
 ```
 
 Let ChatGPT answer questions in the role of a linux shell expert.
@@ -76,11 +76,11 @@ Let ChatGPT answer questions in the role of a linux shell expert.
 ```
 〉.role shell
 
-〉resize app.png to 256x256
-convert app.png -resize 256x256 app.png
-
-〉 extract password protected app.zip to /tmp/app
-unzip -P password app.zip -d /tmp/app
+〉 extract encrypted zipfile app.zip to /tmp/app
+```
+```bash
+mkdir /tmp/app
+unzip -P PASSWORD app.zip -d /tmp/app
 ```
 
 ## CLI
@@ -95,32 +95,38 @@ Arguments:
 
 Options:
   -H, --no-highlight  Turn off highlight
-  -L, --list-roles    List all roles
+  -S, --no-stream     No stream output
+      --list-roles    List all roles
   -r, --role <ROLE>   Select a role
   -h, --help          Print help
   -V, --version       Print version
 ```
+### Command mode
 
 ```sh
-aichat calculate 25.6 + 32.5
+aichat math 3.8x4 
 ```
 
+control highlighting and streaming
+
 ```sh
-aichat -r shell flip the image horizontally
+aichat how to post a json in rust         # highlight, streaming output
+aichat -H -S how to post a json in rust   # no highlight, output all at once
 ```
+
+pipe input/output
+```sh
+# convert toml to json
+cat data.toml | aichat turn toml below to json > data.json
+```
+### Chat mode
 
 Enter Chat REPL if no text input.
 ```
 $ aichat
-Welcome to aichat 0.4.0
+Welcome to aichat 0.5.0
 Type ".help" for more information.
 〉
-```
-
-aichat can accept pipe.
-```sh
-# convert toml to json
-cat Cargo.toml | aichat -H turn toml below to json
 ```
 
 ## Chat REPL
@@ -132,33 +138,30 @@ Tle Chat REPL supports:
 - command autocompletion
 - history search
 - fish-style history autosuggestion hints
-- mulitline input
+- edit/past multiline input
 - undo support
 - clipboard integration
 
 Chat REPL also provide many commands.
 
 ```
-Welcome to aichat 0.4.0
+Welcome to aichat 0.5.0
 Type ".help" for more information.
-〉.help
 .info           Print the information
 .set            Modify the configuration temporarily
+.prompt         Add a GPT prompt
 .role           Select a role
 .clear role     Clear the currently selected role
-.prompt         Add prompt, aka create a temporary role
 .history        Print the history
 .clear history  Clear the history
-.clear screen   Clear the screen
-.multiline      Enter multiline editor mode
-.copy           Copy last reply message
+.editor         Enter editor mode for multiline input
 .help           Print this help message
 .exit           Exit the REPL
 
 Press Ctrl+C to abort session, Ctrl+D to exit the REPL
 ```
 
-- View current configuration information.
+### `.info` - view current configuration information.
 
 ```
 〉.info
@@ -174,8 +177,7 @@ proxy               -
 dry_run             false
 ```
 
-
-- Modify the configuration temporarily
+### `.set` - modify the configuration temporarily
 
 ```
 〉.set highlight false
@@ -183,21 +185,7 @@ dry_run             false
 〉.set temperature 1.2
 ```
 
-- Input multiline text
-
-```
-〉.multiline {convert json below to toml
-::: {
-:::   "an": [
-:::     "arbitrarily",
-:::     "nested"
-:::   ],
-:::   "data": "structure"
-::: }
-::: }
-```
-
-- Use GPT Prompt
+### `.prompt` - use GPT prompt
 
 When you set up a prompt, every message sent later will carry the prompt.
 
@@ -216,16 +204,39 @@ Done
 🙈😳
 ```
 
-`.prompt` actually creates a temporary role called `%TEMP%` internally, so you run `.clear role` to clear the prompt.
+`.prompt` actually creates a temporary role called `%TEMP%` internally, so **run `.clear role` to clear the prompt**.
 
 When you are satisfied with the prompt, add it to `roles.yaml` for later use.
 
-- Copy last reply message
+### `.role` - let the ai play a role
 
-The message may be highlighted, and when copied, you will find that they are different from the original Markdown text.
+Select a role.
+```
+〉.role shell
+```
 
-At this point you need to use `.copy` to copy the original text to the clipboard.
+Unselect a role.
+```
+〉.clear role
+```
 
+Use `.info` to check current selected role.
+
+### `.editor` - input/paste multiline text
+
+Type `.editor {` to enter editor mode, you can input/paste multiline text, quite editor mode with `}`
+
+```
+〉.editor {convert json below to toml
+::: {
+:::   "an": [
+:::     "arbitrarily",
+:::     "nested"
+:::   ],
+:::   "data": "structure"
+::: }
+::: }
+```
 
 ## License
 
