@@ -3,7 +3,7 @@ use crate::config::SharedConfig;
 use crate::print_now;
 use crate::render::render_stream;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use crossbeam::channel::Sender;
 use crossbeam::sync::WaitGroup;
 use std::cell::RefCell;
@@ -110,22 +110,25 @@ impl ReplyStreamHandler {
         }
     }
 
-    pub fn text(&mut self, text: &str) {
+    pub fn text(&mut self, text: &str) -> Result<()> {
         match self.sender.as_ref() {
             Some(tx) => {
-                let _ = tx.send(ReplyStreamEvent::Text(text.to_string()));
+                tx.send(ReplyStreamEvent::Text(text.to_string()))
+                    .with_context(|| "Failed to send StreamEvent:Text")?;
             }
             None => {
                 print_now!("{}", text);
             }
         }
         self.buffer.push_str(text);
+        Ok(())
     }
 
-    pub fn done(&mut self) {
+    pub fn done(&mut self) -> Result<()> {
         match self.sender.as_ref() {
             Some(tx) => {
-                let _ = tx.send(ReplyStreamEvent::Done);
+                tx.send(ReplyStreamEvent::Done)
+                    .with_context(|| "Failed to send StreamEvent:Done")?;
             }
             None => {
                 if !self.buffer.ends_with('\n') {
@@ -133,6 +136,7 @@ impl ReplyStreamHandler {
                 }
             }
         }
+        Ok(())
     }
 
     pub fn get_buffer(&self) -> &str {

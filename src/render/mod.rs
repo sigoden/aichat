@@ -7,6 +7,7 @@ pub use self::markdown::MarkdownRender;
 use self::repl::repl_render_stream;
 
 use crate::client::ChatGptClient;
+use crate::print_now;
 use crate::repl::{ReplyStreamHandler, SharedAbortSignal};
 use anyhow::Result;
 use crossbeam::channel::unbounded;
@@ -26,11 +27,15 @@ pub fn render_stream(
         let (tx, rx) = unbounded();
         let abort_clone = abort.clone();
         spawn(move || {
-            let _ = if repl {
+            let err = if repl {
                 repl_render_stream(rx, abort)
             } else {
                 cmd_render_stream(rx, abort)
             };
+			if let Err(err) = err {
+				let err = format!("{err:?}");
+				print_now!("{}\n\n", err.trim());
+			}
             drop(wg);
         });
         ReplyStreamHandler::new(Some(tx), abort_clone)

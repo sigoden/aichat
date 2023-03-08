@@ -54,11 +54,11 @@ impl ChatGptClient {
         self.runtime.block_on(async {
             tokio::select! {
                 ret = self.send_message_streaming_inner(input, prompt, handler) => {
-                    handler.done();
+                    handler.done()?;
                     ret.with_context(|| "Failed to send message streaming")
                 }
                 _ = watch_abort(abort.clone()) => {
-                    handler.done();
+                    handler.done()?;
                     Ok(())
                  },
                 _ =  tokio::signal::ctrl_c() => {
@@ -91,7 +91,7 @@ impl ChatGptClient {
         handler: &mut ReplyStreamHandler,
     ) -> Result<()> {
         if self.config.borrow().dry_run {
-            handler.text(&combine(content, prompt));
+            handler.text(&combine(content, prompt))?;
             return Ok(());
         }
         let builder = self.request_builder(content, prompt, true)?;
@@ -115,7 +115,7 @@ impl ChatGptClient {
                         continue;
                     }
                 }
-                handler.text(text);
+                handler.text(text)?;
             }
         }
 
