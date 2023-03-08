@@ -139,7 +139,10 @@ impl ReplyStreamHandler {
                     print_now!("\n")
                 }
                 if self.repl {
-                    print_now!("\n")
+                    print_now!("\n");
+                    if cfg!(macos) {
+                        print_now!("\n")
+                    }
                 }
             }
         }
