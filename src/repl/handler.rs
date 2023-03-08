@@ -49,11 +49,9 @@ impl ReplCmdHandler {
                     return Ok(());
                 }
                 let highlight = self.config.borrow().highlight;
-                let prompt = self.config.borrow().get_prompt();
                 let wg = WaitGroup::new();
                 let ret = render_stream(
                     &input,
-                    prompt,
                     &self.client,
                     highlight,
                     true,

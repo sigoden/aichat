@@ -16,7 +16,6 @@ use std::thread::spawn;
 
 pub fn render_stream(
     input: &str,
-    prompt: Option<String>,
     client: &ChatGptClient,
     highlight: bool,
     repl: bool,
@@ -43,7 +42,7 @@ pub fn render_stream(
         drop(wg);
         ReplyStreamHandler::new(None, abort)
     };
-    client.send_message_streaming(input, prompt, &mut stream_handler)?;
+    client.send_message_streaming(input, &mut stream_handler)?;
     let buffer = stream_handler.get_buffer();
     Ok(buffer.to_string())
 }
