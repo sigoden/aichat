@@ -1,4 +1,5 @@
 use chrono::prelude::*;
+use crossterm::style::{Color, Stylize};
 use std::io::{stdout, Write};
 
 #[macro_export]
@@ -16,4 +17,8 @@ pub fn print_now<T: ToString>(text: T) {
 pub fn now() -> String {
     let now = Local::now();
     now.to_rfc3339_opts(SecondsFormat::Secs, false)
+}
+
+pub fn emphasis(text: &str) -> String {
+    text.stylize().with(Color::White).to_string()
 }
