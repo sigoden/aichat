@@ -178,6 +178,13 @@ impl Config {
         })
     }
 
+    pub fn merge_prompt(&self, content: &str) -> String {
+        match self.get_prompt() {
+            Some(prompt) => format!("{}\n{content}", prompt.trim()),
+            None => content.to_string(),
+        }
+    }
+
     pub fn info(&self) -> Result<String> {
         let file_info = |path: &Path| {
             let state = if path.exists() { "" } else { " ⚠️" };
