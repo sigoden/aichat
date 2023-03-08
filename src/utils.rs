@@ -1,8 +1,15 @@
 use chrono::prelude::*;
 use std::io::{stdout, Write};
 
-pub fn dump<T: ToString>(text: T, newlines: usize) {
-    print!("{}{}", text.to_string(), "\n".repeat(newlines));
+#[macro_export]
+macro_rules! print_now {
+    ($($arg:tt)*) => {
+        $crate::utils::print_now(&format!($($arg)*))
+    };
+}
+
+pub fn print_now<T: ToString>(text: T) {
+    print!("{}", text.to_string());
     let _ = stdout().flush();
 }
 

@@ -163,9 +163,9 @@ impl Config {
             Some(role) => {
                 let output = format!("{}>> {}", role.name, role.prompt.trim());
                 self.role = Some(role);
-                format!("{}\n", output.trim())
+                output
             }
-            None => "Error: Unknown role\n".into(),
+            None => "Error: Unknown role".into(),
         }
     }
 
@@ -278,7 +278,7 @@ impl Config {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.dry_run = value;
             }
-            _ => return Ok(format!("Error: Unknown key `{key}`\n")),
+            _ => return Ok(format!("Error: Unknown key `{key}`")),
         }
         Ok("".into())
     }
