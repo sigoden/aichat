@@ -18,11 +18,9 @@ use unicode_width::UnicodeWidthStr;
 pub fn repl_render_stream(rx: Receiver<ReplyStreamEvent>, abort: SharedAbortSignal) -> Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
-    queue!(stdout, event::DisableMouseCapture)?;
 
     let ret = repl_render_stream_inner(rx, abort, &mut stdout);
 
-    queue!(stdout, event::DisableMouseCapture)?;
     disable_raw_mode()?;
 
     ret

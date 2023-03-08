@@ -32,10 +32,10 @@ pub fn render_stream(
             } else {
                 cmd_render_stream(rx, abort)
             };
-			if let Err(err) = err {
-				let err = format!("{err:?}");
-				print_now!("{}\n\n", err.trim());
-			}
+            if let Err(err) = err {
+                let err = format!("{err:?}");
+                print_now!("{}\n\n", err.trim());
+            }
             drop(wg);
         });
         ReplyStreamHandler::new(Some(tx), abort_clone)
