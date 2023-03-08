@@ -10,9 +10,9 @@ use std::{
 
 use anyhow::{anyhow, Context, Result};
 use inquire::{Confirm, Text};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-use crate::utils::now;
+use crate::utils::{emphasis, now};
 
 const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
@@ -153,7 +153,19 @@ impl Config {
     pub fn change_role(&mut self, name: &str) -> String {
         match self.find_role(name) {
             Some(role) => {
-                let output = format!("{}>> {}", role.name, role.prompt.trim());
+                let temperature = match role.temperature {
+                    Some(v) => format!("{v}"),
+                    None => "null".into(),
+                };
+                let output = format!(
+                    "{}: {}\n{}: {}\n{}: {}",
+                    emphasis("name"),
+                    role.name,
+                    emphasis("prompt"),
+                    role.prompt.trim(),
+                    emphasis("temperature"),
+                    temperature
+                );
                 self.role = Some(role);
                 output
             }
@@ -165,6 +177,7 @@ impl Config {
         self.role = Some(Role {
             name: TEMP_ROLE_NAME.into(),
             prompt: prompt.into(),
+            temperature: self.temperature,
         });
     }
 
@@ -176,6 +189,13 @@ impl Config {
                 Some(v.prompt.to_string())
             }
         })
+    }
+
+    pub fn get_temperature(&self) -> Option<f64> {
+        self.role
+            .as_ref()
+            .and_then(|v| v.temperature)
+            .or(self.temperature)
     }
 
     pub fn merge_prompt(&self, content: &str) -> String {
@@ -305,12 +325,14 @@ impl Config {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Role {
     /// Role name
     pub name: String,
     /// Prompt text send to ai for setting up a role
     pub prompt: String,
+    /// What sampling temperature to use, between 0 and 2
+    pub temperature: Option<f64>,
 }
 
 fn create_config_file(config_path: &Path) -> Result<()> {

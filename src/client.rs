@@ -148,7 +148,7 @@ impl ChatGptClient {
             "messages": messages,
         });
 
-        if let Some(v) = self.config.borrow().temperature {
+        if let Some(v) = self.config.borrow().get_temperature() {
             body.as_object_mut()
                 .and_then(|m| m.insert("temperature".into(), json!(v)));
         }
