@@ -128,10 +128,8 @@ impl ReplyStreamHandler {
                 let _ = tx.send(ReplyStreamEvent::Done);
             }
             None => {
-                if self.buffer.ends_with('\n') {
-                    print_now!("\n");
-                } else {
-                    print_now!("\n\n");
+                if !self.buffer.ends_with('\n') {
+                    print_now!("\n")
                 }
             }
         }

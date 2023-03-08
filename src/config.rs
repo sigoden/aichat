@@ -114,26 +114,18 @@ impl Config {
         let timestamp = now();
         let output = match self.role.as_ref() {
             None => {
-                format!(
-                    "# CHAT:[{timestamp}]\n{}\n\n--------\n{}\n--------\n\n",
-                    input.trim(),
-                    output.trim(),
-                )
+                format!("# CHAT:[{timestamp}]\n{input}\n--------\n{output}\n--------\n\n",)
             }
             Some(v) => {
                 if v.name == TEMP_ROLE_NAME {
                     format!(
-                        "# CHAT:[{timestamp}]\n{}\n{}\n\n--------\n{}\n--------\n\n",
-                        v.prompt,
-                        input.trim(),
-                        output.trim(),
+                        "# CHAT:[{timestamp}]\n{}\n{input}\n--------\n{output}\n--------\n\n",
+                        v.prompt
                     )
                 } else {
                     format!(
-                        "# CHAT:[{timestamp}] ({})\n{}\n\n--------\n{}\n--------\n\n",
+                        "# CHAT:[{timestamp}] ({})\n{input}\n--------\n{output}\n--------\n\n",
                         v.name,
-                        input.trim(),
-                        output.trim(),
                     )
                 }
             }

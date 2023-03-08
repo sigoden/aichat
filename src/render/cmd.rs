@@ -38,7 +38,7 @@ pub fn cmd_render_stream(rx: Receiver<ReplyStreamEvent>, abort: SharedAbortSigna
                 }
                 ReplyStreamEvent::Done => {
                     let output = markdown_render.render(&buffer);
-                    print_now!("{}\n\n", output);
+                    print_now!("{}\n", output.trim_end());
                     break;
                 }
             }
