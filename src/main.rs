@@ -76,9 +76,9 @@ fn start_directive(
         let output = client.send_message(input)?;
         if highlight {
             let mut markdown_render = MarkdownRender::new();
-            println!("{}\n", markdown_render.render(&output).trim_end());
+            println!("{}", markdown_render.render(&output).trim());
         } else {
-            println!("{}\n", output.trim_end());
+            println!("{}", output.trim());
         }
         output
     } else {

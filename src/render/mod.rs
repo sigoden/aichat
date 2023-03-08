@@ -37,10 +37,10 @@ pub fn render_stream(
             }
             drop(wg);
         });
-        ReplyStreamHandler::new(Some(tx), abort_clone)
+        ReplyStreamHandler::new(Some(tx), repl, abort_clone)
     } else {
         drop(wg);
-        ReplyStreamHandler::new(None, abort)
+        ReplyStreamHandler::new(None, repl, abort)
     };
     client.send_message_streaming(input, &mut stream_handler)?;
     let buffer = stream_handler.get_buffer();
