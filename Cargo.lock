@@ -26,6 +26,7 @@ dependencies = [
  "futures-util",
  "inquire",
  "is-terminal",
+ "parking_lot",
  "reedline",
  "reqwest",
  "serde",

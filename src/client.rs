@@ -69,8 +69,8 @@ impl ChatGptClient {
     }
 
     async fn send_message_inner(&self, content: &str) -> Result<String> {
-        if self.config.borrow().dry_run {
-            return Ok(self.config.borrow().merge_prompt(content));
+        if self.config.lock().dry_run {
+            return Ok(self.config.lock().merge_prompt(content));
         }
         let builder = self.request_builder(content, false)?;
 
@@ -88,8 +88,8 @@ impl ChatGptClient {
         content: &str,
         handler: &mut ReplyStreamHandler,
     ) -> Result<()> {
-        if self.config.borrow().dry_run {
-            handler.text(&self.config.borrow().merge_prompt(content))?;
+        if self.config.lock().dry_run {
+            handler.text(&self.config.lock().merge_prompt(content))?;
             return Ok(());
         }
         let builder = self.request_builder(content, true)?;
@@ -122,7 +122,7 @@ impl ChatGptClient {
 
     fn build_client(&self) -> Result<Client> {
         let mut builder = Client::builder();
-        if let Some(proxy) = self.config.borrow().proxy.as_ref() {
+        if let Some(proxy) = self.config.lock().proxy.as_ref() {
             builder = builder.proxy(Proxy::all(proxy).with_context(|| "Invalid config.proxy")?);
         }
         let client = builder
@@ -134,7 +134,7 @@ impl ChatGptClient {
 
     fn request_builder(&self, content: &str, stream: bool) -> Result<RequestBuilder> {
         let user_message = json!({ "role": "user", "content": content });
-        let messages = match self.config.borrow().get_prompt() {
+        let messages = match self.config.lock().get_prompt() {
             Some(prompt) => {
                 let system_message = json!({ "role": "system", "content": prompt.trim() });
                 json!([system_message, user_message])
@@ -148,7 +148,7 @@ impl ChatGptClient {
             "messages": messages,
         });
 
-        if let Some(v) = self.config.borrow().get_temperature() {
+        if let Some(v) = self.config.lock().get_temperature() {
             body.as_object_mut()
                 .and_then(|m| m.insert("temperature".into(), json!(v)));
         }
@@ -161,7 +161,7 @@ impl ChatGptClient {
         let builder = self
             .build_client()?
             .post(API_URL)
-            .bearer_auth(&self.config.borrow().api_key)
+            .bearer_auth(&self.config.lock().api_key)
             .json(&body);
 
         Ok(builder)

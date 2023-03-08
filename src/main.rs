@@ -7,7 +7,6 @@ mod term;
 #[macro_use]
 mod utils;
 
-use std::cell::RefCell;
 use std::io::{stdin, Read};
 use std::sync::Arc;
 use std::{io::stdout, process::exit};
@@ -17,6 +16,7 @@ use client::ChatGptClient;
 use config::{Config, SharedConfig};
 use crossbeam::sync::WaitGroup;
 use is_terminal::IsTerminal;
+use parking_lot::Mutex;
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
@@ -26,10 +26,10 @@ use repl::{AbortSignal, Repl};
 fn main() -> Result<()> {
     let cli = Cli::parse();
     let text = cli.text();
-    let config = Arc::new(RefCell::new(Config::init(text.is_none())?));
+    let config = Arc::new(Mutex::new(Config::init(text.is_none())?));
     if cli.list_roles {
         config
-            .borrow()
+            .lock()
             .roles
             .iter()
             .for_each(|v| println!("{}", v.name));
@@ -38,15 +38,15 @@ fn main() -> Result<()> {
     let role = match &cli.role {
         Some(name) => Some(
             config
-                .borrow()
+                .lock()
                 .find_role(name)
                 .ok_or_else(|| anyhow!("Unknown role '{name}'"))?,
         ),
         None => None,
     };
-    config.borrow_mut().role = role;
+    config.lock().role = role;
     if cli.no_highlight {
-        config.borrow_mut().highlight = false;
+        config.lock().highlight = false;
     }
     let no_stream = cli.no_stream;
     let client = ChatGptClient::init(config.clone())?;
@@ -71,7 +71,7 @@ fn start_directive(
     input: &str,
     no_stream: bool,
 ) -> Result<()> {
-    let highlight = config.borrow().highlight && stdout().is_terminal();
+    let highlight = config.lock().highlight && stdout().is_terminal();
     let output = if no_stream {
         let output = client.send_message(input)?;
         if highlight {
@@ -93,7 +93,7 @@ fn start_directive(
         wg.wait();
         output
     };
-    config.borrow().save_message(input, &output)
+    config.lock().save_message(input, &output)
 }
 
 fn start_interactive(client: ChatGptClient, config: SharedConfig) -> Result<()> {

@@ -47,7 +47,7 @@ impl Repl {
             .into_iter()
             .map(|(v, _, _)| v.to_string())
             .collect();
-        completion.extend(config.borrow().repl_completions());
+        completion.extend(config.lock().repl_completions());
         let mut completer = DefaultCompleter::with_inclusions(&['.', '-', '_']).set_min_word_len(2);
         completer.insert(completion.clone());
         completer
