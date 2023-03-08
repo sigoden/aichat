@@ -70,7 +70,6 @@ fn start_directive(
     input: &str,
     no_stream: bool,
 ) -> Result<()> {
-    let mut file = config.borrow().open_message_file()?;
     let prompt = config.borrow().get_prompt();
     let highlight = config.borrow().highlight && stdout().is_terminal();
     let output = if no_stream {
@@ -94,7 +93,7 @@ fn start_directive(
         wg.wait();
         output
     };
-    config.borrow().save_message(file.as_mut(), input, &output)
+    config.borrow().save_message(input, &output)
 }
 
 fn start_interactive(client: ChatGptClient, config: SharedConfig) -> Result<()> {
