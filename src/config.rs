@@ -103,29 +103,14 @@ impl Config {
         Ok(path)
     }
 
-    pub fn open_message_file(&self) -> Result<Option<File>> {
+    pub fn save_message(&self, input: &str, output: &str) -> Result<()> {
         if !self.save {
-            return Ok(None);
-        }
-        let path = Config::messages_file()?;
-        let file: Option<File> = if self.save {
-            let file = OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(&path)
-                .with_context(|| format!("Failed to create/append {}", path.display()))?;
-            Some(file)
-        } else {
-            None
-        };
-        Ok(file)
-    }
-
-    pub fn save_message(&self, file: Option<&mut File>, input: &str, output: &str) -> Result<()> {
-        if output.is_empty() || !self.save || file.is_none() {
             return Ok(());
         }
-        let file = file.unwrap();
+        let mut file = self.open_message_file()?;
+        if output.is_empty() || !self.save {
+            return Ok(());
+        }
         let timestamp = now();
         let output = match self.role.as_ref() {
             None => {
@@ -261,7 +246,7 @@ impl Config {
         match key {
             "api_key" => {
                 if unset {
-                    return Ok("Not allowed".into());
+                    return Ok("Error: Not allowed".into());
                 } else {
                     self.api_key = value.to_string();
                 }
@@ -296,6 +281,15 @@ impl Config {
             _ => return Ok(format!("Error: Unknown key `{key}`\n")),
         }
         Ok("".into())
+    }
+
+    fn open_message_file(&self) -> Result<File> {
+        let path = Config::messages_file()?;
+        OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&path)
+            .with_context(|| format!("Failed to create/append {}", path.display()))
     }
 
     fn load_roles(&mut self) -> Result<()> {

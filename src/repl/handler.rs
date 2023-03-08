@@ -7,7 +7,6 @@ use anyhow::Result;
 use crossbeam::channel::Sender;
 use crossbeam::sync::WaitGroup;
 use std::cell::RefCell;
-use std::fs::File;
 
 use super::abort::SharedAbortSignal;
 
@@ -23,13 +22,8 @@ pub enum ReplCmd {
 pub struct ReplCmdHandler {
     client: ChatGptClient,
     config: SharedConfig,
-    state: RefCell<ReplCmdHandlerState>,
+    reply: RefCell<String>,
     abort: SharedAbortSignal,
-}
-
-pub struct ReplCmdHandlerState {
-    reply: String,
-    save_file: Option<File>,
 }
 
 impl ReplCmdHandler {
@@ -38,15 +32,11 @@ impl ReplCmdHandler {
         config: SharedConfig,
         abort: SharedAbortSignal,
     ) -> Result<Self> {
-        let save_file = config.as_ref().borrow().open_message_file()?;
-        let state = RefCell::new(ReplCmdHandlerState {
-            save_file,
-            reply: String::new(),
-        });
+        let reply = RefCell::new(String::new());
         Ok(Self {
             client,
             config,
-            state,
+            reply,
             abort,
         })
     }
@@ -55,7 +45,7 @@ impl ReplCmdHandler {
         match cmd {
             ReplCmd::Submit(input) => {
                 if input.is_empty() {
-                    self.state.borrow_mut().reply.clear();
+                    self.reply.borrow_mut().clear();
                     return Ok(());
                 }
                 let highlight = self.config.borrow().highlight;
@@ -72,12 +62,8 @@ impl ReplCmdHandler {
                 );
                 wg.wait();
                 let buffer = ret?;
-                self.config.borrow().save_message(
-                    self.state.borrow_mut().save_file.as_mut(),
-                    &input,
-                    &buffer,
-                )?;
-                self.state.borrow_mut().reply = buffer;
+                self.config.borrow().save_message(&input, &buffer)?;
+                *self.reply.borrow_mut() = buffer;
             }
             ReplCmd::SetRole(name) => {
                 let output = self.config.borrow_mut().change_role(&name);
