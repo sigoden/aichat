@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 homepage = "https://github.com/sigoden/aichat"
 repository = "https://github.com/sigoden/aichat"
 categories = ["command-line-utilities"]
-keywords = ["chatgpt", "ai", "gpt-3.5", "repl"]
+keywords = ["chatgpt", "ai", "gpt", "repl"]
 
 [dependencies]
 anyhow = "1.0.69"
