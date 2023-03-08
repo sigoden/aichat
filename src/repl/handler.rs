@@ -97,14 +97,20 @@ pub struct ReplyStreamHandler {
     sender: Option<Sender<ReplyStreamEvent>>,
     buffer: String,
     abort: SharedAbortSignal,
+    repl: bool,
 }
 
 impl ReplyStreamHandler {
-    pub fn new(sender: Option<Sender<ReplyStreamEvent>>, abort: SharedAbortSignal) -> Self {
+    pub fn new(
+        sender: Option<Sender<ReplyStreamEvent>>,
+        repl: bool,
+        abort: SharedAbortSignal,
+    ) -> Self {
         Self {
             sender,
             abort,
             buffer: String::new(),
+            repl,
         }
     }
 
@@ -130,6 +136,9 @@ impl ReplyStreamHandler {
             }
             None => {
                 if !self.buffer.ends_with('\n') {
+                    print_now!("\n")
+                }
+                if self.repl {
                     print_now!("\n")
                 }
             }
