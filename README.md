@@ -54,6 +54,8 @@ proxy: "socks5://127.0.0.1:1080"  # optional, set proxy server. e.g. http://127.
 
 > You can specify the configuration directory through `$AICHAT_CONFIG_DIR`
 
+> You can use `.info` to view the current configuration file path
+
 ### Roles
 
 We can let ChatGPT play a certain role through `prompt` to make it better generate what we want.
