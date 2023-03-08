@@ -84,10 +84,12 @@ impl Repl {
     }
 
     fn handle_line(&mut self, handler: Arc<ReplCmdHandler>, line: String) -> Result<bool> {
-        if line.starts_with('.') {
-            let (cmd, args) = match line.split_once(' ') {
-                Some((head, tail)) => (head, Some(tail.trim())),
-                None => (line.as_str(), None),
+        let mut trimed_line = line.trim_start();
+        if trimed_line.starts_with('.') {
+            trimed_line = trimed_line.trim_end();
+            let (cmd, args) = match trimed_line.split_once(' ') {
+                Some((head, tail)) => (head, Some(tail)),
+                None => (trimed_line, None),
             };
             match cmd {
                 ".exit" => {
