@@ -48,7 +48,7 @@ impl ReplCmdHandler {
                     self.reply.borrow_mut().clear();
                     return Ok(());
                 }
-                let highlight = self.config.borrow().highlight;
+                let highlight = self.config.lock().highlight;
                 let wg = WaitGroup::new();
                 let ret = render_stream(
                     &input,
@@ -60,27 +60,27 @@ impl ReplCmdHandler {
                 );
                 wg.wait();
                 let buffer = ret?;
-                self.config.borrow().save_message(&input, &buffer)?;
+                self.config.lock().save_message(&input, &buffer)?;
                 *self.reply.borrow_mut() = buffer;
             }
             ReplCmd::SetRole(name) => {
-                let output = self.config.borrow_mut().change_role(&name);
+                let output = self.config.lock().change_role(&name);
                 print_now!("{}\n\n", output.trim_end());
             }
             ReplCmd::ClearRole => {
-                self.config.borrow_mut().role = None;
+                self.config.lock().role = None;
                 print_now!("\n");
             }
             ReplCmd::Prompt(prompt) => {
-                self.config.borrow_mut().create_temp_role(&prompt);
+                self.config.lock().create_temp_role(&prompt);
                 print_now!("\n");
             }
             ReplCmd::Info => {
-                let output = self.config.borrow().info()?;
+                let output = self.config.lock().info()?;
                 print_now!("{}\n\n", output.trim_end());
             }
             ReplCmd::UpdateConfig(input) => {
-                let output = self.config.borrow_mut().update(&input)?;
+                let output = self.config.lock().update(&input)?;
                 let output = output.trim();
                 if output.is_empty() {
                     print_now!("\n");

@@ -1,5 +1,4 @@
 use std::{
-    cell::RefCell,
     env,
     fs::{create_dir_all, read_to_string, File, OpenOptions},
     io::Write,
@@ -7,6 +6,8 @@ use std::{
     process::exit,
     sync::Arc,
 };
+
+use parking_lot::Mutex;
 
 use anyhow::{anyhow, Context, Result};
 use inquire::{Confirm, Text};
@@ -56,7 +57,7 @@ pub struct Config {
     pub role: Option<Role>,
 }
 
-pub type SharedConfig = Arc<RefCell<Config>>;
+pub type SharedConfig = Arc<Mutex<Config>>;
 
 impl Config {
     pub fn init(is_interactive: bool) -> Result<Config> {
