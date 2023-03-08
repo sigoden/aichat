@@ -1,7 +1,7 @@
 use crate::client::ChatGptClient;
 use crate::config::SharedConfig;
+use crate::print_now;
 use crate::render::render_stream;
-use crate::utils::dump;
 
 use anyhow::Result;
 use crossbeam::channel::Sender;
@@ -67,23 +67,28 @@ impl ReplCmdHandler {
             }
             ReplCmd::SetRole(name) => {
                 let output = self.config.borrow_mut().change_role(&name);
-                dump(output, 1);
+                print_now!("{}\n\n", output.trim_end());
             }
             ReplCmd::ClearRole => {
                 self.config.borrow_mut().role = None;
-                dump("", 1);
+                print_now!("\n");
             }
             ReplCmd::Prompt(prompt) => {
                 self.config.borrow_mut().create_temp_role(&prompt);
-                dump("", 1);
+                print_now!("\n");
             }
             ReplCmd::Info => {
                 let output = self.config.borrow().info()?;
-                dump(output, 1);
+                print_now!("{}\n\n", output.trim_end());
             }
             ReplCmd::UpdateConfig(input) => {
                 let output = self.config.borrow_mut().update(&input)?;
-                dump(output, 1);
+                let output = output.trim();
+                if output.is_empty() {
+                    print_now!("\n");
+                } else {
+                    print_now!("{}\n\n", output);
+                }
             }
         }
         Ok(())
@@ -111,7 +116,7 @@ impl ReplyStreamHandler {
                 let _ = tx.send(ReplyStreamEvent::Text(text.to_string()));
             }
             None => {
-                dump(text, 0);
+                print_now!("{}", text);
             }
         }
         self.buffer.push_str(text);
@@ -123,7 +128,11 @@ impl ReplyStreamHandler {
                 let _ = tx.send(ReplyStreamEvent::Done);
             }
             None => {
-                dump("", 2);
+                if self.buffer.ends_with('\n') {
+                    print_now!("\n");
+                } else {
+                    print_now!("\n\n");
+                }
             }
         }
     }

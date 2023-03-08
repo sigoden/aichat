@@ -1,6 +1,6 @@
 use super::MarkdownRender;
+use crate::print_now;
 use crate::repl::{ReplyStreamEvent, SharedAbortSignal};
-use crate::utils::dump;
 
 use anyhow::Result;
 use crossbeam::channel::Receiver;
@@ -20,7 +20,7 @@ pub fn cmd_render_stream(rx: Receiver<ReplyStreamEvent>, abort: SharedAbortSigna
                         let mut lines: Vec<&str> = text.split('\n').collect();
                         buffer = lines.pop().unwrap_or_default().to_string();
                         let output = lines.join("\n");
-                        dump(markdown_render.render(&output), 1);
+                        print_now!("{}\n", markdown_render.render(&output))
                     } else {
                         buffer = format!("{buffer}{text}");
                         if !(markdown_render.is_code_block()
@@ -30,7 +30,7 @@ pub fn cmd_render_stream(rx: Receiver<ReplyStreamEvent>, abort: SharedAbortSigna
                             || buffer.starts_with('|'))
                         {
                             if let Some((output, remain)) = split_line(&buffer) {
-                                dump(markdown_render.render_line_stateless(&output), 0);
+                                print_now!("{}", markdown_render.render_line_stateless(&output));
                                 buffer = remain
                             }
                         }
@@ -38,7 +38,7 @@ pub fn cmd_render_stream(rx: Receiver<ReplyStreamEvent>, abort: SharedAbortSigna
                 }
                 ReplyStreamEvent::Done => {
                     let output = markdown_render.render(&buffer);
-                    dump(output, 2);
+                    print_now!("{}\n\n", output);
                     break;
                 }
             }

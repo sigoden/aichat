@@ -4,8 +4,8 @@ mod init;
 
 use crate::client::ChatGptClient;
 use crate::config::SharedConfig;
+use crate::print_now;
 use crate::term;
-use crate::utils::dump;
 
 use anyhow::{Context, Result};
 use reedline::{DefaultPrompt, Reedline, Signal};
@@ -36,11 +36,8 @@ impl Repl {
     pub fn run(&mut self, client: ChatGptClient, config: SharedConfig) -> Result<()> {
         let abort = AbortSignal::new();
         let handler = ReplCmdHandler::init(client, config, abort.clone())?;
-        dump(
-            format!("Welcome to aichat {}", env!("CARGO_PKG_VERSION")),
-            1,
-        );
-        dump("Type \".help\" for more information.", 1);
+        print_now!("Welcome to aichat {}\n", env!("CARGO_PKG_VERSION"));
+        print_now!("Type \".help\" for more information.\n");
         let mut already_ctrlc = false;
         let handler = Arc::new(handler);
         loop {
@@ -63,7 +60,7 @@ impl Repl {
                         }
                         Err(err) => {
                             let err = format!("{err:?}");
-                            dump(err.trim(), 2);
+                            print_now!("{}\n\n", err.trim());
                         }
                     }
                 }
@@ -71,7 +68,7 @@ impl Repl {
                     abort.set_ctrlc();
                     if !already_ctrlc {
                         already_ctrlc = true;
-                        dump("(To exit, press Ctrl+C again or Ctrl+D or type .exit)", 2);
+                        print_now!("(To exit, press Ctrl+C again or Ctrl+D or type .exit)\n\n");
                     } else {
                         break;
                     }
@@ -104,18 +101,18 @@ impl Repl {
                     Some("history") => {
                         let history = Box::new(self.editor.history_mut());
                         history.clear().with_context(|| "Failed to clear history")?;
-                        dump("", 1);
+                        print_now!("\n");
                     }
                     Some("role") => handler.handle(ReplCmd::ClearRole)?,
                     _ => dump_unknown_command(),
                 },
                 ".history" => {
                     self.editor.print_history()?;
-                    dump("", 1);
+                    print_now!("\n");
                 }
                 ".role" => match args {
                     Some(name) => handler.handle(ReplCmd::SetRole(name.to_string()))?,
-                    None => dump("Usage: .role <name>", 2),
+                    None => print_now!("Usage: .role <name>\n\n"),
                 },
                 ".info" => {
                     handler.handle(ReplCmd::Info)?;
@@ -123,7 +120,7 @@ impl Repl {
                 ".editor" => {
                     let mut text = args.unwrap_or_default().to_string();
                     if text.is_empty() {
-                        dump("Usage: .editor { <your multiline/paste content> }", 2);
+                        print_now!("Usage: .editor {{ <your multiline/paste content here> }}\n\n");
                     } else {
                         if text.starts_with('{') && text.ends_with('}') {
                             text = text[1..text.len() - 1].to_string()
@@ -137,7 +134,7 @@ impl Repl {
                 ".prompt" => {
                     let mut text = args.unwrap_or_default().to_string();
                     if text.is_empty() {
-                        dump("Usage: .prompt { <your multiline/paste content> }.", 2);
+                        print_now!("Usage: .prompt {{ <your content here> }}.\n\n");
                     } else {
                         if text.starts_with('{') && text.ends_with('}') {
                             text = text[1..text.len() - 1].to_string()
@@ -156,10 +153,7 @@ impl Repl {
 }
 
 fn dump_unknown_command() {
-    dump(
-        "Error: Unknown command. Type \".help\" for more information.",
-        2,
-    );
+    print_now!("Error: Unknown command. Type \".help\" for more information.\n\n");
 }
 
 fn dump_repl_help() {
@@ -168,8 +162,8 @@ fn dump_repl_help() {
         .map(|(name, desc, _)| format!("{name:<15} {desc}"))
         .collect::<Vec<String>>()
         .join("\n");
-    dump(
-        format!("{head}\n\nPress Ctrl+C to abort session, Ctrl+D to exit the REPL"),
-        2,
+    print_now!(
+        "{}\n\nPress Ctrl+C to abort session, Ctrl+D to exit the REPL\n\n",
+        head,
     );
 }

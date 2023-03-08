@@ -4,6 +4,7 @@ mod config;
 mod render;
 mod repl;
 mod term;
+#[macro_use]
 mod utils;
 
 use std::cell::RefCell;
