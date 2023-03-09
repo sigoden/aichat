@@ -1,3 +1,7 @@
+mod tiktoken;
+
+pub use self::tiktoken::{cl100k_base_singleton, count_tokens, text_to_tokens, tokens_to_text};
+
 use chrono::prelude::*;
 use crossterm::style::{Color, Stylize};
 use std::io::{stdout, Write};
@@ -19,6 +23,7 @@ pub fn now() -> String {
     now.to_rfc3339_opts(SecondsFormat::Secs, false)
 }
 
+#[allow(unused)]
 pub fn emphasis(text: &str) -> String {
     text.stylize().with(Color::White).to_string()
 }

@@ -1,7 +1,7 @@
 use crate::config::SharedConfig;
 use crate::repl::{ReplyStreamHandler, SharedAbortSignal};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use eventsource_stream::Eventsource;
 use futures_util::StreamExt;
 use reqwest::{Client, Proxy, RequestBuilder};
@@ -32,7 +32,7 @@ impl ChatGptClient {
         self.runtime.block_on(async {
             self.send_message_inner(input)
                 .await
-                .with_context(|| "Failed to send message")
+                .with_context(|| "Failed to fetch")
         })
     }
 
@@ -54,7 +54,7 @@ impl ChatGptClient {
             tokio::select! {
                 ret = self.send_message_streaming_inner(input, handler) => {
                     handler.done()?;
-                    ret.with_context(|| "Failed to send message streaming")
+                    ret.with_context(|| "Failed to fetch stream")
                 }
                 _ = watch_abort(abort.clone()) => {
                     handler.done()?;
@@ -73,8 +73,10 @@ impl ChatGptClient {
             return Ok(self.config.lock().echo_messages(content));
         }
         let builder = self.request_builder(content, false)?;
-
         let data: Value = builder.send().await?.json().await?;
+        if let Some(err_msg) = data["error"]["message"].as_str() {
+            bail!("Request failed, {err_msg}");
+        }
 
         let output = data["choices"][0]["message"]["content"]
             .as_str()
@@ -93,7 +95,15 @@ impl ChatGptClient {
             return Ok(());
         }
         let builder = self.request_builder(content, true)?;
-        let mut stream = builder.send().await?.bytes_stream().eventsource();
+        let res = builder.send().await?;
+        if !res.status().is_success() {
+            let data: Value = res.json().await?;
+            if let Some(err_msg) = data["error"]["message"].as_str() {
+                bail!("Request failed, {err_msg}");
+            }
+            bail!("Request failed");
+        }
+        let mut stream = res.bytes_stream().eventsource();
         let mut virgin = true;
         while let Some(part) = stream.next().await {
             let chunk = part?.data;
@@ -133,7 +143,7 @@ impl ChatGptClient {
     }
 
     fn request_builder(&self, content: &str, stream: bool) -> Result<RequestBuilder> {
-        let messages = self.config.lock().build_messages(content);
+        let messages = self.config.lock().build_messages(content)?;
         let mut body = json!({
             "model": MODEL,
             "messages": messages,

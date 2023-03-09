@@ -1,13 +1,13 @@
 mod conversation;
 
-use self::conversation::Session;
+use self::conversation::Conversation;
 
-use crate::utils::{emphasis, now};
+use crate::utils::{count_tokens, now};
 
 use anyhow::{anyhow, bail, Context, Result};
 use inquire::{Confirm, Text};
 use parking_lot::Mutex;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{
     env,
@@ -18,6 +18,8 @@ use std::{
     sync::Arc,
 };
 
+const MAX_TOKENS: usize = 4096;
+const MESSAGE_EXTRA_TOKENS: usize = 6;
 const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
 const HISTORY_FILE_NAME: &str = "history.txt";
@@ -53,14 +55,14 @@ pub struct Config {
     #[serde(default)]
     pub dry_run: bool,
     /// Predefined roles
-    #[serde(default, skip)]
+    #[serde(skip)]
     pub roles: Vec<Role>,
     /// Current selected role
-    #[serde(default, skip)]
+    #[serde(skip)]
     pub role: Option<Role>,
     /// Current conversation
-    #[serde(default, skip)]
-    pub conversation: Option<Session>,
+    #[serde(skip)]
+    pub conversation: Option<Conversation>,
 }
 
 pub type SharedConfig = Arc<Mutex<Config>>;
@@ -163,20 +165,10 @@ impl Config {
             bail!("")
         }
         match self.find_role(name) {
-            Some(role) => {
-                let temperature = match role.temperature {
-                    Some(v) => format!("{v}"),
-                    None => "null".into(),
-                };
-                let output = format!(
-                    "{}: {}\n{}: {}\n{}: {}",
-                    emphasis("name"),
-                    role.name,
-                    emphasis("prompt"),
-                    role.prompt.trim(),
-                    emphasis("temperature"),
-                    temperature
-                );
+            Some(mut role) => {
+                role.tokens = count_tokens(&role.prompt);
+                let output =
+                    serde_yaml::to_string(&role).unwrap_or("Unable to echo role details".into());
                 self.role = Some(role);
                 Ok(output)
             }
@@ -190,6 +182,7 @@ impl Config {
             name: TEMP_ROLE_NAME.into(),
             prompt: prompt.into(),
             temperature: self.temperature,
+            tokens: count_tokens(prompt),
         });
         Ok(())
     }
@@ -205,22 +198,33 @@ impl Config {
         if let Some(conversation) = self.conversation.as_ref() {
             conversation.echo_messages(content)
         } else if let Some(role) = self.role.as_ref() {
-            format!("{}\n{content}", role.prompt.trim())
+            format!("{}\n{content}", role.prompt)
         } else {
             content.to_string()
         }
     }
 
-    pub fn build_messages(&self, content: &str) -> Value {
+    pub fn build_messages(&self, content: &str) -> Result<Value> {
+        let tokens = count_tokens(content) + MESSAGE_EXTRA_TOKENS;
+        let check_tokens = |tokens| {
+            if tokens >= MAX_TOKENS {
+                bail!("Exceed max tokens limit")
+            }
+            Ok(())
+        };
+        check_tokens(tokens)?;
         let user_message = json!({ "role": "user", "content": content });
-        if let Some(conversation) = self.conversation.as_ref() {
+        let value = if let Some(conversation) = self.conversation.as_ref() {
+            check_tokens(tokens + conversation.tokens)?;
             conversation.build_emssages(content)
         } else if let Some(role) = self.role.as_ref() {
-            let system_message = json!({ "role": "system", "content": role.prompt.trim() });
+            check_tokens(tokens + role.tokens + MESSAGE_EXTRA_TOKENS)?;
+            let system_message = json!({ "role": "system", "content": role.prompt });
             json!([system_message, user_message])
         } else {
             json!([user_message])
-        }
+        };
+        Ok(value)
     }
 
     pub fn info(&self) -> Result<String> {
@@ -329,7 +333,7 @@ impl Config {
                 return Ok(());
             }
         }
-        let mut conversation = Session::new();
+        let mut conversation = Conversation::new();
         if let Some(role) = self.role.as_ref() {
             conversation.add_prompt(&role.prompt);
         }
@@ -341,9 +345,9 @@ impl Config {
         self.conversation = None;
     }
 
-    pub fn record_conversation(&mut self, input: &str, output: &str) -> Result<()> {
+    pub fn save_conversation(&mut self, input: &str, output: &str) -> Result<()> {
         if let Some(conversation) = self.conversation.as_mut() {
-            conversation.add_conversatoin(input, output)?;
+            conversation.add_chat(input, output)?;
         }
         Ok(())
     }
@@ -378,7 +382,7 @@ impl Config {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Role {
     /// Role name
     pub name: String,
@@ -386,6 +390,9 @@ pub struct Role {
     pub prompt: String,
     /// What sampling temperature to use, between 0 and 2
     pub temperature: Option<f64>,
+    /// Number of tokens
+    #[serde(skip_deserializing)]
+    pub tokens: usize,
 }
 
 fn create_config_file(config_path: &Path) -> Result<()> {

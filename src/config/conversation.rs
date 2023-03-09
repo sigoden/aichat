@@ -2,8 +2,12 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
+use crate::utils::count_tokens;
+
+use super::{MAX_TOKENS, MESSAGE_EXTRA_TOKENS};
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct Session {
+pub struct Conversation {
     pub tokens: usize,
     pub messages: Vec<Message>,
 }
@@ -14,7 +18,7 @@ pub struct Message {
     pub content: String,
 }
 
-impl Session {
+impl Conversation {
     pub fn new() -> Self {
         Self {
             tokens: 0,
@@ -22,7 +26,7 @@ impl Session {
         }
     }
 
-    pub fn add_conversatoin(&mut self, input: &str, output: &str) -> Result<()> {
+    pub fn add_chat(&mut self, input: &str, output: &str) -> Result<()> {
         self.messages.push(Message {
             role: MessageRole::User,
             content: input.to_string(),
@@ -31,6 +35,7 @@ impl Session {
             role: MessageRole::Assistant,
             content: output.to_string(),
         });
+        self.tokens += count_tokens(input) + count_tokens(output) + 2 * MESSAGE_EXTRA_TOKENS;
         Ok(())
     }
 
@@ -40,6 +45,7 @@ impl Session {
             role: MessageRole::System,
             content: prompt.into(),
         });
+        self.tokens += count_tokens(prompt) + MESSAGE_EXTRA_TOKENS;
     }
 
     pub fn echo_messages(&self, content: &str) -> String {
@@ -58,6 +64,10 @@ impl Session {
             content: content.into(),
         }));
         json!(messages)
+    }
+
+    pub fn reamind_tokens(&self) -> usize {
+        MAX_TOKENS.saturating_sub(self.tokens)
     }
 }
 

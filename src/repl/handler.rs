@@ -63,7 +63,7 @@ impl ReplCmdHandler {
                 wg.wait();
                 let buffer = ret?;
                 self.config.lock().save_message(&input, &buffer)?;
-                self.config.lock().record_conversation(&input, &buffer)?;
+                self.config.lock().save_conversation(&input, &buffer)?;
                 *self.reply.borrow_mut() = buffer;
             }
             ReplCmd::SetRole(name) => {
