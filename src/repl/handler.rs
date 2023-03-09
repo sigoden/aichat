@@ -3,12 +3,12 @@ use crate::config::SharedConfig;
 use crate::print_now;
 use crate::render::render_stream;
 
+use super::abort::SharedAbortSignal;
+
 use anyhow::{Context, Result};
 use crossbeam::channel::Sender;
 use crossbeam::sync::WaitGroup;
 use std::cell::RefCell;
-
-use super::abort::SharedAbortSignal;
 
 pub enum ReplCmd {
     Submit(String),

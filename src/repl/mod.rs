@@ -2,6 +2,9 @@ mod abort;
 mod handler;
 mod init;
 
+pub use self::abort::*;
+pub use self::handler::*;
+
 use crate::client::ChatGptClient;
 use crate::config::SharedConfig;
 use crate::print_now;
@@ -10,9 +13,6 @@ use crate::term;
 use anyhow::{Context, Result};
 use reedline::{DefaultPrompt, Reedline, Signal};
 use std::sync::Arc;
-
-pub use self::abort::*;
-pub use self::handler::*;
 
 pub const REPL_COMMANDS: [(&str, &str, bool); 10] = [
     (".info", "Print the information", false),

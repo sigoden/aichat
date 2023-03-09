@@ -1,11 +1,9 @@
-use std::io::{self, Stdout, Write};
-
 use anyhow::Result;
-
 use crossterm::{
     cursor, queue, style,
     terminal::{self, disable_raw_mode, enable_raw_mode, ClearType},
 };
+use std::io::{self, Stdout, Write};
 
 pub fn clear_screen(keep_lines: u16) -> Result<()> {
     enable_raw_mode()?;

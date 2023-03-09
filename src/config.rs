@@ -1,3 +1,9 @@
+use crate::utils::{emphasis, now};
+
+use anyhow::{anyhow, Context, Result};
+use inquire::{Confirm, Text};
+use parking_lot::Mutex;
+use serde::{Deserialize, Serialize};
 use std::{
     env,
     fs::{create_dir_all, read_to_string, File, OpenOptions},
@@ -6,14 +12,6 @@ use std::{
     process::exit,
     sync::Arc,
 };
-
-use parking_lot::Mutex;
-
-use anyhow::{anyhow, Context, Result};
-use inquire::{Confirm, Text};
-use serde::{Deserialize, Serialize};
-
-use crate::utils::{emphasis, now};
 
 const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";

@@ -9,6 +9,7 @@ use self::repl::repl_render_stream;
 use crate::client::ChatGptClient;
 use crate::print_now;
 use crate::repl::{ReplyStreamHandler, SharedAbortSignal};
+
 use anyhow::Result;
 use crossbeam::channel::unbounded;
 use crossbeam::sync::WaitGroup;

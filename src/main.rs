@@ -7,21 +7,20 @@ mod term;
 #[macro_use]
 mod utils;
 
-use std::io::{stdin, Read};
-use std::sync::Arc;
-use std::{io::stdout, process::exit};
-
-use cli::Cli;
-use client::ChatGptClient;
-use config::{Config, SharedConfig};
-use crossbeam::sync::WaitGroup;
-use is_terminal::IsTerminal;
-use parking_lot::Mutex;
+use crate::cli::Cli;
+use crate::client::ChatGptClient;
+use crate::config::{Config, SharedConfig};
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
+use crossbeam::sync::WaitGroup;
+use is_terminal::IsTerminal;
+use parking_lot::Mutex;
 use render::{render_stream, MarkdownRender};
 use repl::{AbortSignal, Repl};
+use std::io::{stdin, Read};
+use std::sync::Arc;
+use std::{io::stdout, process::exit};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();

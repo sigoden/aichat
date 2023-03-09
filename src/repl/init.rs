@@ -1,4 +1,5 @@
 use super::Repl;
+use super::REPL_COMMANDS;
 
 use crate::config::{Config, SharedConfig};
 
@@ -8,8 +9,6 @@ use reedline::{
     Emacs, FileBackedHistory, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent,
     ReedlineMenu, ValidationResult, Validator,
 };
-
-use super::REPL_COMMANDS;
 
 const MENU_NAME: &str = "completion_menu";
 
