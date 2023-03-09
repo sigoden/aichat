@@ -1,93 +1,81 @@
-use anyhow::Result;
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use super::message::{Message, MessageRole, MESSAGE_EXTRA_TOKENS};
+use super::role::Role;
+use super::MAX_TOKENS;
 
 use crate::utils::count_tokens;
 
-use super::{MAX_TOKENS, MESSAGE_EXTRA_TOKENS};
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Conversation {
     pub tokens: usize,
+    pub role: Option<Role>,
     pub messages: Vec<Message>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct Message {
-    pub role: MessageRole,
-    pub content: String,
-}
-
 impl Conversation {
-    pub fn new() -> Self {
+    pub fn new(role: Option<Role>) -> Self {
+        let tokens = if let Some(role) = role.as_ref() {
+            role.consume_tokens()
+        } else {
+            0
+        };
         Self {
-            tokens: 0,
+            tokens,
+            role,
             messages: vec![],
         }
     }
 
-    pub fn add_chat(&mut self, input: &str, output: &str) -> Result<()> {
-        self.messages.push(Message {
-            role: MessageRole::User,
-            content: input.to_string(),
-        });
+    pub fn add_message(&mut self, input: &str, output: &str) -> Result<()> {
+        let mut need_add_msg = true;
+        let mut input_tokens = count_tokens(input);
+        if self.messages.is_empty() {
+            if let Some(role) = self.role.as_ref() {
+                self.messages.extend(role.build_emssages(input));
+                need_add_msg = false;
+            }
+        }
+        if need_add_msg {
+            self.messages.push(Message {
+                role: MessageRole::User,
+                content: input.to_string(),
+            });
+            input_tokens += MESSAGE_EXTRA_TOKENS;
+        }
         self.messages.push(Message {
             role: MessageRole::Assistant,
             content: output.to_string(),
         });
-        self.tokens += count_tokens(input) + count_tokens(output) + 2 * MESSAGE_EXTRA_TOKENS;
+        self.tokens += input_tokens + count_tokens(output) + MESSAGE_EXTRA_TOKENS;
         Ok(())
     }
 
-    /// Readline prompt
-    pub fn add_prompt(&mut self, prompt: &str) {
-        self.messages.push(Message {
-            role: MessageRole::System,
-            content: prompt.into(),
-        });
-        self.tokens += count_tokens(prompt) + MESSAGE_EXTRA_TOKENS;
-    }
-
     pub fn echo_messages(&self, content: &str) -> String {
-        let mut messages = self.messages.to_vec();
-        messages.push(Message {
-            role: MessageRole::User,
-            content: content.into(),
-        });
+        let messages = self.build_emssages(content);
         serde_yaml::to_string(&messages).unwrap_or("Unable to echo message".into())
     }
 
-    pub fn build_emssages(&self, content: &str) -> Value {
-        let mut messages: Vec<Value> = self.messages.iter().map(msg_to_value).collect();
-        messages.push(msg_to_value(&Message {
-            role: MessageRole::User,
-            content: content.into(),
-        }));
-        json!(messages)
+    pub fn build_emssages(&self, content: &str) -> Vec<Message> {
+        let mut messages = self.messages.to_vec();
+        let mut need_add_msg = true;
+        if messages.is_empty() {
+            if let Some(role) = self.role.as_ref() {
+                messages = role.build_emssages(content);
+                need_add_msg = false;
+            }
+        };
+        if need_add_msg {
+            messages.push(Message {
+                role: MessageRole::User,
+                content: content.into(),
+            });
+        }
+        messages
     }
 
     pub fn reamind_tokens(&self) -> usize {
         MAX_TOKENS.saturating_sub(self.tokens)
     }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub enum MessageRole {
-    System,
-    Assistant,
-    User,
-}
-
-impl MessageRole {
-    pub fn name(&self) -> &'static str {
-        match self {
-            MessageRole::System => "system",
-            MessageRole::Assistant => "assistant",
-            MessageRole::User => "user",
-        }
-    }
-}
-
-fn msg_to_value(msg: &Message) -> Value {
-    json!({ "role": msg.role.name(), "content": msg.content  })
 }
