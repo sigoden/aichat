@@ -1,12 +1,9 @@
-use super::message::{Message, MessageRole, MESSAGE_EXTRA_TOKENS};
-
-use crate::utils::count_tokens;
+use super::message::{Message, MessageRole};
 
 use serde::{Deserialize, Serialize};
 
 const TEMP_NAME: &str = "Ｐ";
 const INPUT_PLACEHOLDER: &str = "__INPUT__";
-const INPUT_PLACEHOLDER_TOKENS: usize = 3;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Role {
@@ -19,35 +16,19 @@ pub struct Role {
     pub prompt: String,
     /// What sampling temperature to use, between 0 and 2
     pub temperature: Option<f64>,
-    /// Number of tokens
-    ///
-    /// System prompt consume extra 6 tokens
-    #[serde(skip_deserializing)]
-    pub tokens: usize,
 }
 
 impl Role {
     pub fn new(prompt: &str, temperature: Option<f64>) -> Self {
-        let mut value = Self {
+        Self {
             name: TEMP_NAME.into(),
             prompt: prompt.into(),
             temperature,
-            tokens: 0,
-        };
-        value.tokens = value.consume_tokens();
-        value
+        }
     }
 
     pub fn is_temp(&self) -> bool {
         self.name == TEMP_NAME
-    }
-
-    pub fn consume_tokens(&self) -> usize {
-        if self.embeded() {
-            count_tokens(&self.prompt) + MESSAGE_EXTRA_TOKENS - INPUT_PLACEHOLDER_TOKENS
-        } else {
-            count_tokens(&self.prompt) + 2 * MESSAGE_EXTRA_TOKENS
-        }
     }
 
     pub fn embeded(&self) -> bool {
