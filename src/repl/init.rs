@@ -1,16 +1,23 @@
-use super::Repl;
 use super::REPL_COMMANDS;
 
 use crate::config::{Config, SharedConfig};
 
 use anyhow::{Context, Result};
 use reedline::{
-    default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultPrompt, DefaultPromptSegment,
-    Emacs, FileBackedHistory, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent,
-    ReedlineMenu, ValidationResult, Validator,
+    default_emacs_keybindings, ColumnarMenu, DefaultCompleter, Emacs, FileBackedHistory, KeyCode,
+    KeyModifiers, Keybindings, Prompt, PromptHistorySearch, PromptHistorySearchStatus, Reedline,
+    ReedlineEvent, ReedlineMenu, ValidationResult, Validator,
 };
+use std::borrow::Cow;
 
 const MENU_NAME: &str = "completion_menu";
+const DEFAULT_PROMPT_INDICATOR: &str = "〉";
+const DEFAULT_MULTILINE_INDICATOR: &str = "::: ";
+
+pub struct Repl {
+    pub editor: Reedline,
+    pub prompt: ReplPrompt,
+}
 
 impl Repl {
     pub fn init(config: SharedConfig) -> Result<Self> {
@@ -19,7 +26,7 @@ impl Repl {
             .filter(|(_, _, v)| *v)
             .map(|(v, _, _)| *v)
             .collect();
-        let completer = Self::create_completer(config);
+        let completer = Self::create_completer(config.clone());
         let keybindings = Self::create_keybindings();
         let history = Self::create_history()?;
         let menu = Self::create_menu();
@@ -33,12 +40,8 @@ impl Repl {
             .with_partial_completions(true)
             .with_validator(Box::new(ReplValidator { multiline_commands }))
             .with_ansi_colors(true);
-        let prompt = Self::create_prompt();
+        let prompt = ReplPrompt(config);
         Ok(Self { editor, prompt })
-    }
-
-    fn create_prompt() -> DefaultPrompt {
-        DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty)
     }
 
     fn create_completer(config: SharedConfig) -> DefaultCompleter {
@@ -117,4 +120,46 @@ fn incomplete_brackets(line: &str, multiline_commands: &[&str]) -> bool {
     }
 
     !balance.is_empty()
+}
+
+#[derive(Clone)]
+pub struct ReplPrompt(SharedConfig);
+
+impl Prompt for ReplPrompt {
+    fn render_prompt_left(&self) -> Cow<str> {
+        let config = self.0.lock();
+        if let Some(role) = config.role.as_ref() {
+            role.name.to_string().into()
+        } else {
+            Cow::Borrowed("")
+        }
+    }
+
+    fn render_prompt_right(&self) -> Cow<str> {
+        Cow::Borrowed("")
+    }
+
+    fn render_prompt_indicator(&self, _prompt_mode: reedline::PromptEditMode) -> Cow<str> {
+        Cow::Borrowed(DEFAULT_PROMPT_INDICATOR)
+    }
+
+    fn render_prompt_multiline_indicator(&self) -> Cow<str> {
+        Cow::Borrowed(DEFAULT_MULTILINE_INDICATOR)
+    }
+
+    fn render_prompt_history_search_indicator(
+        &self,
+        history_search: PromptHistorySearch,
+    ) -> Cow<str> {
+        let prefix = match history_search.status {
+            PromptHistorySearchStatus::Passing => "",
+            PromptHistorySearchStatus::Failing => "failing ",
+        };
+        // NOTE: magic strings, given there is logic on how these compose I am not sure if it
+        // is worth extracting in to static constant
+        Cow::Owned(format!(
+            "({}reverse-search: {}) ",
+            prefix, history_search.term
+        ))
+    }
 }
