@@ -82,11 +82,15 @@ impl Config {
         let mut config: Config = serde_yaml::from_str(&content)
             .with_context(|| format!("Invalid config at {}", config_path.display()))?;
         config.load_roles()?;
-        if config.conversation_first {
-            config.start_conversation()?;
-        }
 
         Ok(config)
+    }
+
+    pub fn on_repl(&mut self) -> Result<()> {
+        if self.conversation_first {
+            self.start_conversation()?;
+        }
+        Ok(())
     }
 
     pub fn find_role(&self, name: &str) -> Option<Role> {

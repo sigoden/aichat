@@ -98,6 +98,7 @@ fn start_directive(
 
 fn start_interactive(client: ChatGptClient, config: SharedConfig) -> Result<()> {
     cl100k_base_singleton();
+    config.lock().on_repl()?;
     let mut repl = Repl::init(config.clone())?;
     repl.run(client, config)
 }
