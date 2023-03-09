@@ -121,6 +121,10 @@ impl ReplyStreamHandler {
     }
 
     pub fn text(&mut self, text: &str) -> Result<()> {
+        if self.buffer.is_empty() && text == "\n\n" {
+            return Ok(());
+        }
+        self.buffer.push_str(text);
         match self.sender.as_ref() {
             Some(tx) => {
                 let ret = tx
@@ -132,7 +136,6 @@ impl ReplyStreamHandler {
                 print_now!("{}", text);
             }
         }
-        self.buffer.push_str(text);
         Ok(())
     }
 

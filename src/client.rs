@@ -104,7 +104,6 @@ impl ChatGptClient {
             bail!("Request failed");
         }
         let mut stream = res.bytes_stream().eventsource();
-        let mut virgin = true;
         while let Some(part) = stream.next().await {
             let chunk = part?.data;
             if chunk == "[DONE]" {
@@ -116,12 +115,6 @@ impl ChatGptClient {
                     .unwrap_or_default();
                 if text.is_empty() {
                     continue;
-                }
-                if virgin {
-                    virgin = false;
-                    if text == "\n\n" {
-                        continue;
-                    }
                 }
                 handler.text(text)?;
             }
