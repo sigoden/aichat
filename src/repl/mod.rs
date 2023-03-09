@@ -15,12 +15,14 @@ use anyhow::{Context, Result};
 use reedline::Signal;
 use std::sync::Arc;
 
-pub const REPL_COMMANDS: [(&str, &str, bool); 10] = [
+pub const REPL_COMMANDS: [(&str, &str, bool); 12] = [
     (".info", "Print the information", false),
     (".set", "Modify the configuration temporarily", false),
     (".prompt", "Add a GPT prompt", true),
     (".role", "Select a role", false),
     (".clear role", "Clear the currently selected role", false),
+    (".conversation", "Start a conversation.", false),
+    (".clear conversation", "End the conversation.", false),
     (".history", "Print the history", false),
     (".clear history", "Clear the history", false),
     (".editor", "Enter editor mode for multiline input", true),
@@ -102,6 +104,7 @@ impl Repl {
                         print_now!("\n");
                     }
                     Some("role") => handler.handle(ReplCmd::ClearRole)?,
+                    Some("conversation") => handler.handle(ReplCmd::EndConversatoin)?,
                     _ => dump_unknown_command(),
                 },
                 ".history" => {
@@ -113,7 +116,7 @@ impl Repl {
                     None => print_now!("Usage: .role <name>\n\n"),
                 },
                 ".info" => {
-                    handler.handle(ReplCmd::Info)?;
+                    handler.handle(ReplCmd::ViewInfo)?;
                 }
                 ".editor" => {
                     let mut text = args.unwrap_or_default().to_string();
@@ -140,6 +143,9 @@ impl Repl {
                         handler.handle(ReplCmd::Prompt(text))?;
                     }
                 }
+                ".conversation" => {
+                    handler.handle(ReplCmd::StartConversation)?;
+                }
                 _ => dump_unknown_command(),
             }
         } else {
@@ -157,11 +163,11 @@ fn dump_unknown_command() {
 fn dump_repl_help() {
     let head = REPL_COMMANDS
         .iter()
-        .map(|(name, desc, _)| format!("{name:<15} {desc}"))
+        .map(|(name, desc, _)| format!("{name:<24} {desc}"))
         .collect::<Vec<String>>()
         .join("\n");
     print_now!(
-        "{}\n\nPress Ctrl+C to abort session, Ctrl+D to exit the REPL\n\n",
+        "{}\n\nPress Ctrl+C to abort conversation, Ctrl+D to exit the REPL\n\n",
         head,
     );
 }

@@ -11,7 +11,6 @@ use reedline::{
 use std::borrow::Cow;
 
 const MENU_NAME: &str = "completion_menu";
-const DEFAULT_PROMPT_INDICATOR: &str = "〉";
 const DEFAULT_MULTILINE_INDICATOR: &str = "::: ";
 
 pub struct Repl {
@@ -140,7 +139,12 @@ impl Prompt for ReplPrompt {
     }
 
     fn render_prompt_indicator(&self, _prompt_mode: reedline::PromptEditMode) -> Cow<str> {
-        Cow::Borrowed(DEFAULT_PROMPT_INDICATOR)
+        let config = self.0.lock();
+        if config.conversation.is_some() {
+            Cow::Borrowed("＄")
+        } else {
+            Cow::Borrowed("〉")
+        }
     }
 
     fn render_prompt_multiline_indicator(&self) -> Cow<str> {

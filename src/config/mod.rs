@@ -1,9 +1,14 @@
+mod conversation;
+
+use self::conversation::Session;
+
 use crate::utils::{emphasis, now};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use inquire::{Confirm, Text};
 use parking_lot::Mutex;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde_json::{json, Value};
 use std::{
     env,
     fs::{create_dir_all, read_to_string, File, OpenOptions},
@@ -17,7 +22,7 @@ const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
 const HISTORY_FILE_NAME: &str = "history.txt";
 const MESSAGE_FILE_NAME: &str = "messages.md";
-const TEMP_ROLE_NAME: &str = "%TEMP%";
+const TEMP_ROLE_NAME: &str = "%PROMPT%";
 const SET_COMPLETIONS: [&str; 9] = [
     ".set api_key",
     ".set temperature",
@@ -53,6 +58,9 @@ pub struct Config {
     /// Current selected role
     #[serde(default, skip)]
     pub role: Option<Role>,
+    /// Current conversation
+    #[serde(default, skip)]
+    pub conversation: Option<Session>,
 }
 
 pub type SharedConfig = Arc<Mutex<Config>>;
@@ -149,7 +157,11 @@ impl Config {
         Self::local_file(MESSAGE_FILE_NAME)
     }
 
-    pub fn change_role(&mut self, name: &str) -> String {
+    pub fn change_role(&mut self, name: &str) -> Result<String> {
+        self.ensure_no_conversation()?;
+        if self.conversation.is_some() {
+            bail!("")
+        }
         match self.find_role(name) {
             Some(role) => {
                 let temperature = match role.temperature {
@@ -166,28 +178,20 @@ impl Config {
                     temperature
                 );
                 self.role = Some(role);
-                output
+                Ok(output)
             }
-            None => "Error: Unknown role".into(),
+            None => bail!("Error: Unknown role"),
         }
     }
 
-    pub fn create_temp_role(&mut self, prompt: &str) {
+    pub fn create_temp_role(&mut self, prompt: &str) -> Result<()> {
+        self.ensure_no_conversation()?;
         self.role = Some(Role {
             name: TEMP_ROLE_NAME.into(),
             prompt: prompt.into(),
             temperature: self.temperature,
         });
-    }
-
-    pub fn get_prompt(&self) -> Option<String> {
-        self.role.as_ref().and_then(|v| {
-            if v.prompt.is_empty() {
-                None
-            } else {
-                Some(v.prompt.to_string())
-            }
-        })
+        Ok(())
     }
 
     pub fn get_temperature(&self) -> Option<f64> {
@@ -197,10 +201,25 @@ impl Config {
             .or(self.temperature)
     }
 
-    pub fn merge_prompt(&self, content: &str) -> String {
-        match self.get_prompt() {
-            Some(prompt) => format!("{}\n{content}", prompt.trim()),
-            None => content.to_string(),
+    pub fn echo_messages(&self, content: &str) -> String {
+        if let Some(conversation) = self.conversation.as_ref() {
+            conversation.echo_messages(content)
+        } else if let Some(role) = self.role.as_ref() {
+            format!("{}\n{content}", role.prompt.trim())
+        } else {
+            content.to_string()
+        }
+    }
+
+    pub fn build_messages(&self, content: &str) -> Value {
+        let user_message = json!({ "role": "user", "content": content });
+        if let Some(conversation) = self.conversation.as_ref() {
+            conversation.build_emssages(content)
+        } else if let Some(role) = self.role.as_ref() {
+            let system_message = json!({ "role": "system", "content": role.prompt.trim() });
+            json!([system_message, user_message])
+        } else {
+            json!([user_message])
         }
     }
 
@@ -253,10 +272,10 @@ impl Config {
         completion
     }
 
-    pub fn update(&mut self, data: &str) -> Result<String> {
+    pub fn update(&mut self, data: &str) -> Result<()> {
         let parts: Vec<&str> = data.split_whitespace().collect();
         if parts.len() != 2 {
-            return Ok("Usage: .set <key> <value>. If value is null, unset key.".into());
+            bail!("Usage: .set <key> <value>. If value is null, unset key.");
         }
         let key = parts[0];
         let value = parts[1];
@@ -264,7 +283,7 @@ impl Config {
         match key {
             "api_key" => {
                 if unset {
-                    return Ok("Error: Not allowed".into());
+                    bail!("Error: Not allowed");
                 } else {
                     self.api_key = value.to_string();
                 }
@@ -296,9 +315,37 @@ impl Config {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.dry_run = value;
             }
-            _ => return Ok(format!("Error: Unknown key `{key}`")),
+            _ => bail!("Error: Unknown key `{key}`"),
         }
-        Ok("".into())
+        Ok(())
+    }
+
+    pub fn start_conversation(&mut self) -> Result<()> {
+        if self.conversation.is_some() {
+            let ans = Confirm::new("Already in a conversation, start a new one?")
+                .with_default(true)
+                .prompt()?;
+            if !ans {
+                return Ok(());
+            }
+        }
+        let mut conversation = Session::new();
+        if let Some(role) = self.role.as_ref() {
+            conversation.add_prompt(&role.prompt);
+        }
+        self.conversation = Some(conversation);
+        Ok(())
+    }
+
+    pub fn end_conversation(&mut self) {
+        self.conversation = None;
+    }
+
+    pub fn record_conversation(&mut self, input: &str, output: &str) -> Result<()> {
+        if let Some(conversation) = self.conversation.as_mut() {
+            conversation.add_conversatoin(input, output)?;
+        }
+        Ok(())
     }
 
     fn open_message_file(&self) -> Result<File> {
@@ -308,6 +355,13 @@ impl Config {
             .append(true)
             .open(&path)
             .with_context(|| format!("Failed to create/append {}", path.display()))
+    }
+
+    fn ensure_no_conversation(&self) -> Result<()> {
+        if self.conversation.is_some() {
+            bail!("Error: Cannot perform this action in a conversation");
+        }
+        Ok(())
     }
 
     fn load_roles(&mut self) -> Result<()> {
@@ -324,7 +378,7 @@ impl Config {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Role {
     /// Role name
     pub name: String,
