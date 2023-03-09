@@ -16,7 +16,9 @@ pub enum ReplCmd {
     UpdateConfig(String),
     Prompt(String),
     ClearRole,
-    Info,
+    ViewInfo,
+    StartConversation,
+    EndConversatoin,
 }
 
 pub struct ReplCmdHandler {
@@ -61,10 +63,11 @@ impl ReplCmdHandler {
                 wg.wait();
                 let buffer = ret?;
                 self.config.lock().save_message(&input, &buffer)?;
+                self.config.lock().record_conversation(&input, &buffer)?;
                 *self.reply.borrow_mut() = buffer;
             }
             ReplCmd::SetRole(name) => {
-                let output = self.config.lock().change_role(&name);
+                let output = self.config.lock().change_role(&name)?;
                 print_now!("{}\n\n", output.trim_end());
             }
             ReplCmd::ClearRole => {
@@ -72,21 +75,24 @@ impl ReplCmdHandler {
                 print_now!("\n");
             }
             ReplCmd::Prompt(prompt) => {
-                self.config.lock().create_temp_role(&prompt);
+                self.config.lock().create_temp_role(&prompt)?;
                 print_now!("\n");
             }
-            ReplCmd::Info => {
+            ReplCmd::ViewInfo => {
                 let output = self.config.lock().info()?;
                 print_now!("{}\n\n", output.trim_end());
             }
             ReplCmd::UpdateConfig(input) => {
-                let output = self.config.lock().update(&input)?;
-                let output = output.trim();
-                if output.is_empty() {
-                    print_now!("\n");
-                } else {
-                    print_now!("{}\n\n", output);
-                }
+                self.config.lock().update(&input)?;
+                print_now!("\n");
+            }
+            ReplCmd::StartConversation => {
+                self.config.lock().start_conversation()?;
+                print_now!("\n");
+            }
+            ReplCmd::EndConversatoin => {
+                self.config.lock().end_conversation();
+                print_now!("\n");
             }
         }
         Ok(())

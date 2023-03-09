@@ -70,7 +70,7 @@ impl ChatGptClient {
 
     async fn send_message_inner(&self, content: &str) -> Result<String> {
         if self.config.lock().dry_run {
-            return Ok(self.config.lock().merge_prompt(content));
+            return Ok(self.config.lock().echo_messages(content));
         }
         let builder = self.request_builder(content, false)?;
 
@@ -89,7 +89,7 @@ impl ChatGptClient {
         handler: &mut ReplyStreamHandler,
     ) -> Result<()> {
         if self.config.lock().dry_run {
-            handler.text(&self.config.lock().merge_prompt(content))?;
+            handler.text(&self.config.lock().echo_messages(content))?;
             return Ok(());
         }
         let builder = self.request_builder(content, true)?;
@@ -133,16 +133,7 @@ impl ChatGptClient {
     }
 
     fn request_builder(&self, content: &str, stream: bool) -> Result<RequestBuilder> {
-        let user_message = json!({ "role": "user", "content": content });
-        let messages = match self.config.lock().get_prompt() {
-            Some(prompt) => {
-                let system_message = json!({ "role": "system", "content": prompt.trim() });
-                json!([system_message, user_message])
-            }
-            None => {
-                json!([user_message])
-            }
-        };
+        let messages = self.config.lock().build_messages(content);
         let mut body = json!({
             "model": MODEL,
             "messages": messages,
