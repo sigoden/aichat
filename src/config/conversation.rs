@@ -1,6 +1,5 @@
-use super::message::{num_tokens_from_messages, Message, MessageRole};
+use super::message::{num_tokens_from_messages, Message, MessageRole, MAX_TOKENS};
 use super::role::Role;
-use super::MAX_TOKENS;
 
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};

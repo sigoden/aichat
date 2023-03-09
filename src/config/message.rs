@@ -1,6 +1,9 @@
+use crate::utils::count_tokens;
+
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::utils::count_tokens;
+pub const MAX_TOKENS: usize = 4096;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Message {
@@ -23,6 +26,14 @@ pub enum MessageRole {
     System,
     Assistant,
     User,
+}
+
+pub fn within_max_tokens_limit(messages: &[Message]) -> Result<()> {
+    let tokens = num_tokens_from_messages(messages);
+    if tokens >= MAX_TOKENS {
+        bail!("Exceed max tokens limit")
+    }
+    Ok(())
 }
 
 pub fn num_tokens_from_messages(messages: &[Message]) -> usize {

@@ -4,7 +4,7 @@ mod role;
 
 use self::message::Message;
 use self::role::Role;
-use self::{conversation::Conversation, message::num_tokens_from_messages};
+use self::{conversation::Conversation, message::within_max_tokens_limit};
 
 use crate::utils::now;
 
@@ -21,7 +21,6 @@ use std::{
     sync::Arc,
 };
 
-const MAX_TOKENS: usize = 4096;
 const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
 const HISTORY_FILE_NAME: &str = "history.txt";
@@ -229,10 +228,7 @@ impl Config {
             let message = Message::new(content);
             vec![message]
         };
-        let tokens = num_tokens_from_messages(&messages);
-        if tokens >= MAX_TOKENS {
-            bail!("Exceed max tokens limit")
-        }
+        within_max_tokens_limit(&messages)?;
 
         Ok(messages)
     }
