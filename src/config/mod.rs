@@ -2,11 +2,11 @@ mod conversation;
 mod message;
 mod role;
 
-use self::conversation::Conversation;
-use self::message::{Message, MESSAGE_EXTRA_TOKENS};
+use self::message::Message;
 use self::role::Role;
+use self::{conversation::Conversation, message::num_tokens_from_messages};
 
-use crate::utils::{count_tokens, now};
+use crate::utils::now;
 
 use anyhow::{anyhow, bail, Context, Result};
 use inquire::{Confirm, Text};
@@ -166,8 +166,7 @@ impl Config {
             bail!("")
         }
         match self.find_role(name) {
-            Some(mut role) => {
-                role.tokens = role.consume_tokens();
+            Some(role) => {
                 let output =
                     serde_yaml::to_string(&role).unwrap_or("Unable to echo role details".into());
                 self.role = Some(role);
@@ -201,24 +200,19 @@ impl Config {
     }
 
     pub fn build_messages(&self, content: &str) -> Result<Vec<Message>> {
-        let content_tokens = count_tokens(content);
-        let check_tokens = |tokens| {
-            if tokens >= MAX_TOKENS {
-                bail!("Exceed max tokens limit")
-            }
-            Ok(())
-        };
         let messages = if let Some(conversation) = self.conversation.as_ref() {
-            check_tokens(content_tokens + conversation.tokens)?;
             conversation.build_emssages(content)
         } else if let Some(role) = self.role.as_ref() {
-            check_tokens(content_tokens + role.tokens)?;
             role.build_emssages(content)
         } else {
             let message = Message::new(content);
-            check_tokens(content_tokens + MESSAGE_EXTRA_TOKENS)?;
             vec![message]
         };
+        let tokens = num_tokens_from_messages(&messages);
+        if tokens >= MAX_TOKENS {
+            bail!("Exceed max tokens limit")
+        }
+
         Ok(messages)
     }
 
