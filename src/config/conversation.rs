@@ -2,7 +2,7 @@ use super::message::{num_tokens_from_messages, Message, MessageRole};
 use super::role::Role;
 use super::MAX_TOKENS;
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -19,8 +19,22 @@ impl Conversation {
             role,
             messages: vec![],
         };
-        value.tokens = num_tokens_from_messages(&value.build_emssages(""));
+        value.update_tokens();
         value
+    }
+
+    pub fn update_role(&mut self, role: &Role) -> Result<()> {
+        if self.messages.is_empty() {
+            self.role = Some(role.clone());
+            self.update_tokens();
+        } else {
+            bail!("Error: Cannot perform this action in the middle of conversation")
+        }
+        Ok(())
+    }
+
+    pub fn update_tokens(&mut self) {
+        self.tokens = num_tokens_from_messages(&self.build_emssages(""));
     }
 
     pub fn add_message(&mut self, input: &str, output: &str) -> Result<()> {
