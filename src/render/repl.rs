@@ -70,11 +70,16 @@ fn repl_render_stream_inner(
                 }
                 ReplyStreamEvent::Done => {
                     let output = markdown_render.render_line_stateless(&buffer);
-                    queue!(writer, style::Print(output.trim_end()), style::Print("\n"))?;
-                    if cfg!(windows) {
-                        queue!(writer, style::Print("\n"))?;
+                    let trimed_output = output.trim_end();
+                    if !trimed_output.is_empty() {
+                        queue!(writer, style::Print(output.trim_end()))?;
+                        writer.flush()?;
                     }
+
+                    let (_, row) = cursor::position()?;
+                    queue!(writer, cursor::MoveTo(0, row), style::Print("\n\n"))?;
                     writer.flush()?;
+
                     break;
                 }
             }
