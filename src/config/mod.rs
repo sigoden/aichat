@@ -24,7 +24,7 @@ const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
 const HISTORY_FILE_NAME: &str = "history.txt";
 const MESSAGE_FILE_NAME: &str = "messages.md";
-const TEMP_ROLE_NAME: &str = "%PROMPT%";
+const TEMP_ROLE_NAME: &str = "Ｐ";
 const SET_COMPLETIONS: [&str; 9] = [
     ".set api_key",
     ".set temperature",
@@ -241,16 +241,10 @@ impl Config {
             .temperature
             .map(|v| v.to_string())
             .unwrap_or("-".into());
-        let role_name = self
-            .role
-            .as_ref()
-            .map(|v| v.name.to_string())
-            .unwrap_or("-".into());
         let items = vec![
             ("config_file", file_info(&Config::config_file()?)),
             ("roles_file", file_info(&Config::roles_file()?)),
             ("messages_file", file_info(&Config::messages_file()?)),
-            ("role", role_name),
             ("api_key", self.api_key.clone()),
             ("temperature", temperature),
             ("save", self.save.to_string()),
@@ -396,7 +390,7 @@ pub struct Role {
 }
 
 fn create_config_file(config_path: &Path) -> Result<()> {
-    let confirm_map_err = |_| anyhow!("Error with questionnaire, try again later");
+    let confirm_map_err = |_| anyhow!("Not finish questionnaire, try again later.");
     let text_map_err = |_| anyhow!("An error happened when asking for your key, try again later.");
     let ans = Confirm::new("No config file, create a new one?")
         .with_default(true)
@@ -420,7 +414,7 @@ fn create_config_file(config_path: &Path) -> Result<()> {
     }
 
     let ans = Confirm::new("Save chat messages")
-        .with_default(false)
+        .with_default(true)
         .prompt()
         .map_err(confirm_map_err)?;
     if ans {
