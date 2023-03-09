@@ -55,6 +55,9 @@ pub struct Config {
     /// Used only for debugging
     #[serde(default)]
     pub dry_run: bool,
+    /// If set ture, start a conversation immediately upon repl
+    #[serde(default)]
+    pub conversation_first: bool,
     /// Predefined roles
     #[serde(skip)]
     pub roles: Vec<Role>,
@@ -79,6 +82,10 @@ impl Config {
         let mut config: Config = serde_yaml::from_str(&content)
             .with_context(|| format!("Invalid config at {}", config_path.display()))?;
         config.load_roles()?;
+        if config.conversation_first {
+            config.start_conversation()?;
+        }
+
         Ok(config)
     }
 
@@ -161,12 +168,11 @@ impl Config {
     }
 
     pub fn change_role(&mut self, name: &str) -> Result<String> {
-        self.ensure_no_conversation()?;
-        if self.conversation.is_some() {
-            bail!("")
-        }
         match self.find_role(name) {
             Some(role) => {
+                if let Some(conversation) = self.conversation.as_mut() {
+                    conversation.update_role(&role)?;
+                }
                 let output =
                     serde_yaml::to_string(&role).unwrap_or("Unable to echo role details".into());
                 self.role = Some(role);
@@ -177,8 +183,11 @@ impl Config {
     }
 
     pub fn create_temp_role(&mut self, prompt: &str) -> Result<()> {
-        self.ensure_no_conversation()?;
-        self.role = Some(Role::new(prompt, self.temperature));
+        let role = Role::new(prompt, self.temperature);
+        if let Some(conversation) = self.conversation.as_mut() {
+            conversation.update_role(&role)?;
+        }
+        self.role = Some(role);
         Ok(())
     }
 
@@ -239,6 +248,7 @@ impl Config {
             ("save", self.save.to_string()),
             ("highlight", self.highlight.to_string()),
             ("proxy", proxy),
+            ("conversation_first", self.conversation_first.to_string()),
             ("dry_run", self.dry_run.to_string()),
         ];
         let mut output = String::new();
@@ -340,13 +350,6 @@ impl Config {
             .append(true)
             .open(&path)
             .with_context(|| format!("Failed to create/append {}", path.display()))
-    }
-
-    fn ensure_no_conversation(&self) -> Result<()> {
-        if self.conversation.is_some() {
-            bail!("Error: Cannot perform this action in a conversation");
-        }
-        Ok(())
     }
 
     fn load_roles(&mut self) -> Result<()> {
