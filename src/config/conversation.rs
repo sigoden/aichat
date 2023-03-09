@@ -33,6 +33,13 @@ impl Conversation {
         Ok(())
     }
 
+    pub fn can_clear_role(&self) -> Result<()> {
+        if self.messages.is_empty() {
+            return Ok(());
+        }
+        bail!("Error: Cannot perform this action in the middle of conversation")
+    }
+
     pub fn update_tokens(&mut self) {
         self.tokens = num_tokens_from_messages(&self.build_emssages(""));
     }

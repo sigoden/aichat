@@ -71,7 +71,7 @@ impl ReplCmdHandler {
                 print_now!("{}\n\n", output.trim_end());
             }
             ReplCmd::ClearRole => {
-                self.config.lock().role = None;
+                self.config.lock().clear_role()?;
                 print_now!("\n");
             }
             ReplCmd::Prompt(prompt) => {

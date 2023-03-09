@@ -186,6 +186,14 @@ impl Config {
         }
     }
 
+    pub fn clear_role(&mut self) -> Result<()> {
+        if let Some(conversation) = self.conversation.as_ref() {
+            conversation.can_clear_role()?;
+        }
+        self.role = None;
+        Ok(())
+    }
+
     pub fn create_temp_role(&mut self, prompt: &str) -> Result<()> {
         let role = Role::new(prompt, self.temperature);
         if let Some(conversation) = self.conversation.as_mut() {
