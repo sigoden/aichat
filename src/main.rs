@@ -21,6 +21,7 @@ use repl::{AbortSignal, Repl};
 use std::io::{stdin, Read};
 use std::sync::Arc;
 use std::{io::stdout, process::exit};
+use utils::cl100k_base_singleton;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -96,6 +97,7 @@ fn start_directive(
 }
 
 fn start_interactive(client: ChatGptClient, config: SharedConfig) -> Result<()> {
+    cl100k_base_singleton();
     let mut repl = Repl::init(config.clone())?;
     repl.run(client, config)
 }

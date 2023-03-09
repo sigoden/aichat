@@ -22,7 +22,7 @@ pub const REPL_COMMANDS: [(&str, &str, bool); 12] = [
     (".role", "Select a role", false),
     (".clear role", "Clear the currently selected role", false),
     (".conversation", "Start a conversation.", false),
-    (".clear conversation", "End the conversation.", false),
+    (".clear conversation", "End current conversation.", false),
     (".history", "Print the history", false),
     (".clear history", "Clear the history", false),
     (".editor", "Enter editor mode for multiline input", true),

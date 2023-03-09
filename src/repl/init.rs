@@ -135,7 +135,12 @@ impl Prompt for ReplPrompt {
     }
 
     fn render_prompt_right(&self) -> Cow<str> {
-        Cow::Borrowed("")
+        let config = self.0.lock();
+        if let Some(conversation) = config.conversation.as_ref() {
+            conversation.reamind_tokens().to_string().into()
+        } else {
+            Cow::Borrowed("")
+        }
     }
 
     fn render_prompt_indicator(&self, _prompt_mode: reedline::PromptEditMode) -> Cow<str> {
