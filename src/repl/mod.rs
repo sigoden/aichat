@@ -4,6 +4,7 @@ mod init;
 
 pub use self::abort::*;
 pub use self::handler::*;
+pub use self::init::Repl;
 
 use crate::client::ChatGptClient;
 use crate::config::SharedConfig;
@@ -11,7 +12,7 @@ use crate::print_now;
 use crate::term;
 
 use anyhow::{Context, Result};
-use reedline::{DefaultPrompt, Reedline, Signal};
+use reedline::Signal;
 use std::sync::Arc;
 
 pub const REPL_COMMANDS: [(&str, &str, bool); 10] = [
@@ -26,11 +27,6 @@ pub const REPL_COMMANDS: [(&str, &str, bool); 10] = [
     (".help", "Print this help message", false),
     (".exit", "Exit the REPL", false),
 ];
-
-pub struct Repl {
-    editor: Reedline,
-    prompt: DefaultPrompt,
-}
 
 impl Repl {
     pub fn run(&mut self, client: ChatGptClient, config: SharedConfig) -> Result<()> {
