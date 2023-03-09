@@ -123,8 +123,10 @@ impl ReplyStreamHandler {
     pub fn text(&mut self, text: &str) -> Result<()> {
         match self.sender.as_ref() {
             Some(tx) => {
-                tx.send(ReplyStreamEvent::Text(text.to_string()))
-                    .with_context(|| "Failed to send StreamEvent:Text")?;
+                let ret = tx
+                    .send(ReplyStreamEvent::Text(text.to_string()))
+                    .with_context(|| "Failed to send StreamEvent:Text");
+                self.safe_ret(ret)?;
             }
             None => {
                 print_now!("{}", text);
@@ -137,8 +139,10 @@ impl ReplyStreamHandler {
     pub fn done(&mut self) -> Result<()> {
         match self.sender.as_ref() {
             Some(tx) => {
-                tx.send(ReplyStreamEvent::Done)
-                    .with_context(|| "Failed to send StreamEvent:Done")?;
+                let ret = tx
+                    .send(ReplyStreamEvent::Done)
+                    .with_context(|| "Failed to send StreamEvent:Done");
+                self.safe_ret(ret)?;
             }
             None => {
                 if !self.buffer.ends_with('\n') {
@@ -161,6 +165,13 @@ impl ReplyStreamHandler {
 
     pub fn get_abort(&self) -> SharedAbortSignal {
         self.abort.clone()
+    }
+
+    fn safe_ret(&self, ret: Result<()>) -> Result<()> {
+        if ret.is_err() && self.abort.aborted() {
+            return Ok(());
+        }
+        ret
     }
 }
 
