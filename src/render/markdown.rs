@@ -1,4 +1,6 @@
 use crossterm::style::{Color, Stylize};
+use lazy_static::lazy_static;
+use std::collections::HashMap;
 use syntect::highlighting::{Color as SyntectColor, FontStyle, Style, Theme};
 use syntect::parsing::SyntaxSet;
 use syntect::{easy::HighlightLines, parsing::SyntaxReference};
@@ -7,6 +9,15 @@ use syntect::{easy::HighlightLines, parsing::SyntaxReference};
 const MD_THEME: &[u8] = include_bytes!("../../assets/monokai-extended.theme.bin");
 /// Comes from https://github.com/sharkdp/bat/raw/5e77ca37e89c873e4490b42ff556370dc5c6ba4f/assets/syntaxes.bin
 const SYNTAXES: &[u8] = include_bytes!("../../assets/syntaxes.bin");
+
+lazy_static! {
+    static ref LANGE_MAPS: HashMap<String, String> = {
+        let mut m = HashMap::new();
+        m.insert("csharp".into(), "C#".into());
+        m.insert("php".into(), "PHP Source".into());
+        m
+    };
+}
 
 pub struct MarkdownRender {
     syntax_set: SyntaxSet,
@@ -83,6 +94,11 @@ impl MarkdownRender {
                     self.render_line_inner(line, &self.md_syntax)
                 }
                 LineType::CodeBegin => {
+                    if self.code_syntax.is_none() {
+                        if let Some(syntax) = self.syntax_set.find_syntax_by_first_line(line) {
+                            self.code_syntax = Some(syntax.clone());
+                        }
+                    }
                     self.prev_line_type = LineType::CodeInner;
                     self.render_code_line(line)
                 }
@@ -109,9 +125,13 @@ impl MarkdownRender {
     }
 
     fn find_syntax(&self, lang: &str) -> Option<&SyntaxReference> {
-        self.syntax_set
-            .find_syntax_by_token(lang)
-            .or_else(|| self.syntax_set.find_syntax_by_extension(lang))
+        if let Some(new_lang) = LANGE_MAPS.get(&lang.to_ascii_lowercase()) {
+            self.syntax_set.find_syntax_by_name(new_lang)
+        } else {
+            self.syntax_set
+                .find_syntax_by_token(lang)
+                .or_else(|| self.syntax_set.find_syntax_by_extension(lang))
+        }
     }
 }
 
@@ -199,5 +219,11 @@ mod tests {
         assert!(syntax_set.find_syntax_by_extension("md").is_some());
         let md_theme: Theme = bincode::deserialize_from(MD_THEME).expect("invalid md_theme binary");
         assert_eq!(md_theme.name, Some("Monokai Extended".into()));
+    }
+
+    #[test]
+    fn test_render() {
+        let render = MarkdownRender::new();
+        assert!(render.find_syntax("csharp").is_some());
     }
 }
