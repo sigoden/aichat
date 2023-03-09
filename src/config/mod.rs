@@ -308,12 +308,14 @@ impl Config {
     }
 
     pub fn start_conversation(&mut self) -> Result<()> {
-        if self.conversation.is_some() {
-            let ans = Confirm::new("Already in a conversation, start a new one?")
-                .with_default(true)
-                .prompt()?;
-            if !ans {
-                return Ok(());
+        if let Some(conversation) = self.conversation.as_ref() {
+            if conversation.reamind_tokens() > 0 {
+                let ans = Confirm::new("Already in a conversation, start a new one?")
+                    .with_default(true)
+                    .prompt()?;
+                if !ans {
+                    return Ok(());
+                }
             }
         }
         self.conversation = Some(Conversation::new(self.role.clone()));
