@@ -39,7 +39,7 @@ impl Role {
         if self.embeded() {
             merge_prompt_content(&self.prompt, content)
         } else {
-            format!("{}{content}", self.prompt)
+            format!("{}\n{content}", self.prompt)
         }
     }
 

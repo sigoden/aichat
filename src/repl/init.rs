@@ -4,8 +4,8 @@ use crate::config::{Config, SharedConfig};
 
 use anyhow::{Context, Result};
 use reedline::{
-    default_emacs_keybindings, ColumnarMenu, DefaultCompleter, Emacs, FileBackedHistory, KeyCode,
-    KeyModifiers, Keybindings, Reedline, ReedlineEvent, ReedlineMenu, ValidationResult, Validator,
+    default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultValidator, Emacs,
+    FileBackedHistory, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent, ReedlineMenu,
 };
 
 const MENU_NAME: &str = "completion_menu";
@@ -16,11 +16,6 @@ pub struct Repl {
 
 impl Repl {
     pub fn init(config: SharedConfig) -> Result<Self> {
-        let multiline_commands: Vec<&'static str> = REPL_COMMANDS
-            .iter()
-            .filter(|(_, _, v)| *v)
-            .map(|(v, _, _)| *v)
-            .collect();
         let completer = Self::create_completer(config);
         let keybindings = Self::create_keybindings();
         let history = Self::create_history()?;
@@ -33,7 +28,7 @@ impl Repl {
             .with_edit_mode(edit_mode)
             .with_quick_completions(true)
             .with_partial_completions(true)
-            .with_validator(Box::new(ReplValidator { multiline_commands }))
+            .with_validator(Box::new(DefaultValidator))
             .with_ansi_colors(true);
         Ok(Self { editor })
     }
@@ -41,7 +36,7 @@ impl Repl {
     fn create_completer(config: SharedConfig) -> DefaultCompleter {
         let mut completion: Vec<String> = REPL_COMMANDS
             .into_iter()
-            .map(|(v, _, _)| v.to_string())
+            .map(|(v, _)| v.to_string())
             .collect();
         completion.extend(config.lock().repl_completions());
         let mut completer = DefaultCompleter::with_inclusions(&['.', '-', '_']).set_min_word_len(2);
@@ -78,40 +73,4 @@ impl Repl {
                 .with_context(|| "Failed to setup history file")?,
         ))
     }
-}
-
-struct ReplValidator {
-    multiline_commands: Vec<&'static str>,
-}
-
-impl Validator for ReplValidator {
-    fn validate(&self, line: &str) -> ValidationResult {
-        if line.split('"').count() % 2 == 0 || incomplete_brackets(line, &self.multiline_commands) {
-            ValidationResult::Incomplete
-        } else {
-            ValidationResult::Complete
-        }
-    }
-}
-
-fn incomplete_brackets(line: &str, multiline_commands: &[&str]) -> bool {
-    let mut balance: Vec<char> = Vec::new();
-    let line = line.trim_start();
-    if !multiline_commands.iter().any(|v| line.starts_with(v)) {
-        return false;
-    }
-
-    for c in line.chars() {
-        if c == '{' {
-            balance.push('}');
-        } else if c == '}' {
-            if let Some(last) = balance.last() {
-                if last == &c {
-                    balance.pop();
-                }
-            }
-        }
-    }
-
-    !balance.is_empty()
 }
