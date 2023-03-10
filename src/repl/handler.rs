@@ -75,7 +75,7 @@ impl ReplCmdHandler {
                 print_now!("\n");
             }
             ReplCmd::Prompt(prompt) => {
-                self.config.lock().create_temp_role(&prompt)?;
+                self.config.lock().add_prompt(&prompt)?;
                 print_now!("\n");
             }
             ReplCmd::ViewInfo => {
