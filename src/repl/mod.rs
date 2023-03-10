@@ -15,21 +15,21 @@ use crate::term;
 
 use anyhow::{Context, Result};
 use reedline::Signal;
+use std::borrow::Cow;
 use std::sync::Arc;
 
-pub const REPL_COMMANDS: [(&str, &str, bool); 12] = [
-    (".info", "Print the information", false),
-    (".set", "Modify the configuration temporarily", false),
-    (".prompt", "Add a GPT prompt", true),
-    (".role", "Select a role", false),
-    (".clear role", "Clear the currently selected role", false),
-    (".conversation", "Start a conversation.", false),
-    (".clear conversation", "End current conversation.", false),
-    (".history", "Print the history", false),
-    (".clear history", "Clear the history", false),
-    (".editor", "Enter editor mode for multiline input", true),
-    (".help", "Print this help message", false),
-    (".exit", "Exit the REPL", false),
+pub const REPL_COMMANDS: [(&str, &str); 11] = [
+    (".info", "Print the information"),
+    (".set", "Modify the configuration temporarily"),
+    (".prompt", "Add a GPT prompt"),
+    (".role", "Select a role"),
+    (".clear role", "Clear the currently selected role"),
+    (".conversation", "Start a conversation."),
+    (".clear conversation", "End current conversation."),
+    (".history", "Print the history"),
+    (".clear history", "Clear the history"),
+    (".help", "Print this help message"),
+    (".exit", "Exit the REPL"),
 ];
 
 impl Repl {
@@ -85,14 +85,9 @@ impl Repl {
     }
 
     fn handle_line(&mut self, handler: Arc<ReplCmdHandler>, line: String) -> Result<bool> {
-        let mut trimed_line = line.trim_start();
-        if trimed_line.starts_with('.') {
-            trimed_line = trimed_line.trim_end();
-            let (cmd, args) = match trimed_line.split_once(' ') {
-                Some((head, tail)) => (head, Some(tail)),
-                None => (trimed_line, None),
-            };
-            match cmd {
+        let line = clean_multiline_symbols(&line);
+        match parse_command(&line) {
+            Some((cmd, args)) => match cmd {
                 ".exit" => {
                     return Ok(true);
                 }
@@ -121,28 +116,14 @@ impl Repl {
                 ".info" => {
                     handler.handle(ReplCmd::ViewInfo)?;
                 }
-                ".editor" => {
-                    let mut text = args.unwrap_or_default().to_string();
-                    if text.is_empty() {
-                        print_now!("Usage: .editor {{ <your multiline/paste content here> }}\n\n");
-                    } else {
-                        if text.starts_with('{') && text.ends_with('}') {
-                            text = text[1..text.len() - 1].to_string()
-                        }
-                        handler.handle(ReplCmd::Submit(text))?;
-                    }
-                }
                 ".set" => {
                     handler.handle(ReplCmd::UpdateConfig(args.unwrap_or_default().to_string()))?
                 }
                 ".prompt" => {
-                    let mut text = args.unwrap_or_default().to_string();
+                    let text = args.unwrap_or_default().to_string();
                     if text.is_empty() {
-                        print_now!("Usage: .prompt {{ <your content here> }}.\n\n");
+                        print_now!("Usage: .prompt <text>.\n\n");
                     } else {
-                        if text.starts_with('{') && text.ends_with('}') {
-                            text = text[1..text.len() - 1].to_string()
-                        }
                         handler.handle(ReplCmd::Prompt(text))?;
                     }
                 }
@@ -150,9 +131,10 @@ impl Repl {
                     handler.handle(ReplCmd::StartConversation)?;
                 }
                 _ => dump_unknown_command(),
+            },
+            None => {
+                handler.handle(ReplCmd::Submit(line.to_string()))?;
             }
-        } else {
-            handler.handle(ReplCmd::Submit(line))?;
         }
 
         Ok(false)
@@ -166,11 +148,64 @@ fn dump_unknown_command() {
 fn dump_repl_help() {
     let head = REPL_COMMANDS
         .iter()
-        .map(|(name, desc, _)| format!("{name:<24} {desc}"))
+        .map(|(name, desc)| format!("{name:<24} {desc}"))
         .collect::<Vec<String>>()
         .join("\n");
     print_now!(
         "{}\n\nPress Ctrl+C to abort conversation, Ctrl+D to exit the REPL\n\n",
         head,
     );
+}
+
+fn clean_multiline_symbols(line: &str) -> Cow<str> {
+    let trimed_line = line.trim();
+    match trimed_line.chars().next() {
+        Some('{') | Some('[') | Some('(') => trimed_line[1..trimed_line.len() - 1].into(),
+        _ => Cow::Borrowed(line),
+    }
+}
+
+fn parse_command(line: &str) -> Option<(&str, Option<&str>)> {
+    let mut trimed_line = line.trim_start();
+    if trimed_line.starts_with('.') {
+        trimed_line = trimed_line.trim_end();
+        match trimed_line
+            .split_once(' ')
+            .or_else(|| trimed_line.split_once('\n'))
+        {
+            Some((head, tail)) => {
+                let trimed_tail = tail.trim();
+                if trimed_tail.is_empty() {
+                    Some((head, None))
+                } else {
+                    Some((head, Some(trimed_tail)))
+                }
+            }
+            None => Some((trimed_line, None)),
+        }
+    } else {
+        None
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_process_command_line() {
+        assert_eq!(parse_command(" .role"), Some((".role", None)));
+        assert_eq!(parse_command(" .role  "), Some((".role", None)));
+        assert_eq!(
+            parse_command(" .set dry_run true"),
+            Some((".set", Some("dry_run true")))
+        );
+        assert_eq!(
+            parse_command(" .set dry_run true  "),
+            Some((".set", Some("dry_run true")))
+        );
+        assert_eq!(
+            parse_command(".prompt \nabc\n"),
+            Some((".prompt", Some("abc")))
+        );
+    }
 }

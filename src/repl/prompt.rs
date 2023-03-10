@@ -3,8 +3,6 @@ use crate::config::SharedConfig;
 use reedline::{Prompt, PromptHistorySearch, PromptHistorySearchStatus};
 use std::borrow::Cow;
 
-const DEFAULT_MULTILINE_INDICATOR: &str = "::: ";
-
 #[derive(Clone)]
 pub struct ReplPrompt(SharedConfig);
 
@@ -43,7 +41,7 @@ impl Prompt for ReplPrompt {
     }
 
     fn render_prompt_multiline_indicator(&self) -> Cow<str> {
-        Cow::Borrowed(DEFAULT_MULTILINE_INDICATOR)
+        Cow::Borrowed("")
     }
 
     fn render_prompt_history_search_indicator(
