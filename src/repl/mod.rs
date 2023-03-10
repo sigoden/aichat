@@ -152,8 +152,12 @@ fn dump_repl_help() {
         .collect::<Vec<String>>()
         .join("\n");
     print_now!(
-        "{}\n\nPress Ctrl+C to abort conversation, Ctrl+D to exit the REPL\n\n",
-        head,
+        r###"{head}
+
+Type `{{` to enter the multi-line editing mode, type '}}' to exit the mode.
+Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
+
+"###,
     );
 }
 
