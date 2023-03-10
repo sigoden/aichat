@@ -3,6 +3,9 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
+    /// Add a GPT prompt
+    #[clap(short, long)]
+    pub prompt: Option<String>,
     /// Turn off highlight
     #[clap(short = 'H', long)]
     pub no_highlight: bool,

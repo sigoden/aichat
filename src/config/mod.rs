@@ -193,7 +193,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn create_temp_role(&mut self, prompt: &str) -> Result<()> {
+    pub fn add_prompt(&mut self, prompt: &str) -> Result<()> {
         let role = Role::new(prompt, self.temperature);
         if let Some(conversation) = self.conversation.as_mut() {
             conversation.update_role(&role)?;

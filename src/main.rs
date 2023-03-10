@@ -48,6 +48,9 @@ fn main() -> Result<()> {
     if cli.no_highlight {
         config.lock().highlight = false;
     }
+    if let Some(prompt) = &cli.prompt {
+        config.lock().add_prompt(prompt)?;
+    }
     let no_stream = cli.no_stream;
     let client = ChatGptClient::init(config.clone())?;
     if atty::isnt(atty::Stream::Stdin) {
