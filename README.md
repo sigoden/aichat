@@ -3,7 +3,7 @@
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 
-A powerful ChatGPT command line tool that allows easy chat with ChatGPT-3.5 in a terminal.
+Chat with gpt-3.5/chatgpt in terminal.
 
 ![demo](https://user-images.githubusercontent.com/4012553/223645914-f397b95f-1a30-4eda-a6a8-5bd0c2903add.gif)
 
@@ -51,7 +51,7 @@ temperature: 1.0                  # optional, see https://platform.openai.com/do
 save: true                        # optional, If set to true, aichat will save chat messages to message.md
 highlight: true                   # optional, Set false to turn highlight
 proxy: "socks5://127.0.0.1:1080"  # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
-conversation_first: false         # optional, If set ture, start a conversation immediately upon repl
+conversation_first: false         # optional, If set true, start a conversation immediately upon repl
 ```
 
 > You can specify the configuration directory through `$AICHAT_CONFIG_DIR`
