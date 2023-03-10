@@ -17,7 +17,7 @@ cargo install --force aichat
 
 ### Binaries on macOS, Linux, Windows
 
-Download from [Github Releases](https://github.com/sigoden/aichat/releases), unzip and add opscan to your $PATH.
+Download it from [Github Releases](https://github.com/sigoden/aichat/releases), unzip and add aichat to your $PATH.
 
 ## Features
 
@@ -48,7 +48,7 @@ After setting, it will automatically create the configuration file. Of course, y
 ```yaml
 api_key: "<YOUR SECRET API KEY>"  # Request via https://platform.openai.com/account/api-keys
 temperature: 1.0                  # optional, see https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
-save: true                        # optional, If set to true, aichat will save chat messages to message.md
+save: true                        # optional, If set true, aichat will save chat messages to message.md
 highlight: true                   # optional, Set false to turn highlight
 proxy: "socks5://127.0.0.1:1080"  # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
 conversation_first: false         # optional, If set true, start a conversation immediately upon repl
@@ -64,14 +64,14 @@ We can let ChatGPT play a certain role through `prompt` to make it better genera
 
 We can predefine a batch of roles in `roles.yaml`.
 
-For example, we define a role.
+For example, we define a role
 
 ```yaml
 - name: shell
   prompt: >
     I want you to act as a linux shell expert.
     I want you to answer only with bash code.
-    Do not write explanations.
+    Do not provide explanations.
   # temperature: 0.3
 ```
 
@@ -97,7 +97,7 @@ Arguments:
   [TEXT]...  Input text
 
 Options:
-  -H, --no-highlight  Turn off highlight
+  -H, --no-highlight  Disable syntax highlightiing
   -S, --no-stream     No stream output
       --list-roles    List all roles
   -r, --role <ROLE>   Select a role
@@ -136,18 +136,18 @@ Type ".help" for more information.
 
 aichat has a powerful Chat REPL.
 
-Tle Chat REPL supports:
-- emacs keybinding
-- command autocompletion
-- history search
-- fish-style history autosuggestion hints
-- edit/past multiline input
-- undo support
-- clipboard integration
+The Chat REPL supports:
+- Emacs keybinding
+- Command autocompletion
+- History search
+- Fish-style history autosuggestion hints
+- Edit/past multiline input
+- Undo support
+- Clipboard integration
 
 ### multi-line editing mode
 
-**Type `{` or `(` or `[` at the beginning of the line to enter the multi-line editing mode.** In this mode you can type or paste multiple lines of text. Type the corresponding `}`, `)` `]` at the end of the line to exit the mode and submit the content.
+**Type `{` or `(` or `[` at the beginning of the line to enter the multi-line editing mode.** In this mode you can type or paste multiple lines of text. Type the corresponding `}` or `)` or `]` at the end of the line to exit the mode and submit the content.
 
 ```
 〉{ convert json below to toml
