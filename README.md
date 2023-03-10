@@ -24,6 +24,7 @@ Download from [Github Releases](https://github.com/sigoden/aichat/releases), unz
 - Predefine AI [roles](#roles)
 - Use GPT prompt easily
 - Powerful [Chat REPL](#chat-repl)
+- Context-ware conversation
 - syntax highlighting markdown and other 200 languages.
 - Stream output with hand typing effect
 - Multiline input support and emacs-like editing experience
@@ -50,6 +51,7 @@ temperature: 1.0                  # optional, see https://platform.openai.com/do
 save: true                        # optional, If set to true, aichat will save chat messages to message.md
 highlight: true                   # optional, Set false to turn highlight
 proxy: "socks5://127.0.0.1:1080"  # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
+conversation_first: false         # optional, If set ture, start a conversation immediately upon repl
 ```
 
 > You can specify the configuration directory through `$AICHAT_CONFIG_DIR`
@@ -74,15 +76,14 @@ For example, we define a role.
 ```
 
 Let ChatGPT answer questions in the role of a linux shell expert.
-
 ```
 〉.role shell
 
-〉 extract encrypted zipfile app.zip to /tmp/app
-```
-```bash
+shell〉 extract encrypted zipfile app.zip to /tmp/app
+---
 mkdir /tmp/app
 unzip -P PASSWORD app.zip -d /tmp/app
+---
 ```
 
 ## CLI
@@ -144,23 +145,40 @@ Tle Chat REPL supports:
 - undo support
 - clipboard integration
 
-Chat REPL also provide many commands.
+### multi-line editing mode
+
+**Type `{` or `(` or `[` at the beginning of the line to enter the multi-line editing mode.** In this mode you can type or paste multiple lines of text. Type the corresponding `}`, `)` `]` at the end of the line to exit the mode and submit the content.
 
 ```
-Welcome to aichat 0.5.0
-Type ".help" for more information.
-.info           Print the information
-.set            Modify the configuration temporarily
-.prompt         Add a GPT prompt
-.role           Select a role
-.clear role     Clear the currently selected role
-.history        Print the history
-.clear history  Clear the history
-.editor         Enter editor mode for multiline input
-.help           Print this help message
-.exit           Exit the REPL
+〉{ convert json below to toml
+{
+  "an": [
+    "arbitrarily",
+    "nested"
+  ],
+  "data": "structure"
+}}
+```
 
-Press Ctrl+C to abort session, Ctrl+D to exit the REPL
+
+### `.help` - Print help message
+
+```
+〉.help
+.info                    Print the information
+.set                     Modify the configuration temporarily
+.prompt                  Add a GPT prompt
+.role                    Select a role
+.clear role              Clear the currently selected role
+.conversation            Start a conversation.
+.clear conversation      End current conversation.
+.history                 Print the history
+.clear history           Clear the history
+.help                    Print this help message
+.exit                    Exit the REPL
+
+Press Ctrl+C to abort conversation, Ctrl+D to exit the REPL
+
 ```
 
 ### `.info` - view current configuration information.
@@ -176,6 +194,7 @@ temperature         -
 save                true
 highlight           true
 proxy               -
+conversation_first  false
 dry_run             false
 ```
 
@@ -192,17 +211,17 @@ dry_run             false
 When you set up a prompt, every message sent later will carry the prompt.
 
 ```
-〉.prompt {
-:::     I want you to translate the sentences I wrote into emojis.
-:::     I will write the sentence, and you will express it with emojis.
-:::     I don't want you to reply with anything but emoji.
-::: }
+〉{ .prompt
+I want you to translate the sentences I wrote into emojis.
+I will write the sentence, and you will express it with emojis.
+I don't want you to reply with anything but emoji.
+}
 Done
 
-〉You are a genius
+Ｐ〉You are a genius
 👉🧠💡👨‍🎓
 
-〉I'm embarrassed
+Ｐ〉I'm embarrassed
 🙈😳
 ```
 
@@ -213,32 +232,58 @@ When you are satisfied with the prompt, add it to `roles.yaml` for later use.
 ### `.role` - let the ai play a role
 
 Select a role.
-```
-〉.role shell
-```
-
-Unselect a role.
-```
-〉.clear role
-```
-
-Use `.info` to check current selected role.
-
-### `.editor` - input/paste multiline text
-
-Type `.editor {` to enter editor mode, you can input/paste multiline text, quite editor mode with `}`
 
 ```
-〉.editor {convert json below to toml
-::: {
-:::   "an": [
-:::     "arbitrarily",
-:::     "nested"
-:::   ],
-:::   "data": "structure"
-::: }
-::: }
+〉.role emoji
+name: emoji
+prompt: I want you to translate the sentences I wrote into emojis. I will write the sentence, and you will express it with emojis. I just want you to express it with emojis. I don't want you to reply with anything but emoji. When I need to tell you something in English, I will do it by wrapping it in curly brackets like {like this}.
+temperature: null
 ```
+
+AI play the role we specified
+```
+emoji〉hello
+👋
+```
+
+Clear current selected role
+```
+emoji〉.clear role
+
+〉hello 
+Hello there! How can I assist you today?
+```
+
+### `.conversation` - start a context-aware conversation
+
+By default, aichat behaves in a one-off request/response manner.
+
+You can run `.conversation` to enter context-aware mode, or set `config.conversation_first` true to start a conversation immediately upon repl.
+
+```
+〉.conversation
+
+＄list 1 to 5, one per line                                                              4089
+1
+2
+3
+4
+5
+
+＄reverse the list                                                                       4065
+5
+4
+3
+2
+1
+
+＄.clear conversation                                                                    4043
+
+〉
+```
+
+When enter conversation mode, prompt `〉` will change to `＄`, A number will appear on the right, which means how many tokens left to use.
+Once the number becomes zero, you need to start a new conversation.
 
 ## License
 
