@@ -155,7 +155,7 @@ impl ChatGptClient {
         let builder = self
             .build_client()?
             .post(API_URL)
-            .bearer_auth(&self.config.lock().api_key)
+            .bearer_auth(self.config.lock().get_api_key())
             .json(&body);
 
         Ok(builder)
