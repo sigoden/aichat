@@ -16,11 +16,15 @@ use std::{
 };
 use unicode_width::UnicodeWidthStr;
 
-pub fn repl_render_stream(rx: Receiver<ReplyStreamEvent>, abort: SharedAbortSignal) -> Result<()> {
+pub fn repl_render_stream(
+    rx: Receiver<ReplyStreamEvent>,
+    light_theme: bool,
+    abort: SharedAbortSignal,
+) -> Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
 
-    let ret = repl_render_stream_inner(rx, abort, &mut stdout);
+    let ret = repl_render_stream_inner(rx, light_theme, abort, &mut stdout);
 
     disable_raw_mode()?;
 
@@ -29,13 +33,14 @@ pub fn repl_render_stream(rx: Receiver<ReplyStreamEvent>, abort: SharedAbortSign
 
 fn repl_render_stream_inner(
     rx: Receiver<ReplyStreamEvent>,
+    light_theme: bool,
     abort: SharedAbortSignal,
     writer: &mut Stdout,
 ) -> Result<()> {
     let mut last_tick = Instant::now();
     let tick_rate = Duration::from_millis(100);
     let mut buffer = String::new();
-    let mut markdown_render = MarkdownRender::new();
+    let mut markdown_render = MarkdownRender::new(light_theme);
     let terminal_columns = terminal::size()?.0;
     loop {
         if abort.aborted() {

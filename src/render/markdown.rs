@@ -7,6 +7,7 @@ use syntect::{easy::HighlightLines, parsing::SyntaxReference};
 
 /// Monokai Extended
 const MD_THEME: &[u8] = include_bytes!("../../assets/monokai-extended.theme.bin");
+const MD_THEME_LIGHT: &[u8] = include_bytes!("../../assets/monokai-extended-light.theme.bin");
 /// Comes from https://github.com/sharkdp/bat/raw/5e77ca37e89c873e4490b42ff556370dc5c6ba4f/assets/syntaxes.bin
 const SYNTAXES: &[u8] = include_bytes!("../../assets/syntaxes.bin");
 
@@ -29,10 +30,14 @@ pub struct MarkdownRender {
 }
 
 impl MarkdownRender {
-    pub fn new() -> Self {
+    pub fn new(light_theme: bool) -> Self {
         let syntax_set: SyntaxSet =
             bincode::deserialize_from(SYNTAXES).expect("invalid syntaxes binary");
-        let md_theme: Theme = bincode::deserialize_from(MD_THEME).expect("invalid md_theme binary");
+        let md_theme: Theme = if light_theme {
+            bincode::deserialize_from(MD_THEME_LIGHT).expect("invalid theme binary")
+        } else {
+            bincode::deserialize_from(MD_THEME).expect("invalid theme binary")
+        };
         let code_color = get_code_color(&md_theme);
         let md_syntax = syntax_set.find_syntax_by_extension("md").unwrap().clone();
         let line_type = LineType::Normal;
@@ -223,7 +228,7 @@ mod tests {
 
     #[test]
     fn test_render() {
-        let render = MarkdownRender::new();
+        let render = MarkdownRender::new(true);
         assert!(render.find_syntax("csharp").is_some());
     }
 }

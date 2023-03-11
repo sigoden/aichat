@@ -39,6 +39,7 @@ dependencies = [
  "inquire",
  "is-terminal",
  "lazy_static",
+ "nu-ansi-term",
  "parking_lot",
  "reedline",
  "reqwest",

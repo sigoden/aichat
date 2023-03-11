@@ -54,6 +54,8 @@ pub struct Config {
     pub dry_run: bool,
     /// If set ture, start a conversation immediately upon repl
     pub conversation_first: bool,
+    /// Is ligth theme
+    pub light_theme: bool,
     /// Predefined roles
     #[serde(skip)]
     pub roles: Vec<Role>,
@@ -75,6 +77,7 @@ impl Default for Config {
             proxy: None,
             dry_run: false,
             conversation_first: false,
+            light_theme: false,
             roles: vec![],
             role: None,
             conversation: None,
@@ -409,11 +412,10 @@ impl Config {
 
     fn merge_env_vars(&mut self) {
         if let Ok(value) = env::var(get_env_name("dry_run")) {
-            match value.as_str() {
-                "1" | "true" => self.dry_run = true,
-                "0" | "false" => self.dry_run = false,
-                _ => {}
-            }
+            set_bool(&mut self.dry_run, &value);
+        }
+        if let Ok(value) = env::var(get_env_name("light_theme")) {
+            set_bool(&mut self.light_theme, &value);
         }
     }
 }
@@ -478,4 +480,12 @@ fn get_env_name(key: &str) -> String {
         env!("CARGO_CRATE_NAME").to_ascii_uppercase(),
         key.to_ascii_uppercase(),
     )
+}
+
+fn set_bool(target: &mut bool, value: &str) {
+    match value {
+        "1" | "true" => *target = true,
+        "0" | "false" => *target = false,
+        _ => {}
+    }
 }
