@@ -15,7 +15,7 @@ use anyhow::{anyhow, Result};
 use clap::Parser;
 use crossbeam::sync::WaitGroup;
 use is_terminal::IsTerminal;
-use parking_lot::Mutex;
+use parking_lot::RwLock;
 use render::{render_stream, MarkdownRender};
 use repl::{AbortSignal, Repl};
 use std::io::{stdin, Read};
@@ -26,10 +26,10 @@ use utils::cl100k_base_singleton;
 fn main() -> Result<()> {
     let cli = Cli::parse();
     let text = cli.text();
-    let config = Arc::new(Mutex::new(Config::init(text.is_none())?));
+    let config = Arc::new(RwLock::new(Config::init(text.is_none())?));
     if cli.list_roles {
         config
-            .lock()
+            .read()
             .roles
             .iter()
             .for_each(|v| println!("{}", v.name));
@@ -38,18 +38,18 @@ fn main() -> Result<()> {
     let role = match &cli.role {
         Some(name) => Some(
             config
-                .lock()
+                .read()
                 .find_role(name)
                 .ok_or_else(|| anyhow!("Unknown role '{name}'"))?,
         ),
         None => None,
     };
-    config.lock().role = role;
+    config.write().role = role;
     if cli.no_highlight {
-        config.lock().highlight = false;
+        config.write().highlight = false;
     }
     if let Some(prompt) = &cli.prompt {
-        config.lock().add_prompt(prompt)?;
+        config.write().add_prompt(prompt)?;
     }
     let no_stream = cli.no_stream;
     let client = ChatGptClient::init(config.clone())?;
@@ -74,9 +74,11 @@ fn start_directive(
     input: &str,
     no_stream: bool,
 ) -> Result<()> {
-    let highlight = config.lock().highlight && stdout().is_terminal();
-    let light_theme = config.lock().light_theme;
+    if !stdout().is_terminal() {
+        config.write().highlight = false;
+    }
     let output = if no_stream {
+        let (highlight, light_theme) = config.read().get_render_options();
         let output = client.send_message(input)?;
         if highlight {
             let mut markdown_render = MarkdownRender::new(light_theme);
@@ -93,24 +95,16 @@ fn start_directive(
             abort_clone.set_ctrlc();
         })
         .expect("Error setting Ctrl-C handler");
-        let output = render_stream(
-            input,
-            &client,
-            highlight,
-            light_theme,
-            false,
-            abort,
-            wg.clone(),
-        )?;
+        let output = render_stream(input, &client, config.clone(), false, abort, wg.clone())?;
         wg.wait();
         output
     };
-    config.lock().save_message(input, &output)
+    config.read().save_message(input, &output)
 }
 
 fn start_interactive(client: ChatGptClient, config: SharedConfig) -> Result<()> {
     cl100k_base_singleton();
-    config.lock().on_repl()?;
+    config.write().on_repl()?;
     let mut repl = Repl::init(config.clone())?;
     repl.run(client, config)
 }

@@ -1,12 +1,12 @@
 mod abort;
 mod handler;
+mod highlighter;
 mod init;
 mod prompt;
 
 pub use self::abort::*;
 pub use self::handler::*;
 pub use self::init::Repl;
-use self::prompt::ReplPrompt;
 
 use crate::client::ChatGptClient;
 use crate::config::SharedConfig;
@@ -35,8 +35,7 @@ pub const REPL_COMMANDS: [(&str, &str); 11] = [
 impl Repl {
     pub fn run(&mut self, client: ChatGptClient, config: SharedConfig) -> Result<()> {
         let abort = AbortSignal::new();
-        let handler = ReplCmdHandler::init(client, config.clone(), abort.clone())?;
-        let prompt = ReplPrompt::new(config);
+        let handler = ReplCmdHandler::init(client, config, abort.clone())?;
         print_now!("Welcome to aichat {}\n", env!("CARGO_PKG_VERSION"));
         print_now!("Type \".help\" for more information.\n");
         let mut already_ctrlc = false;
@@ -48,7 +47,7 @@ impl Repl {
             if abort.aborted_ctrlc() && !already_ctrlc {
                 already_ctrlc = true;
             }
-            let sig = self.editor.read_line(&prompt);
+            let sig = self.editor.read_line(&self.prompt);
             match sig {
                 Ok(Signal::Success(line)) => {
                     already_ctrlc = false;
@@ -117,7 +116,8 @@ impl Repl {
                     handler.handle(ReplCmd::ViewInfo)?;
                 }
                 ".set" => {
-                    handler.handle(ReplCmd::UpdateConfig(args.unwrap_or_default().to_string()))?
+                    handler.handle(ReplCmd::UpdateConfig(args.unwrap_or_default().to_string()))?;
+                    self.prompt.sync_config();
                 }
                 ".prompt" => {
                     let text = args.unwrap_or_default().to_string();

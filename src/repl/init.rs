@@ -1,22 +1,18 @@
-use super::REPL_COMMANDS;
+use super::{highlighter::ReplHighlighter, prompt::ReplPrompt, REPL_COMMANDS};
 
 use crate::config::{Config, SharedConfig};
 
 use anyhow::{Context, Result};
-use nu_ansi_term::Color;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultValidator, Emacs,
-    ExampleHighlighter, FileBackedHistory, KeyCode, KeyModifiers, Keybindings, Reedline,
-    ReedlineEvent, ReedlineMenu,
+    FileBackedHistory, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent, ReedlineMenu,
 };
 
 const MENU_NAME: &str = "completion_menu";
-const MATCH_COLOR: Color = Color::Green;
-const NEUTRAL_COLOR: Color = Color::White;
-const NEUTRAL_COLOR_LIGHT: Color = Color::Black;
 
 pub struct Repl {
-    pub editor: Reedline,
+    pub(crate) editor: Reedline,
+    pub(crate) prompt: ReplPrompt,
 }
 
 impl Repl {
@@ -27,7 +23,7 @@ impl Repl {
             .collect();
 
         let completer = Self::create_completer(config.clone(), &commands);
-        let highlighter = Self::create_highlighter(config, &commands);
+        let highlighter = ReplHighlighter::new(config.clone(), commands);
         let keybindings = Self::create_keybindings();
         let history = Self::create_history()?;
         let menu = Self::create_menu();
@@ -42,25 +38,16 @@ impl Repl {
             .with_partial_completions(true)
             .with_validator(Box::new(DefaultValidator))
             .with_ansi_colors(true);
-        Ok(Self { editor })
+        let prompt = ReplPrompt::new(config);
+        Ok(Self { editor, prompt })
     }
 
     fn create_completer(config: SharedConfig, commands: &[String]) -> DefaultCompleter {
         let mut completion = commands.to_vec();
-        completion.extend(config.lock().repl_completions());
+        completion.extend(config.read().repl_completions());
         let mut completer = DefaultCompleter::with_inclusions(&['.', '-', '_']).set_min_word_len(2);
         completer.insert(completion.clone());
         completer
-    }
-
-    fn create_highlighter(config: SharedConfig, commands: &[String]) -> ExampleHighlighter {
-        let mut highlighter = ExampleHighlighter::new(commands.to_vec());
-        if config.lock().light_theme {
-            highlighter.change_colors(MATCH_COLOR, NEUTRAL_COLOR_LIGHT, NEUTRAL_COLOR_LIGHT);
-        } else {
-            highlighter.change_colors(MATCH_COLOR, NEUTRAL_COLOR, NEUTRAL_COLOR);
-        }
-        highlighter
     }
 
     fn create_keybindings() -> Keybindings {

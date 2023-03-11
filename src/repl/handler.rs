@@ -50,50 +50,47 @@ impl ReplCmdHandler {
                     self.reply.borrow_mut().clear();
                     return Ok(());
                 }
-                let highlight = self.config.lock().highlight;
-                let light_theme = self.config.lock().light_theme;
                 let wg = WaitGroup::new();
                 let ret = render_stream(
                     &input,
                     &self.client,
-                    highlight,
-                    light_theme,
+                    self.config.clone(),
                     true,
                     self.abort.clone(),
                     wg.clone(),
                 );
                 wg.wait();
                 let buffer = ret?;
-                self.config.lock().save_message(&input, &buffer)?;
-                self.config.lock().save_conversation(&input, &buffer)?;
+                self.config.read().save_message(&input, &buffer)?;
+                self.config.write().save_conversation(&input, &buffer)?;
                 *self.reply.borrow_mut() = buffer;
             }
             ReplCmd::SetRole(name) => {
-                let output = self.config.lock().change_role(&name)?;
+                let output = self.config.write().change_role(&name)?;
                 print_now!("{}\n\n", output.trim_end());
             }
             ReplCmd::ClearRole => {
-                self.config.lock().clear_role()?;
+                self.config.write().clear_role()?;
                 print_now!("\n");
             }
             ReplCmd::Prompt(prompt) => {
-                self.config.lock().add_prompt(&prompt)?;
+                self.config.write().add_prompt(&prompt)?;
                 print_now!("\n");
             }
             ReplCmd::ViewInfo => {
-                let output = self.config.lock().info()?;
+                let output = self.config.read().info()?;
                 print_now!("{}\n\n", output.trim_end());
             }
             ReplCmd::UpdateConfig(input) => {
-                self.config.lock().update(&input)?;
+                self.config.write().update(&input)?;
                 print_now!("\n");
             }
             ReplCmd::StartConversation => {
-                self.config.lock().start_conversation()?;
+                self.config.write().start_conversation()?;
                 print_now!("\n");
             }
             ReplCmd::EndConversatoin => {
-                self.config.lock().end_conversation();
+                self.config.write().end_conversation();
                 print_now!("\n");
             }
         }
