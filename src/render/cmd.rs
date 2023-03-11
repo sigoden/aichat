@@ -6,9 +6,13 @@ use crate::repl::{ReplyStreamEvent, SharedAbortSignal};
 use anyhow::Result;
 use crossbeam::channel::Receiver;
 
-pub fn cmd_render_stream(rx: Receiver<ReplyStreamEvent>, abort: SharedAbortSignal) -> Result<()> {
+pub fn cmd_render_stream(
+    rx: Receiver<ReplyStreamEvent>,
+    light_theme: bool,
+    abort: SharedAbortSignal,
+) -> Result<()> {
     let mut buffer = String::new();
-    let mut markdown_render = MarkdownRender::new();
+    let mut markdown_render = MarkdownRender::new(light_theme);
     loop {
         if abort.aborted() {
             return Ok(());

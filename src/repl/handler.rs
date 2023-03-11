@@ -51,11 +51,13 @@ impl ReplCmdHandler {
                     return Ok(());
                 }
                 let highlight = self.config.lock().highlight;
+                let light_theme = self.config.lock().light_theme;
                 let wg = WaitGroup::new();
                 let ret = render_stream(
                     &input,
                     &self.client,
                     highlight,
+                    light_theme,
                     true,
                     self.abort.clone(),
                     wg.clone(),

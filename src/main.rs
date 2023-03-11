@@ -75,10 +75,11 @@ fn start_directive(
     no_stream: bool,
 ) -> Result<()> {
     let highlight = config.lock().highlight && stdout().is_terminal();
+    let light_theme = config.lock().light_theme;
     let output = if no_stream {
         let output = client.send_message(input)?;
         if highlight {
-            let mut markdown_render = MarkdownRender::new();
+            let mut markdown_render = MarkdownRender::new(light_theme);
             println!("{}", markdown_render.render(&output).trim());
         } else {
             println!("{}", output.trim());
@@ -92,7 +93,15 @@ fn start_directive(
             abort_clone.set_ctrlc();
         })
         .expect("Error setting Ctrl-C handler");
-        let output = render_stream(input, &client, highlight, false, abort, wg.clone())?;
+        let output = render_stream(
+            input,
+            &client,
+            highlight,
+            light_theme,
+            false,
+            abort,
+            wg.clone(),
+        )?;
         wg.wait();
         output
     };
