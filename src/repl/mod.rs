@@ -3,6 +3,7 @@ mod handler;
 mod highlighter;
 mod init;
 mod prompt;
+mod validator;
 
 pub use self::abort::*;
 pub use self::handler::*;

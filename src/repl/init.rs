@@ -1,11 +1,13 @@
-use super::{highlighter::ReplHighlighter, prompt::ReplPrompt, REPL_COMMANDS};
+use super::{
+    highlighter::ReplHighlighter, prompt::ReplPrompt, validator::ReplValidator, REPL_COMMANDS,
+};
 
 use crate::config::{Config, SharedConfig};
 
 use anyhow::{Context, Result};
 use reedline::{
-    default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultValidator, Emacs,
-    FileBackedHistory, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent, ReedlineMenu,
+    default_emacs_keybindings, ColumnarMenu, DefaultCompleter, Emacs, FileBackedHistory, KeyCode,
+    KeyModifiers, Keybindings, Reedline, ReedlineEvent, ReedlineMenu,
 };
 
 const MENU_NAME: &str = "completion_menu";
@@ -36,7 +38,7 @@ impl Repl {
             .with_edit_mode(edit_mode)
             .with_quick_completions(true)
             .with_partial_completions(true)
-            .with_validator(Box::new(DefaultValidator))
+            .with_validator(Box::new(ReplValidator))
             .with_ansi_colors(true);
         let prompt = ReplPrompt::new(config);
         Ok(Self { editor, prompt })
