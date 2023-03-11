@@ -1,21 +1,74 @@
 use crate::config::SharedConfig;
 
+use crossterm::style::Color;
 use reedline::{Prompt, PromptHistorySearch, PromptHistorySearchStatus};
 use std::borrow::Cow;
 
+const PROMPT_COLOR: Color = Color::Green;
+const PROMPT_MULTILINE_COLOR: nu_ansi_term::Color = nu_ansi_term::Color::LightBlue;
+const INDICATOR_COLOR: Color = Color::Cyan;
+const PROMPT_RIGHT_COLOR: Color = Color::AnsiValue(5);
+
 #[derive(Clone)]
-pub struct ReplPrompt(SharedConfig);
+pub struct ReplPrompt {
+    config: SharedConfig,
+    prompt_color: Color,
+    prompt_multiline_color: nu_ansi_term::Color,
+    indicator_color: Color,
+    prompt_right_color: Color,
+}
 
 impl ReplPrompt {
     pub fn new(config: SharedConfig) -> Self {
-        Self(config)
+        let (prompt_color, prompt_multiline_color, indicator_color, prompt_right_color) =
+            Self::get_colors(config.clone());
+        Self {
+            config,
+            prompt_color,
+            prompt_multiline_color,
+            indicator_color,
+            prompt_right_color,
+        }
+    }
+    pub fn sync_config(&mut self) {
+        let (prompt_color, prompt_multiline_color, indicator_color, prompt_right_color) =
+            Self::get_colors(self.config.clone());
+        self.prompt_color = prompt_color;
+        self.prompt_multiline_color = prompt_multiline_color;
+        self.indicator_color = indicator_color;
+        self.prompt_right_color = prompt_right_color;
+    }
+
+    pub fn get_colors(config: SharedConfig) -> (Color, nu_ansi_term::Color, Color, Color) {
+        let (highlight, light_theme) = config.read().get_render_options();
+        if highlight {
+            (
+                PROMPT_COLOR,
+                PROMPT_MULTILINE_COLOR,
+                INDICATOR_COLOR,
+                PROMPT_RIGHT_COLOR,
+            )
+        } else if light_theme {
+            (
+                Color::Black,
+                nu_ansi_term::Color::Black,
+                Color::Black,
+                Color::Black,
+            )
+        } else {
+            (
+                Color::White,
+                nu_ansi_term::Color::White,
+                Color::White,
+                Color::White,
+            )
+        }
     }
 }
 
 impl Prompt for ReplPrompt {
     fn render_prompt_left(&self) -> Cow<str> {
-        let config = self.0.lock();
-        if let Some(role) = config.role.as_ref() {
+        if let Some(role) = self.config.read().role.as_ref() {
             role.name.to_string().into()
         } else {
             Cow::Borrowed("")
@@ -23,8 +76,7 @@ impl Prompt for ReplPrompt {
     }
 
     fn render_prompt_right(&self) -> Cow<str> {
-        let config = self.0.lock();
-        if let Some(conversation) = config.conversation.as_ref() {
+        if let Some(conversation) = self.config.read().conversation.as_ref() {
             conversation.reamind_tokens().to_string().into()
         } else {
             Cow::Borrowed("")
@@ -32,8 +84,7 @@ impl Prompt for ReplPrompt {
     }
 
     fn render_prompt_indicator(&self, _prompt_mode: reedline::PromptEditMode) -> Cow<str> {
-        let config = self.0.lock();
-        if config.conversation.is_some() {
+        if self.config.read().conversation.is_some() {
             Cow::Borrowed("＄")
         } else {
             Cow::Borrowed("〉")
@@ -58,5 +109,21 @@ impl Prompt for ReplPrompt {
             "({}reverse-search: {}) ",
             prefix, history_search.term
         ))
+    }
+
+    fn get_prompt_color(&self) -> Color {
+        self.prompt_color
+    }
+    /// Get the default multilince prompt color
+    fn get_prompt_multiline_color(&self) -> nu_ansi_term::Color {
+        self.prompt_multiline_color
+    }
+    /// Get the default indicator color
+    fn get_indicator_color(&self) -> Color {
+        self.indicator_color
+    }
+    /// Get the default right prompt color
+    fn get_prompt_right_color(&self) -> Color {
+        self.prompt_right_color
     }
 }

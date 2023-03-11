@@ -6,7 +6,7 @@ pub struct Cli {
     /// Add a GPT prompt
     #[clap(short, long)]
     pub prompt: Option<String>,
-    /// Turn off highlight
+    /// Disable syntax highlightiing
     #[clap(short = 'H', long)]
     pub no_highlight: bool,
     /// No stream output

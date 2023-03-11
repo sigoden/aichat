@@ -7,6 +7,7 @@ pub use self::markdown::MarkdownRender;
 use self::repl::repl_render_stream;
 
 use crate::client::ChatGptClient;
+use crate::config::SharedConfig;
 use crate::print_now;
 use crate::repl::{ReplyStreamHandler, SharedAbortSignal};
 
@@ -18,12 +19,12 @@ use std::thread::spawn;
 pub fn render_stream(
     input: &str,
     client: &ChatGptClient,
-    highlight: bool,
-    light_theme: bool,
+    config: SharedConfig,
     repl: bool,
     abort: SharedAbortSignal,
     wg: WaitGroup,
 ) -> Result<String> {
+    let (highlight, light_theme) = config.read().get_render_options();
     let mut stream_handler = if highlight {
         let (tx, rx) = unbounded();
         let abort_clone = abort.clone();

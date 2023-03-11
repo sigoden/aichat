@@ -10,7 +10,7 @@ use crate::utils::now;
 
 use anyhow::{anyhow, bail, Context, Result};
 use inquire::{Confirm, Text};
-use parking_lot::Mutex;
+use parking_lot::RwLock;
 use serde::Deserialize;
 use std::{
     env,
@@ -85,7 +85,7 @@ impl Default for Config {
     }
 }
 
-pub type SharedConfig = Arc<Mutex<Config>>;
+pub type SharedConfig = Arc<RwLock<Config>>;
 
 impl Config {
     pub fn init(is_interactive: bool) -> Result<Self> {
@@ -284,6 +284,7 @@ impl Config {
             ("highlight", self.highlight.to_string()),
             ("proxy", proxy),
             ("conversation_first", self.conversation_first.to_string()),
+            ("light_theme", self.light_theme.to_string()),
             ("dry_run", self.dry_run.to_string()),
         ];
         let mut output = String::new();
@@ -378,6 +379,10 @@ impl Config {
         Ok(())
     }
 
+    pub fn get_render_options(&self) -> (bool, bool) {
+        (self.highlight, self.light_theme)
+    }
+
     fn open_message_file(&self) -> Result<File> {
         let path = Config::messages_file()?;
         ensure_parent_exists(&path)?;
@@ -416,6 +421,13 @@ impl Config {
         }
         if let Ok(value) = env::var(get_env_name("light_theme")) {
             set_bool(&mut self.light_theme, &value);
+        }
+        if let Ok(value) = env::var("NO_COLOR") {
+            let mut no_color = false;
+            set_bool(&mut no_color, &value);
+            if no_color {
+                self.highlight = false;
+            }
         }
     }
 }
