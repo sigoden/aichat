@@ -106,6 +106,7 @@ impl Config {
             bail!("api_key not set");
         }
         config.merge_env_vars();
+        config.maybe_proxy();
         config.load_roles()?;
 
         Ok(config)
@@ -428,6 +429,15 @@ impl Config {
             if no_color {
                 self.highlight = false;
             }
+        }
+    }
+
+    fn maybe_proxy(&mut self) {
+        if self.proxy.is_some() {
+            return;
+        }
+        if let Ok(value) = env::var("HTTPS_PROXY").or_else(|_| env::var("ALL_PROXY")) {
+            self.proxy = Some(value);
         }
     }
 }

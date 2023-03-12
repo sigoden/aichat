@@ -126,7 +126,8 @@ impl ChatGptClient {
     fn build_client(&self) -> Result<Client> {
         let mut builder = Client::builder();
         if let Some(proxy) = self.config.read().proxy.as_ref() {
-            builder = builder.proxy(Proxy::all(proxy).with_context(|| "Invalid config.proxy")?);
+            builder = builder
+                .proxy(Proxy::all(proxy).with_context(|| format!("Invalid proxy `{proxy}`"))?);
         }
         let client = builder
             .connect_timeout(CONNECT_TIMEOUT)
