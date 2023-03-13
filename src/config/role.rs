@@ -9,10 +9,7 @@ const INPUT_PLACEHOLDER: &str = "__INPUT__";
 pub struct Role {
     /// Role name
     pub name: String,
-    /// Prompt text send to ai for setting up a role.
-    ///
-    /// If prmopt contains __INPUT___, it's embeded prompt
-    /// If prmopt don't contain __INPUT___, it's system prompt
+    /// Prompt text
     pub prompt: String,
     /// What sampling temperature to use, between 0 and 2
     pub temperature: Option<f64>,
