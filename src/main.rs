@@ -39,7 +39,7 @@ fn main() -> Result<()> {
         Some(name) => Some(
             config
                 .read()
-                .find_role(name)
+                .get_role(name)
                 .ok_or_else(|| anyhow!("Unknown role '{name}'"))?,
         ),
         None => None,

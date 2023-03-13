@@ -119,8 +119,12 @@ impl Config {
         Ok(())
     }
 
-    pub fn find_role(&self, name: &str) -> Option<Role> {
-        self.roles.iter().find(|v| v.match_name(name)).cloned()
+    pub fn get_role(&self, name: &str) -> Option<Role> {
+        self.roles.iter().find(|v| v.match_name(name)).map(|v| {
+            let mut role = v.clone();
+            role.complete_prompt_args(name);
+            role
+        })
     }
 
     pub fn config_dir() -> Result<PathBuf> {
@@ -199,9 +203,8 @@ impl Config {
     }
 
     pub fn change_role(&mut self, name: &str) -> Result<String> {
-        match self.find_role(name) {
-            Some(mut role) => {
-                role.complete_prompt_args(name);
+        match self.get_role(name) {
+            Some(role) => {
                 if let Some(conversation) = self.conversation.as_mut() {
                     conversation.update_role(&role)?;
                 }
