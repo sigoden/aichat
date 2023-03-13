@@ -47,7 +47,8 @@ impl Repl {
     fn create_completer(config: SharedConfig, commands: &[String]) -> DefaultCompleter {
         let mut completion = commands.to_vec();
         completion.extend(config.read().repl_completions());
-        let mut completer = DefaultCompleter::with_inclusions(&['.', '-', '_']).set_min_word_len(2);
+        let mut completer =
+            DefaultCompleter::with_inclusions(&['.', '-', '_', ':']).set_min_word_len(2);
         completer.insert(completion.clone());
         completer
     }
