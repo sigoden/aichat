@@ -28,7 +28,8 @@ Download it from [Github Releases](https://github.com/sigoden/aichat/releases), 
 - syntax highlighting markdown and other 200 languages.
 - Stream output with hand typing effect
 - Multiline input support and emacs-like editing experience
-- Proxy support
+- Support proxy
+- Support dark/light theme
 - Save chat messages
 
 ## Config
@@ -52,17 +53,20 @@ save: true                        # optional, If set true, aichat will save chat
 highlight: true                   # optional, Set false to turn highlight
 proxy: "socks5://127.0.0.1:1080"  # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
 conversation_first: false         # optional, If set true, start a conversation immediately upon repl
+light_theme: false                # optional, If set true, use light theme
 ```
 
-> You can specify the configuration directory through `$AICHAT_CONFIG_DIR`
+> You can use `.info` to view the current configuration file path and roles file path.
 
-> You can use `.info` to view the current configuration file path
+> You can use [Enviroment Variables](https://github.com/sigoden/aichat/wiki/Environment-Variables) to customize certain configuration items.
 
 ### Roles
 
 We can let ChatGPT play a certain role through `prompt` to make it better generate what we want.
 
 We can predefine a batch of roles in `roles.yaml`.
+
+> We can get the location of `roles.yaml` through the `.info` command.
 
 For example, we define a role
 
@@ -86,6 +90,8 @@ unzip -P PASSWORD app.zip -d /tmp/app
 ---
 ```
 
+We have provided many [Role Examples](https://github.com/sigoden/aichat/wiki/Role-Examples).
+
 ## CLI
 
 ```
@@ -97,12 +103,13 @@ Arguments:
   [TEXT]...  Input text
 
 Options:
-  -H, --no-highlight  Disable syntax highlightiing
-  -S, --no-stream     No stream output
-      --list-roles    List all roles
-  -r, --role <ROLE>   Select a role
-  -h, --help          Print help
-  -V, --version       Print version
+  -p, --prompt <PROMPT>  Set a GPT prompt
+  -H, --no-highlight     Disable syntax highlightiing
+  -S, --no-stream        No stream output
+      --list-roles       List all roles
+  -r, --role <ROLE>      Select a role
+  -h, --help             Print help
+  -V, --version          Print version
 ```
 ### Command mode
 
@@ -147,7 +154,7 @@ The Chat REPL supports:
 
 ### multi-line editing mode
 
-**Type `{` or `(` or `[` at the beginning of the line to enter the multi-line editing mode.** In this mode you can type or paste multiple lines of text. Type the corresponding `}` or `)` or `]` at the end of the line to exit the mode and submit the content.
+**Type `{` or `(` at the beginning of the line to enter the multi-line editing mode.** In this mode you can type or paste multiple lines of text. Type the corresponding `}` or `)` at the end of the line to exit the mode and submit the content.
 
 ```
 〉{ convert json below to toml
@@ -177,7 +184,8 @@ The Chat REPL supports:
 .help                    Print this help message
 .exit                    Exit the REPL
 
-Press Ctrl+C to abort conversation, Ctrl+D to exit the REPL
+Type `{` to enter the multi-line editing mode, type '}' to exit the mode.
+Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
 
 ```
 
@@ -188,13 +196,13 @@ Press Ctrl+C to abort conversation, Ctrl+D to exit the REPL
 config_file         /home/alice/.config/aichat/config.yaml
 roles_file          /home/alice/.config/aichat/roles.yaml
 messages_file       /home/alice/.config/aichat/messages.md
-role                -
 api_key             sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 temperature         -
 save                true
 highlight           true
 proxy               -
 conversation_first  false
+light_theme         false
 dry_run             false
 ```
 
@@ -214,7 +222,8 @@ When you set up a prompt, every message sent later will carry the prompt.
 〉{ .prompt
 I want you to translate the sentences I wrote into emojis.
 I will write the sentence, and you will express it with emojis.
-I don't want you to reply with anything but emoji.
+I just want you to express it with emojis.
+I want you to reply only with emojis.
 }
 Done
 
