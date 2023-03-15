@@ -3,6 +3,9 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
+    /// Choose a model
+    #[clap(short, long)]
+    pub model: Option<String>,
     /// Add a GPT prompt
     #[clap(short, long)]
     pub prompt: Option<String>,
@@ -15,6 +18,9 @@ pub struct Cli {
     /// List all roles
     #[clap(long)]
     pub list_roles: bool,
+    /// List all models
+    #[clap(long)]
+    pub list_models: bool,
     /// Select a role
     #[clap(short, long)]
     pub role: Option<String>,

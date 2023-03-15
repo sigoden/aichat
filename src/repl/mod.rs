@@ -19,9 +19,10 @@ use reedline::Signal;
 use std::borrow::Cow;
 use std::sync::Arc;
 
-pub const REPL_COMMANDS: [(&str, &str); 11] = [
+pub const REPL_COMMANDS: [(&str, &str); 12] = [
     (".info", "Print the information"),
     (".set", "Modify the configuration temporarily"),
+    (".model", "Choose a model"),
     (".prompt", "Add a GPT prompt"),
     (".role", "Select a role"),
     (".clear role", "Clear the currently selected role"),
@@ -109,6 +110,10 @@ impl Repl {
                     self.editor.print_history()?;
                     print_now!("\n");
                 }
+                ".model" => match args {
+                    Some(name) => handler.handle(ReplCmd::SetModel(name.to_string()))?,
+                    None => print_now!("Usage: .model <name>\n\n"),
+                },
                 ".role" => match args {
                     Some(name) => handler.handle(ReplCmd::SetRole(name.to_string()))?,
                     None => print_now!("Usage: .role <name>\n\n"),

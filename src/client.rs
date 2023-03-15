@@ -12,7 +12,6 @@ use tokio::time::sleep;
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 const API_URL: &str = "https://api.openai.com/v1/chat/completions";
-const MODEL: &str = "gpt-3.5-turbo";
 
 #[derive(Debug)]
 pub struct ChatGptClient {
@@ -137,9 +136,10 @@ impl ChatGptClient {
     }
 
     fn request_builder(&self, content: &str, stream: bool) -> Result<RequestBuilder> {
+        let (model, _) = self.config.read().get_model();
         let messages = self.config.read().build_messages(content)?;
         let mut body = json!({
-            "model": MODEL,
+            "model": model,
             "messages": messages,
         });
 

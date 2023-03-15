@@ -12,6 +12,7 @@ use std::cell::RefCell;
 
 pub enum ReplCmd {
     Submit(String),
+    SetModel(String),
     SetRole(String),
     UpdateConfig(String),
     Prompt(String),
@@ -64,6 +65,10 @@ impl ReplCmdHandler {
                 self.config.read().save_message(&input, &buffer)?;
                 self.config.write().save_conversation(&input, &buffer)?;
                 *self.reply.borrow_mut() = buffer;
+            }
+            ReplCmd::SetModel(name) => {
+                self.config.write().set_model(&name)?;
+                print_now!("\n");
             }
             ReplCmd::SetRole(name) => {
                 let output = self.config.write().change_role(&name)?;
