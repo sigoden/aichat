@@ -12,6 +12,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use inquire::{Confirm, Text};
 use parking_lot::RwLock;
 use serde::Deserialize;
+use std::time::Duration;
 use std::{
     env,
     fs::{create_dir_all, read_to_string, File, OpenOptions},
@@ -65,6 +66,8 @@ pub struct Config {
     pub conversation_first: bool,
     /// Is ligth theme
     pub light_theme: bool,
+    /// Set a timeout in seconds for connect to gpt
+    pub connect_timeout: usize,
     /// Predefined roles
     #[serde(skip)]
     pub roles: Vec<Role>,
@@ -90,6 +93,7 @@ impl Default for Config {
             dry_run: false,
             conversation_first: false,
             light_theme: false,
+            connect_timeout: 10,
             roles: vec![],
             role: None,
             conversation: None,
@@ -267,6 +271,10 @@ impl Config {
         }
     }
 
+    pub fn get_connect_timeout(&self) -> Duration {
+        Duration::from_secs(self.connect_timeout as u64)
+    }
+
     pub fn get_model(&self) -> (String, usize) {
         self.model.clone()
     }
@@ -328,6 +336,7 @@ impl Config {
             ("proxy", proxy),
             ("conversation_first", self.conversation_first.to_string()),
             ("light_theme", self.light_theme.to_string()),
+            ("connect_timeout", self.connect_timeout.to_string()),
             ("dry_run", self.dry_run.to_string()),
         ];
         let mut output = String::new();
