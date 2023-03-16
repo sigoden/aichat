@@ -10,7 +10,6 @@ use std::time::Duration;
 use tokio::runtime::Runtime;
 use tokio::time::sleep;
 
-const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 const API_URL: &str = "https://api.openai.com/v1/chat/completions";
 
 #[derive(Debug)]
@@ -128,8 +127,9 @@ impl ChatGptClient {
             builder = builder
                 .proxy(Proxy::all(proxy).with_context(|| format!("Invalid proxy `{proxy}`"))?);
         }
+        let timeout = self.config.read().get_connect_timeout();
         let client = builder
-            .connect_timeout(CONNECT_TIMEOUT)
+            .connect_timeout(timeout)
             .build()
             .with_context(|| "Failed to build http client")?;
         Ok(client)
