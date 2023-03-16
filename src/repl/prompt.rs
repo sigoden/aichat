@@ -76,10 +76,10 @@ impl Prompt for ReplPrompt {
     }
 
     fn render_prompt_right(&self) -> Cow<str> {
-        if let Some(conversation) = self.config.read().conversation.as_ref() {
-            conversation.reamind_tokens().to_string().into()
-        } else {
+        if self.config.read().conversation.is_none() {
             Cow::Borrowed("")
+        } else {
+            self.config.read().get_reamind_tokens().to_string().into()
         }
     }
 

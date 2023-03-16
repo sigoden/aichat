@@ -1,4 +1,4 @@
-use super::message::{num_tokens_from_messages, Message, MessageRole, MAX_TOKENS};
+use super::message::{num_tokens_from_messages, Message, MessageRole};
 use super::role::Role;
 
 use anyhow::{bail, Result};
@@ -86,9 +86,5 @@ impl Conversation {
             });
         }
         messages
-    }
-
-    pub fn reamind_tokens(&self) -> usize {
-        MAX_TOKENS.saturating_sub(self.tokens)
     }
 }

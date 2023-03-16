@@ -35,6 +35,12 @@ fn main() -> Result<()> {
             .for_each(|v| println!("{}", v.name));
         exit(0);
     }
+    if cli.list_models {
+        config::MODELS
+            .iter()
+            .for_each(|(name, _)| println!("{}", name));
+        exit(0);
+    }
     let role = match &cli.role {
         Some(name) => Some(
             config
@@ -44,6 +50,9 @@ fn main() -> Result<()> {
         ),
         None => None,
     };
+    if let Some(model) = &cli.model {
+        config.write().set_model(model)?;
+    }
     config.write().role = role;
     if cli.no_highlight {
         config.write().highlight = false;

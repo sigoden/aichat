@@ -21,6 +21,12 @@ use std::{
     sync::Arc,
 };
 
+pub const MODELS: [(&str, usize); 3] = [
+    ("gpt-4", 8192),
+    ("gpt-4-32k", 32768),
+    ("gpt-3.5-turbo", 4096),
+];
+
 const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
 const HISTORY_FILE_NAME: &str = "history.txt";
@@ -42,6 +48,9 @@ const SET_COMPLETIONS: [&str; 9] = [
 pub struct Config {
     /// Openai api key
     pub api_key: Option<String>,
+    /// Openai model
+    #[serde(rename(serialize = "model", deserialize = "model"))]
+    pub model_name: Option<String>,
     /// What sampling temperature to use, between 0 and 2
     pub temperature: Option<f64>,
     /// Whether to persistently save chat messages
@@ -65,12 +74,15 @@ pub struct Config {
     /// Current conversation
     #[serde(skip)]
     pub conversation: Option<Conversation>,
+    #[serde(skip)]
+    pub model: (String, usize),
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             api_key: None,
+            model_name: None,
             temperature: None,
             save: false,
             highlight: true,
@@ -81,6 +93,7 @@ impl Default for Config {
             roles: vec![],
             role: None,
             conversation: None,
+            model: ("gpt-3.5-turbo".into(), 4096),
         }
     }
 }
@@ -104,6 +117,9 @@ impl Config {
         }
         if config.api_key.is_none() {
             bail!("api_key not set");
+        }
+        if let Some(name) = config.model_name.clone() {
+            config.set_model(&name)?;
         }
         config.merge_env_vars();
         config.maybe_proxy();
@@ -251,6 +267,10 @@ impl Config {
         }
     }
 
+    pub fn get_model(&self) -> (String, usize) {
+        self.model.clone()
+    }
+
     pub fn build_messages(&self, content: &str) -> Result<Vec<Message>> {
         let messages = if let Some(conversation) = self.conversation.as_ref() {
             conversation.build_emssages(content)
@@ -260,9 +280,26 @@ impl Config {
             let message = Message::new(content);
             vec![message]
         };
-        within_max_tokens_limit(&messages)?;
+        within_max_tokens_limit(&messages, self.model.1)?;
 
         Ok(messages)
+    }
+
+    pub fn set_model(&mut self, name: &str) -> Result<()> {
+        if let Some(token) = MODELS.iter().find(|(v, _)| *v == name).map(|(_, v)| *v) {
+            self.model = (name.to_string(), token);
+        } else {
+            bail!("Invalid model")
+        }
+        Ok(())
+    }
+
+    pub fn get_reamind_tokens(&self) -> usize {
+        let mut tokens = self.model.1;
+        if let Some(conversation) = self.conversation.as_ref() {
+            tokens = tokens.saturating_sub(conversation.tokens);
+        }
+        tokens
     }
 
     pub fn info(&self) -> Result<String> {
@@ -284,6 +321,7 @@ impl Config {
             ("roles_file", file_info(&Config::roles_file()?)),
             ("messages_file", file_info(&Config::messages_file()?)),
             ("api_key", self.get_api_key().to_string()),
+            ("model", self.model.0.to_string()),
             ("temperature", temperature),
             ("save", self.save.to_string()),
             ("highlight", self.highlight.to_string()),
@@ -307,6 +345,7 @@ impl Config {
             .collect();
 
         completion.extend(SET_COMPLETIONS.map(|v| v.to_string()));
+        completion.extend(MODELS.map(|(v, _)| format!(".model {}", v)));
         completion
     }
 
@@ -359,14 +398,12 @@ impl Config {
     }
 
     pub fn start_conversation(&mut self) -> Result<()> {
-        if let Some(conversation) = self.conversation.as_ref() {
-            if conversation.reamind_tokens() > 0 {
-                let ans = Confirm::new("Already in a conversation, start a new one?")
-                    .with_default(true)
-                    .prompt()?;
-                if !ans {
-                    return Ok(());
-                }
+        if self.conversation.is_some() && self.get_reamind_tokens() > 0 {
+            let ans = Confirm::new("Already in a conversation, start a new one?")
+                .with_default(true)
+                .prompt()?;
+            if !ans {
+                return Ok(());
             }
         }
         self.conversation = Some(Conversation::new(self.role.clone()));
