@@ -153,11 +153,17 @@ impl ChatGptClient {
                 .and_then(|m| m.insert("stream".into(), json!(true)));
         }
 
-        let builder = self
+        let (api_key, organization_id) = self.config.read().get_api_key();
+
+        let mut builder = self
             .build_client()?
             .post(API_URL)
-            .bearer_auth(self.config.read().get_api_key())
+            .bearer_auth(api_key)
             .json(&body);
+
+        if let Some(organization_id) = organization_id {
+            builder = builder.header("OpenAI-Organization", organization_id);
+        }
 
         Ok(builder)
     }
