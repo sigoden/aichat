@@ -480,9 +480,6 @@ impl Config {
     }
 
     fn merge_env_vars(&mut self) {
-        if let Ok(value) = env::var(get_env_name("dry_run")) {
-            set_bool(&mut self.dry_run, &value);
-        }
         if let Ok(value) = env::var(get_env_name("light_theme")) {
             set_bool(&mut self.light_theme, &value);
         }
