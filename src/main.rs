@@ -60,6 +60,11 @@ fn main() -> Result<()> {
     if let Some(prompt) = &cli.prompt {
         config.write().add_prompt(prompt)?;
     }
+    if cli.info {
+        let info = config.read().info()?;
+        println!("{info}");
+        exit(0);
+    }
     let no_stream = cli.no_stream;
     let client = ChatGptClient::init(config.clone())?;
     if atty::isnt(atty::Stream::Stdin) {

@@ -24,6 +24,9 @@ pub struct Cli {
     /// Select a role
     #[clap(short, long)]
     pub role: Option<String>,
+    /// Print information
+    #[clap(long)]
+    pub info: bool,
     /// Input text
     text: Vec<String>,
 }
