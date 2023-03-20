@@ -2,10 +2,11 @@ mod conversation;
 mod message;
 mod role;
 
+use self::conversation::Conversation;
 use self::message::Message;
 use self::role::Role;
-use self::{conversation::Conversation, message::within_max_tokens_limit};
 
+use crate::config::message::num_tokens_from_messages;
 use crate::utils::now;
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -292,7 +293,10 @@ impl Config {
             let message = Message::new(content);
             vec![message]
         };
-        within_max_tokens_limit(&messages, self.model.1)?;
+        let tokens = num_tokens_from_messages(&messages);
+        if tokens >= self.model.1 {
+            bail!("Exceed max tokens limit")
+        }
 
         Ok(messages)
     }
@@ -432,6 +436,15 @@ impl Config {
 
     pub fn get_render_options(&self) -> (bool, bool) {
         (self.highlight, self.light_theme)
+    }
+
+    pub fn maybe_print_send_tokens(&self, input: &str) {
+        if self.dry_run {
+            if let Ok(messages) = self.build_messages(input) {
+                let tokens = num_tokens_from_messages(&messages);
+                println!(">>> The following message consumes {tokens} tokens.")
+            }
+        }
     }
 
     fn open_message_file(&self) -> Result<File> {
