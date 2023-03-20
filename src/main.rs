@@ -41,6 +41,9 @@ fn main() -> Result<()> {
             .for_each(|(name, _)| println!("{}", name));
         exit(0);
     }
+    if cli.dry_run {
+        config.write().dry_run = true;
+    }
     let role = match &cli.role {
         Some(name) => Some(
             config

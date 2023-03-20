@@ -27,6 +27,9 @@ pub struct Cli {
     /// Print information
     #[clap(long)]
     pub info: bool,
+    /// Run in dry run mode
+    #[clap(long)]
+    pub dry_run: bool,
     /// Input text
     text: Vec<String>,
 }
