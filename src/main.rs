@@ -91,6 +91,7 @@ fn start_directive(
     if !stdout().is_terminal() {
         config.write().highlight = false;
     }
+    config.read().maybe_print_send_tokens(input);
     let output = if no_stream {
         let (highlight, light_theme) = config.read().get_render_options();
         let output = client.send_message(input)?;

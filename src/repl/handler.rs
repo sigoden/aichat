@@ -51,6 +51,7 @@ impl ReplCmdHandler {
                     self.reply.borrow_mut().clear();
                     return Ok(());
                 }
+                self.config.read().maybe_print_send_tokens(&input);
                 let wg = WaitGroup::new();
                 let ret = render_stream(
                     &input,
