@@ -142,6 +142,7 @@ The Chat REPL supports:
 .clear conversation      End current conversation.
 .history                 Print the history
 .clear history           Clear the history
+.clear screen            Clear the screen
 .help                    Print this help message
 .exit                    Exit the REPL
 

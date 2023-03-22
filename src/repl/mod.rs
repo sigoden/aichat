@@ -19,7 +19,7 @@ use reedline::Signal;
 use std::borrow::Cow;
 use std::sync::Arc;
 
-pub const REPL_COMMANDS: [(&str, &str); 12] = [
+pub const REPL_COMMANDS: [(&str, &str); 13] = [
     (".info", "Print the information"),
     (".set", "Modify the configuration temporarily"),
     (".model", "Choose a model"),
@@ -30,6 +30,7 @@ pub const REPL_COMMANDS: [(&str, &str); 12] = [
     (".clear conversation", "End current conversation."),
     (".history", "Print the history"),
     (".clear history", "Clear the history"),
+    (".clear screen", "Clear the screen"),
     (".help", "Print this help message"),
     (".exit", "Exit the REPL"),
 ];
