@@ -7,7 +7,7 @@ use self::message::Message;
 use self::role::Role;
 
 use crate::config::message::num_tokens_from_messages;
-use crate::utils::now;
+use crate::utils::{mask_text, now};
 
 use anyhow::{anyhow, bail, Context, Result};
 use inquire::{Confirm, Text};
@@ -333,7 +333,10 @@ impl Config {
             .map(|v| v.to_string())
             .unwrap_or("-".into());
         let (api_key, organization_id) = self.get_api_key();
-        let organization_id = organization_id.unwrap_or("-".into());
+        let api_key = mask_text(&api_key, 3, 4);
+        let organization_id = organization_id
+            .map(|v| mask_text(&v, 3, 4))
+            .unwrap_or("-".into());
         let items = vec![
             ("config_file", file_info(&Config::config_file()?)),
             ("roles_file", file_info(&Config::roles_file()?)),

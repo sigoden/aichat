@@ -27,3 +27,23 @@ pub fn now() -> String {
 pub fn emphasis(text: &str) -> String {
     text.stylize().with(Color::White).to_string()
 }
+
+pub fn mask_text(text: &str, head: usize, tail: usize) -> String {
+    if text.len() <= head + tail {
+        return text.to_string();
+    }
+    format!("{}...{}", &text[0..head], &text[text.len() - tail..])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_mask_text() {
+        assert_eq!(mask_text("123456", 3, 4), "123456");
+        assert_eq!(mask_text("1234567", 3, 4), "1234567");
+        assert_eq!(mask_text("12345678", 3, 4), "123...5678");
+        assert_eq!(mask_text("12345678", 4, 3), "1234...678");
+    }
+}
