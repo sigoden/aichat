@@ -33,7 +33,7 @@ const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
 const HISTORY_FILE_NAME: &str = "history.txt";
 const MESSAGE_FILE_NAME: &str = "messages.md";
-const SET_COMPLETIONS: [&str; 8] = [
+const SET_COMPLETIONS: [&str; 10] = [
     ".set temperature",
     ".set save true",
     ".set save false",
@@ -42,6 +42,8 @@ const SET_COMPLETIONS: [&str; 8] = [
     ".set proxy",
     ".set dry_run true",
     ".set dry_run false",
+    ".set stream true",
+    ".set stream false",
 ];
 
 #[derive(Debug, Clone, Deserialize)]
@@ -64,7 +66,9 @@ pub struct Config {
     pub proxy: Option<String>,
     /// Used only for debugging
     pub dry_run: bool,
-    /// If set ture, start a conversation immediately upon repl
+    /// If set to false, wait for full response before printing
+    pub stream: bool,
+    /// If set true, start a conversation immediately upon repl
     pub conversation_first: bool,
     /// Is ligth theme
     pub light_theme: bool,
@@ -93,6 +97,7 @@ impl Default for Config {
             save: false,
             highlight: true,
             proxy: None,
+            stream: true,
             dry_run: false,
             conversation_first: false,
             light_theme: false,
@@ -344,6 +349,7 @@ impl Config {
             ("temperature", temperature),
             ("save", self.save.to_string()),
             ("highlight", self.highlight.to_string()),
+            ("stream", self.stream.to_string()),
             ("proxy", proxy),
             ("conversation_first", self.conversation_first.to_string()),
             ("light_theme", self.light_theme.to_string()),
@@ -404,6 +410,10 @@ impl Config {
             "dry_run" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.dry_run = value;
+            }
+            "stream" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                self.stream = value;
             }
             _ => bail!("Error: Unknown key `{key}`"),
         }

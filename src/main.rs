@@ -68,7 +68,9 @@ fn main() -> Result<()> {
         println!("{info}");
         exit(0);
     }
-    let no_stream = cli.no_stream;
+    if cli.no_stream {
+        config.write().stream = false;
+    }
     let client = ChatGptClient::init(config.clone())?;
     if atty::isnt(atty::Stream::Stdin) {
         let mut input = String::new();
@@ -76,10 +78,10 @@ fn main() -> Result<()> {
         if let Some(text) = text {
             input = format!("{text}\n{input}");
         }
-        start_directive(client, config, &input, no_stream)
+        start_directive(client, config, &input)
     } else {
         match text {
-            Some(text) => start_directive(client, config, &text, no_stream),
+            Some(text) => start_directive(client, config, &text),
             None => start_interactive(client, config),
         }
     }
@@ -89,13 +91,12 @@ fn start_directive(
     client: ChatGptClient,
     config: SharedConfig,
     input: &str,
-    no_stream: bool,
 ) -> Result<()> {
     if !stdout().is_terminal() {
         config.write().highlight = false;
     }
     config.read().maybe_print_send_tokens(input);
-    let output = if no_stream {
+    let output = if !config.read().stream {
         let (highlight, light_theme) = config.read().get_render_options();
         let output = client.send_message(input)?;
         if highlight {
