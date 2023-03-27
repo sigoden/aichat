@@ -9,8 +9,8 @@ use self::role::Role;
 use crate::config::message::num_tokens_from_messages;
 use crate::utils::{mask_text, now};
 
-use clipboard::{ClipboardContext, ClipboardProvider};
 use anyhow::{anyhow, bail, Context, Result};
+use clipboard::{ClipboardContext, ClipboardProvider};
 use inquire::{Confirm, Text};
 use parking_lot::RwLock;
 use serde::Deserialize;
@@ -180,7 +180,7 @@ impl Config {
                     let mut ctx: ClipboardContext = context;
                     ctx.set_contents(output.to_string())
                         .map_err(|_| anyhow!("Error: Unable to copy output to clipboard."))?;
-                },
+                }
                 Err(_) => bail!("Error: Unable to access clipboard context."),
             }
         }
