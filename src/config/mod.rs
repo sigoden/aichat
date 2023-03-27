@@ -9,6 +9,7 @@ use self::role::Role;
 use crate::config::message::num_tokens_from_messages;
 use crate::utils::{mask_text, now};
 
+use clipboard::{ClipboardContext, ClipboardProvider};
 use anyhow::{anyhow, bail, Context, Result};
 use inquire::{Confirm, Text};
 use parking_lot::RwLock;
@@ -70,6 +71,8 @@ pub struct Config {
     pub light_theme: bool,
     /// Set a timeout in seconds for connect to gpt
     pub connect_timeout: usize,
+    /// Copy output to clipboard
+    pub clip: bool,
     /// Predefined roles
     #[serde(skip)]
     pub roles: Vec<Role>,
@@ -97,6 +100,7 @@ impl Default for Config {
             conversation_first: false,
             light_theme: false,
             connect_timeout: 10,
+            clip: false,
             roles: vec![],
             role: None,
             conversation: None,
@@ -167,6 +171,20 @@ impl Config {
         let mut path = Self::config_dir()?;
         path.push(name);
         Ok(path)
+    }
+
+    pub fn copy_message(&self, output: &str) -> Result<()> {
+        if self.clip {
+            match ClipboardProvider::new() {
+                Ok(context) => {
+                    let mut ctx: ClipboardContext = context;
+                    ctx.set_contents(output.to_string())
+                        .map_err(|_| anyhow!("Error: Unable to copy output to clipboard."))?;
+                },
+                Err(_) => bail!("Error: Unable to access clipboard context."),
+            }
+        }
+        Ok(())
     }
 
     pub fn save_message(&self, input: &str, output: &str) -> Result<()> {
