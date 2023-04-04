@@ -1,4 +1,4 @@
-use crate::config::SharedConfig;
+use crate::config::{Config, SharedConfig};
 use crate::repl::{ReplyStreamHandler, SharedAbortSignal};
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -92,6 +92,7 @@ impl ChatGptClient {
             handler.text(&self.config.read().echo_messages(content))?;
             return Ok(());
         }
+        let is_aoai = self.config.read().aoai_endpoint.is_some();
         let builder = self.request_builder(content, true)?;
         let res = builder.send().await?;
         if !res.status().is_success() {
@@ -108,10 +109,13 @@ impl ChatGptClient {
                 break;
             } else {
                 let data: Value = serde_json::from_str(&chunk)?;
-                let text = data["choices"][0]["delta"]["content"]
-                    .as_str()
-                    .unwrap_or_default();
-                if text.is_empty() {
+                let text = if is_aoai {
+                    &data["choices"][0]["text"]
+                } else {
+                    &data["choices"][0]["delta"]["content"]
+                };
+                let text = text.as_str().unwrap_or_default();
+                if text.is_empty() || text == "<|im_end|>" {
                     continue;
                 }
                 handler.text(text)?;
@@ -136,16 +140,47 @@ impl ChatGptClient {
     }
 
     fn request_builder(&self, content: &str, stream: bool) -> Result<RequestBuilder> {
-        let (model, _) = self.config.read().get_model();
+        let (api_key, organization_id) = self.config.read().get_api_key();
         let messages = self.config.read().build_messages(content)?;
-        let mut body = json!({
-            "model": model,
-            "messages": messages,
-        });
+
+        let (builder, mut body) =
+            if let Some((endpoint, deployment)) = self.config.read().get_aoai_endpoint() {
+                // Azure OpenAI: https://learn.microsoft.com/en-gb/azure/cognitive-services/openai/reference
+                let url = format!(
+                    "{endpoint}/openai/deployments/{deployment}/completions?api-version=2022-12-01"
+                );
+                let body = json!({
+                    "prompt": Config::render_messages(&messages),
+                });
+
+                let builder = self.build_client()?.post(url).header("api-key", api_key);
+
+                (builder, body)
+            } else {
+                // OpenAI: https://platform.openai.com/docs/api-reference/chat
+                let (model, _) = self.config.read().get_model();
+                let body = json!({
+                    "model": model,
+                    "messages": messages,
+                });
+
+                let mut builder = self.build_client()?.post(API_URL).bearer_auth(api_key);
+
+                if let Some(organization_id) = organization_id {
+                    builder = builder.header("OpenAI-Organization", organization_id);
+                }
+
+                (builder, body)
+            };
 
         if let Some(v) = self.config.read().get_temperature() {
             body.as_object_mut()
                 .and_then(|m| m.insert("temperature".into(), json!(v)));
+        }
+
+        if let Some(v) = self.config.read().get_max_tokens() {
+            body.as_object_mut()
+                .and_then(|m| m.insert("max_tokens".into(), json!(v)));
         }
 
         if stream {
@@ -153,19 +188,7 @@ impl ChatGptClient {
                 .and_then(|m| m.insert("stream".into(), json!(true)));
         }
 
-        let (api_key, organization_id) = self.config.read().get_api_key();
-
-        let mut builder = self
-            .build_client()?
-            .post(API_URL)
-            .bearer_auth(api_key)
-            .json(&body);
-
-        if let Some(organization_id) = organization_id {
-            builder = builder.header("OpenAI-Organization", organization_id);
-        }
-
-        Ok(builder)
+        Ok(builder.json(&body))
     }
 }
 

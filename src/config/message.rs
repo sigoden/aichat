@@ -15,6 +15,21 @@ impl Message {
             content: content.to_string(),
         }
     }
+
+    pub fn render(&self) -> String {
+        let role = self.role.render();
+        let content = &self.content;
+        format!("<|im_start|>{role}\n{content}<|im_end|>\n")
+    }
+
+    pub fn render_all(messages: &[Message]) -> String {
+        let mut result = String::new();
+        for message in messages {
+            result.push_str(&message.render())
+        }
+        result.push_str("<|im_start|>assistant\n");
+        result
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -23,6 +38,16 @@ pub enum MessageRole {
     System,
     Assistant,
     User,
+}
+
+impl MessageRole {
+    pub fn render(&self) -> &'static str {
+        match self {
+            MessageRole::System => "system",
+            MessageRole::Assistant => "assistant",
+            MessageRole::User => "user",
+        }
+    }
 }
 
 pub fn num_tokens_from_messages(messages: &[Message]) -> usize {

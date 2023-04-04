@@ -13,14 +13,17 @@ pub struct Role {
     pub prompt: String,
     /// What sampling temperature to use, between 0 and 2
     pub temperature: Option<f64>,
+    /// Maximum number of tokens to return
+    pub max_tokens: Option<u32>,
 }
 
 impl Role {
-    pub fn new(prompt: &str, temperature: Option<f64>) -> Self {
+    pub fn new(prompt: &str, temperature: Option<f64>, max_tokens: Option<u32>) -> Self {
         Self {
             name: TEMP_NAME.into(),
             prompt: prompt.into(),
             temperature,
+            max_tokens,
         }
     }
 

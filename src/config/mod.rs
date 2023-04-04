@@ -33,8 +33,9 @@ const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
 const HISTORY_FILE_NAME: &str = "history.txt";
 const MESSAGE_FILE_NAME: &str = "messages.md";
-const SET_COMPLETIONS: [&str; 8] = [
+const SET_COMPLETIONS: [&str; 9] = [
     ".set temperature",
+    ".set max_tokens",
     ".set save true",
     ".set save false",
     ".set highlight true",
@@ -47,8 +48,12 @@ const SET_COMPLETIONS: [&str; 8] = [
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    /// Openai api key
+    /// OpenAI or Azure OpenAI API key
     pub api_key: Option<String>,
+    /// Azure OpenAI endpoint (set this to access via Azure OpenAI)
+    pub aoai_endpoint: Option<String>,
+    /// Azure OpenAI model deployment name
+    pub aoai_deployment: Option<String>,
     /// Openai organization id
     pub organization_id: Option<String>,
     /// Openai model
@@ -56,6 +61,8 @@ pub struct Config {
     pub model_name: Option<String>,
     /// What sampling temperature to use, between 0 and 2
     pub temperature: Option<f64>,
+    /// The maximum size of the response in tokens
+    pub max_tokens: Option<u32>,
     /// Whether to persistently save chat messages
     pub save: bool,
     /// Whether to disable highlight
@@ -87,9 +94,12 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             api_key: None,
+            aoai_endpoint: None,
+            aoai_deployment: None,
             organization_id: None,
             model_name: None,
             temperature: None,
+            max_tokens: None,
             save: false,
             highlight: true,
             proxy: None,
@@ -210,6 +220,19 @@ impl Config {
         (api_key.into(), organization_id.cloned())
     }
 
+    /// If using Azure OpenAI, returns `Some(endpoint, deployment)`, else `None`.
+    pub fn get_aoai_endpoint(&self) -> Option<(String, String)> {
+        if let Some(endpoint) = self.aoai_endpoint.as_ref() {
+            let deployment = self
+                .aoai_deployment
+                .as_ref()
+                .expect("aoai_deployment not set");
+            Some((endpoint.to_string(), deployment.to_string()))
+        } else {
+            None
+        }
+    }
+
     pub fn roles_file() -> Result<PathBuf> {
         let env_name = get_env_name("roles_file");
         if let Ok(value) = env::var(env_name) {
@@ -251,7 +274,7 @@ impl Config {
     }
 
     pub fn add_prompt(&mut self, prompt: &str) -> Result<()> {
-        let role = Role::new(prompt, self.temperature);
+        let role = Role::new(prompt, self.temperature, self.max_tokens);
         if let Some(conversation) = self.conversation.as_mut() {
             conversation.update_role(&role)?;
         }
@@ -264,6 +287,13 @@ impl Config {
             .as_ref()
             .and_then(|v| v.temperature)
             .or(self.temperature)
+    }
+
+    pub fn get_max_tokens(&self) -> Option<u32> {
+        self.role
+            .as_ref()
+            .and_then(|v| v.max_tokens)
+            .or(self.max_tokens)
     }
 
     pub fn echo_messages(&self, content: &str) -> String {
@@ -301,6 +331,10 @@ impl Config {
         Ok(messages)
     }
 
+    pub fn render_messages(messages: &[Message]) -> String {
+        Message::render_all(messages)
+    }
+
     pub fn set_model(&mut self, name: &str) -> Result<()> {
         if let Some(token) = MODELS.iter().find(|(v, _)| *v == name).map(|(_, v)| *v) {
             self.model = (name.to_string(), token);
@@ -332,8 +366,11 @@ impl Config {
             .temperature
             .map(|v| v.to_string())
             .unwrap_or("-".into());
+        let max_tokens = self.max_tokens.map(|v| v.to_string()).unwrap_or("-".into());
         let (api_key, organization_id) = self.get_api_key();
         let api_key = mask_text(&api_key, 3, 4);
+        let aoai_endpoint = self.aoai_endpoint.clone().unwrap_or("-".into());
+        let aoai_deployment = self.aoai_deployment.clone().unwrap_or("-".into());
         let organization_id = organization_id
             .map(|v| mask_text(&v, 3, 4))
             .unwrap_or("-".into());
@@ -342,9 +379,12 @@ impl Config {
             ("roles_file", file_info(&Config::roles_file()?)),
             ("messages_file", file_info(&Config::messages_file()?)),
             ("api_key", api_key),
+            ("aoai_endpoint", aoai_endpoint.to_string()),
+            ("aoai_deployment", aoai_deployment.to_string()),
             ("organization_id", organization_id),
             ("model", self.model.0.to_string()),
             ("temperature", temperature),
+            ("max_tokens", max_tokens),
             ("save", self.save.to_string()),
             ("highlight", self.highlight.to_string()),
             ("proxy", proxy),
@@ -387,6 +427,14 @@ impl Config {
                 } else {
                     let value = value.parse().with_context(|| "Invalid value")?;
                     self.temperature = Some(value);
+                }
+            }
+            "max_tokens" => {
+                if unset {
+                    self.max_tokens = None;
+                } else {
+                    let value = value.parse().with_context(|| "Invalid value")?;
+                    self.max_tokens = Some(value);
                 }
             }
             "save" => {
@@ -519,6 +567,22 @@ fn create_config_file(config_path: &Path) -> Result<()> {
         .prompt()
         .map_err(text_map_err)?;
     let mut raw_config = format!("api_key: {api_key}\n");
+
+    let ans = Confirm::new("Use OpenAI via Azure?")
+        .with_default(false)
+        .prompt()
+        .map_err(confirm_map_err)?;
+    if ans {
+        let endpoint = Text::new("Azure OpenAI endpoint:")
+            .prompt()
+            .map_err(text_map_err)?;
+        raw_config.push_str(&format!("aoai_endpoint: {endpoint}\n"));
+
+        let deployment = Text::new("Model deployment name:")
+            .prompt()
+            .map_err(text_map_err)?;
+        raw_config.push_str(&format!("aoai_deployment: {deployment}\n"));
+    }
 
     let ans = Confirm::new("Use proxy?")
         .with_default(false)
