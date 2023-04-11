@@ -54,6 +54,8 @@ pub struct Config {
     pub aoai_endpoint: Option<String>,
     /// Azure OpenAI model deployment name
     pub aoai_deployment: Option<String>,
+    /// Azure OpenAI - is this a chat-only model?
+    pub aoai_use_chat: Option<bool>,
     /// Openai organization id
     pub organization_id: Option<String>,
     /// Openai model
@@ -96,6 +98,7 @@ impl Default for Config {
             api_key: None,
             aoai_endpoint: None,
             aoai_deployment: None,
+            aoai_use_chat: None,
             organization_id: None,
             model_name: None,
             temperature: None,
@@ -230,6 +233,17 @@ impl Config {
             Some((endpoint.to_string(), deployment.to_string()))
         } else {
             None
+        }
+    }
+
+    pub fn use_chat_api(&self) -> bool {
+        if self.get_aoai_endpoint().is_none() {
+            // If we're using OpenAI's API, always use the chat API
+            true
+        } else {
+            // If we're using Azure OpenAI, then use chat API unless we're on an
+            // older model that doesn't support it.
+            self.aoai_use_chat.unwrap_or(true)
         }
     }
 
@@ -371,6 +385,11 @@ impl Config {
         let api_key = mask_text(&api_key, 3, 4);
         let aoai_endpoint = self.aoai_endpoint.clone().unwrap_or("-".into());
         let aoai_deployment = self.aoai_deployment.clone().unwrap_or("-".into());
+        let aoai_use_chat = self
+            .aoai_use_chat
+            .as_ref()
+            .map(|v| v.to_string())
+            .unwrap_or("-".into());
         let organization_id = organization_id
             .map(|v| mask_text(&v, 3, 4))
             .unwrap_or("-".into());
@@ -381,6 +400,7 @@ impl Config {
             ("api_key", api_key),
             ("aoai_endpoint", aoai_endpoint.to_string()),
             ("aoai_deployment", aoai_deployment.to_string()),
+            ("aoai_use_chat", aoai_use_chat),
             ("organization_id", organization_id),
             ("model", self.model.0.to_string()),
             ("temperature", temperature),
@@ -582,6 +602,12 @@ fn create_config_file(config_path: &Path) -> Result<()> {
             .prompt()
             .map_err(text_map_err)?;
         raw_config.push_str(&format!("aoai_deployment: {deployment}\n"));
+
+        let use_chat: bool = Confirm::new("Use chat API (not available for older models)?")
+            .with_default(true)
+            .prompt()
+            .map_err(text_map_err)?;
+        raw_config.push_str(&format!("aoai_use_chat: {use_chat}\n"));
     }
 
     let ans = Confirm::new("Use proxy?")
