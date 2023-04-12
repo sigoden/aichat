@@ -35,7 +35,7 @@ pub const REPL_COMMANDS: [(&str, &str); 12] = [
 ];
 
 impl Repl {
-    pub fn run(&mut self, client: ChatGptClient, config: SharedConfig) -> Result<()> {
+    pub async fn run(&mut self, client: ChatGptClient, config: SharedConfig) -> Result<()> {
         let abort = AbortSignal::new();
         let handler = ReplCmdHandler::init(client, config, abort.clone())?;
         print_now!("Welcome to aichat {}\n", env!("CARGO_PKG_VERSION"));
@@ -54,7 +54,7 @@ impl Repl {
                 Ok(Signal::Success(line)) => {
                     already_ctrlc = false;
                     abort.reset();
-                    match self.handle_line(handler.clone(), line) {
+                    match self.handle_line(handler.clone(), line).await {
                         Ok(quit) => {
                             if quit {
                                 break;
@@ -85,7 +85,7 @@ impl Repl {
         Ok(())
     }
 
-    fn handle_line(&mut self, handler: Arc<ReplCmdHandler>, line: String) -> Result<bool> {
+    async fn handle_line(&mut self, handler: Arc<ReplCmdHandler>, line: String) -> Result<bool> {
         let line = clean_multiline_symbols(&line);
         match parse_command(&line) {
             Some((cmd, args)) => match cmd {
@@ -102,8 +102,8 @@ impl Repl {
                         history.clear().with_context(|| "Failed to clear history")?;
                         print_now!("\n");
                     }
-                    Some("role") => handler.handle(ReplCmd::ClearRole)?,
-                    Some("conversation") => handler.handle(ReplCmd::EndConversatoin)?,
+                    Some("role") => handler.handle(ReplCmd::ClearRole).await?,
+                    Some("conversation") => handler.handle(ReplCmd::EndConversatoin).await?,
                     _ => dump_unknown_command(),
                 },
                 ".history" => {
@@ -111,18 +111,20 @@ impl Repl {
                     print_now!("\n");
                 }
                 ".model" => match args {
-                    Some(name) => handler.handle(ReplCmd::SetModel(name.to_string()))?,
+                    Some(name) => handler.handle(ReplCmd::SetModel(name.to_string())).await?,
                     None => print_now!("Usage: .model <name>\n\n"),
                 },
                 ".role" => match args {
-                    Some(name) => handler.handle(ReplCmd::SetRole(name.to_string()))?,
+                    Some(name) => handler.handle(ReplCmd::SetRole(name.to_string())).await?,
                     None => print_now!("Usage: .role <name>\n\n"),
                 },
                 ".info" => {
-                    handler.handle(ReplCmd::ViewInfo)?;
+                    handler.handle(ReplCmd::ViewInfo).await?;
                 }
                 ".set" => {
-                    handler.handle(ReplCmd::UpdateConfig(args.unwrap_or_default().to_string()))?;
+                    handler
+                        .handle(ReplCmd::UpdateConfig(args.unwrap_or_default().to_string()))
+                        .await?;
                     self.prompt.sync_config();
                 }
                 ".prompt" => {
@@ -130,16 +132,16 @@ impl Repl {
                     if text.is_empty() {
                         print_now!("Usage: .prompt <text>.\n\n");
                     } else {
-                        handler.handle(ReplCmd::Prompt(text))?;
+                        handler.handle(ReplCmd::Prompt(text)).await?;
                     }
                 }
                 ".conversation" => {
-                    handler.handle(ReplCmd::StartConversation)?;
+                    handler.handle(ReplCmd::StartConversation).await?;
                 }
                 _ => dump_unknown_command(),
             },
             None => {
-                handler.handle(ReplCmd::Submit(line.to_string()))?;
+                handler.handle(ReplCmd::Submit(line.to_string())).await?;
             }
         }
 

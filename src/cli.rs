@@ -39,12 +39,18 @@ impl Cli {
         let text = self
             .text
             .iter()
-            .map(|x| x.trim().to_string())
-            .collect::<Vec<String>>()
+            .map(|x| x.trim())
+            .collect::<Vec<_>>()
             .join(" ");
+
         if text.is_empty() {
             return None;
         }
+
         Some(text)
+    }
+
+    pub fn is_interactive(&self) -> bool {
+        self.text.is_empty()
     }
 }

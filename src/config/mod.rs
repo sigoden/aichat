@@ -111,28 +111,40 @@ impl Config {
     pub fn init(is_interactive: bool) -> Result<Self> {
         let api_key = env::var(get_env_name("api_key")).ok();
         let config_path = Self::config_file()?;
+
         if is_interactive && api_key.is_none() && !config_path.exists() {
             create_config_file(&config_path)?;
         }
+
         let mut config = if api_key.is_some() && !config_path.exists() {
             Default::default()
         } else {
             Self::load_config(&config_path)?
         };
+
         if api_key.is_some() {
             config.api_key = api_key;
         }
+
         if config.api_key.is_none() {
             bail!("api_key not set");
         }
+
         if let Some(name) = config.model_name.clone() {
             config.set_model(&name)?;
         }
+
         config.merge_env_vars();
         config.maybe_proxy();
         config.load_roles()?;
 
         Ok(config)
+    }
+
+    pub fn init_shared(is_interactive: bool) -> Result<SharedConfig> {
+        let config = Self::init(is_interactive)?;
+
+        Ok(Arc::new(RwLock::new(config)))
     }
 
     pub fn on_repl(&mut self) -> Result<()> {

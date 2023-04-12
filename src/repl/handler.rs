@@ -7,8 +7,8 @@ use super::abort::SharedAbortSignal;
 
 use anyhow::{Context, Result};
 use crossbeam::channel::Sender;
-use crossbeam::sync::WaitGroup;
-use std::cell::RefCell;
+use std::{cell::RefCell, sync::Arc};
+use tokio::sync::Barrier;
 
 pub enum ReplCmd {
     Submit(String),
@@ -44,27 +44,34 @@ impl ReplCmdHandler {
         })
     }
 
-    pub fn handle(&self, cmd: ReplCmd) -> Result<()> {
+    pub async fn handle(&self, cmd: ReplCmd) -> Result<()> {
         match cmd {
             ReplCmd::Submit(input) => {
                 if input.is_empty() {
                     self.reply.borrow_mut().clear();
                     return Ok(());
                 }
+
                 self.config.read().maybe_print_send_tokens(&input);
-                let wg = WaitGroup::new();
+
+                let barrier = Arc::new(Barrier::new(2));
                 let ret = render_stream(
                     &input,
                     &self.client,
                     self.config.clone(),
                     true,
                     self.abort.clone(),
-                    wg.clone(),
-                );
-                wg.wait();
+                    barrier.clone(),
+                )
+                .await;
+
+                barrier.wait().await;
+
                 let buffer = ret?;
+
                 self.config.read().save_message(&input, &buffer)?;
                 self.config.write().save_conversation(&input, &buffer)?;
+
                 *self.reply.borrow_mut() = buffer;
             }
             ReplCmd::SetModel(name) => {

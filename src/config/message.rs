@@ -25,6 +25,16 @@ pub enum MessageRole {
     User,
 }
 
+impl From<MessageRole> for async_openai::types::Role {
+    fn from(role: MessageRole) -> Self {
+        match role {
+            MessageRole::System => Self::System,
+            MessageRole::Assistant => Self::Assistant,
+            MessageRole::User => Self::User,
+        }
+    }
+}
+
 pub fn num_tokens_from_messages(messages: &[Message]) -> usize {
     let mut num_tokens = 0;
     for message in messages.iter() {
