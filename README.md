@@ -110,7 +110,6 @@ The Chat REPL supports:
 - Fish-style history autosuggestion hints
 - Edit/past multiline input
 - Undo support
-- Clipboard integration
 
 ### multi-line editing
 

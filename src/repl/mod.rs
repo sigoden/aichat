@@ -20,7 +20,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 pub const REPL_COMMANDS: [(&str, &str); 12] = [
-    (".info", "Print the information"),
+    (".info", "Print system-wide information"),
     (".set", "Modify the configuration temporarily"),
     (".model", "Choose a model"),
     (".prompt", "Add a GPT prompt"),
@@ -98,8 +98,10 @@ impl Repl {
                 ".clear" => match args {
                     Some("screen") => term::clear_screen(0)?,
                     Some("history") => {
-                        let history = Box::new(self.editor.history_mut());
-                        history.clear().with_context(|| "Failed to clear history")?;
+                        self.editor
+                            .history_mut()
+                            .clear()
+                            .with_context(|| "Failed to clear history")?;
                         print_now!("\n");
                     }
                     Some("role") => handler.handle(ReplCmd::ClearRole)?,

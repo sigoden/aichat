@@ -30,7 +30,7 @@ impl Repl {
         let history = Self::create_history()?;
         let menu = Self::create_menu();
         let edit_mode = Box::new(Emacs::new(keybindings));
-        let editor = Reedline::create()
+        let mut editor = Reedline::create()
             .with_completer(Box::new(completer))
             .with_highlighter(Box::new(highlighter))
             .with_history(history)
@@ -40,6 +40,7 @@ impl Repl {
             .with_partial_completions(true)
             .with_validator(Box::new(ReplValidator))
             .with_ansi_colors(true);
+        editor.enable_bracketed_paste()?;
         let prompt = ReplPrompt::new(config);
         Ok(Self { editor, prompt })
     }

@@ -9,7 +9,7 @@ pub struct Cli {
     /// Add a GPT prompt
     #[clap(short, long)]
     pub prompt: Option<String>,
-    /// Disable syntax highlightiing
+    /// Disable syntax highlighting
     #[clap(short = 'H', long)]
     pub no_highlight: bool,
     /// No stream output
@@ -24,7 +24,7 @@ pub struct Cli {
     /// Select a role
     #[clap(short, long)]
     pub role: Option<String>,
-    /// Print information
+    /// Print system-wide information
     #[clap(long)]
     pub info: bool,
     /// Run in dry run mode
