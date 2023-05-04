@@ -98,8 +98,10 @@ impl Repl {
                 ".clear" => match args {
                     Some("screen") => term::clear_screen(0)?,
                     Some("history") => {
-                        let history = Box::new(self.editor.history_mut());
-                        history.clear().with_context(|| "Failed to clear history")?;
+                        self.editor
+                            .history_mut()
+                            .clear()
+                            .with_context(|| "Failed to clear history")?;
                         print_now!("\n");
                     }
                     Some("role") => handler.handle(ReplCmd::ClearRole)?,
