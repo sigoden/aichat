@@ -10,7 +10,6 @@ use crate::config::message::num_tokens_from_messages;
 use crate::utils::{mask_text, now};
 
 use anyhow::{anyhow, bail, Context, Result};
-use copypasta::{ClipboardContext, ClipboardProvider};
 use inquire::{Confirm, Text};
 use parking_lot::RwLock;
 use serde::Deserialize;
@@ -71,7 +70,7 @@ pub struct Config {
     pub light_theme: bool,
     /// Set a timeout in seconds for connect to gpt
     pub connect_timeout: usize,
-    /// Automatically copy the last message output to the clipboard
+    /// Automatically copy the last output to the clipboard
     pub auto_copy: bool,
     /// Predefined roles
     #[serde(skip)]
@@ -171,20 +170,6 @@ impl Config {
         let mut path = Self::config_dir()?;
         path.push(name);
         Ok(path)
-    }
-
-    pub fn copy_message(&self, output: &str) -> Result<()> {
-        if self.auto_copy {
-            match ClipboardContext::new() {
-                Ok(mut ctx) => {
-                    ctx.set_contents(output.to_string()).map_err(|err| {
-                        anyhow!("Error: Unable to the last message output to clipboard, {err}")
-                    })?;
-                }
-                Err(_) => bail!("Error: Unable to access clipboard context."),
-            }
-        }
-        Ok(())
     }
 
     pub fn save_message(&self, input: &str, output: &str) -> Result<()> {

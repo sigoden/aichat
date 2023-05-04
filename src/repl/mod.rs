@@ -19,7 +19,7 @@ use reedline::Signal;
 use std::borrow::Cow;
 use std::sync::Arc;
 
-pub const REPL_COMMANDS: [(&str, &str); 12] = [
+pub const REPL_COMMANDS: [(&str, &str); 13] = [
     (".info", "Print system-wide information"),
     (".set", "Modify the configuration temporarily"),
     (".model", "Choose a model"),
@@ -28,6 +28,7 @@ pub const REPL_COMMANDS: [(&str, &str); 12] = [
     (".clear role", "Clear the currently selected role"),
     (".conversation", "Start a conversation."),
     (".clear conversation", "End current conversation."),
+    (".copy", "Copy the last output to the clipboard"),
     (".history", "Print the history"),
     (".clear history", "Clear the history"),
     (".help", "Print this help message"),
@@ -137,6 +138,9 @@ impl Repl {
                 }
                 ".conversation" => {
                     handler.handle(ReplCmd::StartConversation)?;
+                }
+                ".copy" => {
+                    handler.handle(ReplCmd::Copy)?;
                 }
                 _ => dump_unknown_command(),
             },

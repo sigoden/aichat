@@ -2,6 +2,7 @@ use crate::client::ChatGptClient;
 use crate::config::SharedConfig;
 use crate::print_now;
 use crate::render::render_stream;
+use crate::utils::copy;
 
 use super::abort::SharedAbortSignal;
 
@@ -20,6 +21,7 @@ pub enum ReplCmd {
     ViewInfo,
     StartConversation,
     EndConversatoin,
+    Copy,
 }
 
 pub struct ReplCmdHandler {
@@ -64,7 +66,9 @@ impl ReplCmdHandler {
                 wg.wait();
                 let buffer = ret?;
                 self.config.read().save_message(&input, &buffer)?;
-                let _ = self.config.read().copy_message(&buffer);
+                if self.config.read().auto_copy {
+                    let _ = copy(&buffer);
+                }
                 self.config.write().save_conversation(&input, &buffer)?;
                 *self.reply.borrow_mut() = buffer;
             }
@@ -98,6 +102,10 @@ impl ReplCmdHandler {
             }
             ReplCmd::EndConversatoin => {
                 self.config.write().end_conversation();
+                print_now!("\n");
+            }
+            ReplCmd::Copy => {
+                copy(&self.reply.borrow()).with_context(|| "Failed to copy the last output")?;
                 print_now!("\n");
             }
         }
