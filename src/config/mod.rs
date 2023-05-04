@@ -10,7 +10,7 @@ use crate::config::message::num_tokens_from_messages;
 use crate::utils::{mask_text, now};
 
 use anyhow::{anyhow, bail, Context, Result};
-use clipboard::{ClipboardContext, ClipboardProvider};
+use copypasta::{ClipboardContext, ClipboardProvider};
 use inquire::{Confirm, Text};
 use parking_lot::RwLock;
 use serde::Deserialize;
@@ -71,8 +71,8 @@ pub struct Config {
     pub light_theme: bool,
     /// Set a timeout in seconds for connect to gpt
     pub connect_timeout: usize,
-    /// Copy output to clipboard
-    pub clip: bool,
+    /// Automatically copy the last message output to the clipboard
+    pub auto_copy: bool,
     /// Predefined roles
     #[serde(skip)]
     pub roles: Vec<Role>,
@@ -100,7 +100,7 @@ impl Default for Config {
             conversation_first: false,
             light_theme: false,
             connect_timeout: 10,
-            clip: false,
+            auto_copy: false,
             roles: vec![],
             role: None,
             conversation: None,
@@ -174,12 +174,12 @@ impl Config {
     }
 
     pub fn copy_message(&self, output: &str) -> Result<()> {
-        if self.clip {
-            match ClipboardProvider::new() {
-                Ok(context) => {
-                    let mut ctx: ClipboardContext = context;
-                    ctx.set_contents(output.to_string())
-                        .map_err(|_| anyhow!("Error: Unable to copy output to clipboard."))?;
+        if self.auto_copy {
+            match ClipboardContext::new() {
+                Ok(mut ctx) => {
+                    ctx.set_contents(output.to_string()).map_err(|err| {
+                        anyhow!("Error: Unable to the last message output to clipboard, {err}")
+                    })?;
                 }
                 Err(_) => bail!("Error: Unable to access clipboard context."),
             }
