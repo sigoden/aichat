@@ -24,7 +24,7 @@ pub struct Cli {
     /// Select a role
     #[clap(short, long)]
     pub role: Option<String>,
-    /// Print information
+    /// Print system-wide information
     #[clap(long)]
     pub info: bool,
     /// Run in dry run mode

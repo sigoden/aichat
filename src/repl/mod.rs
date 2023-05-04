@@ -20,7 +20,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 pub const REPL_COMMANDS: [(&str, &str); 12] = [
-    (".info", "Print the information"),
+    (".info", "Print system-wide information"),
     (".set", "Modify the configuration temporarily"),
     (".model", "Choose a model"),
     (".prompt", "Add a GPT prompt"),
