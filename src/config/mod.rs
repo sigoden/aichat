@@ -538,6 +538,12 @@ fn create_config_file(config_path: &Path) -> Result<()> {
     }
     ensure_parent_exists(config_path)?;
     std::fs::write(config_path, raw_config).with_context(|| "Failed to write to config file")?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::prelude::PermissionsExt;
+        let perms = std::fs::Permissions::from_mode(0o600);
+        std::fs::set_permissions(config_path, perms)?;
+    }
     Ok(())
 }
 
