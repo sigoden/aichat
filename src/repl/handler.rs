@@ -64,6 +64,7 @@ impl ReplCmdHandler {
                 wg.wait();
                 let buffer = ret?;
                 self.config.read().save_message(&input, &buffer)?;
+                let _ = self.config.read().copy_message(&buffer);
                 self.config.write().save_conversation(&input, &buffer)?;
                 *self.reply.borrow_mut() = buffer;
             }
