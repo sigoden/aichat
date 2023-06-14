@@ -181,8 +181,11 @@ dry_run             false
 
 ```
 > .model gpt-4
+> .model gpt-4-0613
 > .model gpt-4-32k
 > .model gpt-3.5-turbo
+> .model gpt-3.5-turbo-16k
+
 ```
 
 ### `.prompt` - use GPT prompt

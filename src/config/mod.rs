@@ -23,10 +23,12 @@ use std::{
     sync::Arc,
 };
 
-pub const MODELS: [(&str, usize); 3] = [
+pub const MODELS: [(&str, usize); 5] = [
     ("gpt-4", 8192),
+    ("gpt-4-0613", 8192), // fewer limits when calling API compared to gpt-4
     ("gpt-4-32k", 32768),
     ("gpt-3.5-turbo", 4096),
+    ("gpt-3.5-turbo-16k", 16384), 
 ];
 
 const CONFIG_FILE_NAME: &str = "config.yaml";
