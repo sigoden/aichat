@@ -10,6 +10,8 @@ $ cargo install aichat
 $ ./aichat "your comment"
 #fun useage 
 $ aichat "give it a prompt here and say you are in a cowsay bubble" | cowsay
+## can also be used as a coding copilot via copy paste 
+$ aichat "will you please check this code <paste code>
 ######
 # 👀 #
 ######
