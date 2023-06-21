@@ -5,7 +5,7 @@ $ pkg update && pkg -y upgrade && pkg install ruby python-pip python python2 pyt
 # get cargo && npmpip
 $ ruby fetch cargo && ruby install cargo && pip install npm
 # install aichat
-$ cargo install aichat
+$ cargo install aichat --force
 #useage
 $ ./aichat "your comment"
 #fun useage 
