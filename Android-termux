@@ -1,11 +1,11 @@
 #first you will need to set up your termux
 $ termux-setup-storage 
 #update and add repositories 
-$ pkg update && pkg -y upgrade && pkg install ruby python-pip python python2 python3
-# get cargo && npmpip
+$ pkg update && pkg -y upgrade && pkg install ruby python-pip python python2 python3 termux-api
+# get cargo && npm 
 $ ruby fetch cargo && ruby install cargo && pip install npm
 # install aichat
-$ cargo install aichat --force
+$ cargo install aichat --force  # alternative $ cargo --locked install aichat
 #useage
 $ ./aichat "your comment"
 #fun useage 
