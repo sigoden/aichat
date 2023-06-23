@@ -1,0 +1,16 @@
+- name: eyes
+  prompt: >
+    this is just a sample template
+  temprature: 0.0
+- name: sample 
+  prompt: >      
+     make sure you keep your spacing
+  temprature: 0.5
+- name: sample 
+  prompt: >    
+     your prompts should be as detailed as possible  
+  temprature: 1.5  
+- name: sample
+  prompt: >
+    text here be detailed
+  temprature: 2.0 
