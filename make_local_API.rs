@@ -14,4 +14,4 @@ fn main() {
         println!("Command failed:\n{}", error);
     }
 }
-```
+
