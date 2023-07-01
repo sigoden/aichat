@@ -8,7 +8,8 @@
   temprature: 0.5
 - name: sample 
   prompt: >    
-     your prompts should be as detailed as possible  
+     your prompts should be as detailed as
+     possible  
   temprature: 1.5  
 - name: sample
   prompt: >
