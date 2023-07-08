@@ -5,6 +5,7 @@ use reedline::{Highlighter, StyledText};
 
 const MATCH_COLOR: Color = Color::Green;
 
+#[allow(clippy::module_name_repetitions)]
 pub struct ReplHighlighter {
     external_commands: Vec<String>,
     config: SharedConfig,
@@ -12,10 +13,10 @@ pub struct ReplHighlighter {
 
 impl ReplHighlighter {
     /// Construct the default highlighter with a given set of extern commands/keywords to detect and highlight
-    pub fn new(config: SharedConfig, external_commands: Vec<String>) -> ReplHighlighter {
+    pub fn new(config: SharedConfig, external_commands: Vec<String>) -> Self {
         Self {
-            config,
             external_commands,
+            config,
         }
     }
 }
@@ -28,9 +29,10 @@ impl Highlighter for ReplHighlighter {
         } else {
             Color::White
         };
-        let match_color = match self.config.read().highlight {
-            true => MATCH_COLOR,
-            false => color,
+        let match_color = if self.config.read().highlight {
+            MATCH_COLOR
+        } else {
+            color
         };
 
         if self
@@ -45,7 +47,7 @@ impl Highlighter for ReplHighlighter {
                 .filter(|c| line.contains(*c))
                 .map(std::ops::Deref::deref)
                 .collect();
-            let longest_match = matches.iter().fold("".to_string(), |acc, &item| {
+            let longest_match = matches.iter().fold(String::new(), |acc, &item| {
                 if item.len() > acc.len() {
                     item.to_string()
                 } else {

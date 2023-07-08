@@ -9,6 +9,7 @@ const PROMPT_MULTILINE_COLOR: nu_ansi_term::Color = nu_ansi_term::Color::LightBl
 const INDICATOR_COLOR: Color = Color::Cyan;
 const PROMPT_RIGHT_COLOR: Color = Color::AnsiValue(5);
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone)]
 pub struct ReplPrompt {
     config: SharedConfig,
@@ -21,7 +22,7 @@ pub struct ReplPrompt {
 impl ReplPrompt {
     pub fn new(config: SharedConfig) -> Self {
         let (prompt_color, prompt_multiline_color, indicator_color, prompt_right_color) =
-            Self::get_colors(config.clone());
+            Self::get_colors(&config);
         Self {
             config,
             prompt_color,
@@ -32,14 +33,14 @@ impl ReplPrompt {
     }
     pub fn sync_config(&mut self) {
         let (prompt_color, prompt_multiline_color, indicator_color, prompt_right_color) =
-            Self::get_colors(self.config.clone());
+            Self::get_colors(&self.config);
         self.prompt_color = prompt_color;
         self.prompt_multiline_color = prompt_multiline_color;
         self.indicator_color = indicator_color;
         self.prompt_right_color = prompt_right_color;
     }
 
-    pub fn get_colors(config: SharedConfig) -> (Color, nu_ansi_term::Color, Color, Color) {
+    pub fn get_colors(config: &SharedConfig) -> (Color, nu_ansi_term::Color, Color, Color) {
         let (highlight, light_theme) = config.read().get_render_options();
         if highlight {
             (
@@ -68,11 +69,11 @@ impl ReplPrompt {
 
 impl Prompt for ReplPrompt {
     fn render_prompt_left(&self) -> Cow<str> {
-        if let Some(role) = self.config.read().role.as_ref() {
-            role.name.to_string().into()
-        } else {
-            Cow::Borrowed("")
-        }
+        self.config
+            .read()
+            .role
+            .as_ref()
+            .map_or(Cow::Borrowed(""), |role| Cow::Owned(role.name.clone()))
     }
 
     fn render_prompt_right(&self) -> Cow<str> {

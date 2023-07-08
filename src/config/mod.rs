@@ -45,6 +45,7 @@ const SET_COMPLETIONS: [&str; 8] = [
     ".set dry_run false",
 ];
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -109,6 +110,7 @@ impl Default for Config {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub type SharedConfig = Arc<RwLock<Config>>;
 
 impl Config {
@@ -119,7 +121,7 @@ impl Config {
             create_config_file(&config_path)?;
         }
         let mut config = if api_key.is_some() && !config_path.exists() {
-            Default::default()
+            Self::default()
         } else {
             Self::load_config(&config_path)?
         };
@@ -156,13 +158,12 @@ impl Config {
 
     pub fn config_dir() -> Result<PathBuf> {
         let env_name = get_env_name("config_dir");
-        let path = match env::var_os(env_name) {
-            Some(v) => PathBuf::from(v),
-            None => {
-                let mut dir = dirs::config_dir().ok_or_else(|| anyhow!("Not found config dir"))?;
-                dir.push(env!("CARGO_CRATE_NAME"));
-                dir
-            }
+        let path = if let Some(v) = env::var_os(env_name) {
+            PathBuf::from(v)
+        } else {
+            let mut dir = dirs::config_dir().ok_or_else(|| anyhow!("Not found config dir"))?;
+            dir.push(env!("CARGO_CRATE_NAME"));
+            dir
         };
         Ok(path)
     }
@@ -186,18 +187,17 @@ impl Config {
             None => {
                 format!("# CHAT:[{timestamp}]\n{input}\n--------\n{output}\n--------\n\n",)
             }
+            Some(v) if v.is_temp() => {
+                format!(
+                    "# CHAT:[{timestamp}]\n{}\n{input}\n--------\n{output}\n--------\n\n",
+                    v.prompt
+                )
+            }
             Some(v) => {
-                if v.is_temp() {
-                    format!(
-                        "# CHAT:[{timestamp}]\n{}\n{input}\n--------\n{output}\n--------\n\n",
-                        v.prompt
-                    )
-                } else {
-                    format!(
-                        "# CHAT:[{timestamp}] ({})\n{input}\n--------\n{output}\n--------\n\n",
-                        v.name,
-                    )
-                }
+                format!(
+                    "# CHAT:[{timestamp}] ({})\n{input}\n--------\n{output}\n--------\n\n",
+                    v.name,
+                )
             }
         };
         file.write_all(output.as_bytes())
@@ -216,11 +216,10 @@ impl Config {
 
     pub fn roles_file() -> Result<PathBuf> {
         let env_name = get_env_name("roles_file");
-        if let Ok(value) = env::var(env_name) {
-            Ok(PathBuf::from(value))
-        } else {
-            Self::local_file(ROLES_FILE_NAME)
-        }
+        env::var(env_name).map_or_else(
+            |_| Self::local_file(ROLES_FILE_NAME),
+            |value| Ok(PathBuf::from(value)),
+        )
     }
 
     pub fn history_file() -> Result<PathBuf> {
@@ -237,8 +236,8 @@ impl Config {
                 if let Some(conversation) = self.conversation.as_mut() {
                     conversation.update_role(&role)?;
                 }
-                let output =
-                    serde_yaml::to_string(&role).unwrap_or("Unable to echo role details".into());
+                let output = serde_yaml::to_string(&role)
+                    .unwrap_or_else(|_| "Unable to echo role details".into());
                 self.role = Some(role);
                 Ok(output)
             }
@@ -271,6 +270,7 @@ impl Config {
     }
 
     pub fn echo_messages(&self, content: &str) -> String {
+        #[allow(clippy::option_if_let_else)]
         if let Some(conversation) = self.conversation.as_ref() {
             conversation.echo_messages(content)
         } else if let Some(role) = self.role.as_ref() {
@@ -280,7 +280,7 @@ impl Config {
         }
     }
 
-    pub fn get_connect_timeout(&self) -> Duration {
+    pub const fn get_connect_timeout(&self) -> Duration {
         Duration::from_secs(self.connect_timeout as u64)
     }
 
@@ -289,10 +289,11 @@ impl Config {
     }
 
     pub fn build_messages(&self, content: &str) -> Result<Vec<Message>> {
+        #[allow(clippy::option_if_let_else)]
         let messages = if let Some(conversation) = self.conversation.as_ref() {
             conversation.build_emssages(content)
         } else if let Some(role) = self.role.as_ref() {
-            role.build_emssages(content)
+            role.build_messages(content)
         } else {
             let message = Message::new(content);
             vec![message]
@@ -314,7 +315,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn get_reamind_tokens(&self) -> usize {
+    pub const fn get_reamind_tokens(&self) -> usize {
         let mut tokens = self.model.1;
         if let Some(conversation) = self.conversation.as_ref() {
             tokens = tokens.saturating_sub(conversation.tokens);
@@ -330,21 +331,17 @@ impl Config {
         let proxy = self
             .proxy
             .as_ref()
-            .map(|v| v.to_string())
-            .unwrap_or("-".into());
+            .map_or_else(|| String::from("-"), std::string::ToString::to_string);
         let temperature = self
             .temperature
-            .map(|v| v.to_string())
-            .unwrap_or("-".into());
+            .map_or_else(|| String::from("-"), |v| v.to_string());
         let (api_key, organization_id) = self.get_api_key();
         let api_key = mask_text(&api_key, 3, 4);
-        let organization_id = organization_id
-            .map(|v| mask_text(&v, 3, 4))
-            .unwrap_or("-".into());
+        let organization_id = organization_id.map_or_else(|| "-".into(), |v| mask_text(&v, 3, 4));
         let items = vec![
-            ("config_file", file_info(&Config::config_file()?)),
-            ("roles_file", file_info(&Config::roles_file()?)),
-            ("messages_file", file_info(&Config::messages_file()?)),
+            ("config_file", file_info(&Self::config_file()?)),
+            ("roles_file", file_info(&Self::roles_file()?)),
+            ("messages_file", file_info(&Self::messages_file()?)),
             ("api_key", api_key),
             ("organization_id", organization_id),
             ("model", self.model.0.to_string()),
@@ -371,8 +368,8 @@ impl Config {
             .map(|v| format!(".role {}", v.name))
             .collect();
 
-        completion.extend(SET_COMPLETIONS.map(|v| v.to_string()));
-        completion.extend(MODELS.map(|(v, _)| format!(".model {}", v)));
+        completion.extend(SET_COMPLETIONS.map(std::string::ToString::to_string));
+        completion.extend(MODELS.map(|(v, _)| format!(".model {v}")));
         completion
     }
 
@@ -441,7 +438,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn get_render_options(&self) -> (bool, bool) {
+    pub const fn get_render_options(&self) -> (bool, bool) {
         (self.highlight, self.light_theme)
     }
 
@@ -449,13 +446,14 @@ impl Config {
         if self.dry_run {
             if let Ok(messages) = self.build_messages(input) {
                 let tokens = num_tokens_from_messages(&messages);
-                println!(">>> The following message consumes {tokens} tokens.")
+                println!(">>> The following message consumes {tokens} tokens.");
             }
         }
     }
 
+    #[allow(clippy::unused_self)] // TODO: do we need to take self here? it's not used in the fn
     fn open_message_file(&self) -> Result<File> {
-        let path = Config::messages_file()?;
+        let path = Self::messages_file()?;
         ensure_parent_exists(&path)?;
         OpenOptions::new()
             .create(true)
@@ -468,7 +466,7 @@ impl Config {
         let content = read_to_string(config_path)
             .with_context(|| format!("Failed to load config at {}", config_path.display()))?;
 
-        let config: Config = serde_yaml::from_str(&content)
+        let config: Self = serde_yaml::from_str(&content)
             .with_context(|| format!("Invalid config at {}", config_path.display()))?;
         Ok(config)
     }
