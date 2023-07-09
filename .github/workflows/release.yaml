@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    name: Publish to Github Release
+    name: Publish to GitHub Release
     permissions:
       contents: write
     outputs:
