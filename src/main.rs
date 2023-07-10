@@ -36,9 +36,9 @@ fn main() -> Result<()> {
         exit(0);
     }
     if cli.list_models {
-        config::MODELS
-            .iter()
-            .for_each(|(name, _)| println!("{}", name));
+        for (name, _) in &config::MODELS {
+            println!("{name}");
+        }
         exit(0);
     }
     if cli.dry_run {
@@ -76,18 +76,18 @@ fn main() -> Result<()> {
         if let Some(text) = text {
             input = format!("{text}\n{input}");
         }
-        start_directive(client, config, &input, no_stream)
+        start_directive(&client, &config, &input, no_stream)
     } else {
         match text {
-            Some(text) => start_directive(client, config, &text, no_stream),
+            Some(text) => start_directive(&client, &config, &text, no_stream),
             None => start_interactive(client, config),
         }
     }
 }
 
 fn start_directive(
-    client: ChatGptClient,
-    config: SharedConfig,
+    client: &ChatGptClient,
+    config: &SharedConfig,
     input: &str,
     no_stream: bool,
 ) -> Result<()> {
@@ -113,7 +113,7 @@ fn start_directive(
             abort_clone.set_ctrlc();
         })
         .expect("Error setting Ctrl-C handler");
-        let output = render_stream(input, &client, config.clone(), false, abort, wg.clone())?;
+        let output = render_stream(input, client, config, false, abort, wg.clone())?;
         wg.wait();
         output
     };

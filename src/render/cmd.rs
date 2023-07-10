@@ -6,10 +6,11 @@ use crate::repl::{ReplyStreamEvent, SharedAbortSignal};
 use anyhow::Result;
 use crossbeam::channel::Receiver;
 
+#[allow(clippy::unnecessary_wraps, clippy::module_name_repetitions)]
 pub fn cmd_render_stream(
-    rx: Receiver<ReplyStreamEvent>,
+    rx: &Receiver<ReplyStreamEvent>,
     light_theme: bool,
-    abort: SharedAbortSignal,
+    abort: &SharedAbortSignal,
 ) -> Result<()> {
     let mut buffer = String::new();
     let mut markdown_render = MarkdownRender::new(light_theme);
@@ -25,7 +26,7 @@ pub fn cmd_render_stream(
                         let mut lines: Vec<&str> = text.split('\n').collect();
                         buffer = lines.pop().unwrap_or_default().to_string();
                         let output = lines.join("\n");
-                        print_now!("{}\n", markdown_render.render(&output))
+                        print_now!("{}\n", markdown_render.render(&output));
                     } else {
                         buffer = format!("{buffer}{text}");
                         if !(markdown_render.is_code_block()
@@ -36,7 +37,7 @@ pub fn cmd_render_stream(
                         {
                             if let Some((output, remain)) = split_line(&buffer) {
                                 print_now!("{}", markdown_render.render_line_stateless(&output));
-                                buffer = remain
+                                buffer = remain;
                             }
                         }
                     }
@@ -74,8 +75,8 @@ fn split_line(line: &str) -> Option<(String, String)> {
             index += 2;
             continue;
         }
-        do_balance(&mut balance, &chars[index..index + 1]);
-        index += 1
+        do_balance(&mut balance, &chars[index..=index]);
+        index += 1;
     }
 
     None
@@ -101,25 +102,25 @@ impl Kind {
     fn from_chars(chars: &[char]) -> Option<Self> {
         let kind = match chars.len() {
             1 => match chars[0] {
-                '(' => Kind::ParentheseStart,
-                ')' => Kind::ParentheseEnd,
-                '[' => Kind::BracketStart,
-                ']' => Kind::BracketEnd,
-                '*' => Kind::Asterisk,
-                '\'' => Kind::SingleQuota,
-                '"' => Kind::DoubleQuota,
-                '~' => Kind::Tilde,
-                '`' => Kind::Backtick,
+                '(' => Self::ParentheseStart,
+                ')' => Self::ParentheseEnd,
+                '[' => Self::BracketStart,
+                ']' => Self::BracketEnd,
+                '*' => Self::Asterisk,
+                '\'' => Self::SingleQuota,
+                '"' => Self::DoubleQuota,
+                '~' => Self::Tilde,
+                '`' => Self::Backtick,
                 _ => return None,
             },
             2 if chars[0] == chars[1] => match chars[0] {
-                '*' => Kind::Asterisk2,
-                '~' => Kind::Tilde2,
+                '*' => Self::Asterisk2,
+                '~' => Self::Tilde2,
                 _ => return None,
             },
             3 => {
                 if chars == ['`', '`', '`'] {
-                    Kind::Backtick3
+                    Self::Backtick3
                 } else {
                     return None;
                 }
@@ -131,22 +132,12 @@ impl Kind {
 }
 
 fn do_balance(balance: &mut Vec<Kind>, chars: &[char]) -> bool {
-    if let Some(kind) = Kind::from_chars(chars) {
+    Kind::from_chars(chars).map_or(false, |kind| {
         let last = balance.last();
         match (kind, last) {
-            (Kind::ParentheseStart | Kind::BracketStart, _) => {
-                balance.push(kind);
-                true
-            }
-            (Kind::ParentheseEnd, Some(&Kind::ParentheseStart)) => {
-                balance.pop();
-                true
-            }
-            (Kind::BracketEnd, Some(&Kind::BracketStart)) => {
-                balance.pop();
-                true
-            }
-            (Kind::Asterisk, Some(&Kind::Asterisk))
+            (Kind::ParentheseEnd, Some(&Kind::ParentheseStart))
+            | (Kind::BracketEnd, Some(&Kind::BracketStart))
+            | (Kind::Asterisk, Some(&Kind::Asterisk))
             | (Kind::Asterisk2, Some(&Kind::Asterisk2))
             | (Kind::SingleQuota, Some(&Kind::SingleQuota))
             | (Kind::DoubleQuota, Some(&Kind::DoubleQuota))
@@ -157,22 +148,25 @@ fn do_balance(balance: &mut Vec<Kind>, chars: &[char]) -> bool {
                 balance.pop();
                 true
             }
-            (Kind::Asterisk, _)
-            | (Kind::Asterisk2, _)
-            | (Kind::SingleQuota, _)
-            | (Kind::DoubleQuota, _)
-            | (Kind::Tilde, _)
-            | (Kind::Tilde2, _)
-            | (Kind::Backtick, _)
-            | (Kind::Backtick3, _) => {
+            (
+                Kind::ParentheseStart
+                | Kind::BracketStart
+                | Kind::Asterisk
+                | Kind::Asterisk2
+                | Kind::SingleQuota
+                | Kind::DoubleQuota
+                | Kind::Tilde
+                | Kind::Tilde2
+                | Kind::Backtick
+                | Kind::Backtick3,
+                _,
+            ) => {
                 balance.push(kind);
                 true
             }
             _ => false,
         }
-    } else {
-        false
-    }
+    })
 }
 
 #[cfg(test)]

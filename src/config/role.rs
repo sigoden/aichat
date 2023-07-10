@@ -55,7 +55,7 @@ impl Role {
         }
     }
 
-    pub fn build_emssages(&self, content: &str) -> Vec<Message> {
+    pub fn build_messages(&self, content: &str) -> Vec<Message> {
         if self.embeded() {
             let content = merge_prompt_content(&self.prompt, content);
             vec![Message {

@@ -1,6 +1,7 @@
 use reedline::{ValidationResult, Validator};
 
 /// A default validator which checks for mismatched quotes and brackets
+#[allow(clippy::module_name_repetitions)]
 pub struct ReplValidator;
 
 impl Validator for ReplValidator {
@@ -30,7 +31,7 @@ fn incomplete_brackets(line: &str) -> bool {
             None => match c {
                 '{' | '(' => {
                     balance.push(c);
-                    symbol = Some(c)
+                    symbol = Some(c);
                 }
                 _ => {}
             },

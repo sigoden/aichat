@@ -17,6 +17,7 @@ impl Message {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MessageRole {
@@ -45,6 +46,6 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&Message::new("Hello World")).unwrap(),
             "{\"role\":\"user\",\"content\":\"Hello World\"}"
-        )
+        );
     }
 }

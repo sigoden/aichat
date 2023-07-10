@@ -16,10 +16,11 @@ use std::{
 };
 use unicode_width::UnicodeWidthStr;
 
+#[allow(clippy::module_name_repetitions)]
 pub fn repl_render_stream(
-    rx: Receiver<ReplyStreamEvent>,
+    rx: &Receiver<ReplyStreamEvent>,
     light_theme: bool,
-    abort: SharedAbortSignal,
+    abort: &SharedAbortSignal,
 ) -> Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -32,9 +33,9 @@ pub fn repl_render_stream(
 }
 
 fn repl_render_stream_inner(
-    rx: Receiver<ReplyStreamEvent>,
+    rx: &Receiver<ReplyStreamEvent>,
     light_theme: bool,
-    abort: SharedAbortSignal,
+    abort: &SharedAbortSignal,
     writer: &mut Stdout,
 ) -> Result<()> {
     let mut last_tick = Instant::now();
@@ -118,7 +119,8 @@ fn repl_render_stream_inner(
 }
 
 fn recover_cursor(writer: &mut Stdout, terminal_columns: u16, buffer: &str) -> Result<()> {
-    let buffer_rows = (buffer.width() as u16 + terminal_columns - 1) / terminal_columns;
+    let buffer_rows = (u16::try_from(buffer.width()).unwrap_or(u16::MAX) + terminal_columns - 1)
+        / terminal_columns;
     let (_, row) = cursor::position()?;
     if buffer_rows == 0 {
         queue!(writer, cursor::MoveTo(0, row))?;

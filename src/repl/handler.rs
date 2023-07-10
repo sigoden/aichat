@@ -24,6 +24,7 @@ pub enum ReplCmd {
     Copy,
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub struct ReplCmdHandler {
     client: ChatGptClient,
     config: SharedConfig,
@@ -32,6 +33,7 @@ pub struct ReplCmdHandler {
 }
 
 impl ReplCmdHandler {
+    #[allow(clippy::unnecessary_wraps)]
     pub fn init(
         client: ChatGptClient,
         config: SharedConfig,
@@ -58,7 +60,7 @@ impl ReplCmdHandler {
                 let ret = render_stream(
                     &input,
                     &self.client,
-                    self.config.clone(),
+                    &self.config,
                     true,
                     self.abort.clone(),
                     wg.clone(),
@@ -113,6 +115,7 @@ impl ReplCmdHandler {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub struct ReplyStreamHandler {
     sender: Option<Sender<ReplyStreamEvent>>,
     buffer: String,
@@ -154,22 +157,19 @@ impl ReplyStreamHandler {
     }
 
     pub fn done(&mut self) -> Result<()> {
-        match self.sender.as_ref() {
-            Some(tx) => {
-                let ret = tx
-                    .send(ReplyStreamEvent::Done)
-                    .with_context(|| "Failed to send StreamEvent:Done");
-                self.safe_ret(ret)?;
+        if let Some(tx) = self.sender.as_ref() {
+            let ret = tx
+                .send(ReplyStreamEvent::Done)
+                .with_context(|| "Failed to send StreamEvent:Done");
+            self.safe_ret(ret)?;
+        } else {
+            if !self.buffer.ends_with('\n') {
+                print_now!("\n");
             }
-            None => {
-                if !self.buffer.ends_with('\n') {
-                    print_now!("\n")
-                }
-                if self.repl {
+            if self.repl {
+                print_now!("\n");
+                if cfg!(macos) {
                     print_now!("\n");
-                    if cfg!(macos) {
-                        print_now!("\n")
-                    }
                 }
             }
         }
