@@ -49,11 +49,11 @@ const SET_COMPLETIONS: [&str; 8] = [
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    /// Openai api key
+    /// OpenAI api key
     pub api_key: Option<String>,
-    /// Openai organization id
+    /// OpenAI organization id
     pub organization_id: Option<String>,
-    /// Openai model
+    /// OpenAI model
     #[serde(rename(serialize = "model", deserialize = "model"))]
     pub model_name: Option<String>,
     /// What sampling temperature to use, between 0 and 2
@@ -517,7 +517,7 @@ fn create_config_file(config_path: &Path) -> Result<()> {
     if !ans {
         exit(0);
     }
-    let api_key = Text::new("Openai API Key:")
+    let api_key = Text::new("OpenAI API Key:")
         .prompt()
         .map_err(text_map_err)?;
     let mut raw_config = format!("api_key: {api_key}\n");
