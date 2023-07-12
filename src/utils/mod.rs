@@ -14,7 +14,7 @@ macro_rules! print_now {
     };
 }
 
-pub fn print_now<T: ToString>(text: T) {
+pub fn print_now<T: ToString>(text: &T) {
     print!("{}", text.to_string());
     let _ = stdout().flush();
 }

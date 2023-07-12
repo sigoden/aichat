@@ -24,7 +24,7 @@ impl Repl {
             .map(|(v, _)| v.to_string())
             .collect();
 
-        let completer = Self::create_completer(config.clone(), &commands);
+        let completer = Self::create_completer(&config, &commands);
         let highlighter = ReplHighlighter::new(config.clone(), commands);
         let keybindings = Self::create_keybindings();
         let history = Self::create_history()?;
@@ -45,7 +45,7 @@ impl Repl {
         Ok(Self { editor, prompt })
     }
 
-    fn create_completer(config: SharedConfig, commands: &[String]) -> DefaultCompleter {
+    fn create_completer(config: &SharedConfig, commands: &[String]) -> DefaultCompleter {
         let mut completion = commands.to_vec();
         completion.extend(config.read().repl_completions());
         let mut completer =

@@ -8,6 +8,7 @@ use syntect::{easy::HighlightLines, parsing::SyntaxReference};
 /// Monokai Extended
 const MD_THEME: &[u8] = include_bytes!("../../assets/monokai-extended.theme.bin");
 const MD_THEME_LIGHT: &[u8] = include_bytes!("../../assets/monokai-extended-light.theme.bin");
+#[allow(clippy::doc_markdown)]
 /// Comes from https://github.com/sharkdp/bat/raw/5e77ca37e89c873e4490b42ff556370dc5c6ba4f/assets/syntaxes.bin
 const SYNTAXES: &[u8] = include_bytes!("../../assets/syntaxes.bin");
 
@@ -20,6 +21,7 @@ lazy_static! {
     };
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub struct MarkdownRender {
     syntax_set: SyntaxSet,
     md_theme: Theme,
@@ -67,7 +69,7 @@ impl MarkdownRender {
         output.unwrap_or_else(|| line.to_string())
     }
 
-    pub fn is_code_block(&self) -> bool {
+    pub const fn is_code_block(&self) -> bool {
         matches!(
             self.prev_line_type,
             LineType::CodeBegin | LineType::CodeInner
@@ -123,13 +125,14 @@ impl MarkdownRender {
     }
 
     fn render_code_line(&self, line: &str) -> Option<String> {
-        self.code_syntax
-            .as_ref()
-            .map(|syntax| self.render_line_inner(line, syntax))
-            .unwrap_or_else(|| Some(format!("{}", line.with(self.code_color))))
+        self.code_syntax.as_ref().map_or_else(
+            || Some(format!("{}", line.with(self.code_color))),
+            |syntax| self.render_line_inner(line, syntax),
+        )
     }
 
     fn find_syntax(&self, lang: &str) -> Option<&SyntaxReference> {
+        #[allow(clippy::option_if_let_else)]
         if let Some(new_lang) = LANGE_MAPS.get(&lang.to_ascii_lowercase()) {
             self.syntax_set.find_syntax_by_name(new_lang)
         } else {
@@ -154,17 +157,17 @@ fn as_terminal_escaped(ranges: &[(Style, &str)]) -> String {
         let fg = blend_fg_color(style.foreground, style.background);
         let mut text = text.with(convert_color(fg));
         if style.font_style.contains(FontStyle::BOLD) {
-            text = text.bold()
+            text = text.bold();
         }
         if style.font_style.contains(FontStyle::UNDERLINE) {
-            text = text.underlined()
+            text = text.underlined();
         }
         output.push_str(&text.to_string());
     }
     output
 }
 
-fn convert_color(c: SyntectColor) -> Color {
+const fn convert_color(c: SyntectColor) -> Color {
     Color::Rgb {
         r: c.r,
         g: c.g,
@@ -176,14 +179,14 @@ fn blend_fg_color(fg: SyntectColor, bg: SyntectColor) -> SyntectColor {
     if fg.a == 0xff {
         return fg;
     }
-    let ratio = fg.a as u32;
-    let r = (fg.r as u32 * ratio + bg.r as u32 * (255 - ratio)) / 255;
-    let g = (fg.g as u32 * ratio + bg.g as u32 * (255 - ratio)) / 255;
-    let b = (fg.b as u32 * ratio + bg.b as u32 * (255 - ratio)) / 255;
+    let ratio = u32::from(fg.a);
+    let r = (u32::from(fg.r) * ratio + u32::from(bg.r) * (255 - ratio)) / 255;
+    let g = (u32::from(fg.g) * ratio + u32::from(bg.g) * (255 - ratio)) / 255;
+    let b = (u32::from(fg.b) * ratio + u32::from(bg.b) * (255 - ratio)) / 255;
     SyntectColor {
-        r: r as u8,
-        g: g as u8,
-        b: b as u8,
+        r: u8::try_from(r).unwrap_or(u8::MAX),
+        g: u8::try_from(g).unwrap_or(u8::MAX),
+        b: u8::try_from(b).unwrap_or(u8::MAX),
         a: 255,
     }
 }
@@ -209,8 +212,7 @@ fn get_code_color(theme: &Theme) -> Color {
     });
     scope
         .and_then(|v| v.style.foreground)
-        .map(convert_color)
-        .unwrap_or_else(|| Color::Yellow)
+        .map_or_else(|| Color::Yellow, convert_color)
 }
 
 #[cfg(test)]

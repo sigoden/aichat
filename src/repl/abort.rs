@@ -5,6 +5,7 @@ use std::sync::{
 
 pub type SharedAbortSignal = Arc<AbortSignal>;
 
+#[allow(clippy::module_name_repetitions)]
 pub struct AbortSignal {
     ctrlc: AtomicBool,
     ctrld: AtomicBool,

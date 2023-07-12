@@ -55,7 +55,7 @@ impl Repl {
                 Ok(Signal::Success(line)) => {
                     already_ctrlc = false;
                     abort.reset();
-                    match self.handle_line(handler.clone(), line) {
+                    match self.handle_line(&handler, &line) {
                         Ok(quit) => {
                             if quit {
                                 break;
@@ -69,12 +69,11 @@ impl Repl {
                 }
                 Ok(Signal::CtrlC) => {
                     abort.set_ctrlc();
-                    if !already_ctrlc {
-                        already_ctrlc = true;
-                        print_now!("(To exit, press Ctrl+C again or Ctrl+D or type .exit)\n\n");
-                    } else {
+                    if already_ctrlc {
                         break;
                     }
+                    already_ctrlc = true;
+                    print_now!("(To exit, press Ctrl+C again or Ctrl+D or type .exit)\n\n");
                 }
                 Ok(Signal::CtrlD) => {
                     abort.set_ctrld();
@@ -86,9 +85,9 @@ impl Repl {
         Ok(())
     }
 
-    fn handle_line(&mut self, handler: Arc<ReplCmdHandler>, line: String) -> Result<bool> {
-        let line = clean_multiline_symbols(&line);
-        match parse_command(&line) {
+    fn handle_line(&mut self, handler: &Arc<ReplCmdHandler>, line: &str) -> Result<bool> {
+        let line = clean_multiline_symbols(line);
+        match parse_command(line.as_ref()) {
             Some((cmd, args)) => match cmd {
                 ".exit" => {
                     return Ok(true);
@@ -176,7 +175,7 @@ Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
 fn clean_multiline_symbols(line: &str) -> Cow<str> {
     let trimed_line = line.trim();
     match trimed_line.chars().next() {
-        Some('{') | Some('[') | Some('(') => trimed_line[1..trimed_line.len() - 1].into(),
+        Some('{' | '[' | '(') => trimed_line[1..trimed_line.len() - 1].into(),
         _ => Cow::Borrowed(line),
     }
 }

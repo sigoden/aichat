@@ -12,6 +12,7 @@ use tokio::time::sleep;
 
 const API_URL: &str = "https://api.openai.com/v1/chat/completions";
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub struct ChatGptClient {
     config: SharedConfig,
@@ -106,16 +107,15 @@ impl ChatGptClient {
             let chunk = part?.data;
             if chunk == "[DONE]" {
                 break;
-            } else {
-                let data: Value = serde_json::from_str(&chunk)?;
-                let text = data["choices"][0]["delta"]["content"]
-                    .as_str()
-                    .unwrap_or_default();
-                if text.is_empty() {
-                    continue;
-                }
-                handler.text(text)?;
             }
+            let data: Value = serde_json::from_str(&chunk)?;
+            let text = data["choices"][0]["delta"]["content"]
+                .as_str()
+                .unwrap_or_default();
+            if text.is_empty() {
+                continue;
+            }
+            handler.text(text)?;
         }
 
         Ok(())

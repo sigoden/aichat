@@ -43,11 +43,12 @@ impl Conversation {
         self.tokens = num_tokens_from_messages(&self.build_emssages(""));
     }
 
+    #[allow(clippy::unnecessary_wraps)]
     pub fn add_message(&mut self, input: &str, output: &str) -> Result<()> {
         let mut need_add_msg = true;
         if self.messages.is_empty() {
             if let Some(role) = self.role.as_ref() {
-                self.messages.extend(role.build_emssages(input));
+                self.messages.extend(role.build_messages(input));
                 need_add_msg = false;
             }
         }
@@ -67,15 +68,15 @@ impl Conversation {
 
     pub fn echo_messages(&self, content: &str) -> String {
         let messages = self.build_emssages(content);
-        serde_yaml::to_string(&messages).unwrap_or("Unable to echo message".into())
+        serde_yaml::to_string(&messages).unwrap_or_else(|_| "Unable to echo message".into())
     }
 
     pub fn build_emssages(&self, content: &str) -> Vec<Message> {
-        let mut messages = self.messages.to_vec();
+        let mut messages = self.messages.clone();
         let mut need_add_msg = true;
         if messages.is_empty() {
             if let Some(role) = self.role.as_ref() {
-                messages = role.build_emssages(content);
+                messages = role.build_messages(content);
                 need_add_msg = false;
             }
         };

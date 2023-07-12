@@ -3,7 +3,7 @@
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 
-Using ChatGPT/GPT-3.5/GPT-4 in the terminal.
+Use ChatGPT/GPT-3.5/GPT-4 in the terminal.
 
 AIChat in chat mode:
 
@@ -21,9 +21,9 @@ AIChat in command mode:
 cargo install --force aichat
 ```
 
-### Binaries on macOS, Linux, Windows
+### Binaries for macOS, Linux, Windows
 
-Download it from [Github Releases](https://github.com/sigoden/aichat/releases), unzip and add aichat to your $PATH.
+Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), unzip and add aichat to your $PATH.
 
 ## Features
 
@@ -31,64 +31,65 @@ Download it from [Github Releases](https://github.com/sigoden/aichat/releases), 
 - Predefine AI [roles](#roles)
 - Use GPT prompt easily
 - Powerful [Chat REPL](#chat-repl)
-- Context-ware conversation
-- syntax highlighting markdown and other 200 languages
-- Stream output with hand typing effect
+- Context-aware conversation
+- Syntax highlighting markdown and 200 other languages
+- Stream output with hand-typing effect
 - Support multiple models
-- Support proxy
-- Support dark/light theme
+- Support proxy connection
+- Dark/light theme
 - Save chat messages
 
 ## Config
 
-On first launch, aichat will guide you through configuration.
+On first launch, aichat will guide you through the configuration.
 
 ```
 > No config file, create a new one? Yes
-> Openai API Key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+> OpenAI API Key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 > Use proxy? Yes
 > Set proxy: socks5://127.0.0.1:1080
 > Save chat messages Yes
 ```
 
-After setting, it will automatically create the configuration file. Of course, you can also manually set the configuration file. 
+On completion, it will automatically create the configuration file. Of course, you can also manually set the configuration file.
 
 ```yaml
-api_key: "<YOUR SECRET API KEY>"  # Request via https://platform.openai.com/account/api-keys
-organization_id: "org-xxx"        # optional, set organization id
-model: "gpt-3.5-turbo"            # optional, choose a model
-temperature: 1.0                  # optional, see https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
-save: true                        # optional, If set true, aichat will save chat messages to message.md
-highlight: true                   # optional, Set false to turn highlight
-proxy: "socks5://127.0.0.1:1080"  # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
-conversation_first: false         # optional, If set true, start a conversation immediately upon repl
-light_theme: false                # optional, If set true, use light theme
-connect_timeout: 10               # optional, Set a timeout in seconds for connect to gpt.
+api_key: "<YOUR SECRET API KEY>" # Request via https://platform.openai.com/account/api-keys
+organization_id: "org-xxx" # optional, set organization id
+model: "gpt-3.5-turbo" # optional, choose a model
+temperature: 1.0 # optional, see https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
+save: true # optional, If set true, aichat will save chat messages to message.md
+highlight: true # optional, Set false to turn highlight
+proxy: "socks5://127.0.0.1:1080" # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
+conversation_first: false # optional, If set true, start a conversation immediately upon repl
+light_theme: false # optional, If set true, use light theme
+connect_timeout: 10 # optional, Set a timeout in seconds for connect to gpt.
 ```
 
 > You can use `.info` to view the current configuration file path and roles file path.
 
-> You can use [Enviroment Variables](https://github.com/sigoden/aichat/wiki/Environment-Variables) to customize certain configuration items.
+> You can use [Environment Variables](https://github.com/sigoden/aichat/wiki/Environment-Variables) to customize certain configuration items.
 
 ### Roles
 
-We can let ChatGPT play a certain role through `prompt` to make it better generate what we want.
+We can let ChatGPT play a certain role through `prompt` to have it better generate what we want.
 
 We can predefine a batch of roles in `roles.yaml`.
 
 > We can get the location of `roles.yaml` through the repl's `.info` command or cli's `--info` option.
 
-For example, we define a role
+For example, we can define a role:
 
 ```yaml
 - name: shell
   prompt: >
-    I want you to act as a linux shell expert.
+    I want you to act as a Linux shell expert.
     I want you to answer only with bash code.
     Do not provide explanations.
 ```
 
-Let ChatGPT answer questions in the role of a linux shell expert.
+Let ChatGPT answer questions in the role of a Linux shell expert.
+
 ```
 〉.role shell
 
@@ -104,6 +105,7 @@ We have provided many awesome [Role Examples](https://github.com/sigoden/aichat/
 aichat has a powerful Chat REPL.
 
 The Chat REPL supports:
+
 - Emacs keybinding
 - Command autocompletion
 - History search
@@ -111,7 +113,7 @@ The Chat REPL supports:
 - Edit/past multiline input
 - Undo support
 
-### multi-line editing
+### Multi-line editing
 
 **Type `{` or `(` at the beginning of the line to enter the multi-line editing mode.** In this mode you can type or paste multiple lines of text. Type the corresponding `}` or `)` at the end of the line to exit the mode and submit the content.
 
@@ -125,7 +127,6 @@ The Chat REPL supports:
   "data": "structure"
 }}
 ```
-
 
 ### `.help` - Print help message
 
@@ -148,7 +149,7 @@ Type `{` to enter the multi-line editing mode, type '}' to exit the mode.
 Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
 ```
 
-### `.info` - view current configuration information.
+### `.info` - View current configuration information
 
 ```
 〉.info
@@ -168,7 +169,7 @@ connect_timeout     10
 dry_run             false
 ```
 
-### `.set` - modify the configuration temporarily
+### `.set` - Modify the configuration temporarily
 
 ```
 〉.set dry_run true
@@ -177,7 +178,7 @@ dry_run             false
 〉.set temperature 1.2
 ```
 
-### `.model` - choose a model
+### `.model` - Choose a model
 
 ```
 > .model gpt-4
@@ -186,13 +187,13 @@ dry_run             false
 > .model gpt-3.5-turbo-16k
 ```
 
-### `.prompt` - use GPT prompt
+### `.prompt` - Set GPT prompt
 
 When you set up a prompt, every message sent later will carry the prompt.
 
 ```
 〉{ .prompt
-I want you to translate the sentences I wrote into emojis.
+I want you to translate the sentences I write into emojis.
 I will write the sentence, and you will express it with emojis.
 I just want you to express it with emojis.
 I want you to reply only with emojis.
@@ -210,28 +211,30 @@ Done
 
 When you are satisfied with the prompt, add it to `roles.yaml` for later use.
 
-### `.role` - let the ai play a role
+### `.role` - Let the AI play a role
 
-Select a role.
+Select a role:
 
 ```
 〉.role emoji
 name: emoji
-prompt: I want you to translate the sentences I wrote into emojis. I will write the sentence, and you will express it with emojis. I just want you to express it with emojis. I don't want you to reply with anything but emoji. When I need to tell you something in English, I will do it by wrapping it in curly brackets like {like this}.
+prompt: I want you to translate the sentences I write into emojis. I will write the sentence, and you will express it with emojis. I just want you to express it with emojis. I don't want you to reply with anything but emoji. When I need to tell you something in English, I will do it by wrapping it in curly brackets like {like this}.
 temperature: null
 ```
 
-AI play the role we specified
+AI takes the role we specified:
+
 ```
 emoji〉hello
 👋
 ```
 
-Clear current selected role
+Clear current selected role:
+
 ```
 emoji〉.clear role
 
-〉hello 
+〉hello
 Hello there! How can I assist you today?
 ```
 
@@ -260,10 +263,11 @@ You can run `.conversation` to enter context-aware mode, or set `config.conversa
 
 ```
 
-When enter conversation mode, prompt `〉` will change to `＄`, A number will appear on the right, which means how many tokens left to use.
+When entering conversation mode, prompt `〉` will change to `＄`. A number will appear on the right,
+indicating how many tokens are left to use.
 Once the number becomes zero, you need to start a new conversation.
 
-Exit conversation mode
+Exit conversation mode:
 
 ```
 ＄.clear conversation                                                                    4043
