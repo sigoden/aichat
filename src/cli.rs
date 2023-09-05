@@ -16,6 +16,11 @@ pub struct Cli {
     /// No stream output
     #[clap(short = 'S', long)]
     pub no_stream: bool,
+    /// Define the API URL for requesting
+    #[clap(short = 'I', long)]
+    pub api_url: Option<String>,
+    #[clap(long)]
+    pub max_tokens: Option<usize>,
     /// List all roles
     #[clap(long)]
     pub list_roles: bool,

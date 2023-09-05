@@ -25,16 +25,16 @@ use std::{
 
 pub const MODELS: [(&str, usize); 4] = [
     ("gpt-4", 8192),
+    ("gpt-4-0613", 8192), // fewer limits when calling API compared to gpt-4
     ("gpt-4-32k", 32768),
     ("gpt-3.5-turbo", 4096),
-    ("gpt-3.5-turbo-16k", 16384),
 ];
 
 const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
 const HISTORY_FILE_NAME: &str = "history.txt";
 const MESSAGE_FILE_NAME: &str = "messages.md";
-const SET_COMPLETIONS: [&str; 8] = [
+const SET_COMPLETIONS: [&str; 10] = [
     ".set temperature",
     ".set save true",
     ".set save false",
@@ -43,6 +43,8 @@ const SET_COMPLETIONS: [&str; 8] = [
     ".set proxy",
     ".set dry_run true",
     ".set dry_run false",
+    ".set api_url",
+    ".set max_tokens",
 ];
 
 #[allow(clippy::struct_excessive_bools)]
@@ -53,6 +55,9 @@ pub struct Config {
     pub api_key: Option<String>,
     /// OpenAI organization id
     pub organization_id: Option<String>,
+    /// Configable requesting api url
+    pub api_url: String,
+    pub max_tokens: usize,
     /// OpenAI model
     #[serde(rename(serialize = "model", deserialize = "model"))]
     pub model_name: Option<String>,
@@ -105,6 +110,8 @@ impl Default for Config {
             roles: vec![],
             role: None,
             conversation: None,
+            max_tokens: 1024,
+            api_url: "https://api.openai.com/v1/chat/completions".into(),
             model: ("gpt-3.5-turbo".into(), 4096),
         }
     }
@@ -134,6 +141,7 @@ impl Config {
         if let Some(name) = config.model_name.clone() {
             config.set_model(&name)?;
         }
+
         config.merge_env_vars();
         config.maybe_proxy();
         config.load_roles()?;
@@ -287,7 +295,12 @@ impl Config {
     pub fn get_model(&self) -> (String, usize) {
         self.model.clone()
     }
-
+    pub fn get_api_url(&self) -> String {
+        self.api_url.clone()
+    }
+    pub fn get_max_tokens(&self) -> usize {
+        self.max_tokens.clone()
+    }
     pub fn build_messages(&self, content: &str) -> Result<Vec<Message>> {
         #[allow(clippy::option_if_let_else)]
         let messages = if let Some(conversation) = self.conversation.as_ref() {
@@ -336,6 +349,8 @@ impl Config {
             .temperature
             .map_or_else(|| String::from("-"), |v| v.to_string());
         let (api_key, organization_id) = self.get_api_key();
+        let api_url = self.get_api_url();
+        let max_tokens = self.get_max_tokens();
         let api_key = mask_text(&api_key, 3, 4);
         let organization_id = organization_id.map_or_else(|| "-".into(), |v| mask_text(&v, 3, 4));
         let items = vec![
@@ -344,6 +359,8 @@ impl Config {
             ("messages_file", file_info(&Self::messages_file()?)),
             ("api_key", api_key),
             ("organization_id", organization_id),
+            ("api_url", api_url),
+            ("max_tokens", max_tokens.to_string()),
             ("model", self.model.0.to_string()),
             ("temperature", temperature),
             ("save", self.save.to_string()),
@@ -389,6 +406,17 @@ impl Config {
                     let value = value.parse().with_context(|| "Invalid value")?;
                     self.temperature = Some(value);
                 }
+            }
+            "api_url" => {
+                    self.api_url = value.to_string(); 
+            }
+            "max_tokens" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                self.max_tokens = value;
+            }
+            "light_theme" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                self.light_theme = value;
             }
             "save" => {
                 let value = value.parse().with_context(|| "Invalid value")?;

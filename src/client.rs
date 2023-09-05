@@ -10,8 +10,6 @@ use std::time::Duration;
 use tokio::runtime::Runtime;
 use tokio::time::sleep;
 
-const API_URL: &str = "https://api.openai.com/v1/chat/completions";
-
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub struct ChatGptClient {
@@ -138,11 +136,13 @@ impl ChatGptClient {
     fn request_builder(&self, content: &str, stream: bool) -> Result<RequestBuilder> {
         let (model, _) = self.config.read().get_model();
         let messages = self.config.read().build_messages(content)?;
+        let max_tokens = self.config.read().get_max_tokens();
         let mut body = json!({
             "model": model,
             "messages": messages,
+            "max_tokens" : max_tokens,
         });
-
+        
         if let Some(v) = self.config.read().get_temperature() {
             body.as_object_mut()
                 .and_then(|m| m.insert("temperature".into(), json!(v)));
@@ -153,11 +153,14 @@ impl ChatGptClient {
                 .and_then(|m| m.insert("stream".into(), json!(true)));
         }
 
+        let api_url = self.config.read().get_api_url();
+
+
         let (api_key, organization_id) = self.config.read().get_api_key();
 
         let mut builder = self
             .build_client()?
-            .post(API_URL)
+            .post(api_url)
             .bearer_auth(api_key)
             .json(&body);
 

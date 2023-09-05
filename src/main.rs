@@ -44,6 +44,12 @@ fn main() -> Result<()> {
     if cli.dry_run {
         config.write().dry_run = true;
     }
+    if cli.max_tokens.is_some() {
+        config.write().max_tokens = cli.max_tokens.unwrap();
+    }
+    if cli.api_url.is_some() {
+        config.write().api_url = cli.api_url.expect("Error setting API_URL").to_string();
+    }
     let role = match &cli.role {
         Some(name) => Some(
             config
