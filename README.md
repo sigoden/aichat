@@ -38,6 +38,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - Support proxy connection
 - Dark/light theme
 - Save chat messages
+- Customizable API URL
 
 ## Config
 
@@ -58,6 +59,8 @@ api_key: "<YOUR SECRET API KEY>" # Request via https://platform.openai.com/accou
 organization_id: "org-xxx" # optional, set organization id
 model: "gpt-3.5-turbo" # optional, choose a model
 temperature: 1.0 # optional, see https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
+api_url: "https://api.openai.com/v1/chat/completions" #optional, set API url to request
+max_tokens: 1024 # optional, set max tokens for return from API.
 save: true # optional, If set true, aichat will save chat messages to message.md
 highlight: true # optional, Set false to turn highlight
 proxy: "socks5://127.0.0.1:1080" # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
@@ -158,6 +161,8 @@ roles_file          /home/alice/.config/aichat/roles.yaml
 messages_file       /home/alice/.config/aichat/messages.md
 api_key             sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 organization_id     -
+api_url             https://api.openai.com/v1/chat/completions
+max_tokens          1024
 model               gpt-3.5-turbo
 temperature         -
 save                true
