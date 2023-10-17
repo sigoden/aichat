@@ -17,7 +17,7 @@ use crate::term;
 use anyhow::{Context, Result};
 use reedline::Signal;
 use std::borrow::Cow;
-use std::sync::Arc;
+use std::rc::Rc;
 
 pub const REPL_COMMANDS: [(&str, &str); 13] = [
     (".info", "Print system-wide information"),
@@ -42,7 +42,7 @@ impl Repl {
         print_now!("Welcome to aichat {}\n", env!("CARGO_PKG_VERSION"));
         print_now!("Type \".help\" for more information.\n");
         let mut already_ctrlc = false;
-        let handler = Arc::new(handler);
+        let handler = Rc::new(handler);
         loop {
             if abort.aborted_ctrld() {
                 break;
@@ -85,7 +85,7 @@ impl Repl {
         Ok(())
     }
 
-    fn handle_line(&mut self, handler: &Arc<ReplCmdHandler>, line: &str) -> Result<bool> {
+    fn handle_line(&mut self, handler: &Rc<ReplCmdHandler>, line: &str) -> Result<bool> {
         let line = clean_multiline_symbols(line);
         match parse_command(line.as_ref()) {
             Some((cmd, args)) => match cmd {
