@@ -6,8 +6,9 @@ use crate::config::{Config, SharedConfig};
 
 use anyhow::{Context, Result};
 use reedline::{
-    default_emacs_keybindings, ColumnarMenu, DefaultCompleter, Emacs, FileBackedHistory, KeyCode,
-    KeyModifiers, Keybindings, Reedline, ReedlineEvent, ReedlineMenu,
+    default_emacs_keybindings, default_vi_insert_keybindings, default_vi_normal_keybindings,
+    ColumnarMenu, DefaultCompleter, EditMode, Emacs, FileBackedHistory, KeyCode, KeyModifiers,
+    Keybindings, Reedline, ReedlineEvent, ReedlineMenu, Vi,
 };
 
 const MENU_NAME: &str = "completion_menu";
@@ -26,10 +27,22 @@ impl Repl {
 
         let completer = Self::create_completer(&config, &commands);
         let highlighter = ReplHighlighter::new(config.clone(), commands);
-        let keybindings = Self::create_keybindings();
         let history = Self::create_history()?;
         let menu = Self::create_menu();
-        let edit_mode = Box::new(Emacs::new(keybindings));
+        let edit_mode: Box<dyn EditMode> = if config.read().vi_keybindings {
+            let mut normal_keybindings = default_vi_normal_keybindings();
+            let mut insert_keybindings = default_vi_insert_keybindings();
+            Self::add_menu_keybindings(&mut normal_keybindings);
+            Self::add_menu_keybindings(&mut insert_keybindings);
+            Self::add_clear_keybindings(&mut normal_keybindings);
+            Self::add_clear_keybindings(&mut insert_keybindings);
+            Box::new(Vi::new(insert_keybindings, normal_keybindings))
+        } else {
+            let mut keybindings = default_emacs_keybindings();
+            Self::add_menu_keybindings(&mut keybindings);
+            Self::add_clear_keybindings(&mut keybindings);
+            Box::new(Emacs::new(keybindings))
+        };
         let mut editor = Reedline::create()
             .with_completer(Box::new(completer))
             .with_highlighter(Box::new(highlighter))
@@ -54,8 +67,7 @@ impl Repl {
         completer
     }
 
-    fn create_keybindings() -> Keybindings {
-        let mut keybindings = default_emacs_keybindings();
+    fn add_menu_keybindings(keybindings: &mut Keybindings) {
         keybindings.add_binding(
             KeyModifiers::NONE,
             KeyCode::Tab,
@@ -64,12 +76,14 @@ impl Repl {
                 ReedlineEvent::MenuNext,
             ]),
         );
+    }
+
+    fn add_clear_keybindings(keybindings: &mut Keybindings) {
         keybindings.add_binding(
             KeyModifiers::CONTROL,
             KeyCode::Char('l'),
             ReedlineEvent::ExecuteHostCommand(".clear screen".into()),
         );
-        keybindings
     }
 
     fn create_menu() -> ReedlineMenu {
