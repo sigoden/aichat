@@ -74,6 +74,8 @@ pub struct Config {
     pub connect_timeout: usize,
     /// Automatically copy the last output to the clipboard
     pub auto_copy: bool,
+    /// Use vi keybindings, overriding the default Emacs keybindings
+    pub vi_keybindings: bool,
     /// Predefined roles
     #[serde(skip)]
     pub roles: Vec<Role>,
@@ -102,6 +104,7 @@ impl Default for Config {
             light_theme: false,
             connect_timeout: 10,
             auto_copy: false,
+            vi_keybindings: false,
             roles: vec![],
             role: None,
             conversation: None,
@@ -353,6 +356,7 @@ impl Config {
             ("light_theme", self.light_theme.to_string()),
             ("connect_timeout", self.connect_timeout.to_string()),
             ("dry_run", self.dry_run.to_string()),
+            ("vi_keybindings", self.vi_keybindings.to_string()),
         ];
         let mut output = String::new();
         for (name, value) in items {
