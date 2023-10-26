@@ -63,10 +63,8 @@ impl ModelInfo {
 pub trait Client {
     fn get_config(&self) -> &SharedConfig;
 
-    fn get_runtime(&self) -> &Runtime;
-
     fn send_message(&self, content: &str) -> Result<String> {
-        self.get_runtime().block_on(async {
+        init_runtime()?.block_on(async {
             if self.get_config().read().dry_run {
                 return Ok(self.get_config().read().echo_messages(content));
             }
@@ -90,7 +88,7 @@ pub trait Client {
             }
         }
         let abort = handler.get_abort();
-        self.get_runtime().block_on(async {
+        init_runtime()?.block_on(async {
             tokio::select! {
                 ret = async {
                     if self.get_config().read().dry_run {
@@ -123,7 +121,7 @@ pub trait Client {
     ) -> Result<()>;
 }
 
-pub fn init_client(config: SharedConfig, runtime: Runtime) -> Result<Box<dyn Client>> {
+pub fn init_client(config: SharedConfig) -> Result<Box<dyn Client>> {
     let model_info = config.read().model_info.clone();
     let model_info_err = |model_info: &ModelInfo| {
         bail!(
@@ -144,7 +142,6 @@ pub fn init_client(config: SharedConfig, runtime: Runtime) -> Result<Box<dyn Cli
             config,
             local_config,
             model_info,
-            runtime,
         )))
     } else if model_info.client == LocalAIClient::name() {
         let local_config = {
@@ -158,7 +155,6 @@ pub fn init_client(config: SharedConfig, runtime: Runtime) -> Result<Box<dyn Cli
             config,
             local_config,
             model_info,
-            runtime,
         )))
     } else {
         bail!("Unknown client {}", &model_info.client)
@@ -195,4 +191,11 @@ pub fn list_models(config: &Config) -> Vec<ModelInfo> {
                 .collect::<Vec<ModelInfo>>(),
         })
         .collect()
+}
+
+pub fn init_runtime() -> Result<Runtime> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .with_context(|| "Failed to init tokio")
 }

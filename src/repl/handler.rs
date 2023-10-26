@@ -1,4 +1,4 @@
-use crate::client::Client;
+use crate::client::init_client;
 use crate::config::SharedConfig;
 use crate::print_now;
 use crate::render::render_stream;
@@ -26,7 +26,6 @@ pub enum ReplCmd {
 
 #[allow(clippy::module_name_repetitions)]
 pub struct ReplCmdHandler {
-    client: Box<dyn Client>,
     config: SharedConfig,
     reply: RefCell<String>,
     abort: SharedAbortSignal,
@@ -34,14 +33,9 @@ pub struct ReplCmdHandler {
 
 impl ReplCmdHandler {
     #[allow(clippy::unnecessary_wraps)]
-    pub fn init(
-        client: Box<dyn Client>,
-        config: SharedConfig,
-        abort: SharedAbortSignal,
-    ) -> Result<Self> {
+    pub fn init(config: SharedConfig, abort: SharedAbortSignal) -> Result<Self> {
         let reply = RefCell::new(String::new());
         Ok(Self {
-            client,
             config,
             reply,
             abort,
@@ -57,9 +51,10 @@ impl ReplCmdHandler {
                 }
                 self.config.read().maybe_print_send_tokens(&input);
                 let wg = WaitGroup::new();
+                let client = init_client(self.config.clone())?;
                 let ret = render_stream(
                     &input,
-                    self.client.as_ref(),
+                    client.as_ref(),
                     &self.config,
                     true,
                     self.abort.clone(),

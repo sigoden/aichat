@@ -13,7 +13,6 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::env;
 use std::time::Duration;
-use tokio::runtime::Runtime;
 
 const API_URL: &str = "https://api.openai.com/v1/chat/completions";
 
@@ -23,7 +22,6 @@ pub struct OpenAIClient {
     global_config: SharedConfig,
     local_config: OpenAIConfig,
     model_info: ModelInfo,
-    runtime: Runtime,
 }
 
 #[allow(clippy::struct_excessive_bools)]
@@ -40,10 +38,6 @@ pub struct OpenAIConfig {
 impl Client for OpenAIClient {
     fn get_config(&self) -> &SharedConfig {
         &self.global_config
-    }
-
-    fn get_runtime(&self) -> &Runtime {
-        &self.runtime
     }
 
     async fn send_message_inner(&self, content: &str) -> Result<String> {
@@ -66,13 +60,11 @@ impl OpenAIClient {
         global_config: SharedConfig,
         local_config: OpenAIConfig,
         model_info: ModelInfo,
-        runtime: Runtime,
     ) -> Self {
         Self {
             global_config,
             local_config,
             model_info,
-            runtime,
         }
     }
 

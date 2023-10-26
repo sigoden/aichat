@@ -11,7 +11,6 @@ use reqwest::{Client as ReqwestClient, Proxy, RequestBuilder};
 use serde::Deserialize;
 use serde_json::json;
 use std::time::Duration;
-use tokio::runtime::Runtime;
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
@@ -19,7 +18,6 @@ pub struct LocalAIClient {
     global_config: SharedConfig,
     local_config: LocalAIConfig,
     model_info: ModelInfo,
-    runtime: Runtime,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -44,10 +42,6 @@ impl Client for LocalAIClient {
         &self.global_config
     }
 
-    fn get_runtime(&self) -> &Runtime {
-        &self.runtime
-    }
-
     async fn send_message_inner(&self, content: &str) -> Result<String> {
         let builder = self.request_builder(content, false)?;
         openai_send_message(builder).await
@@ -68,13 +62,11 @@ impl LocalAIClient {
         global_config: SharedConfig,
         local_config: LocalAIConfig,
         model_info: ModelInfo,
-        runtime: Runtime,
     ) -> Self {
         Self {
             global_config,
             local_config,
             model_info,
-            runtime,
         }
     }
 

@@ -11,7 +11,7 @@ use crate::cli::Cli;
 use crate::client::Client;
 use crate::config::{Config, SharedConfig};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use clap::Parser;
 use client::{init_client, list_models};
 use crossbeam::sync::WaitGroup;
@@ -22,7 +22,6 @@ use repl::{AbortSignal, Repl};
 use std::io::{stdin, Read};
 use std::sync::Arc;
 use std::{io::stdout, process::exit};
-use tokio::runtime::Runtime;
 use utils::cl100k_base_singleton;
 
 fn main() -> Result<()> {
@@ -71,8 +70,7 @@ fn main() -> Result<()> {
         exit(0);
     }
     let no_stream = cli.no_stream;
-    let runtime = init_runtime()?;
-    let client = init_client(config.clone(), runtime)?;
+    let client = init_client(config.clone())?;
     if atty::isnt(atty::Stream::Stdin) {
         let mut input = String::new();
         stdin().read_to_string(&mut input)?;
@@ -83,7 +81,7 @@ fn main() -> Result<()> {
     } else {
         match text {
             Some(text) => start_directive(client.as_ref(), &config, &text, no_stream),
-            None => start_interactive(client, config),
+            None => start_interactive(config),
         }
     }
 }
@@ -123,16 +121,9 @@ fn start_directive(
     config.read().save_message(input, &output)
 }
 
-fn start_interactive(client: Box<dyn Client>, config: SharedConfig) -> Result<()> {
+fn start_interactive(config: SharedConfig) -> Result<()> {
     cl100k_base_singleton();
     config.write().on_repl()?;
     let mut repl = Repl::init(config.clone())?;
-    repl.run(client, config)
-}
-
-fn init_runtime() -> Result<Runtime> {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .with_context(|| "Failed to init tokio")
+    repl.run(config)
 }
