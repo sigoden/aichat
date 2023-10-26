@@ -1,12 +1,13 @@
+use super::EDIT_RE;
+
 use reedline::{ValidationResult, Validator};
 
 /// A default validator which checks for mismatched quotes and brackets
-#[allow(clippy::module_name_repetitions)]
 pub struct ReplValidator;
 
 impl Validator for ReplValidator {
     fn validate(&self, line: &str) -> ValidationResult {
-        if line.ends_with('\\') {
+        if let Ok(true) = EDIT_RE.is_match(line) {
             ValidationResult::Incomplete
         } else {
             ValidationResult::Complete
