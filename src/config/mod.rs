@@ -6,14 +6,15 @@ use self::conversation::Conversation;
 use self::message::Message;
 use self::role::Role;
 
+use crate::client::openai::{OpenAIClient, OpenAIConfig};
+use crate::client::{all_clients, create_client_config, list_models, ClientConfig, ModelInfo};
 use crate::config::message::num_tokens_from_messages;
-use crate::utils::{mask_text, now};
+use crate::utils::{get_env_name, now};
 
 use anyhow::{anyhow, bail, Context, Result};
-use inquire::{Confirm, Text};
+use inquire::{Confirm, Select};
 use parking_lot::RwLock;
 use serde::Deserialize;
-use std::time::Duration;
 use std::{
     env,
     fs::{create_dir_all, read_to_string, File, OpenOptions},
@@ -23,24 +24,16 @@ use std::{
     sync::Arc,
 };
 
-pub const MODELS: [(&str, usize); 4] = [
-    ("gpt-4", 8192),
-    ("gpt-4-32k", 32768),
-    ("gpt-3.5-turbo", 4096),
-    ("gpt-3.5-turbo-16k", 16384),
-];
-
 const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
 const HISTORY_FILE_NAME: &str = "history.txt";
 const MESSAGE_FILE_NAME: &str = "messages.md";
-const SET_COMPLETIONS: [&str; 8] = [
+const SET_COMPLETIONS: [&str; 7] = [
     ".set temperature",
     ".set save true",
     ".set save false",
     ".set highlight true",
     ".set highlight false",
-    ".set proxy",
     ".set dry_run true",
     ".set dry_run false",
 ];
@@ -49,33 +42,26 @@ const SET_COMPLETIONS: [&str; 8] = [
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    /// OpenAI api key
-    pub api_key: Option<String>,
-    /// OpenAI organization id
-    pub organization_id: Option<String>,
-    /// OpenAI model
-    #[serde(rename(serialize = "model", deserialize = "model"))]
-    pub model_name: Option<String>,
+    /// LLM model
+    pub model: Option<String>,
     /// What sampling temperature to use, between 0 and 2
     pub temperature: Option<f64>,
     /// Whether to persistently save chat messages
     pub save: bool,
     /// Whether to disable highlight
     pub highlight: bool,
-    /// Set proxy
-    pub proxy: Option<String>,
     /// Used only for debugging
     pub dry_run: bool,
     /// If set ture, start a conversation immediately upon repl
     pub conversation_first: bool,
     /// Is ligth theme
     pub light_theme: bool,
-    /// Set a timeout in seconds for connect to gpt
-    pub connect_timeout: usize,
     /// Automatically copy the last output to the clipboard
     pub auto_copy: bool,
     /// Use vi keybindings, overriding the default Emacs keybindings
     pub vi_keybindings: bool,
+    /// LLM clients
+    pub clients: Vec<ClientConfig>,
     /// Predefined roles
     #[serde(skip)]
     pub roles: Vec<Role>,
@@ -86,29 +72,26 @@ pub struct Config {
     #[serde(skip)]
     pub conversation: Option<Conversation>,
     #[serde(skip)]
-    pub model: (String, usize),
+    pub model_info: ModelInfo,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            api_key: None,
-            organization_id: None,
-            model_name: None,
+            model: None,
             temperature: None,
             save: false,
             highlight: true,
-            proxy: None,
             dry_run: false,
             conversation_first: false,
             light_theme: false,
-            connect_timeout: 10,
             auto_copy: false,
             vi_keybindings: false,
             roles: vec![],
+            clients: vec![ClientConfig::OpenAI(OpenAIConfig::default())],
             role: None,
             conversation: None,
-            model: ("gpt-3.5-turbo".into(), 4096),
+            model_info: Default::default(),
         }
     }
 }
@@ -118,27 +101,29 @@ pub type SharedConfig = Arc<RwLock<Config>>;
 
 impl Config {
     pub fn init(is_interactive: bool) -> Result<Self> {
-        let api_key = env::var(get_env_name("api_key")).ok();
         let config_path = Self::config_file()?;
-        if is_interactive && api_key.is_none() && !config_path.exists() {
+
+        let api_key = env::var(get_env_name("api_key")).ok();
+
+        let exist_config_path = config_path.exists();
+        if is_interactive && api_key.is_none() && !exist_config_path {
             create_config_file(&config_path)?;
         }
-        let mut config = if api_key.is_some() && !config_path.exists() {
+        let mut config = if api_key.is_some() && !exist_config_path {
             Self::default()
         } else {
             Self::load_config(&config_path)?
         };
-        if api_key.is_some() {
-            config.api_key = api_key;
+
+        // Compatible with old configuration files
+        if exist_config_path {
+            config.compat_old_config(&config_path)?;
         }
-        if config.api_key.is_none() {
-            bail!("api_key not set");
-        }
-        if let Some(name) = config.model_name.clone() {
+
+        if let Some(name) = config.model.clone() {
             config.set_model(&name)?;
         }
         config.merge_env_vars();
-        config.maybe_proxy();
         config.load_roles()?;
 
         Ok(config)
@@ -211,12 +196,6 @@ impl Config {
         Self::local_file(CONFIG_FILE_NAME)
     }
 
-    pub fn get_api_key(&self) -> (String, Option<String>) {
-        let api_key = self.api_key.as_ref().expect("api_key not set");
-        let organization_id = self.organization_id.as_ref();
-        (api_key.into(), organization_id.cloned())
-    }
-
     pub fn roles_file() -> Result<PathBuf> {
         let env_name = get_env_name("roles_file");
         env::var(env_name).map_or_else(
@@ -283,14 +262,6 @@ impl Config {
         }
     }
 
-    pub const fn get_connect_timeout(&self) -> Duration {
-        Duration::from_secs(self.connect_timeout as u64)
-    }
-
-    pub fn get_model(&self) -> (String, usize) {
-        self.model.clone()
-    }
-
     pub fn build_messages(&self, content: &str) -> Result<Vec<Message>> {
         #[allow(clippy::option_if_let_else)]
         let messages = if let Some(conversation) = self.conversation.as_ref() {
@@ -302,24 +273,29 @@ impl Config {
             vec![message]
         };
         let tokens = num_tokens_from_messages(&messages);
-        if tokens >= self.model.1 {
+        if tokens >= self.model_info.max_tokens {
             bail!("Exceed max tokens limit")
         }
 
         Ok(messages)
     }
 
-    pub fn set_model(&mut self, name: &str) -> Result<()> {
-        if let Some(token) = MODELS.iter().find(|(v, _)| *v == name).map(|(_, v)| *v) {
-            self.model = (name.to_string(), token);
-        } else {
-            bail!("Invalid model")
+    pub fn set_model(&mut self, value: &str) -> Result<()> {
+        let models = list_models(self);
+        if value.contains(':') {
+            if let Some(model) = models.iter().find(|v| v.stringify() == value) {
+                self.model_info = model.clone();
+                return Ok(());
+            }
+        } else if let Some(model) = models.iter().find(|v| v.client == value) {
+            self.model_info = model.clone();
+            return Ok(());
         }
-        Ok(())
+        bail!("Invalid model")
     }
 
     pub const fn get_reamind_tokens(&self) -> usize {
-        let mut tokens = self.model.1;
+        let mut tokens = self.model_info.max_tokens;
         if let Some(conversation) = self.conversation.as_ref() {
             tokens = tokens.saturating_sub(conversation.tokens);
         }
@@ -331,30 +307,19 @@ impl Config {
             let state = if path.exists() { "" } else { " ⚠️" };
             format!("{}{state}", path.display())
         };
-        let proxy = self
-            .proxy
-            .as_ref()
-            .map_or_else(|| String::from("-"), std::string::ToString::to_string);
         let temperature = self
             .temperature
             .map_or_else(|| String::from("-"), |v| v.to_string());
-        let (api_key, organization_id) = self.get_api_key();
-        let api_key = mask_text(&api_key, 3, 4);
-        let organization_id = organization_id.map_or_else(|| "-".into(), |v| mask_text(&v, 3, 4));
         let items = vec![
             ("config_file", file_info(&Self::config_file()?)),
             ("roles_file", file_info(&Self::roles_file()?)),
             ("messages_file", file_info(&Self::messages_file()?)),
-            ("api_key", api_key),
-            ("organization_id", organization_id),
-            ("model", self.model.0.to_string()),
+            ("model", self.model_info.stringify()),
             ("temperature", temperature),
             ("save", self.save.to_string()),
             ("highlight", self.highlight.to_string()),
-            ("proxy", proxy),
             ("conversation_first", self.conversation_first.to_string()),
             ("light_theme", self.light_theme.to_string()),
-            ("connect_timeout", self.connect_timeout.to_string()),
             ("dry_run", self.dry_run.to_string()),
             ("vi_keybindings", self.vi_keybindings.to_string()),
         ];
@@ -373,7 +338,11 @@ impl Config {
             .collect();
 
         completion.extend(SET_COMPLETIONS.map(std::string::ToString::to_string));
-        completion.extend(MODELS.map(|(v, _)| format!(".model {v}")));
+        completion.extend(
+            list_models(self)
+                .iter()
+                .map(|v| format!(".model {}", v.stringify())),
+        );
         completion
     }
 
@@ -401,13 +370,6 @@ impl Config {
             "highlight" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.highlight = value;
-            }
-            "proxy" => {
-                if unset {
-                    self.proxy = None;
-                } else {
-                    self.proxy = Some(value.to_string());
-                }
             }
             "dry_run" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
@@ -501,44 +463,62 @@ impl Config {
         }
     }
 
-    fn maybe_proxy(&mut self) {
-        if self.proxy.is_some() {
-            return;
+    fn compat_old_config(&mut self, config_path: &PathBuf) -> Result<()> {
+        let content = read_to_string(config_path)?;
+        let value: serde_json::Value = serde_yaml::from_str(&content)?;
+        if value.get("client").is_some() {
+            return Ok(());
         }
-        if let Ok(value) = env::var("HTTPS_PROXY").or_else(|_| env::var("ALL_PROXY")) {
-            self.proxy = Some(value);
+
+        if let Some(model_name) = value.get("model").and_then(|v| v.as_str()) {
+            if model_name.starts_with("gpt") {
+                self.model = Some(format!("{}:{}", OpenAIClient::name(), model_name));
+            }
         }
+
+        if let Some(ClientConfig::OpenAI(client_config)) = self.clients.get_mut(0) {
+            if let Some(api_key) = value.get("api_key").and_then(|v| v.as_str()) {
+                client_config.api_key = Some(api_key.to_string())
+            }
+
+            if let Some(organization_id) = value.get("organization_id").and_then(|v| v.as_str()) {
+                client_config.organization_id = Some(organization_id.to_string())
+            }
+
+            if let Some(proxy) = value.get("proxy").and_then(|v| v.as_str()) {
+                client_config.proxy = Some(proxy.to_string())
+            }
+
+            if let Some(connect_timeout) = value.get("connect_timeout").and_then(|v| v.as_i64()) {
+                client_config.connect_timeout = Some(connect_timeout as _)
+            }
+        }
+        Ok(())
     }
 }
 
 fn create_config_file(config_path: &Path) -> Result<()> {
-    let confirm_map_err = |_| anyhow!("Not finish questionnaire, try again later.");
-    let text_map_err = |_| anyhow!("An error happened when asking for your key, try again later.");
     let ans = Confirm::new("No config file, create a new one?")
         .with_default(true)
         .prompt()
-        .map_err(confirm_map_err)?;
+        .map_err(|_| anyhow!("Not finish questionnaire, try again later."))?;
     if !ans {
         exit(0);
     }
-    let api_key = Text::new("OpenAI API Key:")
-        .prompt()
-        .map_err(text_map_err)?;
-    let mut raw_config = format!("api_key: {api_key}\n");
 
-    let ans = Confirm::new("Use proxy?")
-        .with_default(false)
+    let client = Select::new("Choose bots?", all_clients())
         .prompt()
-        .map_err(confirm_map_err)?;
-    if ans {
-        let proxy = Text::new("Set proxy:").prompt().map_err(text_map_err)?;
-        raw_config.push_str(&format!("proxy: {proxy}\n"));
-    }
+        .map_err(|_| anyhow!("An error happened when selecting bots, try again later."))?;
+
+    let mut raw_config = create_client_config(client)?;
+
+    raw_config.push_str(&format!("model: {client}\n"));
 
     let ans = Confirm::new("Save chat messages")
         .with_default(true)
         .prompt()
-        .map_err(confirm_map_err)?;
+        .map_err(|_| anyhow!("Not finish questionnaire, try again later."))?;
+
     if ans {
         raw_config.push_str("save: true\n");
     }
@@ -569,14 +549,6 @@ fn ensure_parent_exists(path: &Path) -> Result<()> {
         })?;
     }
     Ok(())
-}
-
-fn get_env_name(key: &str) -> String {
-    format!(
-        "{}_{}",
-        env!("CARGO_CRATE_NAME").to_ascii_uppercase(),
-        key.to_ascii_uppercase(),
-    )
 }
 
 fn set_bool(target: &mut bool, value: &str) {

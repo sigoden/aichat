@@ -24,32 +24,20 @@ pub fn now() -> String {
     now.to_rfc3339_opts(SecondsFormat::Secs, false)
 }
 
+pub fn get_env_name(key: &str) -> String {
+    format!(
+        "{}_{}",
+        env!("CARGO_CRATE_NAME").to_ascii_uppercase(),
+        key.to_ascii_uppercase(),
+    )
+}
+
 #[allow(unused)]
 pub fn emphasis(text: &str) -> String {
     text.stylize().with(Color::White).to_string()
 }
 
-pub fn mask_text(text: &str, head: usize, tail: usize) -> String {
-    if text.len() <= head + tail {
-        return text.to_string();
-    }
-    format!("{}...{}", &text[0..head], &text[text.len() - tail..])
-}
-
 pub fn copy(src: &str) -> Result<(), arboard::Error> {
     let mut clipboard = Clipboard::new()?;
     clipboard.set_text(src)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_mask_text() {
-        assert_eq!(mask_text("123456", 3, 4), "123456");
-        assert_eq!(mask_text("1234567", 3, 4), "1234567");
-        assert_eq!(mask_text("12345678", 3, 4), "123...5678");
-        assert_eq!(mask_text("12345678", 4, 3), "1234...678");
-    }
 }
