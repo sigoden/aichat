@@ -27,11 +27,11 @@ pub const REPL_COMMANDS: [(&str, &str); 14] = [
     (".conversation", "Start a conversation."),
     (".clear conversation", "End current conversation."),
     (".copy", "Copy the last output to the clipboard"),
+    (".read", "Read the contents of a file into the prompt"),
     (".history", "Print the history"),
     (".clear history", "Clear the history"),
     (".help", "Print this help message"),
     (".exit", "Exit the REPL"),
-    (".read", "Read the contents of a file into the prompt"),
 ];
 
 impl Repl {

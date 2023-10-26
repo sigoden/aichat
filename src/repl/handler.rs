@@ -111,7 +111,8 @@ impl ReplCmdHandler {
             ReplCmd::ReadFile(file) => {
                 let mut contents = String::new();
                 let mut file = fs::File::open(file).expect("Unable to open file");
-                file.read_to_string(&mut contents).expect("Unable to read file");
+                file.read_to_string(&mut contents)
+                    .expect("Unable to read file");
                 self.handle(ReplCmd::Submit(contents))?;
             }
         }
