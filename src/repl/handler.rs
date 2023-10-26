@@ -3,6 +3,8 @@ use crate::config::SharedConfig;
 use crate::print_now;
 use crate::render::render_stream;
 use crate::utils::copy;
+use std::fs;
+use std::io::Read;
 
 use super::abort::SharedAbortSignal;
 
@@ -22,6 +24,7 @@ pub enum ReplCmd {
     StartConversation,
     EndConversatoin,
     Copy,
+    ReadFile(String),
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -104,6 +107,12 @@ impl ReplCmdHandler {
             ReplCmd::Copy => {
                 copy(&self.reply.borrow()).with_context(|| "Failed to copy the last output")?;
                 print_now!("\n");
+            }
+            ReplCmd::ReadFile(file) => {
+                let mut contents = String::new();
+                let mut file = fs::File::open(file).expect("Unable to open file");
+                file.read_to_string(&mut contents).expect("Unable to read file");
+                self.handle(ReplCmd::Submit(contents))?;
             }
         }
         Ok(())

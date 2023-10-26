@@ -17,7 +17,7 @@ use anyhow::{Context, Result};
 use reedline::Signal;
 use std::rc::Rc;
 
-pub const REPL_COMMANDS: [(&str, &str); 13] = [
+pub const REPL_COMMANDS: [(&str, &str); 14] = [
     (".info", "Print system-wide information"),
     (".set", "Modify the configuration temporarily"),
     (".model", "Choose a model"),
@@ -31,6 +31,7 @@ pub const REPL_COMMANDS: [(&str, &str); 13] = [
     (".clear history", "Clear the history"),
     (".help", "Print this help message"),
     (".exit", "Exit the REPL"),
+    (".read", "Read the contents of a file into the prompt"),
 ];
 
 impl Repl {
@@ -117,6 +118,10 @@ impl Repl {
                 ".role" => match args {
                     Some(name) => handler.handle(ReplCmd::SetRole(name.to_string()))?,
                     None => print_now!("Usage: .role <name>\n\n"),
+                },
+                ".read" => match args {
+                    Some(file) => handler.handle(ReplCmd::ReadFile(file.to_string()))?,
+                    None => print_now!("Usage: .read <file name>\n\n"),
                 },
                 ".info" => {
                     handler.handle(ReplCmd::ViewInfo)?;
