@@ -194,11 +194,12 @@ fn parse_command(line: &str) -> Option<(&str, Option<&str>)> {
             .or_else(|| trimed_line.split_once('\n'))
         {
             Some((head, tail)) => {
-                let trimed_tail = tail.trim();
-                if trimed_tail.is_empty() {
+                let head = head.trim();
+                let tail = tail.trim();
+                if tail.is_empty() {
                     Some((head, None))
                 } else {
-                    Some((head, Some(trimed_tail)))
+                    Some((head, Some(tail)))
                 }
             }
             None => Some((trimed_line, None)),
