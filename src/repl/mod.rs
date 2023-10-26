@@ -14,10 +14,12 @@ use crate::print_now;
 use crate::term;
 
 use anyhow::{Context, Result};
+use fancy_regex::Regex;
+use lazy_static::lazy_static;
 use reedline::Signal;
 use std::rc::Rc;
 
-pub const REPL_COMMANDS: [(&str, &str); 14] = [
+pub const REPL_COMMANDS: [(&str, &str); 15] = [
     (".info", "Print system-wide information"),
     (".set", "Modify the configuration temporarily"),
     (".model", "Choose a model"),
@@ -28,11 +30,16 @@ pub const REPL_COMMANDS: [(&str, &str); 14] = [
     (".clear conversation", "End current conversation."),
     (".copy", "Copy the last output to the clipboard"),
     (".read", "Read the contents of a file into the prompt"),
+    (".edit", "Multi-line editing (CTRL+S to finish)"),
     (".history", "Print the history"),
     (".clear history", "Clear the history"),
     (".help", "Print this help message"),
     (".exit", "Exit the REPL"),
 ];
+
+lazy_static! {
+    static ref EDIT_RE: Regex = Regex::new(r"^\s*.edit\s*").unwrap();
+}
 
 impl Repl {
     pub fn run(&mut self, config: SharedConfig) -> Result<()> {
@@ -85,8 +92,7 @@ impl Repl {
     }
 
     fn handle_line(&mut self, handler: &Rc<ReplCmdHandler>, line: &str) -> Result<bool> {
-        let line = line.trim().replace("\\\n", "\n");
-        match parse_command(line.as_ref()) {
+        match parse_command(line) {
             Some((cmd, args)) => match cmd {
                 ".exit" => {
                     return Ok(true);
@@ -119,10 +125,6 @@ impl Repl {
                     Some(name) => handler.handle(ReplCmd::SetRole(name.to_string()))?,
                     None => print_now!("Usage: .role <name>\n\n"),
                 },
-                ".read" => match args {
-                    Some(file) => handler.handle(ReplCmd::ReadFile(file.to_string()))?,
-                    None => print_now!("Usage: .read <file name>\n\n"),
-                },
                 ".info" => {
                     handler.handle(ReplCmd::ViewInfo)?;
                 }
@@ -143,6 +145,15 @@ impl Repl {
                 }
                 ".copy" => {
                     handler.handle(ReplCmd::Copy)?;
+                }
+                ".read" => match args {
+                    Some(file) => handler.handle(ReplCmd::ReadFile(file.to_string()))?,
+                    None => print_now!("Usage: .read <file name>\n\n"),
+                },
+                ".edit" => {
+                    if let Some(text) = args {
+                        handler.handle(ReplCmd::Submit(text.to_string()))?;
+                    }
                 }
                 _ => dump_unknown_command(),
             },
