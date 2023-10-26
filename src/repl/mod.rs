@@ -9,7 +9,7 @@ pub use self::abort::*;
 pub use self::handler::*;
 pub use self::init::Repl;
 
-use crate::client::ChatGptClient;
+use crate::client::Client;
 use crate::config::SharedConfig;
 use crate::print_now;
 use crate::term;
@@ -35,7 +35,7 @@ pub const REPL_COMMANDS: [(&str, &str); 13] = [
 ];
 
 impl Repl {
-    pub fn run(&mut self, client: ChatGptClient, config: SharedConfig) -> Result<()> {
+    pub fn run(&mut self, client: Box<dyn Client>, config: SharedConfig) -> Result<()> {
         let abort = AbortSignal::new();
         let handler = ReplCmdHandler::init(client, config, abort.clone())?;
         print_now!("Welcome to aichat {}\n", env!("CARGO_PKG_VERSION"));

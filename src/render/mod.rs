@@ -7,7 +7,7 @@ use self::cmd::cmd_render_stream;
 pub use self::markdown::MarkdownRender;
 use self::repl::repl_render_stream;
 
-use crate::client::ChatGptClient;
+use crate::client::Client;
 use crate::config::SharedConfig;
 use crate::print_now;
 use crate::repl::{ReplyStreamHandler, SharedAbortSignal};
@@ -20,7 +20,7 @@ use std::thread::spawn;
 #[allow(clippy::module_name_repetitions)]
 pub fn render_stream(
     input: &str,
-    client: &ChatGptClient,
+    client: &dyn Client,
     config: &SharedConfig,
     repl: bool,
     abort: SharedAbortSignal,

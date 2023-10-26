@@ -1,4 +1,4 @@
-use crate::client::ChatGptClient;
+use crate::client::Client;
 use crate::config::SharedConfig;
 use crate::print_now;
 use crate::render::render_stream;
@@ -26,7 +26,7 @@ pub enum ReplCmd {
 
 #[allow(clippy::module_name_repetitions)]
 pub struct ReplCmdHandler {
-    client: ChatGptClient,
+    client: Box<dyn Client>,
     config: SharedConfig,
     reply: RefCell<String>,
     abort: SharedAbortSignal,
@@ -35,7 +35,7 @@ pub struct ReplCmdHandler {
 impl ReplCmdHandler {
     #[allow(clippy::unnecessary_wraps)]
     pub fn init(
-        client: ChatGptClient,
+        client: Box<dyn Client>,
         config: SharedConfig,
         abort: SharedAbortSignal,
     ) -> Result<Self> {
@@ -59,7 +59,7 @@ impl ReplCmdHandler {
                 let wg = WaitGroup::new();
                 let ret = render_stream(
                     &input,
-                    &self.client,
+                    self.client.as_ref(),
                     &self.config,
                     true,
                     self.abort.clone(),
