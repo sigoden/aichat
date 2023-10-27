@@ -114,7 +114,16 @@ mkdir /tmp/app
 unzip -P PASSWORD app.zip -d /tmp/app
 ```
 
-We have provided many awesome [Role Examples](https://github.com/sigoden/aichat/wiki/Role-Examples).
+AIChat with roles will be a universal tool.
+
+```
+$ aichat --role shell extract encrypted zipfile app.zip to /tmp/app
+unzip -P password app.zip -d /tmp/app
+
+$ cat README.md | aichat --role spellcheck
+```
+
+For more details about roles, please visit [Role Guide](https://github.com/sigoden/aichat/wiki/Role-Guide).
 
 ## Chat REPL
 
@@ -255,8 +264,6 @@ emoji〉.clear role
 Hello there! How can I assist you today?
 ```
 
-For more details about roles, please visit https://github.com/sigoden/aichat/wiki/Role-Guide
-
 ### `.conversation` - start a context-aware conversation
 
 By default, aichat behaves in a one-off request/response manner.
@@ -289,7 +296,7 @@ Once the number becomes zero, you need to start a new conversation.
 Exit conversation mode:
 
 ```
-＄.clear conversation                                                                    4043
+）.clear conversation                                                                    4043
 
 〉
 ```
