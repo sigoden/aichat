@@ -17,6 +17,7 @@ use crate::{
     client::localai::LocalAIClient,
     config::{Config, SharedConfig},
     repl::{ReplyStreamHandler, SharedAbortSignal},
+    utils::split_text,
 };
 
 #[allow(clippy::struct_excessive_bools)]
@@ -92,7 +93,11 @@ pub trait Client {
             tokio::select! {
                 ret = async {
                     if self.get_config().read().dry_run {
-                        handler.text(&self.get_config().read().echo_messages(content))?;
+                        let words = split_text(content)?;
+                        for word in words {
+                            tokio::time::sleep(Duration::from_millis(25)).await;
+                            handler.text(&self.get_config().read().echo_messages(&word))?;
+                        }
                         return Ok(());
                     }
                     self.send_message_streaming_inner(content, handler).await

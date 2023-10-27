@@ -1,5 +1,6 @@
 mod tiktoken;
 
+use self::tiktoken::cl100k_base;
 pub use self::tiktoken::{cl100k_base_singleton, count_tokens, text_to_tokens, tokens_to_text};
 
 use arboard::Clipboard;
@@ -40,4 +41,11 @@ pub fn emphasis(text: &str) -> String {
 pub fn copy(src: &str) -> Result<(), arboard::Error> {
     let mut clipboard = Clipboard::new()?;
     clipboard.set_text(src)
+}
+
+pub fn split_text(text: &str) -> Result<Vec<String>, anyhow::Error> {
+    let bpe = cl100k_base()?;
+    let tokens = bpe.encode_with_special_tokens(text);
+    let data: Result<Vec<String>, _> = tokens.into_iter().map(|v| bpe.decode(&[v])).collect();
+    data
 }
