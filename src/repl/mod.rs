@@ -38,7 +38,8 @@ pub const REPL_COMMANDS: [(&str, &str); 15] = [
 ];
 
 lazy_static! {
-    static ref EDIT_RE: Regex = Regex::new(r"^\s*.edit\s*").unwrap();
+    static ref COMMAND_RE: Regex = Regex::new(r"^\s*(\.\S+)\s*").unwrap();
+    static ref EDIT_RE: Regex = Regex::new(r"^\s*\.edit\s*").unwrap();
 }
 
 impl Repl {
@@ -186,26 +187,15 @@ Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
 }
 
 fn parse_command(line: &str) -> Option<(&str, Option<&str>)> {
-    let mut trimed_line = line.trim_start();
-    if trimed_line.starts_with('.') {
-        trimed_line = trimed_line.trim_end();
-        match trimed_line
-            .split_once(' ')
-            .or_else(|| trimed_line.split_once('\n'))
-        {
-            Some((head, tail)) => {
-                let trimed_tail = tail.trim();
-                if trimed_tail.is_empty() {
-                    Some((head, None))
-                } else {
-                    Some((head, Some(trimed_tail)))
-                }
-            }
-            None => Some((trimed_line, None)),
+    if let Ok(Some(captures)) = COMMAND_RE.captures(line) {
+        if let Some(cmd) = captures.get(1) {
+            let cmd = cmd.as_str();
+            let args = line[captures[0].len()..].trim();
+            let args = if args.is_empty() { None } else { Some(args) };
+            return Some((cmd, args));
         }
-    } else {
-        None
     }
+    None
 }
 #[cfg(test)]
 mod tests {
@@ -226,6 +216,10 @@ mod tests {
         assert_eq!(
             parse_command(".prompt \nabc\n"),
             Some((".prompt", Some("abc")))
+        );
+        assert_eq!(
+            parse_command(".edit\r\nabc\r\n"),
+            Some((".edit", Some("abc")))
         );
     }
 }
