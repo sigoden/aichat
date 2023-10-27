@@ -71,7 +71,7 @@ fn main() -> Result<()> {
     }
     let no_stream = cli.no_stream;
     let client = init_client(config.clone())?;
-    if atty::isnt(atty::Stream::Stdin) {
+    if !stdin().is_terminal() {
         let mut input = String::new();
         stdin().read_to_string(&mut input)?;
         if let Some(text) = text {
