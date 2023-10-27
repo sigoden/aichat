@@ -63,7 +63,7 @@ highlight: true                  # Set false to turn highlight
 conversation_first: false        # If set true, start a conversation immediately upon repl
 light_theme: false               # If set true, use light theme
 auto_copy: false                 # Automatically copy the last output to the clipboard
-vi_keybindings: false            # If set ture, switch repl keybindings from emacs to vi
+keybindings: emacs               # REPL keybindings, possible values: emacs (default), vi
 
 clients:                                              # Setup LLM platforms
 
