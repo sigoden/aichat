@@ -2,13 +2,13 @@ use crate::client::init_client;
 use crate::config::SharedConfig;
 use crate::print_now;
 use crate::render::render_stream;
-use crate::utils::copy;
 use std::fs;
 use std::io::Read;
 
 use super::abort::SharedAbortSignal;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
+use arboard::Clipboard;
 use crossbeam::channel::Sender;
 use crossbeam::sync::WaitGroup;
 use std::cell::RefCell;
@@ -32,16 +32,19 @@ pub struct ReplCmdHandler {
     config: SharedConfig,
     reply: RefCell<String>,
     abort: SharedAbortSignal,
+    clipboard: std::result::Result<RefCell<Clipboard>, arboard::Error>,
 }
 
 impl ReplCmdHandler {
     #[allow(clippy::unnecessary_wraps)]
     pub fn init(config: SharedConfig, abort: SharedAbortSignal) -> Result<Self> {
         let reply = RefCell::new(String::new());
+        let clipboard = Clipboard::new().map(RefCell::new);
         Ok(Self {
             config,
             reply,
             abort,
+            clipboard,
         })
     }
 
@@ -67,7 +70,7 @@ impl ReplCmdHandler {
                 let buffer = ret?;
                 self.config.read().save_message(&input, &buffer)?;
                 if self.config.read().auto_copy {
-                    let _ = copy(&buffer);
+                    let _ = self.copy(&buffer);
                 }
                 self.config.write().save_conversation(&input, &buffer)?;
                 *self.reply.borrow_mut() = buffer;
@@ -105,7 +108,8 @@ impl ReplCmdHandler {
                 print_now!("\n");
             }
             ReplCmd::Copy => {
-                copy(&self.reply.borrow()).with_context(|| "Failed to copy the last output")?;
+                self.copy(&self.reply.borrow())
+                    .with_context(|| "Failed to copy the last output")?;
                 print_now!("\n");
             }
             ReplCmd::ReadFile(file) => {
@@ -117,6 +121,16 @@ impl ReplCmdHandler {
             }
         }
         Ok(())
+    }
+
+    fn copy(&self, text: &str) -> Result<()> {
+        match self.clipboard.as_ref() {
+            Err(err) => bail!("{}", err),
+            Ok(clip) => {
+                clip.borrow_mut().set_text(text)?;
+                Ok(())
+            }
+        }
     }
 }
 
