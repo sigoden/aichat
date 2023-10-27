@@ -3,7 +3,6 @@ mod tiktoken;
 use self::tiktoken::cl100k_base;
 pub use self::tiktoken::{cl100k_base_singleton, count_tokens, text_to_tokens, tokens_to_text};
 
-use arboard::Clipboard;
 use chrono::prelude::*;
 use crossterm::style::{Color, Stylize};
 use std::io::{stdout, Write};
@@ -36,11 +35,6 @@ pub fn get_env_name(key: &str) -> String {
 #[allow(unused)]
 pub fn emphasis(text: &str) -> String {
     text.stylize().with(Color::White).to_string()
-}
-
-pub fn copy(src: &str) -> Result<(), arboard::Error> {
-    let mut clipboard = Clipboard::new()?;
-    clipboard.set_text(src)
 }
 
 pub fn split_text(text: &str) -> Result<Vec<String>, anyhow::Error> {
