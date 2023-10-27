@@ -3,7 +3,7 @@
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 
-Use ChatGPT/GPT-3.5/GPT-4 in the terminal.
+Use ChatGPT, LocalAI and other LLMs in the terminal.
 
 AIChat in chat mode:
 
@@ -56,8 +56,8 @@ On first launch, aichat will guide you through the configuration.
 On completion, it will automatically create the configuration file. Of course, you can also manually set the configuration file.
 
 ```yaml
-model: "openai:gpt-3.5-turbo"    # choose a model
-temperature: 1.0                 # see https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
+model: openai:gpt-3.5-turbo      # Choose a model
+temperature: 1.0                 # See https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
 save: true                       # If set true, aichat will save chat messages to message.md
 highlight: true                  # Set false to turn highlight
 conversation_first: false        # If set true, start a conversation immediately upon repl
@@ -68,18 +68,18 @@ vi_keybindings: false            # If set ture, switch repl keybindings from ema
 clients:                                              # Setup LLM platforms
 
   - type: openai                                      # OpenAI configuration
-    api_key: "sk-xxx"                                 # Request via https://platform.openai.com/account/api-keys
-    organization_id: "org-xxx"
-    proxy: "socks5://127.0.0.1:1080"                  # Set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
-    connect_timeout: 10                               # Set a timeout in seconds for connect to gpt.
+    api_key: sk-xxx                                   # Request via https://platform.openai.com/account/api-keys
+    organization_id: org-xxx                          # Organization ID. Optional
+    proxy: socks5://127.0.0.1:1080                    # Set proxy server. Optional
+    connect_timeout: 10                               # Set a timeout in seconds for connect to gpt. Optional
 
   - type: localai                                     # LocalAI configuration
     url: http://localhost:8080/v1/chat/completions    # Localai api server
     models:                                           # Support models
       - name: gpt4all-j
         max_tokens: 4096
-    proxy: "socks5://127.0.0.1:1080"                  # Set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
-    connect_timeout: 10                               # Set a timeout in seconds for connect to gpt.
+    proxy: socks5://127.0.0.1:1080                    # Set proxy server. Optional
+    connect_timeout: 10                               # Set a timeout in seconds for connect to gpt. Optional
 ```
 
 > You can use `.info` to view the current configuration file path and roles file path.
