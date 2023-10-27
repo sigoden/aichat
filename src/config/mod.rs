@@ -412,7 +412,7 @@ impl Config {
         if self.dry_run {
             if let Ok(messages) = self.build_messages(input) {
                 let tokens = num_tokens_from_messages(&messages);
-                println!(">>> The following message consumes {tokens} tokens.");
+                println!(">>> This message consumes {tokens} tokens. <<<");
             }
         }
     }
