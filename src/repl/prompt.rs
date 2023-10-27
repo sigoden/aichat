@@ -86,7 +86,7 @@ impl Prompt for ReplPrompt {
 
     fn render_prompt_indicator(&self, _prompt_mode: reedline::PromptEditMode) -> Cow<str> {
         if self.config.read().conversation.is_some() {
-            Cow::Borrowed("＄")
+            Cow::Borrowed("）")
         } else {
             Cow::Borrowed("〉")
         }
