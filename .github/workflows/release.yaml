@@ -24,10 +24,10 @@ jobs:
           os: macos-latest
           use-cross: true
           cargo-flags: ""
-        # - target: aarch64-pc-windows-msvc
-        #   os: windows-latest
-        #   use-cross: true
-        #   cargo-flags: ""
+        - target: aarch64-pc-windows-msvc
+          os: windows-latest
+          use-cross: true
+          cargo-flags: ""
         - target: x86_64-apple-darwin
           os: macos-latest
           cargo-flags: ""
