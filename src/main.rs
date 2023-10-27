@@ -71,18 +71,18 @@ fn main() -> Result<()> {
     }
     let no_stream = cli.no_stream;
     let client = init_client(config.clone())?;
-    if atty::isnt(atty::Stream::Stdin) {
+    if stdin().is_terminal() {
+        match text {
+            Some(text) => start_directive(client.as_ref(), &config, &text, no_stream),
+            None => start_interactive(config),
+        }
+    } else {
         let mut input = String::new();
         stdin().read_to_string(&mut input)?;
         if let Some(text) = text {
             input = format!("{text}\n{input}");
         }
         start_directive(client.as_ref(), &config, &input, no_stream)
-    } else {
-        match text {
-            Some(text) => start_directive(client.as_ref(), &config, &text, no_stream),
-            None => start_interactive(config),
-        }
     }
 }
 
