@@ -142,7 +142,7 @@ The Chat REPL supports:
 
 AIChat suppoprts bracketed paste, so you can paste multi-lines text directly.
 
-AIChat also provide`.edit` command for multi-lines editing.
+AIChat also provides `.edit` command for multi-lines editing.
 
 ```
 〉.edit convert json below to toml
