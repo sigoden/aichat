@@ -27,6 +27,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 
 ## Features
 
+- Supports multiple platforms, including openai and localai.
 - Support chat and command modes
 - Predefine AI [roles](#roles)
 - Use GPT prompt easily
@@ -45,25 +46,40 @@ On first launch, aichat will guide you through the configuration.
 
 ```
 > No config file, create a new one? Yes
-> OpenAI API Key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-> Use proxy? Yes
-> Set proxy: socks5://127.0.0.1:1080
+> Select platform? openai
+> API key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+> Has Organization? No
+> Use proxy? No
 > Save chat messages Yes
 ```
 
 On completion, it will automatically create the configuration file. Of course, you can also manually set the configuration file.
 
 ```yaml
-api_key: "<YOUR SECRET API KEY>" # Request via https://platform.openai.com/account/api-keys
-organization_id: "org-xxx" # optional, set organization id
-model: "gpt-3.5-turbo" # optional, choose a model
-temperature: 1.0 # optional, see https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
-save: true # optional, If set true, aichat will save chat messages to message.md
-highlight: true # optional, Set false to turn highlight
-proxy: "socks5://127.0.0.1:1080" # optional, set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
-conversation_first: false # optional, If set true, start a conversation immediately upon repl
-light_theme: false # optional, If set true, use light theme
-connect_timeout: 10 # optional, Set a timeout in seconds for connect to gpt.
+model: "openai:gpt-3.5-turbo"    # choose a model
+temperature: 1.0                 # see https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
+save: true                       # If set true, aichat will save chat messages to message.md
+highlight: true                  # Set false to turn highlight
+conversation_first: false        # If set true, start a conversation immediately upon repl
+light_theme: false               # If set true, use light theme
+auto_copy: false                 # Automatically copy the last output to the clipboard
+vi_keybindings: false            # If set ture, switch repl keybindings from emacs to vi
+
+clients:                                              # Setup LLM platforms
+
+  - type: openai                                      # OpenAI configuration
+    api_key: "sk-xxx"                                 # Request via https://platform.openai.com/account/api-keys
+    organization_id: "org-xxx"
+    proxy: "socks5://127.0.0.1:1080"                  # Set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
+    connect_timeout: 10                               # Set a timeout in seconds for connect to gpt.
+
+  - type: localai                                     # LocalAI configuration
+    url: http://localhost:8080/v1/chat/completions    # Localai api server
+    models:                                           # Support models
+      - name: gpt4all-j
+        max_tokens: 4096
+    proxy: "socks5://127.0.0.1:1080"                  # Set proxy server. e.g. http://127.0.0.1:8080 or socks5://127.0.0.1:1080
+    connect_timeout: 10                               # Set a timeout in seconds for connect to gpt.
 ```
 
 > You can use `.info` to view the current configuration file path and roles file path.
@@ -110,29 +126,33 @@ The Chat REPL supports:
 - Command autocompletion
 - History search
 - Fish-style history autosuggestion hints
-- Edit/past multiline input
+- Edit/paste multiline input
 - Undo support
 
-### Multi-line editing
+### Multi-line input
 
-**Type `{` or `(` at the beginning of the line to enter the multi-line editing mode.** In this mode you can type or paste multiple lines of text. Type the corresponding `}` or `)` at the end of the line to exit the mode and submit the content.
+AIChat suppoprts backeted paste, so you can paste multi-lines text directly.
+
+AIChat also provide`.edit` command for multi-lines editing.
 
 ```
-〉{ convert json below to toml
+〉.edit convert json below to toml
 {
   "an": [
     "arbitrarily",
     "nested"
   ],
   "data": "structure"
-}}
+}
 ```
+
+> Submit the multi-line text with `Ctrl+S`.
 
 ### `.help` - Print help message
 
 ```
 〉.help
-.info                    Print the information
+.info                    Print system-wide information
 .set                     Modify the configuration temporarily
 .model                   Choose a model
 .prompt                  Add a GPT prompt
@@ -140,12 +160,14 @@ The Chat REPL supports:
 .clear role              Clear the currently selected role
 .conversation            Start a conversation.
 .clear conversation      End current conversation.
+.copy                    Copy the last output to the clipboard
+.read                    Read the contents of a file into the prompt
+.edit                    Multi-line editing (CTRL+S to finish)
 .history                 Print the history
 .clear history           Clear the history
 .help                    Print this help message
 .exit                    Exit the REPL
 
-Type `{` to enter the multi-line editing mode, type '}' to exit the mode.
 Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
 ```
 
@@ -156,17 +178,14 @@ Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
 config_file         /home/alice/.config/aichat/config.yaml
 roles_file          /home/alice/.config/aichat/roles.yaml
 messages_file       /home/alice/.config/aichat/messages.md
-api_key             sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-organization_id     -
-model               gpt-3.5-turbo
-temperature         -
+model               openai:gpt-3.5-turbo
+temperature         0.7
 save                true
 highlight           true
-proxy               -
 conversation_first  false
 light_theme         false
-connect_timeout     10
 dry_run             false
+vi_keybindings      true
 ```
 
 ### `.set` - Modify the configuration temporarily
@@ -181,10 +200,8 @@ dry_run             false
 ### `.model` - Choose a model
 
 ```
-> .model gpt-4
-> .model gpt-4-32k
-> .model gpt-3.5-turbo
-> .model gpt-3.5-turbo-16k
+> .model openai:gpt-4
+> .model localai:gpt4all-j
 ```
 
 ### `.prompt` - Set GPT prompt
@@ -238,6 +255,8 @@ emoji〉.clear role
 Hello there! How can I assist you today?
 ```
 
+For more details about roles, please visit https://github.com/sigoden/aichat/wiki/Role-Guide
+
 ### `.conversation` - start a context-aware conversation
 
 By default, aichat behaves in a one-off request/response manner.
@@ -247,14 +266,14 @@ You can run `.conversation` to enter context-aware mode, or set `config.conversa
 ```
 〉.conversation
 
-＄list 1 to 5, one per line                                                              4089
+）list 1 to 5, one per line                                                              4089
 1
 2
 3
 4
 5
 
-＄reverse the list                                                                       4065
+）reverse the list                                                                       4065
 5
 4
 3
@@ -263,7 +282,7 @@ You can run `.conversation` to enter context-aware mode, or set `config.conversa
 
 ```
 
-When entering conversation mode, prompt `〉` will change to `＄`. A number will appear on the right,
+When entering conversation mode, prompt `〉` will change to `）`. A number will appear on the right,
 indicating how many tokens are left to use.
 Once the number becomes zero, you need to start a new conversation.
 

@@ -54,13 +54,13 @@ pub struct Config {
     pub dry_run: bool,
     /// If set ture, start a conversation immediately upon repl
     pub conversation_first: bool,
-    /// Is ligth theme
+    /// If set true, use light theme
     pub light_theme: bool,
     /// Automatically copy the last output to the clipboard
     pub auto_copy: bool,
     /// Use vi keybindings, overriding the default Emacs keybindings
     pub vi_keybindings: bool,
-    /// LLM clients
+    /// Setup LLM platforms
     pub clients: Vec<ClientConfig>,
     /// Predefined roles
     #[serde(skip)]
@@ -506,9 +506,9 @@ fn create_config_file(config_path: &Path) -> Result<()> {
         exit(0);
     }
 
-    let client = Select::new("Choose bots?", all_clients())
+    let client = Select::new("Select platform?", all_clients())
         .prompt()
-        .map_err(|_| anyhow!("An error happened when selecting bots, try again later."))?;
+        .map_err(|_| anyhow!("An error happened when selecting platform, try again later."))?;
 
     let mut raw_config = create_client_config(client)?;
 
