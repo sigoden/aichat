@@ -29,7 +29,7 @@ impl Repl {
         let highlighter = ReplHighlighter::new(config.clone(), commands);
         let history = Self::create_history()?;
         let menu = Self::create_menu();
-        let edit_mode: Box<dyn EditMode> = if config.read().vi_keybindings {
+        let edit_mode: Box<dyn EditMode> = if config.read().keybindings.is_vi() {
             let mut normal_keybindings = default_vi_normal_keybindings();
             let mut insert_keybindings = default_vi_insert_keybindings();
             Self::extra_keybindings(&mut normal_keybindings);

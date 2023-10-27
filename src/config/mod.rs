@@ -58,8 +58,8 @@ pub struct Config {
     pub light_theme: bool,
     /// Automatically copy the last output to the clipboard
     pub auto_copy: bool,
-    /// Use vi keybindings, overriding the default Emacs keybindings
-    pub vi_keybindings: bool,
+    /// REPL keybindings, possible values: emacs (default), vi
+    pub keybindings: Keybindings,
     /// Setup LLM platforms
     pub clients: Vec<ClientConfig>,
     /// Predefined roles
@@ -86,7 +86,7 @@ impl Default for Config {
             conversation_first: false,
             light_theme: false,
             auto_copy: false,
-            vi_keybindings: false,
+            keybindings: Default::default(),
             roles: vec![],
             clients: vec![ClientConfig::OpenAI(OpenAIConfig::default())],
             role: None,
@@ -321,7 +321,7 @@ impl Config {
             ("conversation_first", self.conversation_first.to_string()),
             ("light_theme", self.light_theme.to_string()),
             ("dry_run", self.dry_run.to_string()),
-            ("vi_keybindings", self.vi_keybindings.to_string()),
+            ("keybindings", self.keybindings.stringify().into()),
         ];
         let mut output = String::new();
         for (name, value) in items {
@@ -494,6 +494,27 @@ impl Config {
             }
         }
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub enum Keybindings {
+    #[serde(rename = "emacs")]
+    #[default]
+    Emacs,
+    #[serde(rename = "vi")]
+    Vi,
+}
+
+impl Keybindings {
+    pub fn is_vi(&self) -> bool {
+        matches!(self, Keybindings::Vi)
+    }
+    pub fn stringify(&self) -> &str {
+        match self {
+            Keybindings::Emacs => "emacs",
+            Keybindings::Vi => "vi",
+        }
     }
 }
 
