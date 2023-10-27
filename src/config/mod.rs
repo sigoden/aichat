@@ -507,7 +507,7 @@ pub enum Keybindings {
 }
 
 impl Keybindings {
-    pub fn is_vim(&self) -> bool {
+    pub fn is_vi(&self) -> bool {
         matches!(self, Keybindings::Vi)
     }
     pub fn stringify(&self) -> &str {
