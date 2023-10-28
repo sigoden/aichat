@@ -365,6 +365,13 @@ impl Config {
                 .iter()
                 .map(|v| format!(".model {}", v.stringify())),
         );
+        completion.extend(
+            list_models(self)
+                .iter()
+                .map(|v| format!(".model {}", v.stringify())),
+        );
+        let sessions = self.list_sessions().unwrap_or_default();
+        completion.extend(sessions.iter().map(|v| format!(".session {}", v)));
         completion
     }
 
