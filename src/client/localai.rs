@@ -1,5 +1,5 @@
 use super::openai::{openai_send_message, openai_send_message_streaming};
-use super::{Client, ModelInfo};
+use super::{set_proxy, Client, ModelInfo};
 
 use crate::config::SharedConfig;
 use crate::repl::ReplyStreamHandler;
@@ -7,9 +7,10 @@ use crate::repl::ReplyStreamHandler;
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use inquire::{Confirm, Text};
-use reqwest::{Client as ReqwestClient, Proxy, RequestBuilder};
+use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::json;
+use std::env;
 use std::time::Duration;
 
 #[allow(clippy::module_name_repetitions)]
@@ -151,10 +152,7 @@ impl LocalAIClient {
 
         let client = {
             let mut builder = ReqwestClient::builder();
-            if let Some(proxy) = &self.local_config.proxy {
-                builder = builder
-                    .proxy(Proxy::all(proxy).with_context(|| format!("Invalid proxy `{proxy}`"))?);
-            }
+            builder = set_proxy(builder, &self.local_config.proxy)?;
             let timeout = Duration::from_secs(self.local_config.connect_timeout.unwrap_or(10));
             builder
                 .connect_timeout(timeout)
@@ -165,7 +163,9 @@ impl LocalAIClient {
         let mut builder = client.post(&self.local_config.url);
         if let Some(api_key) = &self.local_config.api_key {
             builder = builder.bearer_auth(api_key);
-        };
+        } else if let Ok(api_key) = env::var("LOCALAI_API_KEY") {
+            builder = builder.bearer_auth(api_key);
+        }
         builder = builder.json(&body);
 
         Ok(builder)

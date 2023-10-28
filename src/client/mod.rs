@@ -8,8 +8,9 @@ use self::{
 
 use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
+use reqwest::{ClientBuilder, Proxy};
 use serde::Deserialize;
-use std::time::Duration;
+use std::{env, time::Duration};
 use tokio::runtime::Runtime;
 use tokio::time::sleep;
 
@@ -203,4 +204,20 @@ pub fn init_runtime() -> Result<Runtime> {
         .enable_all()
         .build()
         .with_context(|| "Failed to init tokio")
+}
+
+pub(crate) fn set_proxy(builder: ClientBuilder, proxy: &Option<String>) -> Result<ClientBuilder> {
+    let proxy = if let Some(proxy) = proxy {
+        if proxy.is_empty() || proxy == "false" || proxy == "-" {
+            return Ok(builder);
+        }
+        proxy.clone()
+    } else if let Ok(proxy) = env::var("HTTPS_PROXY").or_else(|_| env::var("ALL_PROXY")) {
+        proxy
+    } else {
+        return Ok(builder);
+    };
+    let builder =
+        builder.proxy(Proxy::all(&proxy).with_context(|| format!("Invalid proxy `{proxy}`"))?);
+    Ok(builder)
 }
