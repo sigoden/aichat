@@ -465,9 +465,7 @@ impl Config {
                 }
                 let mut name = session.name.clone();
                 if session.is_temp() {
-                    name = Text::new("New session name:")
-                        .with_default(&name)
-                        .prompt()?;
+                    name = Text::new("Session name:").with_default(&name).prompt()?;
                 }
                 let session_path = Self::session_file(&name)?;
                 session.save(&session_path)?;

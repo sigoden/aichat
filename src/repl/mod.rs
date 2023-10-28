@@ -77,7 +77,6 @@ impl Repl {
                 Ok(Signal::CtrlC) => {
                     abort.set_ctrlc();
                     if already_ctrlc {
-                        handler.handle(ReplCmd::EndSession)?;
                         break;
                     }
                     already_ctrlc = true;
@@ -90,6 +89,7 @@ impl Repl {
                 _ => {}
             }
         }
+        handler.handle(ReplCmd::EndSession)?;
         Ok(())
     }
 
