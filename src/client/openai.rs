@@ -1,14 +1,14 @@
-use super::{Client, ModelInfo};
+use super::{set_proxy, Client, ModelInfo};
 
+use crate::config::SharedConfig;
 use crate::repl::ReplyStreamHandler;
-use crate::{config::SharedConfig, utils::get_env_name};
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
 use eventsource_stream::Eventsource;
 use futures_util::StreamExt;
 use inquire::{Confirm, Text};
-use reqwest::{Client as ReqwestClient, Proxy, RequestBuilder};
+use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::env;
@@ -120,7 +120,7 @@ impl OpenAIClient {
     fn request_builder(&self, content: &str, stream: bool) -> Result<RequestBuilder> {
         let api_key = if let Some(api_key) = &self.local_config.api_key {
             api_key.to_string()
-        } else if let Ok(api_key) = env::var(get_env_name("api_key")) {
+        } else if let Ok(api_key) = env::var("OPENAI_API_KEY") {
             api_key.to_string()
         } else {
             bail!("Miss api_key")
@@ -145,10 +145,7 @@ impl OpenAIClient {
 
         let client = {
             let mut builder = ReqwestClient::builder();
-            if let Some(proxy) = &self.local_config.proxy {
-                builder = builder
-                    .proxy(Proxy::all(proxy).with_context(|| format!("Invalid proxy `{proxy}`"))?);
-            }
+            builder = set_proxy(builder, &self.local_config.proxy)?;
             let timeout = Duration::from_secs(self.local_config.connect_timeout.unwrap_or(10));
             builder
                 .connect_timeout(timeout)

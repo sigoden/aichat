@@ -105,7 +105,7 @@ impl Config {
     pub fn init(is_interactive: bool) -> Result<Self> {
         let config_path = Self::config_file()?;
 
-        let api_key = env::var(get_env_name("api_key")).ok();
+        let api_key = env::var("OPENAI_API_KEY").ok();
 
         let exist_config_path = config_path.exists();
         if is_interactive && api_key.is_none() && !exist_config_path {
