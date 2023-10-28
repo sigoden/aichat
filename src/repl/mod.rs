@@ -31,8 +31,8 @@ pub const REPL_COMMANDS: [(&str, &str); 15] = [
     (".copy", "Copy the last output to the clipboard"),
     (".read", "Read the contents of a file and submit"),
     (".edit", "Multi-line editing (CTRL+S to finish)"),
-    (".history", "Print the history"),
-    (".clear history", "Clear the history"),
+    (".history", "Print the REPL history"),
+    (".clear history", "Clear the REPL history"),
     (".help", "Print this help message"),
     (".exit", "Exit the REPL"),
 ];

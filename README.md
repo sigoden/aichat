@@ -65,15 +65,16 @@ auto_copy: false                 # Automatically copy the last output to the cli
 keybindings: emacs               # REPL keybindings, possible values: emacs (default), vi
 
 clients:                                              # Setup AIs
-
+  # OpenAI setup instructions: https://platform.openai.com/docs/quickstart
   - type: openai                                      # OpenAI configuration
-    api_key: sk-xxx                                   # Request via https://platform.openai.com/account/api-keys
+    api_key: sk-xxx                                   # OpenAI api key, alternative to OPENAI_API_KEY
     organization_id: org-xxx                          # Organization ID. Optional
     proxy: socks5://127.0.0.1:1080                    # Set proxy server. Optional
     connect_timeout: 10                               # Set a timeout in seconds for connect to gpt. Optional
-
+  # LocalAI setup instructions: https://github.com/go-skynet/LocalAI
   - type: localai                                     # LocalAI configuration
-    url: http://localhost:8080/v1/chat/completions    # Localai api server
+    url: http://localhost:8080/v1/chat/completions    # LocalAI api server
+    api_key: '???'                                    # Api key. alternative to LOCALAI_API_KEY
     models:                                           # Support models
       - name: gpt4all-j
         max_tokens: 4096
@@ -171,8 +172,8 @@ AIChat also provides `.edit` command for multi-lines editing.
 .copy                    Copy the last output to the clipboard
 .read                    Read the contents of a file and submit
 .edit                    Multi-line editing (CTRL+S to finish)
-.history                 Print the history
-.clear history           Clear the history
+.history                 Print the REPL history
+.clear history           Clear the REPL history
 .help                    Print this help message
 .exit                    Exit the REPL
 
@@ -284,10 +285,11 @@ temp）.clear session
 ```
 
 ```sh
-aichat --list-sessions      # List sessions
-aichat -s                   # Start with a new session
-aichat -s rust              # If session rust exists, use it. If it does not exist, create a new session.
-aichat -s rust --info       # Show session details
+aichat --list-sessions      # List sessions.
+aichat -s                   # Start with a new temp session.
+aichat -s temp              # Reuses previous temp session.
+aichat -s rust              # Reuses session named rust. If it does not exist, create a new session named rust.
+aichat -s rust --info       # Show session details.
 ```
 
 ## License
