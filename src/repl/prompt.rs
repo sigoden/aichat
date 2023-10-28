@@ -69,15 +69,17 @@ impl ReplPrompt {
 
 impl Prompt for ReplPrompt {
     fn render_prompt_left(&self) -> Cow<str> {
-        self.config
-            .read()
-            .role
-            .as_ref()
-            .map_or(Cow::Borrowed(""), |role| Cow::Owned(role.name.clone()))
+        if let Some(session) = &self.config.read().session {
+            Cow::Owned(session.name.clone())
+        } else if let Some(role) = &self.config.read().role {
+            Cow::Owned(role.name.clone())
+        } else {
+            Cow::Borrowed("")
+        }
     }
 
     fn render_prompt_right(&self) -> Cow<str> {
-        if self.config.read().conversation.is_none() {
+        if self.config.read().session.is_none() {
             Cow::Borrowed("")
         } else {
             self.config.read().get_reamind_tokens().to_string().into()
@@ -85,7 +87,7 @@ impl Prompt for ReplPrompt {
     }
 
     fn render_prompt_indicator(&self, _prompt_mode: reedline::PromptEditMode) -> Cow<str> {
-        if self.config.read().conversation.is_some() {
+        if self.config.read().session.is_some() {
             Cow::Borrowed("）")
         } else {
             Cow::Borrowed("〉")

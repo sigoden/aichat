@@ -31,6 +31,12 @@ pub struct Cli {
     /// Run in dry run mode
     #[clap(long)]
     pub dry_run: bool,
+    /// List sessions
+    #[clap(long)]
+    pub list_sessions: bool,
+    /// Initiate or continue named session
+    #[clap(short = 's', long)]
+    pub session: Option<Option<String>>,
     /// Input text
     text: Vec<String>,
 }

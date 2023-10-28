@@ -26,10 +26,10 @@ pub const REPL_COMMANDS: [(&str, &str); 15] = [
     (".prompt", "Add a GPT prompt"),
     (".role", "Select a role"),
     (".clear role", "Clear the currently selected role"),
-    (".conversation", "Start a conversation."),
-    (".clear conversation", "End current conversation."),
+    (".session", "Start a session"),
+    (".clear session", "End current session"),
     (".copy", "Copy the last output to the clipboard"),
-    (".read", "Read the contents of a file into the prompt"),
+    (".read", "Read the contents of a file and submit"),
     (".edit", "Multi-line editing (CTRL+S to finish)"),
     (".history", "Print the history"),
     (".clear history", "Clear the history"),
@@ -89,6 +89,7 @@ impl Repl {
                 _ => {}
             }
         }
+        handler.handle(ReplCmd::EndSession)?;
         Ok(())
     }
 
@@ -111,7 +112,7 @@ impl Repl {
                         print_now!("\n");
                     }
                     Some("role") => handler.handle(ReplCmd::ClearRole)?,
-                    Some("conversation") => handler.handle(ReplCmd::EndConversatoin)?,
+                    Some("session") => handler.handle(ReplCmd::EndSession)?,
                     _ => dump_unknown_command(),
                 },
                 ".history" => {
@@ -141,8 +142,8 @@ impl Repl {
                         handler.handle(ReplCmd::Prompt(text))?;
                     }
                 }
-                ".conversation" => {
-                    handler.handle(ReplCmd::StartConversation)?;
+                ".session" => {
+                    handler.handle(ReplCmd::StartSession(args.map(|v| v.to_string())))?;
                 }
                 ".copy" => {
                     handler.handle(ReplCmd::Copy)?;

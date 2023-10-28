@@ -21,8 +21,8 @@ pub enum ReplCmd {
     Prompt(String),
     ClearRole,
     ViewInfo,
-    StartConversation,
-    EndConversatoin,
+    StartSession(Option<String>),
+    EndSession,
     Copy,
     ReadFile(String),
 }
@@ -30,7 +30,6 @@ pub enum ReplCmd {
 #[allow(clippy::module_name_repetitions)]
 pub struct ReplCmdHandler {
     config: SharedConfig,
-    reply: RefCell<String>,
     abort: SharedAbortSignal,
     clipboard: std::result::Result<RefCell<Clipboard>, arboard::Error>,
 }
@@ -38,11 +37,9 @@ pub struct ReplCmdHandler {
 impl ReplCmdHandler {
     #[allow(clippy::unnecessary_wraps)]
     pub fn init(config: SharedConfig, abort: SharedAbortSignal) -> Result<Self> {
-        let reply = RefCell::new(String::new());
         let clipboard = Clipboard::new().map(RefCell::new);
         Ok(Self {
             config,
-            reply,
             abort,
             clipboard,
         })
@@ -52,7 +49,6 @@ impl ReplCmdHandler {
         match cmd {
             ReplCmd::Submit(input) => {
                 if input.is_empty() {
-                    self.reply.borrow_mut().clear();
                     return Ok(());
                 }
                 self.config.read().maybe_print_send_tokens(&input);
@@ -68,12 +64,10 @@ impl ReplCmdHandler {
                 );
                 wg.wait();
                 let buffer = ret?;
-                self.config.read().save_message(&input, &buffer)?;
+                self.config.write().save_message(&input, &buffer)?;
                 if self.config.read().auto_copy {
                     let _ = self.copy(&buffer);
                 }
-                self.config.write().save_conversation(&input, &buffer)?;
-                *self.reply.borrow_mut() = buffer;
             }
             ReplCmd::SetModel(name) => {
                 self.config.write().set_model(&name)?;
@@ -99,16 +93,23 @@ impl ReplCmdHandler {
                 self.config.write().update(&input)?;
                 print_now!("\n");
             }
-            ReplCmd::StartConversation => {
-                self.config.write().start_conversation()?;
+            ReplCmd::StartSession(name) => {
+                self.config.write().start_session(&name)?;
                 print_now!("\n");
             }
-            ReplCmd::EndConversatoin => {
-                self.config.write().end_conversation();
+            ReplCmd::EndSession => {
+                self.config.write().end_session()?;
                 print_now!("\n");
             }
             ReplCmd::Copy => {
-                self.copy(&self.reply.borrow())
+                let reply = self
+                    .config
+                    .read()
+                    .last_message
+                    .as_ref()
+                    .map(|v| v.1.clone())
+                    .unwrap_or_default();
+                self.copy(&reply)
                     .with_context(|| "Failed to copy the last output")?;
                 print_now!("\n");
             }

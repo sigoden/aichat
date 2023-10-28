@@ -42,8 +42,19 @@ fn main() -> Result<()> {
         }
         exit(0);
     }
+    if cli.list_sessions {
+        let sessions = config.read().list_sessions()?.join("\n");
+        println!("{sessions}");
+        exit(0);
+    }
     if cli.dry_run {
         config.write().dry_run = true;
+    }
+    if let Some(session) = &cli.session {
+        config.write().start_session(session)?;
+    }
+    if let Some(model) = &cli.model {
+        config.write().set_model(model)?;
     }
     let role = match &cli.role {
         Some(name) => Some(
@@ -54,9 +65,6 @@ fn main() -> Result<()> {
         ),
         None => None,
     };
-    if let Some(model) = &cli.model {
-        config.write().set_model(model)?;
-    }
     config.write().role = role;
     if cli.no_highlight {
         config.write().highlight = false;
@@ -65,7 +73,11 @@ fn main() -> Result<()> {
         config.write().add_prompt(prompt)?;
     }
     if cli.info {
-        let info = config.read().info()?;
+        let info = if let Some(session) = &config.read().session {
+            session.info()?
+        } else {
+            config.read().info()?
+        };
         println!("{info}");
         exit(0);
     }
@@ -92,6 +104,9 @@ fn start_directive(
     input: &str,
     no_stream: bool,
 ) -> Result<()> {
+    if let Some(sesion) = &config.read().session {
+        sesion.guard_save()?;
+    }
     if !stdout().is_terminal() {
         config.write().highlight = false;
     }
@@ -118,12 +133,11 @@ fn start_directive(
         wg.wait();
         output
     };
-    config.read().save_message(input, &output)
+    config.write().save_message(input, &output)
 }
 
 fn start_interactive(config: SharedConfig) -> Result<()> {
     cl100k_base_singleton();
-    config.write().on_repl()?;
-    let mut repl = Repl::init(config.clone())?;
+    let mut repl: Repl = Repl::init(config.clone())?;
     repl.run(config)
 }

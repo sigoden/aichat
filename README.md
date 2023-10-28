@@ -32,7 +32,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - Predefine AI [roles](#roles)
 - Use GPT prompt easily
 - Powerful [Chat REPL](#chat-repl)
-- Context-aware conversation
+- Context-aware conversation/session
 - Syntax highlighting markdown and 200 other languages
 - Stream output with hand-typing effect
 - Support multiple models
@@ -58,9 +58,8 @@ On completion, it will automatically create the configuration file. Of course, y
 ```yaml
 model: openai:gpt-3.5-turbo      # Choose a model
 temperature: 1.0                 # See https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
-save: true                       # If set true, aichat will save chat messages to message.md
+save: true                       # If set true, aichat will save non-session chat messages to messages.md
 highlight: true                  # Set false to turn highlight
-conversation_first: false        # If set true, start a conversation immediately upon repl
 light_theme: false               # If set true, use light theme
 auto_copy: false                 # Automatically copy the last output to the clipboard
 keybindings: emacs               # REPL keybindings, possible values: emacs (default), vi
@@ -167,10 +166,10 @@ AIChat also provides `.edit` command for multi-lines editing.
 .prompt                  Add a GPT prompt
 .role                    Select a role
 .clear role              Clear the currently selected role
-.conversation            Start a conversation.
-.clear conversation      End current conversation.
+.session                 Start a session
+.clear session           End current session
 .copy                    Copy the last output to the clipboard
-.read                    Read the contents of a file into the prompt
+.read                    Read the contents of a file and submit
 .edit                    Multi-line editing (CTRL+S to finish)
 .history                 Print the history
 .clear history           Clear the history
@@ -187,11 +186,11 @@ Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
 config_file         /home/alice/.config/aichat/config.yaml
 roles_file          /home/alice/.config/aichat/roles.yaml
 messages_file       /home/alice/.config/aichat/messages.md
+sessions_dir        /home/alice/.config/aichat/sessions
 model               openai:gpt-3.5-turbo
 temperature         0.7
 save                true
 highlight           true
-conversation_first  false
 light_theme         false
 dry_run             false
 vi_keybindings      true
@@ -264,41 +263,30 @@ emoji〉.clear role
 Hello there! How can I assist you today?
 ```
 
-### `.conversation` - start a context-aware conversation
+## Session - context-aware conversation
 
 By default, aichat behaves in a one-off request/response manner.
+You should run aichat with "-s/--session" or use the ".session" command to start a session.
 
-You can run `.conversation` to enter context-aware mode, or set `config.conversation_first` true to start a conversation immediately upon repl.
-
-```
-〉.conversation
-
-）list 1 to 5, one per line                                                              4089
-1
-2
-3
-4
-5
-
-）reverse the list                                                                       4065
-5
-4
-3
-2
-1
 
 ```
+〉.session
+temp）1 to 5, odd only                                                    4089
+1, 3, 5
 
-When entering conversation mode, prompt `〉` will change to `）`. A number will appear on the right,
-indicating how many tokens are left to use.
-Once the number becomes zero, you need to start a new conversation.
+temp）to 7                                                                4070
+1, 3, 5, 7
 
-Exit conversation mode:
-
-```
-）.clear conversation                                                                    4043
+temp）.clear session
 
 〉
+```
+
+```sh
+aichat --list-sessions      # List sessions
+aichat -s                   # Start with a new session
+aichat -s rust              # If session rust exists, use it. If it does not exist, create a new session.
+aichat -s rust --info       # Show session details
 ```
 
 ## License
