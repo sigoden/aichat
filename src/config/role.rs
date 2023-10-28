@@ -2,7 +2,7 @@ use super::message::{Message, MessageRole};
 
 use serde::{Deserialize, Serialize};
 
-const TEMP_NAME: &str = "Ｐ";
+const TEMP_ROLE_NAME: &str = "temp";
 const INPUT_PLACEHOLDER: &str = "__INPUT__";
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -18,14 +18,14 @@ pub struct Role {
 impl Role {
     pub fn new(prompt: &str, temperature: Option<f64>) -> Self {
         Self {
-            name: TEMP_NAME.into(),
+            name: TEMP_ROLE_NAME.into(),
             prompt: prompt.into(),
             temperature,
         }
     }
 
     pub fn is_temp(&self) -> bool {
-        self.name == TEMP_NAME
+        self.name == TEMP_ROLE_NAME
     }
 
     pub fn embeded(&self) -> bool {
