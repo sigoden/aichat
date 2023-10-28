@@ -10,6 +10,7 @@ pub const TEMP_SESSION_NAME: &str = "temp";
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Session {
+    pub path: Option<String>,
     pub model: String,
     pub tokens: usize,
     pub messages: Vec<Message>,
@@ -19,20 +20,18 @@ pub struct Session {
     pub role: Option<Role>,
     #[serde(skip)]
     pub name: String,
-    #[serde(skip)]
-    pub path: Option<String>,
 }
 
 impl Session {
     pub fn new(name: &str, model: &str, role: Option<Role>) -> Self {
         let mut value = Self {
+            path: None,
             model: model.to_string(),
             tokens: 0,
             messages: vec![],
             dirty: false,
             role,
             name: name.to_string(),
-            path: None,
         };
         value.update_tokens();
         value

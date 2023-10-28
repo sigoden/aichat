@@ -286,6 +286,7 @@ temp）.clear session
 aichat --list-sessions      # List sessions
 aichat -s                   # Start with a new session
 aichat -s rust              # If session rust exists, use it. If it does not exist, create a new session.
+aichat -s rust --info       # Show session details
 ```
 
 ## License
