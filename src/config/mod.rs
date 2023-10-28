@@ -60,7 +60,7 @@ pub struct Config {
     pub auto_copy: bool,
     /// REPL keybindings, possible values: emacs (default), vi
     pub keybindings: Keybindings,
-    /// Setup LLM platforms
+    /// Setup AIs
     pub clients: Vec<ClientConfig>,
     /// Predefined roles
     #[serde(skip)]
@@ -571,7 +571,7 @@ impl Config {
     fn compat_old_config(&mut self, config_path: &PathBuf) -> Result<()> {
         let content = read_to_string(config_path)?;
         let value: serde_json::Value = serde_yaml::from_str(&content)?;
-        if value.get("client").is_some() {
+        if value.get("clients").is_some() {
             return Ok(());
         }
 
@@ -632,7 +632,7 @@ fn create_config_file(config_path: &Path) -> Result<()> {
         exit(0);
     }
 
-    let client = Select::new("Select platform?", all_clients())
+    let client = Select::new("Select AI?", all_clients())
         .prompt()
         .map_err(|_| anyhow!("An error happened when selecting platform, try again later."))?;
 

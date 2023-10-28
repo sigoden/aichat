@@ -27,9 +27,9 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 
 ## Features
 
-- Supports multiple platforms, including openai and localai.
+- Supports multiple AIs, including openai and localai.
 - Support chat and command modes
-- Predefine AI [roles](#roles)
+- Predefine model [roles](#roles)
 - Use GPT prompt easily
 - Powerful [Chat REPL](#chat-repl)
 - Context-aware conversation/session
@@ -46,7 +46,7 @@ On first launch, aichat will guide you through the configuration.
 
 ```
 > No config file, create a new one? Yes
-> Select platform? openai
+> Select AI? openai
 > API key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 > Has Organization? No
 > Use proxy? No
@@ -64,7 +64,7 @@ light_theme: false               # If set true, use light theme
 auto_copy: false                 # Automatically copy the last output to the clipboard
 keybindings: emacs               # REPL keybindings, possible values: emacs (default), vi
 
-clients:                                              # Setup LLM platforms
+clients:                                              # Setup AIs
 
   - type: openai                                      # OpenAI configuration
     api_key: sk-xxx                                   # Request via https://platform.openai.com/account/api-keys
@@ -266,7 +266,8 @@ Hello there! How can I assist you today?
 ## Session - context-aware conversation
 
 By default, aichat behaves in a one-off request/response manner.
-You should run aichat with "-s/--session" or use the ".session" command to start a session.
+
+You should run aichat with `-s/--session` or use the `.session` command to start a session.
 
 
 ```
