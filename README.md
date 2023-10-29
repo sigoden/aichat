@@ -79,6 +79,8 @@ clients:                                              # Setup AIs
     models:                                           # Support models
       - name: gpt4all-j
         max_tokens: 4096
+    proxy: socks5://127.0.0.1:1080                    # Set proxy server. Optional
+    connect_timeout: 10                               # Set a timeout in seconds for connect to gpt. Optional
 ```
 
 > You can use `.info` to view the current configuration file path and roles file path.
