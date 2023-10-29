@@ -2,7 +2,7 @@
 /// Fork from https://github.com/dalance/termbg/blob/v0.4.3/src/lib.rs
 
 #[allow(unused)]
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::{anyhow, bail, Context, Error, Result};
 use crossterm::terminal;
 use std::env;
 use std::io::{self, Write};
@@ -80,13 +80,7 @@ pub fn terminal() -> Terminal {
         return Terminal::Emacs;
     }
 
-    // Windows Terminal is Xterm-compatible
-    // https://github.com/microsoft/terminal/issues/3718
-    if env::var("WT_SESSION").is_ok() {
-        Terminal::XtermCompatible
-    } else {
-        Terminal::Windows
-    }
+    Terminal::Windows
 }
 
 /// get background color by `RGB`
@@ -108,7 +102,6 @@ pub fn rgb(timeout: Duration) -> Result<Rgb> {
     let rgb = match term {
         Terminal::VSCode => Err(unsupported_err()),
         Terminal::Emacs => Err(unsupported_err()),
-        Terminal::XtermCompatible => from_xterm(term, timeout),
         _ => from_winapi(),
     };
     check_rgb(rgb)
@@ -146,15 +139,18 @@ fn from_xterm(term: Terminal, timeout: Duration) -> Result<Rgb> {
     stderr.flush()?;
 
     let buffer = runtime.block_on(async {
-        tokio::time::timeout(timeout, read_xterm_stdin())
-            .await
-            .map_err(|e| anyhow!("Failed to query xterm: {e}"))
+        tokio::select! {
+            ret = read_xterm_stdin() => {
+                ret
+            }
+            _ = tokio::time::sleep(timeout) => {
+                bail!("Query xterm timeout")
+            }
+        }
     });
 
     terminal::disable_raw_mode()?;
 
-    // Should return by error after disable_raw_mode
-    let buffer = buffer?;
     let buffer = buffer?;
 
     let s = String::from_utf8_lossy(&buffer);
