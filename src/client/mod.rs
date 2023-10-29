@@ -6,7 +6,7 @@ use self::{
     openai::{OpenAIClient, OpenAIConfig},
 };
 
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
 use reqwest::{ClientBuilder, Proxy};
 use serde::Deserialize;
@@ -41,9 +41,7 @@ pub struct ModelInfo {
 
 impl Default for ModelInfo {
     fn default() -> Self {
-        let client = OpenAIClient::name();
-        let (name, max_tokens) = &OpenAIClient::list_models(&OpenAIConfig::default())[0];
-        Self::new(client, name, *max_tokens, 0)
+        OpenAIClient::list_models(&OpenAIConfig::default(), 0)[0].clone()
     }
 }
 
@@ -128,43 +126,16 @@ pub trait Client {
 }
 
 pub fn init_client(config: SharedConfig) -> Result<Box<dyn Client>> {
-    let model_info = config.read().model_info.clone();
-    let model_info_err = |model_info: &ModelInfo| {
-        bail!(
-            "Unknown client {} at config.clients[{}]",
-            &model_info.client,
-            &model_info.index
-        )
-    };
-    if model_info.client == OpenAIClient::name() {
-        let local_config = {
-            if let ClientConfig::OpenAI(c) = &config.read().clients[model_info.index] {
-                c.clone()
-            } else {
-                return model_info_err(&model_info);
-            }
-        };
-        Ok(Box::new(OpenAIClient::new(
-            config,
-            local_config,
-            model_info,
-        )))
-    } else if model_info.client == LocalAIClient::name() {
-        let local_config = {
-            if let ClientConfig::LocalAI(c) = &config.read().clients[model_info.index] {
-                c.clone()
-            } else {
-                return model_info_err(&model_info);
-            }
-        };
-        Ok(Box::new(LocalAIClient::new(
-            config,
-            local_config,
-            model_info,
-        )))
-    } else {
-        bail!("Unknown client {}", &model_info.client)
-    }
+    OpenAIClient::init(config.clone())
+        .or_else(|| LocalAIClient::init(config.clone()))
+        .ok_or_else(|| {
+            let model_info = config.read().model_info.clone();
+            anyhow!(
+                "Unknown client {} at config.clients[{}]",
+                &model_info.client,
+                &model_info.index
+            )
+        })
 }
 
 pub fn all_clients() -> Vec<&'static str> {
@@ -187,14 +158,8 @@ pub fn list_models(config: &Config) -> Vec<ModelInfo> {
         .iter()
         .enumerate()
         .flat_map(|(i, v)| match v {
-            ClientConfig::OpenAI(c) => OpenAIClient::list_models(c)
-                .iter()
-                .map(|(x, y)| ModelInfo::new(OpenAIClient::name(), x, *y, i))
-                .collect::<Vec<ModelInfo>>(),
-            ClientConfig::LocalAI(c) => LocalAIClient::list_models(c)
-                .iter()
-                .map(|(x, y)| ModelInfo::new(LocalAIClient::name(), x, *y, i))
-                .collect::<Vec<ModelInfo>>(),
+            ClientConfig::OpenAI(c) => OpenAIClient::list_models(c, i),
+            ClientConfig::LocalAI(c) => LocalAIClient::list_models(c, i),
         })
         .collect()
 }

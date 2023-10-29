@@ -1,5 +1,5 @@
 use super::openai::{openai_send_message, openai_send_message_streaming};
-use super::{set_proxy, Client, ModelInfo};
+use super::{set_proxy, Client, ClientConfig, ModelInfo};
 
 use crate::config::SharedConfig;
 use crate::repl::ReplyStreamHandler;
@@ -59,27 +59,34 @@ impl Client for LocalAIClient {
 }
 
 impl LocalAIClient {
-    pub fn new(
-        global_config: SharedConfig,
-        local_config: LocalAIConfig,
-        model_info: ModelInfo,
-    ) -> Self {
-        Self {
+    pub fn init(global_config: SharedConfig) -> Option<Box<dyn Client>> {
+        let model_info = global_config.read().model_info.clone();
+        if model_info.client != LocalAIClient::name() {
+            return None;
+        }
+        let local_config = {
+            if let ClientConfig::LocalAI(c) = &global_config.read().clients[model_info.index] {
+                c.clone()
+            } else {
+                return None;
+            }
+        };
+        Some(Box::new(Self {
             global_config,
             local_config,
             model_info,
-        }
+        }))
     }
 
     pub fn name() -> &'static str {
         "localai"
     }
 
-    pub fn list_models(local_config: &LocalAIConfig) -> Vec<(String, usize)> {
+    pub fn list_models(local_config: &LocalAIConfig, index: usize) -> Vec<ModelInfo> {
         local_config
             .models
             .iter()
-            .map(|v| (v.name.to_string(), v.max_tokens))
+            .map(|v| ModelInfo::new(Self::name(), &v.name, v.max_tokens, index))
             .collect()
     }
 
