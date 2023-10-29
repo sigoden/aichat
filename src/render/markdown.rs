@@ -53,14 +53,17 @@ impl MarkdownRender {
         }
     }
 
-    pub fn render(&mut self, src: &str) -> String {
+    pub fn render_block(&mut self, src: &str) -> String {
         src.split('\n')
-            .map(|line| self.render_line(line).unwrap_or_else(|| line.to_string()))
+            .map(|line| {
+                self.render_line_impl(line)
+                    .unwrap_or_else(|| line.to_string())
+            })
             .collect::<Vec<String>>()
             .join("\n")
     }
 
-    pub fn render_line_stateless(&self, line: &str) -> String {
+    pub fn render_line(&self, line: &str) -> String {
         let output = if self.is_code_block() && detect_code_block(line).is_none() {
             self.render_code_line(line)
         } else {
@@ -76,7 +79,7 @@ impl MarkdownRender {
         )
     }
 
-    fn render_line(&mut self, line: &str) -> Option<String> {
+    fn render_line_impl(&mut self, line: &str) -> Option<String> {
         if let Some(lang) = detect_code_block(line) {
             match self.prev_line_type {
                 LineType::Normal | LineType::CodeEnd => {
