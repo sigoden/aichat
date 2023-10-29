@@ -50,9 +50,6 @@ version = "5.0.0"
 default-features = false
 features = ["parsing", "regex-onig"]
 
-[target.'cfg(target_os = "windows")'.dependencies]
-winapi = { version = "0.3", features = ["wincon", "winbase", "processenv", "impl-default"] }
-
 [profile.release]
 lto = true
 strip = true
