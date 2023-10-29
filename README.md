@@ -65,21 +65,20 @@ auto_copy: false                 # Automatically copy the last output to the cli
 keybindings: emacs               # REPL keybindings, possible values: emacs (default), vi
 
 clients:                                              # Setup AIs
-  # OpenAI setup instructions: https://platform.openai.com/docs/quickstart
+  # See https://platform.openai.com/docs/quickstart
   - type: openai                                      # OpenAI configuration
     api_key: sk-xxx                                   # OpenAI api key, alternative to OPENAI_API_KEY
     organization_id: org-xxx                          # Organization ID. Optional
     proxy: socks5://127.0.0.1:1080                    # Set proxy server. Optional
     connect_timeout: 10                               # Set a timeout in seconds for connect to gpt. Optional
-  # LocalAI setup instructions: https://github.com/go-skynet/LocalAI
+
+  # See https://github.com/go-skynet/LocalAI
   - type: localai                                     # LocalAI configuration
     url: http://localhost:8080/v1/chat/completions    # LocalAI api server
-    api_key: '???'                                    # Api key. alternative to LOCALAI_API_KEY
+    api_key: xxx                                      # Api key. alternative to LOCALAI_API_KEY
     models:                                           # Support models
       - name: gpt4all-j
         max_tokens: 4096
-    proxy: socks5://127.0.0.1:1080                    # Set proxy server. Optional
-    connect_timeout: 10                               # Set a timeout in seconds for connect to gpt. Optional
 ```
 
 > You can use `.info` to view the current configuration file path and roles file path.
@@ -273,10 +272,10 @@ You should run aichat with `-s/--session` or use the `.session` command to start
 
 ```
 〉.session
-temp）1 to 5, odd only                                                    4089
+temp）1 to 5, odd only                                                                   4089
 1, 3, 5
 
-temp）to 7                                                                4070
+temp）to 7                                                                               4070
 1, 3, 5, 7
 
 temp）.clear session
