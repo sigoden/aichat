@@ -19,13 +19,13 @@ use unicode_width::UnicodeWidthStr;
 #[allow(clippy::module_name_repetitions)]
 pub fn repl_render_stream(
     rx: &Receiver<ReplyStreamEvent>,
-    light_theme: bool,
+    render: &mut MarkdownRender,
     abort: &SharedAbortSignal,
 ) -> Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
 
-    let ret = repl_render_stream_inner(rx, light_theme, abort, &mut stdout);
+    let ret = repl_render_stream_inner(rx, render, abort, &mut stdout);
 
     disable_raw_mode()?;
 
@@ -34,14 +34,13 @@ pub fn repl_render_stream(
 
 fn repl_render_stream_inner(
     rx: &Receiver<ReplyStreamEvent>,
-    light_theme: bool,
+    render: &mut MarkdownRender,
     abort: &SharedAbortSignal,
     writer: &mut Stdout,
 ) -> Result<()> {
     let mut last_tick = Instant::now();
     let tick_rate = Duration::from_millis(50);
     let mut buffer = String::new();
-    let mut markdown_render = MarkdownRender::new(light_theme);
     let columns = terminal::size()?.0;
     loop {
         if abort.aborted() {
@@ -75,7 +74,7 @@ fn repl_render_stream_inner(
                         let text = format!("{buffer}{text}");
                         let mut lines: Vec<&str> = text.split('\n').collect();
                         buffer = lines.pop().unwrap_or_default().to_string();
-                        let output = markdown_render.render_block(&lines.join("\n"));
+                        let output = render.render_block(&lines.join("\n"));
                         for line in output.split('\n') {
                             queue!(
                                 writer,
@@ -87,7 +86,7 @@ fn repl_render_stream_inner(
                         queue!(writer, style::Print(&buffer),)?;
                     } else {
                         buffer = format!("{buffer}{text}");
-                        let output = markdown_render.render_line(&buffer);
+                        let output = render.render_line(&buffer);
                         queue!(writer, style::Print(&output))?;
                     }
 

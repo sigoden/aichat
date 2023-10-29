@@ -137,23 +137,17 @@ impl ReplCmdHandler {
 
 #[allow(clippy::module_name_repetitions)]
 pub struct ReplyStreamHandler {
-    sender: Option<Sender<ReplyStreamEvent>>,
+    sender: Sender<ReplyStreamEvent>,
     buffer: String,
     abort: SharedAbortSignal,
-    repl: bool,
 }
 
 impl ReplyStreamHandler {
-    pub fn new(
-        sender: Option<Sender<ReplyStreamEvent>>,
-        repl: bool,
-        abort: SharedAbortSignal,
-    ) -> Self {
+    pub fn new(sender: Sender<ReplyStreamEvent>, abort: SharedAbortSignal) -> Self {
         Self {
             sender,
             abort,
             buffer: String::new(),
-            repl,
         }
     }
 
@@ -162,37 +156,20 @@ impl ReplyStreamHandler {
             return Ok(());
         }
         self.buffer.push_str(text);
-        match self.sender.as_ref() {
-            Some(tx) => {
-                let ret = tx
-                    .send(ReplyStreamEvent::Text(text.to_string()))
-                    .with_context(|| "Failed to send StreamEvent:Text");
-                self.safe_ret(ret)?;
-            }
-            None => {
-                print_now!("{}", text);
-            }
-        }
+        let ret = self
+            .sender
+            .send(ReplyStreamEvent::Text(text.to_string()))
+            .with_context(|| "Failed to send StreamEvent:Text");
+        self.safe_ret(ret)?;
         Ok(())
     }
 
     pub fn done(&mut self) -> Result<()> {
-        if let Some(tx) = self.sender.as_ref() {
-            let ret = tx
-                .send(ReplyStreamEvent::Done)
-                .with_context(|| "Failed to send StreamEvent:Done");
-            self.safe_ret(ret)?;
-        } else {
-            if !self.buffer.ends_with('\n') {
-                print_now!("\n");
-            }
-            if self.repl {
-                print_now!("\n");
-                if cfg!(macos) {
-                    print_now!("\n");
-                }
-            }
-        }
+        let ret = self
+            .sender
+            .send(ReplyStreamEvent::Done)
+            .with_context(|| "Failed to send StreamEvent:Done");
+        self.safe_ret(ret)?;
         Ok(())
     }
 

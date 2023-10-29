@@ -1,11 +1,13 @@
 mod cmd;
 mod markdown;
 mod repl;
+mod wrap;
 
 use self::cmd::cmd_render_stream;
 #[allow(clippy::module_name_repetitions)]
-pub use self::markdown::MarkdownRender;
+pub use self::markdown::{MarkdownRender, MarkdownTheme};
 use self::repl::repl_render_stream;
+pub use self::wrap::Wrap;
 
 use crate::client::Client;
 use crate::config::SharedConfig;
@@ -26,15 +28,27 @@ pub fn render_stream(
     abort: SharedAbortSignal,
     wg: WaitGroup,
 ) -> Result<String> {
-    let (highlight, light_theme) = config.read().get_render_options();
-    let mut stream_handler = if highlight {
+    let (highlight, light_theme, wrap) = config.read().get_render_options();
+    let mut stream_handler = {
         let (tx, rx) = unbounded();
         let abort_clone = abort.clone();
         spawn(move || {
-            let err = if repl {
-                repl_render_stream(&rx, light_theme, &abort)
-            } else {
-                cmd_render_stream(&rx, light_theme, &abort)
+            let err = match (highlight, repl) {
+                (false, _) => {
+                    let theme = MarkdownTheme::No;
+                    let mut render = MarkdownRender::new(theme, wrap);
+                    cmd_render_stream(&rx, &mut render, &abort)
+                }
+                (true, false) => {
+                    let theme = MarkdownTheme::new(light_theme);
+                    let mut render = MarkdownRender::new(theme, wrap);
+                    cmd_render_stream(&rx, &mut render, &abort)
+                }
+                (true, true) => {
+                    let theme = MarkdownTheme::new(light_theme);
+                    let mut render = MarkdownRender::new(theme, wrap);
+                    repl_render_stream(&rx, &mut render, &abort)
+                }
             };
             if let Err(err) = err {
                 let err = format!("{err:?}");
@@ -42,10 +56,7 @@ pub fn render_stream(
             }
             drop(wg);
         });
-        ReplyStreamHandler::new(Some(tx), repl, abort_clone)
-    } else {
-        drop(wg);
-        ReplyStreamHandler::new(None, repl, abort)
+        ReplyStreamHandler::new(tx, abort_clone)
     };
     client.send_message_streaming(input, &mut stream_handler)?;
     let buffer = stream_handler.get_buffer();

@@ -9,11 +9,10 @@ use crossbeam::channel::Receiver;
 #[allow(clippy::unnecessary_wraps, clippy::module_name_repetitions)]
 pub fn cmd_render_stream(
     rx: &Receiver<ReplyStreamEvent>,
-    light_theme: bool,
+    render: &mut MarkdownRender,
     abort: &SharedAbortSignal,
 ) -> Result<()> {
     let mut buffer = String::new();
-    let mut markdown_render = MarkdownRender::new(light_theme);
     loop {
         if abort.aborted() {
             return Ok(());
@@ -26,24 +25,24 @@ pub fn cmd_render_stream(
                         let mut lines: Vec<&str> = text.split('\n').collect();
                         buffer = lines.pop().unwrap_or_default().to_string();
                         let output = lines.join("\n");
-                        print_now!("{}\n", markdown_render.render_block(&output));
+                        print_now!("{}\n", render.render_block(&output));
                     } else {
                         buffer = format!("{buffer}{text}");
-                        if !(markdown_render.is_code_block()
+                        if !(render.is_code_block()
                             || buffer.len() < 60
                             || buffer.starts_with('#')
                             || buffer.starts_with('>')
                             || buffer.starts_with('|'))
                         {
                             if let Some((output, remain)) = split_line(&buffer) {
-                                print_now!("{}", markdown_render.render_line(&output));
+                                print_now!("{}", render.render_line(&output));
                                 buffer = remain;
                             }
                         }
                     }
                 }
                 ReplyStreamEvent::Done => {
-                    let output = markdown_render.render_block(&buffer);
+                    let output = render.render_block(&buffer);
                     print_now!("{}\n", output.trim_end());
                     break;
                 }
@@ -53,7 +52,7 @@ pub fn cmd_render_stream(
     Ok(())
 }
 
-fn split_line(line: &str) -> Option<(String, String)> {
+pub(crate) fn split_line(line: &str) -> Option<(String, String)> {
     let mut balance: Vec<Kind> = Vec::new();
     let chars: Vec<char> = line.chars().collect();
     let mut index = 0;

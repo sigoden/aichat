@@ -1,3 +1,5 @@
+use super::Wrap;
+
 use crossterm::style::{Color, Stylize};
 use lazy_static::lazy_static;
 use std::collections::HashMap;
@@ -24,25 +26,31 @@ lazy_static! {
 #[allow(clippy::module_name_repetitions)]
 pub struct MarkdownRender {
     syntax_set: SyntaxSet,
-    md_theme: Theme,
-    code_color: Color,
+    md_theme: Option<Theme>,
+    code_color: Option<Color>,
     md_syntax: SyntaxReference,
     code_syntax: Option<SyntaxReference>,
     prev_line_type: LineType,
+    pub(crate) wrap: Wrap,
 }
 
 impl MarkdownRender {
-    pub fn new(light_theme: bool) -> Self {
+    pub fn new(theme: MarkdownTheme, wrap: Wrap) -> Self {
         let syntax_set: SyntaxSet =
             bincode::deserialize_from(SYNTAXES).expect("invalid syntaxes binary");
-        let md_theme: Theme = if light_theme {
-            bincode::deserialize_from(MD_THEME_LIGHT).expect("invalid theme binary")
-        } else {
-            bincode::deserialize_from(MD_THEME).expect("invalid theme binary")
+        let md_theme: Option<Theme> = match theme {
+            MarkdownTheme::No => None,
+            MarkdownTheme::Dark => {
+                Some(bincode::deserialize_from(MD_THEME_LIGHT).expect("invalid theme binary"))
+            }
+            MarkdownTheme::Light => {
+                Some(bincode::deserialize_from(MD_THEME).expect("invalid theme binary"))
+            }
         };
-        let code_color = get_code_color(&md_theme);
+        let code_color = md_theme.as_ref().map(get_code_color);
         let md_syntax = syntax_set.find_syntax_by_extension("md").unwrap().clone();
         let line_type = LineType::Normal;
+
         Self {
             syntax_set,
             md_theme,
@@ -50,17 +58,21 @@ impl MarkdownRender {
             md_syntax,
             code_syntax: None,
             prev_line_type: line_type,
+            wrap,
         }
     }
 
     pub fn render_block(&mut self, src: &str) -> String {
-        src.split('\n')
+        let output = src
+            .split('\n')
             .map(|line| {
                 self.render_line_impl(line)
                     .unwrap_or_else(|| line.to_string())
             })
             .collect::<Vec<String>>()
-            .join("\n")
+            .join("\n");
+
+        self.wrap.wrap(&output).to_string()
     }
 
     pub fn render_line(&self, line: &str) -> String {
@@ -69,7 +81,8 @@ impl MarkdownRender {
         } else {
             self.render_line_inner(line, &self.md_syntax)
         };
-        output.unwrap_or_else(|| line.to_string())
+        let output = output.unwrap_or_else(|| line.to_string());
+        self.wrap.wrap(&output).to_string()
     }
 
     pub const fn is_code_block(&self) -> bool {
@@ -120,18 +133,26 @@ impl MarkdownRender {
     fn render_line_inner(&self, line: &str, syntax: &SyntaxReference) -> Option<String> {
         let ws: String = line.chars().take_while(|c| c.is_whitespace()).collect();
         let trimed_line = &line[ws.len()..];
-        let mut highlighter = HighlightLines::new(syntax, &self.md_theme);
-        let ranges = highlighter
-            .highlight_line(trimed_line, &self.syntax_set)
-            .ok()?;
-        Some(format!("{ws}{}", as_terminal_escaped(&ranges)))
+        match &self.md_theme {
+            Some(theme) => {
+                let mut highlighter = HighlightLines::new(syntax, theme);
+                let ranges = highlighter
+                    .highlight_line(trimed_line, &self.syntax_set)
+                    .ok()?;
+                Some(format!("{ws}{}", as_terminal_escaped(&ranges)))
+            }
+            None => Some(trimed_line.to_string()),
+        }
     }
 
     fn render_code_line(&self, line: &str) -> Option<String> {
-        self.code_syntax.as_ref().map_or_else(
-            || Some(format!("{}", line.with(self.code_color))),
-            |syntax| self.render_line_inner(line, syntax),
-        )
+        match self.code_color {
+            None => Some(line.to_string()),
+            Some(color) => self.code_syntax.as_ref().map_or_else(
+                || Some(format!("{}", line.with(color))),
+                |syntax| self.render_line_inner(line, syntax),
+            ),
+        }
     }
 
     fn find_syntax(&self, lang: &str) -> Option<&SyntaxReference> {
@@ -142,6 +163,23 @@ impl MarkdownRender {
             self.syntax_set
                 .find_syntax_by_token(lang)
                 .or_else(|| self.syntax_set.find_syntax_by_extension(lang))
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum MarkdownTheme {
+    No,
+    Dark,
+    Light,
+}
+
+impl MarkdownTheme {
+    pub fn new(light_theme: bool) -> Self {
+        if light_theme {
+            MarkdownTheme::Light
+        } else {
+            MarkdownTheme::Dark
         }
     }
 }
@@ -233,7 +271,7 @@ mod tests {
 
     #[test]
     fn test_render() {
-        let render = MarkdownRender::new(true);
+        let render = MarkdownRender::new(MarkdownTheme::Dark, Wrap::No);
         assert!(render.find_syntax("csharp").is_some());
     }
 }

@@ -9,6 +9,7 @@ use self::session::{Session, TEMP_SESSION_NAME};
 use crate::client::openai::{OpenAIClient, OpenAIConfig};
 use crate::client::{all_clients, create_client_config, list_models, ClientConfig, ModelInfo};
 use crate::config::message::num_tokens_from_messages;
+use crate::render::Wrap;
 use crate::utils::{get_env_name, now};
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -56,6 +57,8 @@ pub struct Config {
     pub dry_run: bool,
     /// If set true, use light theme
     pub light_theme: bool,
+    /// Specify the text-wrapping mode (no*, auto, <max-width>)
+    pub wrap: Option<String>,
     /// Automatically copy the last output to the clipboard
     pub auto_copy: bool,
     /// REPL keybindings, possible values: emacs (default), vi
@@ -74,6 +77,8 @@ pub struct Config {
     #[serde(skip)]
     pub model_info: ModelInfo,
     #[serde(skip)]
+    pub text_width: Option<u16>,
+    #[serde(skip)]
     pub last_message: Option<(String, String)>,
 }
 
@@ -86,6 +91,7 @@ impl Default for Config {
             highlight: true,
             dry_run: false,
             light_theme: false,
+            wrap: None,
             auto_copy: false,
             keybindings: Default::default(),
             clients: vec![ClientConfig::OpenAI(OpenAIConfig::default())],
@@ -93,6 +99,7 @@ impl Default for Config {
             role: None,
             session: None,
             model_info: Default::default(),
+            text_width: None,
             last_message: None,
         }
     }
@@ -124,6 +131,9 @@ impl Config {
 
         if let Some(name) = config.model.clone() {
             config.set_model(&name)?;
+        }
+        if let Some(wrap) = config.wrap.clone() {
+            config.set_wrap(&wrap)?;
         }
 
         config.merge_env_vars();
@@ -295,6 +305,22 @@ impl Config {
         Ok(messages)
     }
 
+    pub fn set_wrap(&mut self, value: &str) -> Result<()> {
+        if value == "no" {
+            self.wrap = None;
+            self.text_width = None;
+        } else if value == "auto" {
+            self.wrap = Some(value.into());
+            self.text_width = Some(0);
+        } else {
+            let width = value
+                .parse::<u16>()
+                .map_err(|_| anyhow!("Invalid wrap value"))?;
+            self.text_width = Some(width);
+        }
+        Ok(())
+    }
+
     pub fn set_model(&mut self, value: &str) -> Result<()> {
         let models = list_models(self);
         let mut model_info = None;
@@ -333,6 +359,10 @@ impl Config {
         let temperature = self
             .temperature
             .map_or_else(|| String::from("-"), |v| v.to_string());
+        let wrap = self
+            .wrap
+            .clone()
+            .map_or_else(|| String::from("no"), |v| v.to_string());
         let items = vec![
             ("config_file", path_info(&Self::config_file()?)),
             ("roles_file", path_info(&Self::roles_file()?)),
@@ -343,6 +373,7 @@ impl Config {
             ("save", self.save.to_string()),
             ("highlight", self.highlight.to_string()),
             ("light_theme", self.light_theme.to_string()),
+            ("wrap", wrap),
             ("dry_run", self.dry_run.to_string()),
             ("keybindings", self.keybindings.stringify().into()),
         ];
@@ -500,8 +531,9 @@ impl Config {
         }
     }
 
-    pub const fn get_render_options(&self) -> (bool, bool) {
-        (self.highlight, self.light_theme)
+    pub fn get_render_options(&self) -> (bool, bool, Wrap) {
+        let wrap = Wrap::new(self.text_width);
+        (self.highlight, self.light_theme, wrap)
     }
 
     pub fn maybe_print_send_tokens(&self, input: &str) {
