@@ -284,10 +284,10 @@ You should run aichat with `-s/--session` or use the `.session` command to start
 
 ```
 〉.session
-temp）1 to 5, odd only                                                    4089
+temp）1 to 5, odd only                                                                   4089
 1, 3, 5
 
-temp）to 7                                                                4070
+temp）to 7                                                                               4070
 1, 3, 5, 7
 
 temp）.clear session
