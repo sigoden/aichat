@@ -47,6 +47,9 @@ fn main() -> Result<()> {
         println!("{sessions}");
         exit(0);
     }
+    if cli.light_theme {
+        config.write().light_theme = true;
+    }
     if cli.dry_run {
         config.write().dry_run = true;
     }
