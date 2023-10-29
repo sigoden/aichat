@@ -69,13 +69,13 @@ fn repl_render_stream_inner(
                         let text = format!("{buffer}{text}");
                         let (head, tail) = split_line_tail(&text);
                         buffer = tail.to_string();
-                        let output = render.render_block(head);
+                        let output = render.render(head);
                         print_block(writer, &output, columns)?;
                         queue!(writer, style::Print(&buffer),)?;
                         clear_rows = 0;
                     } else {
                         buffer = format!("{buffer}{text}");
-                        let output = render.render_line(&buffer);
+                        let output = render.render(&buffer);
                         if output.contains('\n') {
                             let (head, tail) = split_line_tail(&output);
                             clear_rows = print_block(writer, head, columns)?;

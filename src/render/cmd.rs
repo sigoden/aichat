@@ -27,7 +27,7 @@ pub fn cmd_render_stream(
                         let (head, tail) = split_line_tail(&text);
                         buffer = tail.to_string();
                         let input = format!("{}{head}", spaces(col));
-                        let output = render.render_block(&input);
+                        let output = render.render(&input);
                         print_now!("{}\n", &output[col..]);
                         col = 0;
                     } else {
@@ -41,7 +41,7 @@ pub fn cmd_render_stream(
                             if let Some((head, remain)) = split_line_sematic(&buffer) {
                                 buffer = remain;
                                 let input = format!("{}{head}", spaces(col));
-                                let output = render.render_line(&input);
+                                let output = render.render(&input);
                                 let output = &output[col..];
                                 let (_, tail) = split_line_tail(output);
                                 if output.contains('\n') {
@@ -56,7 +56,7 @@ pub fn cmd_render_stream(
                 }
                 ReplyStreamEvent::Done => {
                     let input = format!("{}{buffer}", spaces(col));
-                    print_now!("{}\n", render.render_block(&input));
+                    print_now!("{}\n", render.render(&input));
                     break;
                 }
             }

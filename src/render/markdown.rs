@@ -1,5 +1,3 @@
-use super::Wrap;
-
 use crossterm::style::{Color, Stylize};
 use lazy_static::lazy_static;
 use std::collections::HashMap;
@@ -31,19 +29,20 @@ pub struct MarkdownRender {
     md_syntax: SyntaxReference,
     code_syntax: Option<SyntaxReference>,
     prev_line_type: LineType,
-    wrap: Wrap,
+    options: RenderOptions,
 }
 
 impl MarkdownRender {
-    pub fn new(theme: MarkdownTheme, wrap: Wrap) -> Self {
+    pub fn new(options: RenderOptions) -> Self {
         let syntax_set: SyntaxSet =
             bincode::deserialize_from(SYNTAXES).expect("invalid syntaxes binary");
-        let md_theme: Option<Theme> = match theme {
-            MarkdownTheme::No => None,
-            MarkdownTheme::Dark => {
+
+        let md_theme: Option<Theme> = match (options.highlight, options.light_theme) {
+            (false, _) => None,
+            (true, false) => {
                 Some(bincode::deserialize_from(MD_THEME).expect("invalid theme binary"))
             }
-            MarkdownTheme::Light => {
+            (true, true) => {
                 Some(bincode::deserialize_from(MD_THEME_LIGHT).expect("invalid theme binary"))
             }
         };
@@ -58,31 +57,15 @@ impl MarkdownRender {
             md_syntax,
             code_syntax: None,
             prev_line_type: line_type,
-            wrap,
+            options,
         }
     }
 
-    pub fn render_block(&mut self, src: &str) -> String {
-        let output = src
-            .split('\n')
-            .map(|line| {
-                self.render_line_impl(line)
-                    .unwrap_or_else(|| line.to_string())
-            })
+    pub fn render(&mut self, text: &str) -> String {
+        text.split('\n')
+            .map(|line| self.render_line(line).unwrap_or_else(|| line.to_string()))
             .collect::<Vec<String>>()
-            .join("\n");
-
-        self.wrap.wrap(&output).to_string()
-    }
-
-    pub fn render_line(&self, line: &str) -> String {
-        let output = if self.is_code_block() && detect_code_block(line).is_none() {
-            self.render_code_line(line)
-        } else {
-            self.render_line_inner(line, &self.md_syntax)
-        };
-        let output = output.unwrap_or_else(|| line.to_string());
-        self.wrap.wrap(&output).to_string()
+            .join("\n")
     }
 
     pub const fn is_code_block(&self) -> bool {
@@ -92,7 +75,7 @@ impl MarkdownRender {
         )
     }
 
-    fn render_line_impl(&mut self, line: &str) -> Option<String> {
+    fn render_line(&mut self, line: &str) -> Option<String> {
         if let Some(lang) = detect_code_block(line) {
             match self.prev_line_type {
                 LineType::Normal | LineType::CodeEnd => {
@@ -108,13 +91,13 @@ impl MarkdownRender {
                     self.code_syntax = None;
                 }
             }
-            self.render_line_inner(line, &self.md_syntax)
+            self.highligh_line(line, &self.md_syntax, false)
         } else {
             match self.prev_line_type {
-                LineType::Normal => self.render_line_inner(line, &self.md_syntax),
+                LineType::Normal => self.highligh_line(line, &self.md_syntax, false),
                 LineType::CodeEnd => {
                     self.prev_line_type = LineType::Normal;
-                    self.render_line_inner(line, &self.md_syntax)
+                    self.highligh_line(line, &self.md_syntax, false)
                 }
                 LineType::CodeBegin => {
                     if self.code_syntax.is_none() {
@@ -123,17 +106,17 @@ impl MarkdownRender {
                         }
                     }
                     self.prev_line_type = LineType::CodeInner;
-                    self.render_code_line(line)
+                    self.highlint_code_line(line)
                 }
-                LineType::CodeInner => self.render_code_line(line),
+                LineType::CodeInner => self.highlint_code_line(line),
             }
         }
     }
 
-    fn render_line_inner(&self, line: &str, syntax: &SyntaxReference) -> Option<String> {
+    fn highligh_line(&self, line: &str, syntax: &SyntaxReference, is_code: bool) -> Option<String> {
         let ws: String = line.chars().take_while(|c| c.is_whitespace()).collect();
-        let trimed_line = &line[ws.len()..];
-        match &self.md_theme {
+        let trimed_line: &str = &line[ws.len()..];
+        let line = match &self.md_theme {
             Some(theme) => {
                 let mut highlighter = HighlightLines::new(syntax, theme);
                 let ranges = highlighter
@@ -142,16 +125,29 @@ impl MarkdownRender {
                 Some(format!("{ws}{}", as_terminal_escaped(&ranges)))
             }
             None => Some(trimed_line.to_string()),
+        };
+        let line = line?;
+        Some(self.wrap_line(line, is_code))
+    }
+
+    fn highlint_code_line(&self, line: &str) -> Option<String> {
+        match self.code_color {
+            None => Some(self.wrap_line(line.to_string(), true)),
+            Some(color) => self.code_syntax.as_ref().map_or_else(
+                || Some(format!("{}", line.with(color))),
+                |syntax| self.highligh_line(line, syntax, true),
+            ),
         }
     }
 
-    fn render_code_line(&self, line: &str) -> Option<String> {
-        match self.code_color {
-            None => Some(line.to_string()),
-            Some(color) => self.code_syntax.as_ref().map_or_else(
-                || Some(format!("{}", line.with(color))),
-                |syntax| self.render_line_inner(line, syntax),
-            ),
+    fn wrap_line(&self, line: String, is_code: bool) -> String {
+        if let Some(width) = self.options.text_width {
+            if is_code && !self.options.wrap_code {
+                return line;
+            }
+            textwrap::wrap(&line, width as usize).join("\n")
+        } else {
+            line
         }
     }
 
@@ -167,19 +163,37 @@ impl MarkdownRender {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum MarkdownTheme {
-    No,
-    Dark,
-    Light,
+#[derive(Debug, Clone)]
+pub struct RenderOptions {
+    pub highlight: bool,
+    pub light_theme: bool,
+    pub text_width: Option<u16>,
+    pub wrap_code: bool,
 }
 
-impl MarkdownTheme {
-    pub fn new(light_theme: bool) -> Self {
-        if light_theme {
-            MarkdownTheme::Light
-        } else {
-            MarkdownTheme::Dark
+impl Default for RenderOptions {
+    fn default() -> Self {
+        Self {
+            highlight: true,
+            light_theme: false,
+            text_width: None,
+            wrap_code: false,
+        }
+    }
+}
+
+impl RenderOptions {
+    pub(crate) fn new(
+        highlight: bool,
+        light_theme: bool,
+        text_width: Option<u16>,
+        wrap_code: bool,
+    ) -> Self {
+        Self {
+            highlight,
+            light_theme,
+            text_width,
+            wrap_code,
         }
     }
 }
@@ -260,6 +274,18 @@ fn get_code_color(theme: &Theme) -> Color {
 mod tests {
     use super::*;
 
+    const TEXT: &str = r#"
+To unzip a file in Rust, you can use the `zip` crate. Here's an example code that shows how to unzip a file:
+
+```rust
+use std::fs::File;
+
+fn unzip_file(path: &str, output_dir: &str) -> Result<(), Box<dyn std::error::Error>> {
+    todo!()
+}
+```
+"#;
+
     #[test]
     fn test_assets() {
         let syntax_set: SyntaxSet =
@@ -271,7 +297,19 @@ mod tests {
 
     #[test]
     fn test_render() {
-        let render = MarkdownRender::new(MarkdownTheme::Dark, Wrap::No);
+        let options = RenderOptions::default();
+        let render = MarkdownRender::new(options);
         assert!(render.find_syntax("csharp").is_some());
+    }
+
+    #[test]
+    fn no_theme() {
+        let options = RenderOptions {
+            highlight: false,
+            ..Default::default()
+        };
+        let mut render = MarkdownRender::new(options);
+        let output = render.render(TEXT);
+        assert_eq!(TEXT, output);
     }
 }

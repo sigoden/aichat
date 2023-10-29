@@ -10,7 +10,6 @@ mod utils;
 use crate::cli::Cli;
 use crate::client::Client;
 use crate::config::{Config, SharedConfig};
-use crate::render::MarkdownTheme;
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
@@ -119,16 +118,10 @@ fn start_directive(
     }
     config.read().maybe_print_send_tokens(input);
     let output = if no_stream {
-        let (highlight, light_theme, wrap) = config.read().get_render_options();
+        let render_options = config.read().get_render_options();
         let output = client.send_message(input)?;
-        if highlight {
-            let theme = MarkdownTheme::new(light_theme);
-            let mut markdown_render = MarkdownRender::new(theme, wrap);
-            println!("{}", markdown_render.render_block(&output).trim());
-        } else {
-            let output = wrap.wrap(output.trim());
-            println!("{}", output);
-        }
+        let mut markdown_render = MarkdownRender::new(render_options);
+        println!("{}", markdown_render.render(&output).trim());
         output
     } else {
         let wg = WaitGroup::new();

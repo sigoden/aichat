@@ -9,7 +9,7 @@ use self::session::{Session, TEMP_SESSION_NAME};
 use crate::client::openai::{OpenAIClient, OpenAIConfig};
 use crate::client::{all_clients, create_client_config, list_models, ClientConfig, ModelInfo};
 use crate::config::message::num_tokens_from_messages;
-use crate::render::Wrap;
+use crate::render::RenderOptions;
 use crate::utils::{get_env_name, now};
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -59,6 +59,8 @@ pub struct Config {
     pub light_theme: bool,
     /// Specify the text-wrapping mode (no*, auto, <max-width>)
     pub wrap: Option<String>,
+    /// Whethter wrap code block
+    pub wrap_code: bool,
     /// Automatically copy the last output to the clipboard
     pub auto_copy: bool,
     /// REPL keybindings, possible values: emacs (default), vi
@@ -92,6 +94,7 @@ impl Default for Config {
             dry_run: false,
             light_theme: false,
             wrap: None,
+            wrap_code: false,
             auto_copy: false,
             keybindings: Default::default(),
             clients: vec![ClientConfig::OpenAI(OpenAIConfig::default())],
@@ -378,6 +381,7 @@ impl Config {
             ("highlight", self.highlight.to_string()),
             ("light_theme", self.light_theme.to_string()),
             ("wrap", wrap),
+            ("wrap_code", self.wrap_code.to_string()),
             ("dry_run", self.dry_run.to_string()),
             ("keybindings", self.keybindings.stringify().into()),
         ];
@@ -535,9 +539,13 @@ impl Config {
         }
     }
 
-    pub fn get_render_options(&self) -> (bool, bool, Wrap) {
-        let wrap = Wrap::new(self.text_width);
-        (self.highlight, self.light_theme, wrap)
+    pub fn get_render_options(&self) -> RenderOptions {
+        RenderOptions::new(
+            self.highlight,
+            self.light_theme,
+            self.text_width,
+            self.wrap_code,
+        )
     }
 
     pub fn maybe_print_send_tokens(&self, input: &str) {
