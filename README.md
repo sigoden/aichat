@@ -141,7 +141,7 @@ The Chat REPL supports:
 
 ### Multi-line input
 
-AIChat suppoprts bracketed paste, so you can paste multi-lines text directly.
+AIChat supports bracketed paste, so you can paste multi-lines text directly.
 
 AIChat also provides `.edit` command for multi-lines editing.
 
