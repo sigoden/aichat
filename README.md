@@ -73,7 +73,7 @@ clients:                                              # Setup AIs
     connect_timeout: 10                               # Set a timeout in seconds for connect to gpt. Optional
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
   - type: azure-openai                                # Azure openAI configuration
-    api_base: https://RESOURCE.openai.azure.com           # Azure openai base URL
+    api_base: https://RESOURCE.openai.azure.com       # Azure openai base URL
     api_key: xxx                                      # Azure openAI api key, alternative to AZURE_OPENAI_KEY
     models:                                           # Support models
       - name: MyGPT4                                  # Model deployment name
