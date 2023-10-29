@@ -129,6 +129,7 @@ impl Config {
         config.merge_env_vars();
         config.load_roles()?;
         config.ensure_sessions_dir()?;
+        config.check_term_theme()?;
 
         Ok(config)
     }
@@ -546,9 +547,6 @@ impl Config {
     }
 
     fn merge_env_vars(&mut self) {
-        if let Ok(value) = env::var(get_env_name("light_theme")) {
-            set_bool(&mut self.light_theme, &value);
-        }
         if let Ok(value) = env::var("NO_COLOR") {
             let mut no_color = false;
             set_bool(&mut no_color, &value);
@@ -564,6 +562,23 @@ impl Config {
             create_dir_all(&sessions_dir).with_context(|| {
                 format!("Failed to create session_dir '{}'", sessions_dir.display())
             })?;
+        }
+        Ok(())
+    }
+
+    fn check_term_theme(&mut self) -> Result<()> {
+        if self.light_theme {
+            return Ok(());
+        }
+        if let Ok(value) = env::var(get_env_name("light_theme")) {
+            set_bool(&mut self.light_theme, &value);
+            return Ok(());
+        }
+        #[cfg(not(target_os = "windows"))]
+        if let Ok(crate::utils::termbg::Theme::Light) =
+            crate::utils::termbg::theme(std::time::Duration::from_millis(200))
+        {
+            self.light_theme = true;
         }
         Ok(())
     }

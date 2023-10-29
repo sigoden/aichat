@@ -11,7 +11,6 @@ use async_trait::async_trait;
 use reqwest::{ClientBuilder, Proxy};
 use serde::Deserialize;
 use std::{env, time::Duration};
-use tokio::runtime::Runtime;
 use tokio::time::sleep;
 
 use crate::{
@@ -64,7 +63,7 @@ pub trait Client {
     fn get_config(&self) -> &SharedConfig;
 
     fn send_message(&self, content: &str) -> Result<String> {
-        init_runtime()?.block_on(async {
+        init_tokio_runtime()?.block_on(async {
             if self.get_config().read().dry_run {
                 return Ok(self.get_config().read().echo_messages(content));
             }
@@ -88,7 +87,7 @@ pub trait Client {
             }
         }
         let abort = handler.get_abort();
-        init_runtime()?.block_on(async {
+        init_tokio_runtime()?.block_on(async {
             tokio::select! {
                 ret = async {
                     if self.get_config().read().dry_run {
@@ -164,7 +163,7 @@ pub fn list_models(config: &Config) -> Vec<ModelInfo> {
         .collect()
 }
 
-pub fn init_runtime() -> Result<Runtime> {
+pub fn init_tokio_runtime() -> Result<tokio::runtime::Runtime> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
