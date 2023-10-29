@@ -173,6 +173,10 @@ impl Config {
     pub fn save_message(&mut self, input: &str, output: &str) -> Result<()> {
         self.last_message = Some((input.to_string(), output.to_string()));
 
+        if self.dry_run {
+            return Ok(());
+        }
+
         if let Some(session) = self.session.as_mut() {
             session.add_message(input, output)?;
             return Ok(());

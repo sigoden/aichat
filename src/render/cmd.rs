@@ -94,7 +94,7 @@ fn split_line_sematic(text: &str) -> Option<(String, String)> {
     None
 }
 
-fn split_line_tail(text: &str) -> (&str, &str) {
+pub(crate) fn split_line_tail(text: &str) -> (&str, &str) {
     if let Some((head, tail)) = text.rsplit_once('\n') {
         (head, tail)
     } else {

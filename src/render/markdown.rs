@@ -31,7 +31,7 @@ pub struct MarkdownRender {
     md_syntax: SyntaxReference,
     code_syntax: Option<SyntaxReference>,
     prev_line_type: LineType,
-    pub(crate) wrap: Wrap,
+    wrap: Wrap,
 }
 
 impl MarkdownRender {
@@ -41,10 +41,10 @@ impl MarkdownRender {
         let md_theme: Option<Theme> = match theme {
             MarkdownTheme::No => None,
             MarkdownTheme::Dark => {
-                Some(bincode::deserialize_from(MD_THEME_LIGHT).expect("invalid theme binary"))
+                Some(bincode::deserialize_from(MD_THEME).expect("invalid theme binary"))
             }
             MarkdownTheme::Light => {
-                Some(bincode::deserialize_from(MD_THEME).expect("invalid theme binary"))
+                Some(bincode::deserialize_from(MD_THEME_LIGHT).expect("invalid theme binary"))
             }
         };
         let code_color = md_theme.as_ref().map(get_code_color);
