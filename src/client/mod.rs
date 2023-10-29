@@ -1,7 +1,9 @@
+pub mod azure_openai;
 pub mod localai;
 pub mod openai;
 
 use self::{
+    azure_openai::{AzureOpenAIClient, AzureOpenAIConfig},
     localai::LocalAIConfig,
     openai::{OpenAIClient, OpenAIConfig},
 };
@@ -29,6 +31,8 @@ pub enum ClientConfig {
     OpenAI(OpenAIConfig),
     #[serde(rename = "localai")]
     LocalAI(LocalAIConfig),
+    #[serde(rename = "azure-openai")]
+    AzureOpenAI(AzureOpenAIConfig),
 }
 
 #[derive(Debug, Clone)]
@@ -162,13 +166,30 @@ pub fn init_client(config: SharedConfig) -> Result<Box<dyn Client>> {
             local_config,
             model_info,
         )))
+    } else if model_info.client == AzureOpenAIClient::name() {
+        let local_config = {
+            if let ClientConfig::AzureOpenAI(c) = &config.read().clients[model_info.index] {
+                c.clone()
+            } else {
+                return model_info_err(&model_info);
+            }
+        };
+        Ok(Box::new(AzureOpenAIClient::new(
+            config,
+            local_config,
+            model_info,
+        )))
     } else {
         bail!("Unknown client {}", &model_info.client)
     }
 }
 
 pub fn all_clients() -> Vec<&'static str> {
-    vec![OpenAIClient::name(), LocalAIClient::name()]
+    vec![
+        OpenAIClient::name(),
+        LocalAIClient::name(),
+        AzureOpenAIClient::name(),
+    ]
 }
 
 pub fn create_client_config(client: &str) -> Result<String> {
@@ -176,6 +197,8 @@ pub fn create_client_config(client: &str) -> Result<String> {
         OpenAIClient::create_config()
     } else if client == LocalAIClient::name() {
         LocalAIClient::create_config()
+    } else if client == AzureOpenAIClient::name() {
+        AzureOpenAIClient::create_config()
     } else {
         bail!("Unknown client {}", &client)
     }
@@ -194,6 +217,10 @@ pub fn list_models(config: &Config) -> Vec<ModelInfo> {
             ClientConfig::LocalAI(c) => LocalAIClient::list_models(c)
                 .iter()
                 .map(|(x, y)| ModelInfo::new(LocalAIClient::name(), x, *y, i))
+                .collect::<Vec<ModelInfo>>(),
+            ClientConfig::AzureOpenAI(c) => AzureOpenAIClient::list_models(c)
+                .iter()
+                .map(|(x, y)| ModelInfo::new(AzureOpenAIClient::name(), x, *y, i))
                 .collect::<Vec<ModelInfo>>(),
         })
         .collect()

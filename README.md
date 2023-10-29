@@ -3,7 +3,7 @@
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 
-Use ChatGPT, LocalAI and other LLMs in the terminal.
+Use ChatGPT/Azure-OpenAI/LocalAI and other LLMs in the terminal.
 
 AIChat in chat mode:
 
@@ -65,16 +65,25 @@ auto_copy: false                 # Automatically copy the last output to the cli
 keybindings: emacs               # REPL keybindings, possible values: emacs (default), vi
 
 clients:                                              # Setup AIs
-  # OpenAI setup instructions: https://platform.openai.com/docs/quickstart
+  # See https://platform.openai.com/docs/quickstart
   - type: openai                                      # OpenAI configuration
     api_key: sk-xxx                                   # OpenAI api key, alternative to OPENAI_API_KEY
     organization_id: org-xxx                          # Organization ID. Optional
     proxy: socks5://127.0.0.1:1080                    # Set proxy server. Optional
     connect_timeout: 10                               # Set a timeout in seconds for connect to gpt. Optional
-  # LocalAI setup instructions: https://github.com/go-skynet/LocalAI
+  # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
+  - type: azure-openai                                # Azure openAI configuration
+    api_base: https://RESOURCE.openai.azure.com           # Azure openai base URL
+    api_key: xxx                                      # Azure openAI api key, alternative to AZURE_OPENAI_KEY
+    models:                                           # Support models
+      - name: MyGPT4                                  # Model deployment name
+        max_tokens: 4096
+    proxy: socks5://127.0.0.1:1080                    # Set proxy server. Optional
+    connect_timeout: 10                               # Set a timeout in seconds for connect to gpt. Optional
+  # See https://github.com/go-skynet/LocalAI
   - type: localai                                     # LocalAI configuration
     url: http://localhost:8080/v1/chat/completions    # LocalAI api server
-    api_key: '???'                                    # Api key. alternative to LOCALAI_API_KEY
+    api_key: xxx                                      # Api key. alternative to LOCALAI_API_KEY
     models:                                           # Support models
       - name: gpt4all-j
         max_tokens: 4096
