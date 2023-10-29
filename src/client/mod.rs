@@ -17,7 +17,7 @@ use crate::{
     client::localai::LocalAIClient,
     config::{Config, SharedConfig},
     repl::{ReplyStreamHandler, SharedAbortSignal},
-    utils::{init_tokio_runtime, split_text},
+    utils::split_text,
 };
 
 #[allow(clippy::struct_excessive_bools)]
@@ -161,6 +161,13 @@ pub fn list_models(config: &Config) -> Vec<ModelInfo> {
             ClientConfig::LocalAI(c) => LocalAIClient::list_models(c, i),
         })
         .collect()
+}
+
+pub fn init_tokio_runtime() -> Result<tokio::runtime::Runtime> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .with_context(|| "Failed to init tokio")
 }
 
 pub(crate) fn set_proxy(builder: ClientBuilder, proxy: &Option<String>) -> Result<ClientBuilder> {

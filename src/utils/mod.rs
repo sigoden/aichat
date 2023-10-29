@@ -1,7 +1,6 @@
 pub mod termbg;
 mod tiktoken;
 
-pub use self::termbg::init_tokio_runtime;
 use self::tiktoken::cl100k_base;
 pub use self::tiktoken::{cl100k_base_singleton, count_tokens, text_to_tokens, tokens_to_text};
 

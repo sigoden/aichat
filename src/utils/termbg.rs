@@ -2,7 +2,7 @@
 /// Fork from https://github.com/dalance/termbg/blob/v0.4.3/src/lib.rs
 
 #[allow(unused)]
-use anyhow::{anyhow, Context, Error};
+use anyhow::{anyhow, Context, Error, Result};
 use crossterm::terminal;
 use std::env;
 use std::io::{self, Write};
@@ -36,13 +36,6 @@ pub struct Rgb {
 pub enum Theme {
     Light,
     Dark,
-}
-
-pub fn init_tokio_runtime() -> Result<tokio::runtime::Runtime, anyhow::Error> {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .with_context(|| "Failed to init tokio")
 }
 
 /// get detected termnial
@@ -98,26 +91,19 @@ pub fn terminal() -> Terminal {
 
 /// get background color by `RGB`
 #[cfg(not(target_os = "windows"))]
-pub fn rgb(timeout: Duration) -> Result<Rgb, Error> {
+pub fn rgb(timeout: Duration) -> Result<Rgb> {
     let term = terminal();
     let rgb = match term {
         Terminal::VSCode => Err(unsupported_err()),
         Terminal::Emacs => Err(unsupported_err()),
         _ => from_xterm(term, timeout),
     };
-    let fallback = from_env_colorfgbg();
-    if rgb.is_ok() {
-        rgb
-    } else if fallback.is_ok() {
-        fallback
-    } else {
-        rgb
-    }
+    check_rgb(rgb)
 }
 
 /// get background color by `RGB`
 #[cfg(target_os = "windows")]
-pub fn rgb(timeout: Duration) -> Result<Rgb, Error> {
+pub fn rgb(timeout: Duration) -> Result<Rgb> {
     let term = terminal();
     let rgb = match term {
         Terminal::VSCode => Err(unsupported_err()),
@@ -125,18 +111,11 @@ pub fn rgb(timeout: Duration) -> Result<Rgb, Error> {
         Terminal::XtermCompatible => from_xterm(term, timeout),
         _ => from_winapi(),
     };
-    let fallback = from_env_colorfgbg();
-    if rgb.is_ok() {
-        rgb
-    } else if fallback.is_ok() {
-        fallback
-    } else {
-        rgb
-    }
+    check_rgb(rgb)
 }
 
 /// get background color by `Theme`
-pub fn theme(timeout: Duration) -> Result<Theme, Error> {
+pub fn theme(timeout: Duration) -> Result<Theme> {
     let rgb = rgb(timeout)?;
 
     // ITU-R BT.601
@@ -149,7 +128,7 @@ pub fn theme(timeout: Duration) -> Result<Theme, Error> {
     }
 }
 
-fn from_xterm(term: Terminal, timeout: Duration) -> Result<Rgb, Error> {
+fn from_xterm(term: Terminal, timeout: Duration) -> Result<Rgb> {
     // Query by XTerm control sequence
     let query = if term == Terminal::Tmux {
         "\x1bPtmux;\x1b\x1b]11;?\x07\x1b\\\x03"
@@ -166,8 +145,11 @@ fn from_xterm(term: Terminal, timeout: Duration) -> Result<Rgb, Error> {
     write!(stderr, "{}", query)?;
     stderr.flush()?;
 
-    let buffer =
-        runtime.block_on(async { tokio::time::timeout(timeout, read_xterm_stdin()).await });
+    let buffer = runtime.block_on(async {
+        tokio::time::timeout(timeout, read_xterm_stdin())
+            .await
+            .map_err(|e| anyhow!("Failed to query xterm: {e}"))
+    });
 
     terminal::disable_raw_mode()?;
 
@@ -180,7 +162,7 @@ fn from_xterm(term: Terminal, timeout: Duration) -> Result<Rgb, Error> {
     Ok(Rgb { r, g, b })
 }
 
-async fn read_xterm_stdin() -> Result<Vec<u8>, Error> {
+async fn read_xterm_stdin() -> Result<Vec<u8>> {
     let mut buffer = Vec::new();
     let mut stdin = tokio::io::stdin();
     let mut buf = [0; 1];
@@ -208,7 +190,18 @@ async fn read_xterm_stdin() -> Result<Vec<u8>, Error> {
     Ok(buffer)
 }
 
-fn from_env_colorfgbg() -> Result<Rgb, Error> {
+fn check_rgb(prev: Result<Rgb>) -> Result<Rgb> {
+    if prev.is_ok() {
+        return prev;
+    }
+    let fallback = from_env_colorfgbg();
+    if fallback.is_ok() {
+        return fallback;
+    }
+    prev
+}
+
+fn from_env_colorfgbg() -> Result<Rgb> {
     let var = env::var("COLORFGBG").map_err(|_| unsupported_err())?;
     let fgbg: Vec<_> = var.split(';').collect();
     let bg = fgbg.get(1).ok_or(unsupported_err())?;
@@ -260,8 +253,8 @@ fn from_env_colorfgbg() -> Result<Rgb, Error> {
     })
 }
 
-fn decode_x11_color(s: &str) -> Result<(u16, u16, u16), Error> {
-    fn decode_hex(s: &str) -> Result<u16, Error> {
+fn decode_x11_color(s: &str) -> Result<(u16, u16, u16)> {
+    fn decode_hex(s: &str) -> Result<u16> {
         let len = s.len() as u32;
         let mut ret = u16::from_str_radix(s, 16).map_err(|_| parse_err(s))?;
         ret <<= (4 - len) * 4;
@@ -281,7 +274,7 @@ fn decode_x11_color(s: &str) -> Result<(u16, u16, u16), Error> {
 }
 
 #[cfg(target_os = "windows")]
-fn from_winapi() -> Result<Rgb, Error> {
+fn from_winapi() -> Result<Rgb> {
     let info = unsafe {
         let handle = winapi::um::processenv::GetStdHandle(winapi::um::winbase::STD_OUTPUT_HANDLE);
         let mut info: wincon::CONSOLE_SCREEN_BUFFER_INFO = Default::default();
@@ -324,6 +317,13 @@ fn from_winapi() -> Result<Rgb, Error> {
         g: g * 256,
         b: b * 256,
     })
+}
+
+fn init_tokio_runtime() -> Result<tokio::runtime::Runtime> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .with_context(|| "Failed to init tokio")
 }
 
 fn unsupported_err() -> Error {
