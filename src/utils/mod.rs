@@ -1,4 +1,5 @@
-pub mod termbg;
+#[cfg(not(target_os = "windows"))]
+pub(crate) mod termbg;
 mod tiktoken;
 
 use self::tiktoken::cl100k_base;

@@ -9,7 +9,7 @@ use self::session::{Session, TEMP_SESSION_NAME};
 use crate::client::openai::{OpenAIClient, OpenAIConfig};
 use crate::client::{all_clients, create_client_config, list_models, ClientConfig, ModelInfo};
 use crate::config::message::num_tokens_from_messages;
-use crate::utils::{get_env_name, now, termbg};
+use crate::utils::{get_env_name, now};
 
 use anyhow::{anyhow, bail, Context, Result};
 use inquire::{Confirm, Select, Text};
@@ -568,9 +568,17 @@ impl Config {
     }
 
     fn check_term_theme(&mut self) -> Result<()> {
+        if self.light_theme {
+            return Ok(());
+        }
         if let Ok(value) = env::var(get_env_name("light_theme")) {
             set_bool(&mut self.light_theme, &value);
-        } else if let Ok(termbg::Theme::Light) = termbg::theme(Duration::from_millis(200)) {
+            return Ok(());
+        }
+        #[cfg(not(target_os = "windows"))]
+        if let Ok(crate::utils::termbg::Theme::Light) =
+            crate::utils::termbg::theme(Duration::from_millis(200))
+        {
             self.light_theme = true;
         }
         Ok(())

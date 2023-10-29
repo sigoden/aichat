@@ -1,15 +1,11 @@
 //! Terminal background color detection
 /// Fork from https://github.com/dalance/termbg/blob/v0.4.3/src/lib.rs
-
-#[allow(unused)]
 use anyhow::{anyhow, bail, Context, Error, Result};
 use crossterm::terminal;
 use std::env;
 use std::io::{self, Write};
 use std::time::Duration;
 use tokio::io::AsyncReadExt;
-#[cfg(target_os = "windows")]
-use winapi::um::wincon;
 
 /// Terminal
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -17,8 +13,6 @@ pub enum Terminal {
     Screen,
     Tmux,
     XtermCompatible,
-    #[cfg(target_os = "windows")]
-    Windows,
     VSCode,
     Emacs,
 }
@@ -39,7 +33,6 @@ pub enum Theme {
 }
 
 /// get detected termnial
-#[cfg(not(target_os = "windows"))]
 pub fn terminal() -> Terminal {
     if let Ok(term_program) = env::var("TERM_PROGRAM") {
         if term_program == "vscode" {
@@ -67,42 +60,13 @@ pub fn terminal() -> Terminal {
     }
 }
 
-/// get detected termnial
-#[cfg(target_os = "windows")]
-pub fn terminal() -> Terminal {
-    if let Ok(term_program) = env::var("TERM_PROGRAM") {
-        if term_program == "vscode" {
-            return Terminal::VSCode;
-        }
-    }
-
-    if env::var("INSIDE_EMACS").is_ok() {
-        return Terminal::Emacs;
-    }
-
-    Terminal::Windows
-}
-
 /// get background color by `RGB`
-#[cfg(not(target_os = "windows"))]
 pub fn rgb(timeout: Duration) -> Result<Rgb> {
     let term = terminal();
     let rgb = match term {
         Terminal::VSCode => Err(unsupported_err()),
         Terminal::Emacs => Err(unsupported_err()),
         _ => from_xterm(term, timeout),
-    };
-    check_rgb(rgb)
-}
-
-/// get background color by `RGB`
-#[cfg(target_os = "windows")]
-pub fn rgb(timeout: Duration) -> Result<Rgb> {
-    let term = terminal();
-    let rgb = match term {
-        Terminal::VSCode => Err(unsupported_err()),
-        Terminal::Emacs => Err(unsupported_err()),
-        _ => from_winapi(),
     };
     check_rgb(rgb)
 }
@@ -140,7 +104,7 @@ fn from_xterm(term: Terminal, timeout: Duration) -> Result<Rgb> {
 
     let buffer = runtime.block_on(async {
         tokio::select! {
-            ret = read_xterm_stdin() => {
+            ret = read_xterm() => {
                 ret
             }
             _ = tokio::time::sleep(timeout) => {
@@ -158,7 +122,7 @@ fn from_xterm(term: Terminal, timeout: Duration) -> Result<Rgb> {
     Ok(Rgb { r, g, b })
 }
 
-async fn read_xterm_stdin() -> Result<Vec<u8>> {
+async fn read_xterm() -> Result<Vec<u8>> {
     let mut buffer = Vec::new();
     let mut stdin = tokio::io::stdin();
     let mut buf = [0; 1];
@@ -184,6 +148,26 @@ async fn read_xterm_stdin() -> Result<Vec<u8>> {
         }
     }
     Ok(buffer)
+}
+
+fn decode_x11_color(s: &str) -> Result<(u16, u16, u16)> {
+    fn decode_hex(s: &str) -> Result<u16> {
+        let len = s.len() as u32;
+        let mut ret = u16::from_str_radix(s, 16).map_err(|_| parse_err(s))?;
+        ret <<= (4 - len) * 4;
+        Ok(ret)
+    }
+
+    let rgb: Vec<_> = s.split('/').collect();
+
+    let r = rgb.first().ok_or_else(|| parse_err(s))?;
+    let g = rgb.get(1).ok_or_else(|| parse_err(s))?;
+    let b = rgb.get(2).ok_or_else(|| parse_err(s))?;
+    let r = decode_hex(r)?;
+    let g = decode_hex(g)?;
+    let b = decode_hex(b)?;
+
+    Ok((r, g, b))
 }
 
 fn check_rgb(prev: Result<Rgb>) -> Result<Rgb> {
@@ -240,72 +224,6 @@ fn from_env_colorfgbg() -> Result<Rgb> {
         // bright white
         15 => (255, 255, 255),
         _ => (0, 0, 0),
-    };
-
-    Ok(Rgb {
-        r: r * 256,
-        g: g * 256,
-        b: b * 256,
-    })
-}
-
-fn decode_x11_color(s: &str) -> Result<(u16, u16, u16)> {
-    fn decode_hex(s: &str) -> Result<u16> {
-        let len = s.len() as u32;
-        let mut ret = u16::from_str_radix(s, 16).map_err(|_| parse_err(s))?;
-        ret <<= (4 - len) * 4;
-        Ok(ret)
-    }
-
-    let rgb: Vec<_> = s.split('/').collect();
-
-    let r = rgb.first().ok_or_else(|| parse_err(s))?;
-    let g = rgb.get(1).ok_or_else(|| parse_err(s))?;
-    let b = rgb.get(2).ok_or_else(|| parse_err(s))?;
-    let r = decode_hex(r)?;
-    let g = decode_hex(g)?;
-    let b = decode_hex(b)?;
-
-    Ok((r, g, b))
-}
-
-#[cfg(target_os = "windows")]
-fn from_winapi() -> Result<Rgb> {
-    let info = unsafe {
-        let handle = winapi::um::processenv::GetStdHandle(winapi::um::winbase::STD_OUTPUT_HANDLE);
-        let mut info: wincon::CONSOLE_SCREEN_BUFFER_INFO = Default::default();
-        wincon::GetConsoleScreenBufferInfo(handle, &mut info);
-        info
-    };
-
-    let r = (wincon::BACKGROUND_RED & info.wAttributes) != 0;
-    let g = (wincon::BACKGROUND_GREEN & info.wAttributes) != 0;
-    let b = (wincon::BACKGROUND_BLUE & info.wAttributes) != 0;
-    let i = (wincon::BACKGROUND_INTENSITY & info.wAttributes) != 0;
-
-    let r: u8 = r as u8;
-    let g: u8 = g as u8;
-    let b: u8 = b as u8;
-    let i: u8 = i as u8;
-
-    let (r, g, b) = match (r, g, b, i) {
-        (0, 0, 0, 0) => (0, 0, 0),
-        (1, 0, 0, 0) => (128, 0, 0),
-        (0, 1, 0, 0) => (0, 128, 0),
-        (1, 1, 0, 0) => (128, 128, 0),
-        (0, 0, 1, 0) => (0, 0, 128),
-        (1, 0, 1, 0) => (128, 0, 128),
-        (0, 1, 1, 0) => (0, 128, 128),
-        (1, 1, 1, 0) => (192, 192, 192),
-        (0, 0, 0, 1) => (128, 128, 128),
-        (1, 0, 0, 1) => (255, 0, 0),
-        (0, 1, 0, 1) => (0, 255, 0),
-        (1, 1, 0, 1) => (255, 255, 0),
-        (0, 0, 1, 1) => (0, 0, 255),
-        (1, 0, 1, 1) => (255, 0, 255),
-        (0, 1, 1, 1) => (0, 255, 255),
-        (1, 1, 1, 1) => (255, 255, 255),
-        _ => unreachable!(),
     };
 
     Ok(Rgb {
