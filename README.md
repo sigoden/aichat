@@ -63,6 +63,7 @@ highlight: true                  # Set false to turn highlight
 light_theme: false               # If set true, use light theme
 auto_copy: false                 # Automatically copy the last output to the clipboard
 keybindings: emacs               # REPL keybindings, possible values: emacs (default), vi
+wrap: no                         # Specify the text-wrapping mode (no*, auto, <max-width>)
 
 clients:                                              # Setup AIs
   # See https://platform.openai.com/docs/quickstart

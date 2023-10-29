@@ -26,7 +26,7 @@ pub struct Cli {
     #[clap(short = 's', long)]
     pub session: Option<Option<String>>,
     /// Specify the text-wrapping mode (no*, auto, <max-width>)
-    #[clap(long)]
+    #[clap(short = 'w', long)]
     pub wrap: Option<String>,
     /// Print information
     #[clap(long)]
