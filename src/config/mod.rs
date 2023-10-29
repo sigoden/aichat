@@ -15,7 +15,6 @@ use anyhow::{anyhow, bail, Context, Result};
 use inquire::{Confirm, Select, Text};
 use parking_lot::RwLock;
 use serde::Deserialize;
-use std::time::Duration;
 use std::{
     env,
     fs::{create_dir_all, read_dir, read_to_string, remove_file, File, OpenOptions},
@@ -577,7 +576,7 @@ impl Config {
         }
         #[cfg(not(target_os = "windows"))]
         if let Ok(crate::utils::termbg::Theme::Light) =
-            crate::utils::termbg::theme(Duration::from_millis(200))
+            crate::utils::termbg::theme(std::time::Duration::from_millis(200))
         {
             self.light_theme = true;
         }
