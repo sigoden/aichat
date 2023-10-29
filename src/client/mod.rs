@@ -11,14 +11,13 @@ use async_trait::async_trait;
 use reqwest::{ClientBuilder, Proxy};
 use serde::Deserialize;
 use std::{env, time::Duration};
-use tokio::runtime::Runtime;
 use tokio::time::sleep;
 
 use crate::{
     client::localai::LocalAIClient,
     config::{Config, SharedConfig},
     repl::{ReplyStreamHandler, SharedAbortSignal},
-    utils::split_text,
+    utils::{init_tokio_runtime, split_text},
 };
 
 #[allow(clippy::struct_excessive_bools)]
@@ -64,7 +63,7 @@ pub trait Client {
     fn get_config(&self) -> &SharedConfig;
 
     fn send_message(&self, content: &str) -> Result<String> {
-        init_runtime()?.block_on(async {
+        init_tokio_runtime()?.block_on(async {
             if self.get_config().read().dry_run {
                 return Ok(self.get_config().read().echo_messages(content));
             }
@@ -88,7 +87,7 @@ pub trait Client {
             }
         }
         let abort = handler.get_abort();
-        init_runtime()?.block_on(async {
+        init_tokio_runtime()?.block_on(async {
             tokio::select! {
                 ret = async {
                     if self.get_config().read().dry_run {
@@ -162,13 +161,6 @@ pub fn list_models(config: &Config) -> Vec<ModelInfo> {
             ClientConfig::LocalAI(c) => LocalAIClient::list_models(c, i),
         })
         .collect()
-}
-
-pub fn init_runtime() -> Result<Runtime> {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .with_context(|| "Failed to init tokio")
 }
 
 pub(crate) fn set_proxy(builder: ClientBuilder, proxy: &Option<String>) -> Result<ClientBuilder> {

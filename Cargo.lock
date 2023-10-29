@@ -60,6 +60,7 @@ dependencies = [
  "syntect",
  "tokio",
  "unicode-width",
+ "winapi",
 ]
 
 [[package]]
