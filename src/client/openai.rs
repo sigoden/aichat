@@ -1,4 +1,4 @@
-use super::{set_proxy, Client, ModelInfo};
+use super::{set_proxy, Client, ClientConfig, ModelInfo};
 
 use crate::config::SharedConfig;
 use crate::repl::ReplyStreamHandler;
@@ -56,29 +56,39 @@ impl Client for OpenAIClient {
 }
 
 impl OpenAIClient {
-    pub fn new(
-        global_config: SharedConfig,
-        local_config: OpenAIConfig,
-        model_info: ModelInfo,
-    ) -> Self {
-        Self {
+    pub fn init(global_config: SharedConfig) -> Option<Box<dyn Client>> {
+        let model_info = global_config.read().model_info.clone();
+        if model_info.client != OpenAIClient::name() {
+            return None;
+        }
+        let local_config = {
+            if let ClientConfig::OpenAI(c) = &global_config.read().clients[model_info.index] {
+                c.clone()
+            } else {
+                return None;
+            }
+        };
+        Some(Box::new(Self {
             global_config,
             local_config,
             model_info,
-        }
+        }))
     }
 
     pub fn name() -> &'static str {
         "openai"
     }
 
-    pub fn list_models(_local_config: &OpenAIConfig) -> Vec<(String, usize)> {
-        vec![
-            ("gpt-3.5-turbo".into(), 4096),
-            ("gpt-3.5-turbo-16k".into(), 16384),
-            ("gpt-4".into(), 8192),
-            ("gpt-4-32k".into(), 32768),
+    pub fn list_models(_local_config: &OpenAIConfig, index: usize) -> Vec<ModelInfo> {
+        [
+            ("gpt-3.5-turbo", 4096),
+            ("gpt-3.5-turbo-16k", 16384),
+            ("gpt-4", 8192),
+            ("gpt-4-32k", 32768),
         ]
+        .into_iter()
+        .map(|(name, max_tokens)| ModelInfo::new(Self::name(), name, max_tokens, index))
+        .collect()
     }
 
     pub fn create_config() -> Result<String> {
