@@ -1,11 +1,10 @@
 //! Terminal background color detection
 /// Fork from https://github.com/dalance/termbg/blob/v0.4.3/src/lib.rs
-use anyhow::{anyhow, bail, Context, Error, Result};
+use anyhow::{anyhow, Error, Result};
 use crossterm::terminal;
 use std::env;
-use std::io::{self, Write};
+use std::io::{self, Read, Write};
 use std::time::Duration;
-use tokio::io::AsyncReadExt;
 
 /// Terminal
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -95,23 +94,44 @@ fn from_xterm(term: Terminal, timeout: Duration) -> Result<Rgb> {
         "\x1b]11;?\x1b\\"
     };
 
-    let runtime = init_tokio_runtime()?;
-
     let mut stderr = io::stderr();
     terminal::enable_raw_mode()?;
     write!(stderr, "{}", query)?;
     stderr.flush()?;
 
-    let buffer = runtime.block_on(async {
-        tokio::select! {
-            ret = read_xterm() => {
-                ret
+    let mut stdin = io::stdin();
+
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    std::thread::spawn(move || {
+        let mut buffer = Vec::new();
+        let mut buf = [0; 1];
+        let mut start = false;
+        loop {
+            let _ = stdin.read_exact(&mut buf);
+            // response terminated by BEL(0x7)
+            if start && (buf[0] == 0x7) {
+                break;
             }
-            _ = tokio::time::sleep(timeout) => {
-                bail!("Query xterm timeout")
+            // response terminated by ST(0x1b 0x5c)
+            if start && (buf[0] == 0x1b) {
+                // consume last 0x5c
+                let _ = stdin.read_exact(&mut buf);
+                debug_assert_eq!(buf[0], 0x5c);
+                break;
+            }
+            if start {
+                buffer.push(buf[0]);
+            }
+            if buf[0] == b':' {
+                start = true;
             }
         }
+        // Ignore send error because timeout may be occured
+        let _ = tx.send(buffer);
     });
+
+    let buffer = rx.recv_timeout(timeout);
 
     terminal::disable_raw_mode()?;
 
@@ -120,34 +140,6 @@ fn from_xterm(term: Terminal, timeout: Duration) -> Result<Rgb> {
     let s = String::from_utf8_lossy(&buffer);
     let (r, g, b) = decode_x11_color(&s)?;
     Ok(Rgb { r, g, b })
-}
-
-async fn read_xterm() -> Result<Vec<u8>> {
-    let mut buffer = Vec::new();
-    let mut stdin = tokio::io::stdin();
-    let mut buf = [0; 1];
-    let mut start = false;
-    loop {
-        let _ = stdin.read_exact(&mut buf).await?;
-        // response terminated by BEL(0x7)
-        if start && (buf[0] == 0x7) {
-            break;
-        }
-        // response terminated by ST(0x1b 0x5c)
-        if start && (buf[0] == 0x1b) {
-            // consume last 0x5c
-            let _ = stdin.read_exact(&mut buf).await?;
-            debug_assert_eq!(buf[0], 0x5c);
-            break;
-        }
-        if start {
-            buffer.push(buf[0]);
-        }
-        if buf[0] == b':' {
-            start = true;
-        }
-    }
-    Ok(buffer)
 }
 
 fn decode_x11_color(s: &str) -> Result<(u16, u16, u16)> {
@@ -231,13 +223,6 @@ fn from_env_colorfgbg() -> Result<Rgb> {
         g: g * 256,
         b: b * 256,
     })
-}
-
-fn init_tokio_runtime() -> Result<tokio::runtime::Runtime> {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .with_context(|| "Failed to init tokio")
 }
 
 fn unsupported_err() -> Error {
