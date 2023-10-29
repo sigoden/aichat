@@ -5,6 +5,7 @@ use crate::repl::{ReplyStreamEvent, SharedAbortSignal};
 
 use anyhow::Result;
 use crossbeam::channel::Receiver;
+use textwrap::core::display_width;
 
 #[allow(clippy::unnecessary_wraps, clippy::module_name_repetitions)]
 pub fn cmd_render_stream(
@@ -13,6 +14,7 @@ pub fn cmd_render_stream(
     abort: &SharedAbortSignal,
 ) -> Result<()> {
     let mut buffer = String::new();
+    let mut col = 0;
     loop {
         if abort.aborted() {
             return Ok(());
@@ -24,7 +26,10 @@ pub fn cmd_render_stream(
                         let text = format!("{buffer}{text}");
                         let (head, tail) = split_line_tail(&text);
                         buffer = tail.to_string();
-                        print_now!("{}\n", render.render_block(head));
+                        let input = format!("{}{head}", spaces(col));
+                        let output = render.render_block(&input);
+                        print_now!("{}\n", &output[col..]);
+                        col = 0;
                     } else {
                         buffer = format!("{buffer}{text}");
                         if !(render.is_code_block()
@@ -35,13 +40,23 @@ pub fn cmd_render_stream(
                         {
                             if let Some((head, remain)) = split_line_sematic(&buffer) {
                                 buffer = remain;
-                                print_now!("{}", render.render_line(&head));
+                                let input = format!("{}{head}", spaces(col));
+                                let output = render.render_line(&input);
+                                let output = &output[col..];
+                                let (_, tail) = split_line_tail(output);
+                                if output.contains('\n') {
+                                    col = display_width(tail);
+                                } else {
+                                    col += display_width(output);
+                                }
+                                print_now!("{}", output);
                             }
                         }
                     }
                 }
                 ReplyStreamEvent::Done => {
-                    print_now!("{}\n", render.render_block(&buffer));
+                    let input = format!("{}{buffer}", spaces(col));
+                    print_now!("{}\n", render.render_block(&input));
                     break;
                 }
             }
@@ -85,6 +100,10 @@ fn split_line_tail(text: &str) -> (&str, &str) {
     } else {
         ("", text)
     }
+}
+
+fn spaces(n: usize) -> String {
+    " ".repeat(n)
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
