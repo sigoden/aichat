@@ -116,7 +116,7 @@ fn start_directive(
         let output = client.send_message(input)?;
         if highlight {
             let mut markdown_render = MarkdownRender::new(light_theme);
-            println!("{}", markdown_render.render(&output).trim());
+            println!("{}", markdown_render.render_block(&output).trim());
         } else {
             println!("{}", output.trim());
         }

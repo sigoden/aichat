@@ -26,7 +26,7 @@ pub fn cmd_render_stream(
                         let mut lines: Vec<&str> = text.split('\n').collect();
                         buffer = lines.pop().unwrap_or_default().to_string();
                         let output = lines.join("\n");
-                        print_now!("{}\n", markdown_render.render(&output));
+                        print_now!("{}\n", markdown_render.render_block(&output));
                     } else {
                         buffer = format!("{buffer}{text}");
                         if !(markdown_render.is_code_block()
@@ -36,14 +36,14 @@ pub fn cmd_render_stream(
                             || buffer.starts_with('|'))
                         {
                             if let Some((output, remain)) = split_line(&buffer) {
-                                print_now!("{}", markdown_render.render_line_stateless(&output));
+                                print_now!("{}", markdown_render.render_line(&output));
                                 buffer = remain;
                             }
                         }
                     }
                 }
                 ReplyStreamEvent::Done => {
-                    let output = markdown_render.render(&buffer);
+                    let output = markdown_render.render_block(&buffer);
                     print_now!("{}\n", output.trim_end());
                     break;
                 }

@@ -39,51 +39,62 @@ fn repl_render_stream_inner(
     writer: &mut Stdout,
 ) -> Result<()> {
     let mut last_tick = Instant::now();
-    let tick_rate = Duration::from_millis(100);
+    let tick_rate = Duration::from_millis(50);
     let mut buffer = String::new();
     let mut markdown_render = MarkdownRender::new(light_theme);
-    let terminal_columns = terminal::size()?.0;
+    let columns = terminal::size()?.0;
     loop {
         if abort.aborted() {
             return Ok(());
         }
 
         if let Ok(evt) = rx.try_recv() {
-            recover_cursor(writer, terminal_columns, &buffer)?;
-
             match evt {
                 ReplyStreamEvent::Text(text) => {
+                    if !buffer.is_empty() {
+                        let buffer_width = buffer.width() as u16;
+                        let need_rows = (buffer_width + columns - 1) / columns;
+                        let (col, row) = cursor::position()?;
+
+                        if row + 1 >= need_rows {
+                            if col == 0 {
+                                queue!(writer, cursor::MoveTo(0, row - need_rows))?;
+                            } else {
+                                queue!(writer, cursor::MoveTo(0, row + 1 - need_rows))?;
+                            }
+                        } else {
+                            queue!(
+                                writer,
+                                terminal::ScrollUp(need_rows - 1 - row),
+                                cursor::MoveTo(0, 0)
+                            )?;
+                        }
+                    }
+
                     if text.contains('\n') {
                         let text = format!("{buffer}{text}");
                         let mut lines: Vec<&str> = text.split('\n').collect();
                         buffer = lines.pop().unwrap_or_default().to_string();
-                        let output = markdown_render.render(&lines.join("\n"));
+                        let output = markdown_render.render_block(&lines.join("\n"));
                         for line in output.split('\n') {
                             queue!(
                                 writer,
                                 style::Print(line),
                                 style::Print("\n"),
-                                cursor::MoveLeft(terminal_columns),
+                                cursor::MoveLeft(columns),
                             )?;
                         }
                         queue!(writer, style::Print(&buffer),)?;
                     } else {
                         buffer = format!("{buffer}{text}");
-                        let output = markdown_render.render_line_stateless(&buffer);
+                        let output = markdown_render.render_line(&buffer);
                         queue!(writer, style::Print(&output))?;
                     }
+
                     writer.flush()?;
                 }
                 ReplyStreamEvent::Done => {
-                    let output = markdown_render.render_line_stateless(&buffer);
-                    let trimed_output = output.trim_end();
-                    if !trimed_output.is_empty() {
-                        queue!(writer, style::Print(output.trim_end()))?;
-                        writer.flush()?;
-                    }
-
-                    let (_, row) = cursor::position()?;
-                    queue!(writer, cursor::MoveTo(0, row), style::Print("\n\n"))?;
+                    queue!(writer, style::Print("\n"))?;
                     writer.flush()?;
 
                     break;
@@ -114,24 +125,6 @@ fn repl_render_stream_inner(
         if last_tick.elapsed() >= tick_rate {
             last_tick = Instant::now();
         }
-    }
-    Ok(())
-}
-
-fn recover_cursor(writer: &mut Stdout, terminal_columns: u16, buffer: &str) -> Result<()> {
-    let buffer_rows = (u16::try_from(buffer.width()).unwrap_or(u16::MAX) + terminal_columns - 1)
-        / terminal_columns;
-    let (_, row) = cursor::position()?;
-    if buffer_rows == 0 {
-        queue!(writer, cursor::MoveTo(0, row))?;
-    } else if row + 1 >= buffer_rows {
-        queue!(writer, cursor::MoveTo(0, row + 1 - buffer_rows))?;
-    } else {
-        queue!(
-            writer,
-            terminal::ScrollUp(buffer_rows - 1 - row),
-            cursor::MoveTo(0, 0)
-        )?;
     }
     Ok(())
 }
