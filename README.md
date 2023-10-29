@@ -71,6 +71,7 @@ clients:                                              # Setup AIs
     organization_id: org-xxx                          # Organization ID. Optional
     proxy: socks5://127.0.0.1:1080                    # Set proxy server. Optional
     connect_timeout: 10                               # Set a timeout in seconds for connect to gpt. Optional
+
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
   - type: azure-openai                                # Azure openai configuration
     api_base: https://RESOURCE.openai.azure.com       # Azure openai base URL
@@ -80,6 +81,7 @@ clients:                                              # Setup AIs
         max_tokens: 4096
     proxy: socks5://127.0.0.1:1080                    # Set proxy server. Optional
     connect_timeout: 10                               # Set a timeout in seconds for connect to gpt. Optional
+
   # See https://github.com/go-skynet/LocalAI
   - type: localai                                     # LocalAI configuration
     url: http://localhost:8080/v1/chat/completions    # LocalAI api server
