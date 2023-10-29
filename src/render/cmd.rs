@@ -22,28 +22,26 @@ pub fn cmd_render_stream(
                 ReplyStreamEvent::Text(text) => {
                     if text.contains('\n') {
                         let text = format!("{buffer}{text}");
-                        let mut lines: Vec<&str> = text.split('\n').collect();
-                        buffer = lines.pop().unwrap_or_default().to_string();
-                        let output = lines.join("\n");
-                        print_now!("{}\n", render.render_block(&output));
+                        let (head, tail) = split_line_tail(&text);
+                        buffer = tail.to_string();
+                        print_now!("{}\n", render.render_block(head));
                     } else {
                         buffer = format!("{buffer}{text}");
                         if !(render.is_code_block()
-                            || buffer.len() < 60
+                            || buffer.len() < 40
                             || buffer.starts_with('#')
                             || buffer.starts_with('>')
                             || buffer.starts_with('|'))
                         {
-                            if let Some((output, remain)) = split_line(&buffer) {
-                                print_now!("{}", render.render_line(&output));
+                            if let Some((head, remain)) = split_line_sematic(&buffer) {
                                 buffer = remain;
+                                print_now!("{}", render.render_line(&head));
                             }
                         }
                     }
                 }
                 ReplyStreamEvent::Done => {
-                    let output = render.render_block(&buffer);
-                    print_now!("{}\n", output.trim_end());
+                    print_now!("{}\n", render.render_block(&buffer));
                     break;
                 }
             }
@@ -52,9 +50,9 @@ pub fn cmd_render_stream(
     Ok(())
 }
 
-pub(crate) fn split_line(line: &str) -> Option<(String, String)> {
+fn split_line_sematic(text: &str) -> Option<(String, String)> {
     let mut balance: Vec<Kind> = Vec::new();
-    let chars: Vec<char> = line.chars().collect();
+    let chars: Vec<char> = text.chars().collect();
     let mut index = 0;
     let len = chars.len();
     while index < len - 1 {
@@ -79,6 +77,14 @@ pub(crate) fn split_line(line: &str) -> Option<(String, String)> {
     }
 
     None
+}
+
+fn split_line_tail(text: &str) -> (&str, &str) {
+    if let Some((head, tail)) = text.rsplit_once('\n') {
+        (head, tail)
+    } else {
+        ("", text)
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -175,12 +181,12 @@ mod tests {
     macro_rules! assert_split_line {
         ($a:literal, $b:literal, true) => {
             assert_eq!(
-                split_line(&format!("{}{}", $a, $b)),
+                split_line_sematic(&format!("{}{}", $a, $b)),
                 Some(($a.into(), $b.into()))
             );
         };
         ($a:literal, $b:literal, false) => {
-            assert_eq!(split_line(&format!("{}{}", $a, $b)), None);
+            assert_eq!(split_line_sematic(&format!("{}{}", $a, $b)), None);
         };
     }
 
