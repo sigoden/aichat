@@ -3,7 +3,7 @@
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 
-Use ChatGPT/Azure-OpenAI/LocalAI and other LLMs in the terminal.
+se ChatGPT, Azure-OpenAI, LocalAI and other LLMs in the terminal.
 
 AIChat in chat mode:
 
@@ -69,16 +69,6 @@ clients:                                              # Setup AIs
   - type: openai                                      # OpenAI configuration
     api_key: sk-xxx                                   # OpenAI api key, alternative to OPENAI_API_KEY
     organization_id: org-xxx                          # Organization ID. Optional
-
-  # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
-  - type: azure-openai                                # Azure openai configuration
-    api_base: https://RESOURCE.openai.azure.com       # Azure openai base URL
-    api_key: xxx                                      # Azure openai api key, alternative to AZURE_OPENAI_KEY
-    models:                                           # Support models
-      - name: MyGPT4                                  # Model deployment name
-        max_tokens: 4096
-    proxy: socks5://127.0.0.1:1080                    # Set proxy server. Optional
-    connect_timeout: 10                               # Set a timeout in seconds for connect to gpt. Optional
 
   # See https://github.com/go-skynet/LocalAI
   - type: localai                                     # LocalAI configuration
