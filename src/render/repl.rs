@@ -52,7 +52,12 @@ fn repl_render_stream_inner(
         if let Ok(evt) = rx.try_recv() {
             match evt {
                 ReplyStreamEvent::Text(text) => {
-                    let (_, row) = cursor::position()?;
+                    let (col, mut row) = cursor::position()?;
+
+                    // fix unxpected duplicate lines on kitty, see https://github.com/sigoden/aichat/issues/105
+                    if col == 0 && row > 0 && display_width(&buffer) == columns as usize {
+                        row -= 1;
+                    }
 
                     if row + 1 >= clear_rows {
                         queue!(writer, cursor::MoveTo(0, row - clear_rows))?;

@@ -25,6 +25,7 @@ lazy_static! {
 
 #[allow(clippy::module_name_repetitions)]
 pub struct MarkdownRender {
+    options: RenderOptions,
     syntax_set: SyntaxSet,
     md_theme: Option<Theme>,
     code_color: Option<Color>,
@@ -32,7 +33,6 @@ pub struct MarkdownRender {
     code_syntax: Option<SyntaxReference>,
     prev_line_type: LineType,
     wrap_width: Option<u16>,
-    options: RenderOptions,
 }
 
 impl MarkdownRender {
