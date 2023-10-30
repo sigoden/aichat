@@ -286,14 +286,19 @@ Options:
   -V, --version              Print version
 ```
 
-Examples:
-
 ```sh
 aichat -s                                    # Start REPL with a new temp session
 aichat -s temp                               # Use temp session
 aichat -r shell -s                           # Create a session with a role
 aichat -m openai:gpt-4-32k -s                # Create a session with a model
 aichat -s sh unzip a file                    # Run session in command mode
+
+aichat -r shell unzip a file                 # Use role in command mode
+aichat -s shell unzip a file                 # Use session in command mode
+
+cat config.json | aichat convert to yaml     # Read stdin
+cat config.json | aichat -r convert:yaml     # Read stdin with a role
+cat config.json | aichat -s i18n             # Read stdin with a session
 
 aichat --list-models                         # List all available models
 aichat --list-roles                          # List all available roles
@@ -303,13 +308,7 @@ aichat --info                                # system-wide information
 aichat -s temp --info                        # Show session details
 aichat -r shell --info                       # Show role info
 
-
-aichat -r shell unzip a file                 # Use role in command mode
-aichat -s shell unzip a file                 # Use session in command mode
-
-cat config.json | aichat convert to yaml     # Read stdin
-cat config.json | aichat -r convert:yaml     # Read stdin with a role
-cat config.json | aichat -s i18n             # Read stdin with a session
+$(echo "$data" | aichat -S -H to json)       # Use aichat in a script
 ```
 
 ## License

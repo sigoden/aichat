@@ -14,12 +14,13 @@ use crate::utils::{get_env_name, light_theme_from_colorfgbg, now};
 
 use anyhow::{anyhow, bail, Context, Result};
 use inquire::{Confirm, Select, Text};
+use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use serde::Deserialize;
 use std::{
     env,
     fs::{create_dir_all, read_dir, read_to_string, remove_file, File, OpenOptions},
-    io::Write,
+    io::{stdout, Write},
     path::{Path, PathBuf},
     process::exit,
     sync::Arc,
@@ -524,12 +525,12 @@ impl Config {
     }
 
     pub fn get_render_options(&self) -> RenderOptions {
-        RenderOptions::new(
-            self.highlight,
-            self.light_theme,
-            self.wrap.clone(),
-            self.wrap_code,
-        )
+        let wrap = if stdout().is_terminal() {
+            self.wrap.clone()
+        } else {
+            None
+        };
+        RenderOptions::new(self.highlight, self.light_theme, wrap, self.wrap_code)
     }
 
     pub fn maybe_print_send_tokens(&self, input: &str) {
