@@ -14,7 +14,7 @@ use serde_json::{json, Value};
 use std::env;
 use std::time::Duration;
 
-const API_URL: &str = "https://api.openai.com/v1/chat/completions";
+const API_BASE: &str = "https://api.openai.com/v1";
 
 #[derive(Debug)]
 pub struct OpenAIClient {
@@ -161,7 +161,12 @@ impl OpenAIClient {
                 .with_context(|| "Failed to build client")?
         };
 
-        let mut builder = client.post(API_URL).bearer_auth(api_key).json(&body);
+        let api_base = env::var("OPENAI_API_BASE")
+            .ok()
+            .unwrap_or_else(|| API_BASE.to_string());
+        let url = format!("{api_base}/chat/completions");
+
+        let mut builder = client.post(url).bearer_auth(api_key).json(&body);
 
         if let Some(organization_id) = &self.local_config.organization_id {
             builder = builder.header("OpenAI-Organization", organization_id);
