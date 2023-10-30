@@ -82,82 +82,106 @@ impl MarkdownRender {
         })
     }
 
-    pub fn render(&mut self, text: &str) -> String {
-        text.split('\n')
-            .map(|line| self.render_line(line).unwrap_or_else(|| line.to_string()))
-            .collect::<Vec<String>>()
-            .join("\n")
-    }
-
-    pub const fn is_code_block(&self) -> bool {
+    pub(crate) const fn is_code(&self) -> bool {
         matches!(
             self.prev_line_type,
             LineType::CodeBegin | LineType::CodeInner
         )
     }
 
-    fn render_line(&mut self, line: &str) -> Option<String> {
+    pub fn render(&mut self, text: &str) -> String {
+        text.split('\n')
+            .map(|line| self.render_line_mut(line))
+            .collect::<Vec<String>>()
+            .join("\n")
+    }
+
+    pub fn render_line(&self, line: &str) -> String {
+        let (_, code_syntax, is_code) = self.check_line(line);
+        if is_code {
+            self.highlint_code_line(line, &code_syntax)
+        } else {
+            self.highligh_line(line, &self.md_syntax, false)
+        }
+    }
+
+    fn render_line_mut(&mut self, line: &str) -> String {
+        let (line_type, code_syntax, is_code) = self.check_line(line);
+        let output = if is_code {
+            self.highlint_code_line(line, &code_syntax)
+        } else {
+            self.highligh_line(line, &self.md_syntax, false)
+        };
+        self.prev_line_type = line_type;
+        self.code_syntax = code_syntax;
+        output
+    }
+
+    fn check_line(&self, line: &str) -> (LineType, Option<SyntaxReference>, bool) {
+        let mut line_type = self.prev_line_type;
+        let mut code_syntax = self.code_syntax.clone();
+        let mut is_code = false;
         if let Some(lang) = detect_code_block(line) {
-            match self.prev_line_type {
+            match line_type {
                 LineType::Normal | LineType::CodeEnd => {
-                    self.prev_line_type = LineType::CodeBegin;
-                    self.code_syntax = if lang.is_empty() {
+                    line_type = LineType::CodeBegin;
+                    code_syntax = if lang.is_empty() {
                         None
                     } else {
                         self.find_syntax(&lang).cloned()
                     };
                 }
                 LineType::CodeBegin | LineType::CodeInner => {
-                    self.prev_line_type = LineType::CodeEnd;
-                    self.code_syntax = None;
+                    line_type = LineType::CodeEnd;
+                    code_syntax = None;
                 }
             }
-            self.highligh_line(line, &self.md_syntax, false)
         } else {
-            match self.prev_line_type {
-                LineType::Normal => self.highligh_line(line, &self.md_syntax, false),
+            match line_type {
+                LineType::Normal => {}
                 LineType::CodeEnd => {
-                    self.prev_line_type = LineType::Normal;
-                    self.highligh_line(line, &self.md_syntax, false)
+                    line_type = LineType::Normal;
                 }
                 LineType::CodeBegin => {
-                    if self.code_syntax.is_none() {
+                    if code_syntax.is_none() {
                         if let Some(syntax) = self.syntax_set.find_syntax_by_first_line(line) {
-                            self.code_syntax = Some(syntax.clone());
+                            code_syntax = Some(syntax.clone());
                         }
                     }
-                    self.prev_line_type = LineType::CodeInner;
-                    self.highlint_code_line(line)
+                    line_type = LineType::CodeInner;
+                    is_code = true;
                 }
-                LineType::CodeInner => self.highlint_code_line(line),
+                LineType::CodeInner => {
+                    is_code = true;
+                }
             }
         }
+        (line_type, code_syntax, is_code)
     }
 
-    fn highligh_line(&self, line: &str, syntax: &SyntaxReference, is_code: bool) -> Option<String> {
+    fn highligh_line(&self, line: &str, syntax: &SyntaxReference, is_code: bool) -> String {
         let ws: String = line.chars().take_while(|c| c.is_whitespace()).collect();
         let trimed_line: &str = &line[ws.len()..];
-        let line = match &self.md_theme {
-            Some(theme) => {
-                let mut highlighter = HighlightLines::new(syntax, theme);
-                let ranges = highlighter
-                    .highlight_line(trimed_line, &self.syntax_set)
-                    .ok()?;
-                Some(format!("{ws}{}", as_terminal_escaped(&ranges)))
+        let mut line_highlighted = None;
+        if let Some(theme) = &self.md_theme {
+            let mut highlighter = HighlightLines::new(syntax, theme);
+            if let Ok(ranges) = highlighter.highlight_line(trimed_line, &self.syntax_set) {
+                line_highlighted = Some(format!("{ws}{}", as_terminal_escaped(&ranges)))
             }
-            None => Some(trimed_line.to_string()),
-        };
-        let line = line?;
-        Some(self.wrap_line(line, is_code))
+        }
+        let line = line_highlighted.unwrap_or_else(|| line.into());
+        self.wrap_line(line, is_code)
     }
 
-    fn highlint_code_line(&self, line: &str) -> Option<String> {
-        match self.code_color {
-            None => Some(self.wrap_line(line.to_string(), true)),
-            Some(color) => self.code_syntax.as_ref().map_or_else(
-                || Some(format!("{}", line.with(color))),
-                |syntax| self.highligh_line(line, syntax, true),
-            ),
+    fn highlint_code_line(&self, line: &str, code_syntax: &Option<SyntaxReference>) -> String {
+        if let Some(syntax) = code_syntax {
+            self.highligh_line(line, syntax, true)
+        } else {
+            let line = match self.code_color {
+                Some(color) => line.with(color).to_string(),
+                None => line.to_string(),
+            };
+            self.wrap_line(line, true)
         }
     }
 

@@ -32,7 +32,7 @@ pub fn cmd_render_stream(
                         col = 0;
                     } else {
                         buffer = format!("{buffer}{text}");
-                        if !(render.is_code_block()
+                        if !(render.is_code()
                             || buffer.len() < 40
                             || buffer.starts_with('#')
                             || buffer.starts_with('>')

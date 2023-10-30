@@ -80,7 +80,7 @@ fn repl_render_stream_inner(
                         clear_rows = 0;
                     } else {
                         buffer = format!("{buffer}{text}");
-                        let output = render.render(&buffer);
+                        let output = render.render_line(&buffer);
                         if output.contains('\n') {
                             let (head, tail) = split_line_tail(&output);
                             clear_rows = print_block(writer, head, columns)?;
