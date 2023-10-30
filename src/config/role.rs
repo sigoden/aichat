@@ -1,5 +1,6 @@
 use super::message::{Message, MessageRole};
 
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 const TEMP_ROLE_NAME: &str = "temp";
@@ -26,6 +27,12 @@ impl Role {
 
     pub fn is_temp(&self) -> bool {
         self.name == TEMP_ROLE_NAME
+    }
+
+    pub fn info(&self) -> Result<String> {
+        let output = serde_yaml::to_string(&self)
+            .with_context(|| format!("Unable to show info about role {}", &self.name))?;
+        Ok(output)
     }
 
     pub fn embeded(&self) -> bool {

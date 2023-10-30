@@ -81,6 +81,8 @@ fn main() -> Result<()> {
     if cli.info {
         let info = if let Some(session) = &config.read().session {
             session.info()?
+        } else if let Some(role) = &config.read().role {
+            role.info()?
         } else {
             config.read().info()?
         };
