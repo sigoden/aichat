@@ -214,7 +214,7 @@ Select a role:
 〉.role emoji
 ```
 
-Send message with role:
+Send message with the role:
 
 ```
 emoji〉hello
@@ -239,7 +239,7 @@ prompt: I want you to translate the sentences I write into emojis. I will write 
 temperature: null
 ```
 
-## `.session` - context-aware conversation
+### `.session` - context-aware conversation
 
 By default, aichat behaves in a one-off request/response manner.
 
@@ -294,9 +294,11 @@ Options:
   -V, --version              Print version
 ```
 
+Here are some practical examples:
+
 ```sh
 aichat -s                                    # Start REPL with a new temp session
-aichat -s temp                               # Use temp session
+aichat -s temp                               # Reuse temp session
 aichat -r shell -s                           # Create a session with a role
 aichat -m openai:gpt-4-32k -s                # Create a session with a model
 aichat -s sh unzip a file                    # Run session in command mode
