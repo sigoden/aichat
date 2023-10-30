@@ -71,7 +71,7 @@ impl ReplCmdHandler {
                 print_now!("\n");
             }
             ReplCmd::SetRole(name) => {
-                let output = self.config.write().change_role(&name)?;
+                let output = self.config.write().set_role(&name)?;
                 print_now!("{}\n\n", output.trim_end());
             }
             ReplCmd::ClearRole => {
