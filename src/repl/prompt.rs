@@ -116,7 +116,7 @@ impl Prompt for ReplPrompt {
     fn get_prompt_color(&self) -> Color {
         self.prompt_color
     }
-    /// Get the default multilince prompt color
+    /// Get the default multiline prompt color
     fn get_prompt_multiline_color(&self) -> nu_ansi_term::Color {
         self.prompt_multiline_color
     }

@@ -14,7 +14,7 @@ const MD_THEME_LIGHT: &[u8] = include_bytes!("../../assets/monokai-extended-ligh
 const SYNTAXES: &[u8] = include_bytes!("../../assets/syntaxes.bin");
 
 lazy_static! {
-    static ref LANGE_MAPS: HashMap<String, String> = {
+    static ref LANG_MAPS: HashMap<String, String> = {
         let mut m = HashMap::new();
         m.insert("csharp".into(), "C#".into());
         m.insert("php".into(), "PHP Source".into());
@@ -97,18 +97,18 @@ impl MarkdownRender {
     pub fn render_line(&self, line: &str) -> String {
         let (_, code_syntax, is_code) = self.check_line(line);
         if is_code {
-            self.highlint_code_line(line, &code_syntax)
+            self.highlight_code_line(line, &code_syntax)
         } else {
-            self.highligh_line(line, &self.md_syntax, false)
+            self.highlight_line(line, &self.md_syntax, false)
         }
     }
 
     fn render_line_mut(&mut self, line: &str) -> String {
         let (line_type, code_syntax, is_code) = self.check_line(line);
         let output = if is_code {
-            self.highlint_code_line(line, &code_syntax)
+            self.highlight_code_line(line, &code_syntax)
         } else {
-            self.highligh_line(line, &self.md_syntax, false)
+            self.highlight_line(line, &self.md_syntax, false)
         };
         self.prev_line_type = line_type;
         self.code_syntax = code_syntax;
@@ -157,7 +157,7 @@ impl MarkdownRender {
         (line_type, code_syntax, is_code)
     }
 
-    fn highligh_line(&self, line: &str, syntax: &SyntaxReference, is_code: bool) -> String {
+    fn highlight_line(&self, line: &str, syntax: &SyntaxReference, is_code: bool) -> String {
         let ws: String = line.chars().take_while(|c| c.is_whitespace()).collect();
         let trimed_line: &str = &line[ws.len()..];
         let mut line_highlighted = None;
@@ -171,9 +171,9 @@ impl MarkdownRender {
         self.wrap_line(line, is_code)
     }
 
-    fn highlint_code_line(&self, line: &str, code_syntax: &Option<SyntaxReference>) -> String {
+    fn highlight_code_line(&self, line: &str, code_syntax: &Option<SyntaxReference>) -> String {
         if let Some(syntax) = code_syntax {
-            self.highligh_line(line, syntax, true)
+            self.highlight_line(line, syntax, true)
         } else {
             let line = match self.code_color {
                 Some(color) => line.with(color).to_string(),
@@ -195,7 +195,7 @@ impl MarkdownRender {
     }
 
     fn find_syntax(&self, lang: &str) -> Option<&SyntaxReference> {
-        if let Some(new_lang) = LANGE_MAPS.get(&lang.to_ascii_lowercase()) {
+        if let Some(new_lang) = LANG_MAPS.get(&lang.to_ascii_lowercase()) {
             self.syntax_set.find_syntax_by_name(new_lang)
         } else {
             self.syntax_set

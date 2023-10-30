@@ -22,7 +22,7 @@ impl Role {
         Ok(output)
     }
 
-    pub fn embeded(&self) -> bool {
+    pub fn embedded(&self) -> bool {
         self.prompt.contains(INPUT_PLACEHOLDER)
     }
 
@@ -42,7 +42,7 @@ impl Role {
     }
 
     pub fn echo_messages(&self, content: &str) -> String {
-        if self.embeded() {
+        if self.embedded() {
             merge_prompt_content(&self.prompt, content)
         } else {
             format!("{}\n{content}", self.prompt)
@@ -50,7 +50,7 @@ impl Role {
     }
 
     pub fn build_messages(&self, content: &str) -> Vec<Message> {
-        if self.embeded() {
+        if self.embedded() {
             let content = merge_prompt_content(&self.prompt, content);
             vec![Message {
                 role: MessageRole::User,

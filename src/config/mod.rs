@@ -58,7 +58,7 @@ pub struct Config {
     pub light_theme: bool,
     /// Specify the text-wrapping mode (no*, auto, <max-width>)
     pub wrap: Option<String>,
-    /// Whethter wrap code block
+    /// Whether wrap code block
     pub wrap_code: bool,
     /// Automatically copy the last output to the clipboard
     pub auto_copy: bool,

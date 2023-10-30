@@ -166,12 +166,14 @@ roles_file          /home/alice/.config/aichat/roles.yaml
 messages_file       /home/alice/.config/aichat/messages.md
 sessions_dir        /home/alice/.config/aichat/sessions
 model               openai:gpt-3.5-turbo
-temperature         0.7
+temperature         -
 save                true
 highlight           true
 light_theme         false
+wrap                no
+wrap_code           false
 dry_run             false
-vi_keybindings      true
+keybindings         emacs
 ```
 
 ### `.edit` -  multiline editing

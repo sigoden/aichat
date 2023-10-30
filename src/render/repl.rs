@@ -53,7 +53,7 @@ fn repl_render_stream_inner(
                 ReplyStreamEvent::Text(text) => {
                     let (col, mut row) = cursor::position()?;
 
-                    // fix unxpected duplicate lines on kitty, see https://github.com/sigoden/aichat/issues/105
+                    // fix unexpected duplicate lines on kitty, see https://github.com/sigoden/aichat/issues/105
                     if col == 0 && row > 0 && display_width(&buffer) == columns as usize {
                         row -= 1;
                     }

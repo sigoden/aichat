@@ -101,8 +101,8 @@ fn start_directive(
     input: &str,
     no_stream: bool,
 ) -> Result<()> {
-    if let Some(sesion) = &config.read().session {
-        sesion.guard_save()?;
+    if let Some(session) = &config.read().session {
+        session.guard_save()?;
     }
     if !stdout().is_terminal() {
         config.write().highlight = false;

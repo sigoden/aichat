@@ -44,7 +44,7 @@ impl Session {
         let content = read_to_string(path)
             .with_context(|| format!("Failed to load session {} at {}", name, path.display()))?;
         let mut session: Self =
-            serde_yaml::from_str(&content).with_context(|| format!("Invalid sesion {}", name))?;
+            serde_yaml::from_str(&content).with_context(|| format!("Invalid session {}", name))?;
 
         session.name = name.to_string();
         session.path = Some(path.display().to_string());
