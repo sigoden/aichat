@@ -95,7 +95,11 @@ fn repl_render_stream_inner(
                     writer.flush()?;
                 }
                 ReplyStreamEvent::Done => {
-                    queue!(writer, style::Print("\n"))?;
+                    #[cfg(target_os = "windows")]
+                    let eol = "\n\n";
+                    #[cfg(not(target_os = "windows"))]
+                    let eol = "\n";
+                    queue!(writer, style::Print(eol))?;
                     writer.flush()?;
 
                     break;
