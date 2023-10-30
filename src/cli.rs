@@ -15,9 +15,6 @@ pub struct Cli {
     /// Select a role
     #[clap(short, long)]
     pub role: Option<String>,
-    /// Add a GPT prompt
-    #[clap(short, long)]
-    pub prompt: Option<String>,
     /// List sessions
     #[clap(long)]
     pub list_sessions: bool,

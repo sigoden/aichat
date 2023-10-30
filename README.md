@@ -29,8 +29,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 
 - Supports multiple AIs, including openai and localai.
 - Support chat and command modes
-- Predefine model [roles](#roles)
-- Use GPT prompt easily
+- Use [roles](#roles)
 - Powerful [Chat REPL](#chat-repl)
 - Context-aware conversation/session
 - Syntax highlighting markdown and 200 other languages
@@ -91,9 +90,7 @@ clients:                                              # Setup AIs
 
 ### Roles
 
-We can let ChatGPT play a certain role through `prompt` to have it better generate what we want.
-
-We can predefine a batch of roles in `roles.yaml`.
+We can define a batch of roles in `roles.yaml`.
 
 > We can get the location of `roles.yaml` through the repl's `.info` command or cli's `--info` option.
 
@@ -167,7 +164,6 @@ AIChat also provides `.edit` command for multi-lines editing.
 .info                    Print system-wide information
 .set                     Modify the configuration temporarily
 .model                   Choose a model
-.prompt                  Add a GPT prompt
 .role                    Select a role
 .clear role              Clear the currently selected role
 .session                 Start a session
@@ -215,30 +211,6 @@ vi_keybindings      true
 > .model openai:gpt-4
 > .model localai:gpt4all-j
 ```
-
-### `.prompt` - Set GPT prompt
-
-When you set up a prompt, every message sent later will carry the prompt.
-
-```
-〉{ .prompt
-I want you to translate the sentences I write into emojis.
-I will write the sentence, and you will express it with emojis.
-I just want you to express it with emojis.
-I want you to reply only with emojis.
-}
-Done
-
-Ｐ〉You are a genius
-👉🧠💡👨‍🎓
-
-Ｐ〉I'm embarrassed
-🙈😳
-```
-
-`.prompt` actually creates a temporary role internally, so **run `.clear role` to clear the prompt**.
-
-When you are satisfied with the prompt, add it to `roles.yaml` for later use.
 
 ### `.role` - Let the AI play a role
 
