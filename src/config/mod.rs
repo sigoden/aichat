@@ -27,7 +27,6 @@ use std::{
 
 const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
-const HISTORY_FILE_NAME: &str = "history.txt";
 const MESSAGES_FILE_NAME: &str = "messages.md";
 const SESSIONS_DIR_NAME: &str = "sessions";
 
@@ -219,10 +218,6 @@ impl Config {
             |_| Self::local_path(ROLES_FILE_NAME),
             |value| Ok(PathBuf::from(value)),
         )
-    }
-
-    pub fn history_file() -> Result<PathBuf> {
-        Self::local_path(HISTORY_FILE_NAME)
     }
 
     pub fn messages_file() -> Result<PathBuf> {
