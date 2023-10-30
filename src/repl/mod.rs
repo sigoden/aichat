@@ -11,15 +11,14 @@ pub use self::init::Repl;
 
 use crate::config::SharedConfig;
 use crate::print_now;
-use crate::term;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
 use reedline::Signal;
 use std::rc::Rc;
 
-pub const REPL_COMMANDS: [(&str, &str); 14] = [
+pub const REPL_COMMANDS: [(&str, &str); 12] = [
     (".info", "Print system-wide information"),
     (".set", "Modify the configuration temporarily"),
     (".model", "Choose a model"),
@@ -30,8 +29,6 @@ pub const REPL_COMMANDS: [(&str, &str); 14] = [
     (".copy", "Copy the last output to the clipboard"),
     (".read", "Read the contents of a file and submit"),
     (".edit", "Multi-line editing (CTRL+S to finish)"),
-    (".history", "Print the REPL history"),
-    (".clear history", "Clear the REPL history"),
     (".help", "Print this help message"),
     (".exit", "Exit the REPL"),
 ];
@@ -102,22 +99,10 @@ impl Repl {
                     dump_repl_help();
                 }
                 ".clear" => match args {
-                    Some("screen") => term::clear_screen(0)?,
-                    Some("history") => {
-                        self.editor
-                            .history_mut()
-                            .clear()
-                            .with_context(|| "Failed to clear history")?;
-                        print_now!("\n");
-                    }
                     Some("role") => handler.handle(ReplCmd::ClearRole)?,
                     Some("session") => handler.handle(ReplCmd::EndSession)?,
                     _ => dump_unknown_command(),
                 },
-                ".history" => {
-                    self.editor.print_history()?;
-                    print_now!("\n");
-                }
                 ".model" => match args {
                     Some(name) => handler.handle(ReplCmd::SetModel(name.to_string()))?,
                     None => print_now!("Usage: .model <name>\n\n"),

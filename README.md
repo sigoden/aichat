@@ -131,14 +131,49 @@ aichat has a powerful Chat REPL.
 
 The Chat REPL supports:
 
-- Emacs keybinding
+- Emacs/Vi keybinding
 - Command autocompletion
-- History search
-- Fish-style history autosuggestion hints
 - Edit/paste multiline input
 - Undo support
 
-### Multi-line input
+### `.help` - print help message
+
+```
+〉.help
+.info                    Print system-wide information
+.set                     Modify the configuration temporarily
+.model                   Choose a model
+.role                    Select a role
+.clear role              Clear the currently selected role
+.session                 Start a session
+.clear session           End current session
+.copy                    Copy the last output to the clipboard
+.read                    Read the contents of a file and submit
+.edit                    Multi-line editing (CTRL+S to finish)
+.help                    Print this help message
+.exit                    Exit the REPL
+
+Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
+```
+
+### `.info` - view current configuration information
+
+```
+〉.info
+config_file         /home/alice/.config/aichat/config.yaml
+roles_file          /home/alice/.config/aichat/roles.yaml
+messages_file       /home/alice/.config/aichat/messages.md
+sessions_dir        /home/alice/.config/aichat/sessions
+model               openai:gpt-3.5-turbo
+temperature         0.7
+save                true
+highlight           true
+light_theme         false
+dry_run             false
+vi_keybindings      true
+```
+
+### `.edit` -  multiline editing
 
 AIChat supports bracketed paste, so you can paste multi-lines text directly.
 
@@ -157,46 +192,8 @@ AIChat also provides `.edit` command for multi-lines editing.
 
 > Submit the multi-line text with `Ctrl+S`.
 
-### `.help` - Print help message
 
-```
-〉.help
-.info                    Print system-wide information
-.set                     Modify the configuration temporarily
-.model                   Choose a model
-.role                    Select a role
-.clear role              Clear the currently selected role
-.session                 Start a session
-.clear session           End current session
-.copy                    Copy the last output to the clipboard
-.read                    Read the contents of a file and submit
-.edit                    Multi-line editing (CTRL+S to finish)
-.history                 Print the REPL history
-.clear history           Clear the REPL history
-.help                    Print this help message
-.exit                    Exit the REPL
-
-Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
-```
-
-### `.info` - View current configuration information
-
-```
-〉.info
-config_file         /home/alice/.config/aichat/config.yaml
-roles_file          /home/alice/.config/aichat/roles.yaml
-messages_file       /home/alice/.config/aichat/messages.md
-sessions_dir        /home/alice/.config/aichat/sessions
-model               openai:gpt-3.5-turbo
-temperature         0.7
-save                true
-highlight           true
-light_theme         false
-dry_run             false
-vi_keybindings      true
-```
-
-### `.set` - Modify the configuration temporarily
+### `.set` - modify the configuration temporarily
 
 ```
 〉.set dry_run true
@@ -205,14 +202,17 @@ vi_keybindings      true
 〉.set temperature 1.2
 ```
 
-### `.model` - Choose a model
+
+### `.model` - choose a model
 
 ```
 > .model openai:gpt-4
 > .model localai:gpt4all-j
 ```
 
-### `.role` - Let the AI play a role
+> You can easily enter enter model name using autocomplete.
+
+### `.role` - let the AI play a role
 
 Select a role:
 
@@ -239,7 +239,7 @@ emoji〉.clear role
 Hello there! How can I assist you today?
 ```
 
-## Session - context-aware conversation
+## `.session` - context-aware conversation
 
 By default, aichat behaves in a one-off request/response manner.
 
@@ -248,10 +248,10 @@ You should run aichat with `-s/--session` or use the `.session` command to start
 
 ```
 〉.session
-temp）1 to 5, odd only                                                                   4089
+temp）1 to 5, odd only                                                                    4089
 1, 3, 5
 
-temp）to 7                                                                               4070
+temp）to 7                                                                                4070
 1, 3, 5, 7
 
 temp）.clear session
@@ -260,11 +260,13 @@ temp）.clear session
 ```
 
 ```sh
-aichat --list-sessions      # List sessions.
-aichat -s                   # Start with a new temp session.
-aichat -s temp              # Reuses previous temp session.
-aichat -s rust              # Reuses session named rust. If it does not exist, create a new session named rust.
-aichat -s rust --info       # Show session details.
+aichat --list-sessions            # List sessions.
+aichat -s                         # Start REPL with a new temp session
+aichat -s temp                    # Use temp session
+aichat -s temp --info             # Show session details
+aichat -r shell -s                # Create a session with a role
+aichat -m openai:gpt-4-32k -s     # Create a session with a model
+aichat -s sh unzip a file         # Run session in command mode
 ```
 
 ## License
