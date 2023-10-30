@@ -75,9 +75,6 @@ fn main() -> Result<()> {
     if cli.no_highlight {
         config.write().highlight = false;
     }
-    if let Some(prompt) = &cli.prompt {
-        config.write().add_prompt(prompt)?;
-    }
     if cli.info {
         let info = if let Some(session) = &config.read().session {
             session.info()?

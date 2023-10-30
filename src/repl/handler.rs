@@ -18,7 +18,6 @@ pub enum ReplCmd {
     SetModel(String),
     SetRole(String),
     UpdateConfig(String),
-    Prompt(String),
     ClearRole,
     ViewInfo,
     StartSession(Option<String>),
@@ -77,10 +76,6 @@ impl ReplCmdHandler {
             }
             ReplCmd::ClearRole => {
                 self.config.write().clear_role()?;
-                print_now!("\n");
-            }
-            ReplCmd::Prompt(prompt) => {
-                self.config.write().add_prompt(&prompt)?;
                 print_now!("\n");
             }
             ReplCmd::ViewInfo => {

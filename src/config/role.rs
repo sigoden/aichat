@@ -3,7 +3,6 @@ use super::message::{Message, MessageRole};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-const TEMP_ROLE_NAME: &str = "temp";
 const INPUT_PLACEHOLDER: &str = "__INPUT__";
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -17,18 +16,6 @@ pub struct Role {
 }
 
 impl Role {
-    pub fn new(prompt: &str, temperature: Option<f64>) -> Self {
-        Self {
-            name: TEMP_ROLE_NAME.into(),
-            prompt: prompt.into(),
-            temperature,
-        }
-    }
-
-    pub fn is_temp(&self) -> bool {
-        self.name == TEMP_ROLE_NAME
-    }
-
     pub fn info(&self) -> Result<String> {
         let output = serde_yaml::to_string(&self)
             .with_context(|| format!("Unable to show info about role {}", &self.name))?;

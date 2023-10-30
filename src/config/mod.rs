@@ -192,12 +192,6 @@ impl Config {
             None => {
                 format!("# CHAT:[{timestamp}]\n{input}\n--------\n{output}\n--------\n\n",)
             }
-            Some(v) if v.is_temp() => {
-                format!(
-                    "# CHAT:[{timestamp}]\n{}\n{input}\n--------\n{output}\n--------\n\n",
-                    v.prompt
-                )
-            }
             Some(v) => {
                 format!(
                     "# CHAT:[{timestamp}] ({})\n{input}\n--------\n{output}\n--------\n\n",
@@ -259,15 +253,6 @@ impl Config {
             session.update_role(None)?;
         }
         self.role = None;
-        Ok(())
-    }
-
-    pub fn add_prompt(&mut self, prompt: &str) -> Result<()> {
-        let role = Role::new(prompt, self.temperature);
-        if let Some(session) = self.session.as_mut() {
-            session.update_role(Some(role.clone()))?;
-        }
-        self.role = Some(role);
         Ok(())
     }
 

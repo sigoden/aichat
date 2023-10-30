@@ -19,11 +19,10 @@ use lazy_static::lazy_static;
 use reedline::Signal;
 use std::rc::Rc;
 
-pub const REPL_COMMANDS: [(&str, &str); 15] = [
+pub const REPL_COMMANDS: [(&str, &str); 14] = [
     (".info", "Print system-wide information"),
     (".set", "Modify the configuration temporarily"),
     (".model", "Choose a model"),
-    (".prompt", "Add a GPT prompt"),
     (".role", "Select a role"),
     (".clear role", "Clear the currently selected role"),
     (".session", "Start a session"),
@@ -133,14 +132,6 @@ impl Repl {
                 ".set" => {
                     handler.handle(ReplCmd::UpdateConfig(args.unwrap_or_default().to_string()))?;
                     self.prompt.sync_config();
-                }
-                ".prompt" => {
-                    let text = args.unwrap_or_default().to_string();
-                    if text.is_empty() {
-                        print_now!("Usage: .prompt <text>.\n\n");
-                    } else {
-                        handler.handle(ReplCmd::Prompt(text))?;
-                    }
                 }
                 ".session" => {
                     handler.handle(ReplCmd::StartSession(args.map(|v| v.to_string())))?;
