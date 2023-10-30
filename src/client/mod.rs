@@ -1,7 +1,9 @@
+pub mod azure_openai;
 pub mod localai;
 pub mod openai;
 
 use self::{
+    azure_openai::{AzureOpenAIClient, AzureOpenAIConfig},
     localai::LocalAIConfig,
     openai::{OpenAIClient, OpenAIConfig},
 };
@@ -27,6 +29,8 @@ pub enum ClientConfig {
     OpenAI(OpenAIConfig),
     #[serde(rename = "localai")]
     LocalAI(LocalAIConfig),
+    #[serde(rename = "azure-openai")]
+    AzureOpenAI(AzureOpenAIConfig),
 }
 
 #[derive(Debug, Clone)]
@@ -128,6 +132,7 @@ pub trait Client {
 pub fn init_client(config: SharedConfig) -> Result<Box<dyn Client>> {
     OpenAIClient::init(config.clone())
         .or_else(|| LocalAIClient::init(config.clone()))
+        .or_else(|| AzureOpenAIClient::init(config.clone()))
         .ok_or_else(|| {
             let model_info = config.read().model_info.clone();
             anyhow!(
@@ -139,7 +144,11 @@ pub fn init_client(config: SharedConfig) -> Result<Box<dyn Client>> {
 }
 
 pub fn all_clients() -> Vec<&'static str> {
-    vec![OpenAIClient::name(), LocalAIClient::name()]
+    vec![
+        OpenAIClient::name(),
+        LocalAIClient::name(),
+        AzureOpenAIClient::name(),
+    ]
 }
 
 pub fn create_client_config(client: &str) -> Result<String> {
@@ -147,6 +156,8 @@ pub fn create_client_config(client: &str) -> Result<String> {
         OpenAIClient::create_config()
     } else if client == LocalAIClient::name() {
         LocalAIClient::create_config()
+    } else if client == AzureOpenAIClient::name() {
+        AzureOpenAIClient::create_config()
     } else {
         bail!("Unknown client {}", &client)
     }
@@ -160,6 +171,7 @@ pub fn list_models(config: &Config) -> Vec<ModelInfo> {
         .flat_map(|(i, v)| match v {
             ClientConfig::OpenAI(c) => OpenAIClient::list_models(c, i),
             ClientConfig::LocalAI(c) => LocalAIClient::list_models(c, i),
+            ClientConfig::AzureOpenAI(c) => AzureOpenAIClient::list_models(c, i),
         })
         .collect()
 }
