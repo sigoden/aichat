@@ -17,7 +17,7 @@ use crate::{
     client::localai::LocalAIClient,
     config::{Config, SharedConfig},
     repl::{ReplyStreamHandler, SharedAbortSignal},
-    utils::split_text,
+    utils::tokenize,
 };
 
 #[derive(Debug, Clone, Deserialize)]
@@ -64,7 +64,8 @@ pub trait Client {
     fn send_message(&self, content: &str) -> Result<String> {
         init_tokio_runtime()?.block_on(async {
             if self.get_config().read().dry_run {
-                return Ok(self.get_config().read().echo_messages(content));
+                let content = self.get_config().read().echo_messages(content);
+                return Ok(content);
             }
             self.send_message_inner(content)
                 .await
@@ -90,10 +91,11 @@ pub trait Client {
             tokio::select! {
                 ret = async {
                     if self.get_config().read().dry_run {
-                        let words = split_text(content)?;
-                        for word in words {
+                        let content = self.get_config().read().echo_messages(content);
+                        let tokens = tokenize(&content);
+                        for token in tokens {
                             tokio::time::sleep(Duration::from_millis(25)).await;
-                            handler.text(&self.get_config().read().echo_messages(&word))?;
+                            handler.text(&token)?;
                         }
                         return Ok(());
                     }
