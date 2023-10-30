@@ -18,14 +18,16 @@ use lazy_static::lazy_static;
 use reedline::Signal;
 use std::rc::Rc;
 
-pub const REPL_COMMANDS: [(&str, &str); 12] = [
+pub const REPL_COMMANDS: [(&str, &str); 14] = [
     (".help", "Print this help message"),
-    (".info", "Print system-wide information"),
+    (".info", "Print system info"),
     (".edit", "Multi-line editing (CTRL+S to finish)"),
     (".model", "Switch LLM model"),
     (".role", "Use role"),
+    (".info role", "Show role info"),
     (".exit role", "Leave current role"),
     (".session", "Start a context-aware chat session"),
+    (".info session", "Show session info"),
     (".exit session", "End the current session"),
     (".set", "Modify the configuration parameters"),
     (".copy", "Copy the last reply to the clipboard"),
@@ -66,7 +68,7 @@ impl Repl {
                         }
                         Err(err) => {
                             let err = format!("{err:?}");
-                            print_now!("{}\n\n", err.trim());
+                            print_now!("Error: {}\n\n", err.trim());
                         }
                     }
                 }
@@ -95,9 +97,14 @@ impl Repl {
                 ".help" => {
                     dump_repl_help();
                 }
-                ".info" => {
-                    handler.handle(ReplCmd::ViewInfo)?;
-                }
+                ".info" => match args {
+                    Some("role") => handler.handle(ReplCmd::RoleInfo)?,
+                    Some("session") => handler.handle(ReplCmd::SessionInfo)?,
+                    Some(_) => unknown_command(),
+                    None => {
+                        handler.handle(ReplCmd::Info)?;
+                    }
+                },
                 ".edit" => {
                     if let Some(text) = args {
                         handler.handle(ReplCmd::Submit(text.to_string()))?;
@@ -128,7 +135,7 @@ impl Repl {
                 ".exit" => match args {
                     Some("role") => handler.handle(ReplCmd::ExitRole)?,
                     Some("session") => handler.handle(ReplCmd::ExitSession)?,
-                    Some(_) => dump_unknown_command(),
+                    Some(_) => unknown_command(),
                     None => {
                         return Ok(true);
                     }
@@ -141,9 +148,9 @@ impl Repl {
                     Some("session") => {
                         print_now!("Deprecated. Use '.exit session' instead.\n\n");
                     }
-                    _ => dump_unknown_command(),
+                    _ => unknown_command(),
                 },
-                _ => dump_unknown_command(),
+                _ => unknown_command(),
             },
             None => {
                 handler.handle(ReplCmd::Submit(line.to_string()))?;
@@ -154,8 +161,8 @@ impl Repl {
     }
 }
 
-fn dump_unknown_command() {
-    print_now!("Unknown command. Type \".help\" for more information.\n\n");
+fn unknown_command() {
+    print_now!("Unknown command. Try `.help`.\n\n");
 }
 
 fn dump_repl_help() {

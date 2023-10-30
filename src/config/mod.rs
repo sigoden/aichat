@@ -148,12 +148,16 @@ impl Config {
         Ok(config)
     }
 
-    pub fn get_role(&self, name: &str) -> Option<Role> {
-        self.roles.iter().find(|v| v.match_name(name)).map(|v| {
-            let mut role = v.clone();
-            role.complete_prompt_args(name);
-            role
-        })
+    pub fn retrieve_role(&self, name: &str) -> Result<Role> {
+        self.roles
+            .iter()
+            .find(|v| v.match_name(name))
+            .map(|v| {
+                let mut role = v.clone();
+                role.complete_prompt_args(name);
+                role
+            })
+            .ok_or_else(|| anyhow!("Unknown role `{name}`"))
     }
 
     pub fn config_dir() -> Result<PathBuf> {
@@ -235,20 +239,14 @@ impl Config {
         Ok(path)
     }
 
-    pub fn set_role(&mut self, name: &str) -> Result<String> {
-        match self.get_role(name) {
-            Some(role) => {
-                if let Some(session) = self.session.as_mut() {
-                    session.update_role(Some(role.clone()))?;
-                }
-                let output = serde_yaml::to_string(&role)
-                    .unwrap_or_else(|_| "Unable to echo role details".into());
-                self.temperature = role.temperature;
-                self.role = Some(role);
-                Ok(output)
-            }
-            None => bail!("Unknown role `{name}`"),
+    pub fn set_role(&mut self, name: &str) -> Result<()> {
+        let role = self.retrieve_role(name)?;
+        if let Some(session) = self.session.as_mut() {
+            session.update_role(Some(role.clone()))?;
         }
+        self.temperature = role.temperature;
+        self.role = Some(role);
+        Ok(())
     }
 
     pub fn clear_role(&mut self) -> Result<()> {

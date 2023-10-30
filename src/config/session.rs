@@ -1,6 +1,8 @@
 use super::message::{num_tokens_from_messages, Message, MessageRole};
 use super::role::Role;
 
+use crate::render::MarkdownRender;
+
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs::{self, read_to_string};
@@ -52,10 +54,43 @@ impl Session {
         Ok(session)
     }
 
-    pub fn info(&self) -> Result<String> {
+    pub fn export(&self) -> Result<String> {
         self.guard_save()?;
         let output = serde_yaml::to_string(&self)
             .with_context(|| format!("Unable to show info about session {}", &self.name))?;
+        Ok(output)
+    }
+
+    pub fn render(&self, render: &mut MarkdownRender) -> Result<String> {
+        let temperature = self
+            .temperature
+            .map_or_else(|| String::from("-"), |v| v.to_string());
+        let items = vec![
+            ("path", self.path.clone().unwrap_or_else(|| "-".into())),
+            ("model", self.model.clone()),
+            ("tokens", self.tokens.to_string()),
+            ("temperature", temperature),
+        ];
+        let mut lines = vec![];
+        for (name, value) in items {
+            lines.push(format!("{name:<20}{value}"));
+        }
+        lines.push("".into());
+        for message in &self.messages {
+            match message.role {
+                MessageRole::System => {
+                    continue;
+                }
+                MessageRole::Assistant => {
+                    lines.push(render.render(&message.content));
+                    lines.push("".into());
+                }
+                MessageRole::User => {
+                    lines.push(format!("{}）{}", self.name, message.content));
+                }
+            }
+        }
+        let output = lines.join("\n");
         Ok(output)
     }
 
