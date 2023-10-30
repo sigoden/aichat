@@ -10,7 +10,6 @@ use syntect::{easy::HighlightLines, parsing::SyntaxReference};
 /// Monokai Extended
 const MD_THEME: &[u8] = include_bytes!("../../assets/monokai-extended.theme.bin");
 const MD_THEME_LIGHT: &[u8] = include_bytes!("../../assets/monokai-extended-light.theme.bin");
-#[allow(clippy::doc_markdown)]
 /// Comes from https://github.com/sharkdp/bat/raw/5e77ca37e89c873e4490b42ff556370dc5c6ba4f/assets/syntaxes.bin
 const SYNTAXES: &[u8] = include_bytes!("../../assets/syntaxes.bin");
 
@@ -23,7 +22,6 @@ lazy_static! {
     };
 }
 
-#[allow(clippy::module_name_repetitions)]
 pub struct MarkdownRender {
     options: RenderOptions,
     syntax_set: SyntaxSet,
@@ -197,7 +195,6 @@ impl MarkdownRender {
     }
 
     fn find_syntax(&self, lang: &str) -> Option<&SyntaxReference> {
-        #[allow(clippy::option_if_let_else)]
         if let Some(new_lang) = LANGE_MAPS.get(&lang.to_ascii_lowercase()) {
             self.syntax_set.find_syntax_by_name(new_lang)
         } else {

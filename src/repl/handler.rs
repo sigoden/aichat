@@ -27,7 +27,6 @@ pub enum ReplCmd {
     ReadFile(String),
 }
 
-#[allow(clippy::module_name_repetitions)]
 pub struct ReplCmdHandler {
     config: SharedConfig,
     abort: SharedAbortSignal,
@@ -35,7 +34,6 @@ pub struct ReplCmdHandler {
 }
 
 impl ReplCmdHandler {
-    #[allow(clippy::unnecessary_wraps)]
     pub fn init(config: SharedConfig, abort: SharedAbortSignal) -> Result<Self> {
         let clipboard = Clipboard::new().map(RefCell::new);
         Ok(Self {
@@ -135,7 +133,6 @@ impl ReplCmdHandler {
     }
 }
 
-#[allow(clippy::module_name_repetitions)]
 pub struct ReplyStreamHandler {
     sender: Sender<ReplyStreamEvent>,
     buffer: String,

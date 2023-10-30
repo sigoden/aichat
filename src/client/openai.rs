@@ -16,7 +16,6 @@ use std::time::Duration;
 
 const API_URL: &str = "https://api.openai.com/v1/chat/completions";
 
-#[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub struct OpenAIClient {
     global_config: SharedConfig,
@@ -24,7 +23,6 @@ pub struct OpenAIClient {
     model_info: ModelInfo,
 }
 
-#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct OpenAIConfig {
     pub api_key: Option<String>,

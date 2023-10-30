@@ -41,7 +41,6 @@ const SET_COMPLETIONS: [&str; 7] = [
     ".set dry_run false",
 ];
 
-#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -105,7 +104,6 @@ impl Default for Config {
     }
 }
 
-#[allow(clippy::module_name_repetitions)]
 pub type SharedConfig = Arc<RwLock<Config>>;
 
 impl Config {
@@ -281,7 +279,6 @@ impl Config {
     }
 
     pub fn echo_messages(&self, content: &str) -> String {
-        #[allow(clippy::option_if_let_else)]
         if let Some(session) = self.session.as_ref() {
             session.echo_messages(content)
         } else if let Some(role) = self.role.as_ref() {
@@ -292,7 +289,6 @@ impl Config {
     }
 
     pub fn build_messages(&self, content: &str) -> Result<Vec<Message>> {
-        #[allow(clippy::option_if_let_else)]
         let messages = if let Some(session) = self.session.as_ref() {
             session.build_emssages(content)
         } else if let Some(role) = self.role.as_ref() {
@@ -552,7 +548,6 @@ impl Config {
         }
     }
 
-    #[allow(clippy::unused_self)] // TODO: do we need to take self here? it's not used in the fn
     fn open_message_file(&self) -> Result<File> {
         let path = Self::messages_file()?;
         ensure_parent_exists(&path)?;

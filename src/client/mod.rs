@@ -20,7 +20,6 @@ use crate::{
     utils::split_text,
 };
 
-#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type")]
 pub enum ClientConfig {

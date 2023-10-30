@@ -16,7 +16,6 @@ use std::{
 };
 use textwrap::core::display_width;
 
-#[allow(clippy::module_name_repetitions)]
 pub fn repl_render_stream(
     rx: &Receiver<ReplyStreamEvent>,
     render: &mut MarkdownRender,

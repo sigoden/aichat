@@ -1,6 +1,5 @@
 use clap::Parser;
 
-#[allow(clippy::struct_excessive_bools, clippy::module_name_repetitions)]
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {

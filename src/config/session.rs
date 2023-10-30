@@ -110,7 +110,6 @@ impl Session {
         self.tokens = num_tokens_from_messages(&self.build_emssages(""));
     }
 
-    #[allow(clippy::unnecessary_wraps)]
     pub fn add_message(&mut self, input: &str, output: &str) -> Result<()> {
         let mut need_add_msg = true;
         if self.messages.is_empty() {

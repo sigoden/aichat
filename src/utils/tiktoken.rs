@@ -64,7 +64,6 @@ pub fn cl100k_base_singleton() -> Arc<Mutex<CoreBPE>> {
 }
 
 fn _byte_pair_merge(piece: &[u8], ranks: &HashMap<Vec<u8>, usize>) -> Vec<std::ops::Range<usize>> {
-    #[allow(clippy::range_plus_one)]
     let mut parts: Vec<_> = (0..piece.len()).map(|i| i..i + 1).collect();
 
     // If you have n parts and m merges, this does O(mn) work
@@ -340,7 +339,6 @@ impl CoreBPE {
                 && self.sorted_token_bytes[point].starts_with(suffix)
             {
                 let possibility = [prefix, self.sorted_token_bytes[point].as_slice()].concat();
-                #[allow(clippy::option_if_let_else)]
                 let encoded = match std::str::from_utf8(&possibility) {
                     // Morally, this is byte_pair_encode(&possibility, &self.encoder)
                     // But we might have introduced a regex split which would prevent merges.

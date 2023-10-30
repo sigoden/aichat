@@ -9,7 +9,6 @@ const PROMPT_MULTILINE_COLOR: nu_ansi_term::Color = nu_ansi_term::Color::LightBl
 const INDICATOR_COLOR: Color = Color::Cyan;
 const PROMPT_RIGHT_COLOR: Color = Color::AnsiValue(5);
 
-#[allow(clippy::module_name_repetitions)]
 #[derive(Clone)]
 pub struct ReplPrompt {
     config: SharedConfig,

@@ -13,7 +13,6 @@ use serde_json::json;
 use std::env;
 use std::time::Duration;
 
-#[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub struct LocalAIClient {
     global_config: SharedConfig,

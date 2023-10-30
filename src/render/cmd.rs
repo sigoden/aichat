@@ -7,7 +7,6 @@ use anyhow::Result;
 use crossbeam::channel::Receiver;
 use textwrap::core::display_width;
 
-#[allow(clippy::unnecessary_wraps, clippy::module_name_repetitions)]
 pub fn cmd_render_stream(
     rx: &Receiver<ReplyStreamEvent>,
     render: &mut MarkdownRender,

@@ -3,7 +3,6 @@ mod markdown;
 mod repl;
 
 use self::cmd::cmd_render_stream;
-#[allow(clippy::module_name_repetitions)]
 pub use self::markdown::{MarkdownRender, RenderOptions};
 use self::repl::repl_render_stream;
 
@@ -17,7 +16,6 @@ use crossbeam::channel::unbounded;
 use crossbeam::sync::WaitGroup;
 use std::thread::spawn;
 
-#[allow(clippy::module_name_repetitions)]
 pub fn render_stream(
     input: &str,
     client: &dyn Client,
