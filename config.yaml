@@ -1,0 +1,27 @@
+model: openai:gpt-3.5-turbo      # Choose a model
+temperature: 1.0                 # See https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
+save: true                       # If set true, aichat will save non-session chat messages to messages.md
+highlight: true                  # Set false to turn highlight
+light_theme: false               # If set true, use light theme
+wrap: no                         # Specify the text-wrapping mode (no*, auto, <max-width>)
+wrap_code: false                 # Whether wrap code block
+auto_copy: false                 # Automatically copy the last output to the clipboard
+keybindings: emacs               # REPL keybindings, possible values: emacs (default), vi
+
+clients:                                              # Setup AIs
+  # See https://platform.openai.com/docs/quickstart
+  - type: openai                                      # OpenAI configuration
+    api_key: sk-xxx                                   # OpenAI api key, alternative to OPENAI_API_KEY
+    organization_id: org-xxx                          # Organization ID. Optional
+    proxy: socks5://127.0.0.1:1080
+    connect_timeout: 10
+
+  # See https://github.com/go-skynet/LocalAI
+  - type: localai                                     # LocalAI configuration
+    url: http://localhost:8080/v1/chat/completions    # LocalAI api server
+    api_key: xxx                                      # Api key. alternative to LOCALAI_API_KEY
+    models:                                           # Support models
+      - name: gpt4all-j
+        max_tokens: 4096
+    proxy: socks5://127.0.0.1:1080
+    connect_timeout: 10

@@ -5,7 +5,6 @@ use reedline::{Highlighter, StyledText};
 
 const MATCH_COLOR: Color = Color::Green;
 
-#[allow(clippy::module_name_repetitions)]
 pub struct ReplHighlighter {
     external_commands: Vec<String>,
     config: SharedConfig,

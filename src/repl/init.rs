@@ -2,13 +2,13 @@ use super::{
     highlighter::ReplHighlighter, prompt::ReplPrompt, validator::ReplValidator, REPL_COMMANDS,
 };
 
-use crate::config::{Config, SharedConfig};
+use crate::config::SharedConfig;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use reedline::{
     default_emacs_keybindings, default_vi_insert_keybindings, default_vi_normal_keybindings,
-    ColumnarMenu, DefaultCompleter, EditMode, Emacs, FileBackedHistory, KeyCode, KeyModifiers,
-    Keybindings, Reedline, ReedlineEvent, ReedlineMenu, Vi,
+    ColumnarMenu, DefaultCompleter, EditMode, Emacs, KeyCode, KeyModifiers, Keybindings, Reedline,
+    ReedlineEvent, ReedlineMenu, Vi,
 };
 
 const MENU_NAME: &str = "completion_menu";
@@ -27,7 +27,6 @@ impl Repl {
 
         let completer = Self::create_completer(&config, &commands);
         let highlighter = ReplHighlighter::new(config.clone(), commands);
-        let history = Self::create_history()?;
         let menu = Self::create_menu();
         let edit_mode: Box<dyn EditMode> = if config.read().keybindings.is_vi() {
             let mut normal_keybindings = default_vi_normal_keybindings();
@@ -43,7 +42,6 @@ impl Repl {
         let mut editor = Reedline::create()
             .with_completer(Box::new(completer))
             .with_highlighter(Box::new(highlighter))
-            .with_history(history)
             .with_menu(menu)
             .with_edit_mode(edit_mode)
             .with_quick_completions(true)
@@ -75,11 +73,6 @@ impl Repl {
         );
         keybindings.add_binding(
             KeyModifiers::CONTROL,
-            KeyCode::Char('l'),
-            ReedlineEvent::ExecuteHostCommand(".clear screen".into()),
-        );
-        keybindings.add_binding(
-            KeyModifiers::CONTROL,
             KeyCode::Char('s'),
             ReedlineEvent::Submit,
         );
@@ -88,12 +81,5 @@ impl Repl {
     fn create_menu() -> ReedlineMenu {
         let completion_menu = ColumnarMenu::default().with_name(MENU_NAME);
         ReedlineMenu::EngineCompleter(Box::new(completion_menu))
-    }
-
-    fn create_history() -> Result<Box<FileBackedHistory>> {
-        Ok(Box::new(
-            FileBackedHistory::with_file(1000, Config::history_file()?)
-                .with_context(|| "Failed to setup history file")?,
-        ))
     }
 }

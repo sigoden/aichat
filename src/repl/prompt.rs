@@ -9,7 +9,6 @@ const PROMPT_MULTILINE_COLOR: nu_ansi_term::Color = nu_ansi_term::Color::LightBl
 const INDICATOR_COLOR: Color = Color::Cyan;
 const PROMPT_RIGHT_COLOR: Color = Color::AnsiValue(5);
 
-#[allow(clippy::module_name_repetitions)]
 #[derive(Clone)]
 pub struct ReplPrompt {
     config: SharedConfig,
@@ -41,15 +40,15 @@ impl ReplPrompt {
     }
 
     pub fn get_colors(config: &SharedConfig) -> (Color, nu_ansi_term::Color, Color, Color) {
-        let (highlight, light_theme) = config.read().get_render_options();
-        if highlight {
+        let render_options = config.read().get_render_options();
+        if render_options.highlight {
             (
                 PROMPT_COLOR,
                 PROMPT_MULTILINE_COLOR,
                 INDICATOR_COLOR,
                 PROMPT_RIGHT_COLOR,
             )
-        } else if light_theme {
+        } else if render_options.light_theme {
             (
                 Color::Black,
                 nu_ansi_term::Color::Black,
@@ -117,7 +116,7 @@ impl Prompt for ReplPrompt {
     fn get_prompt_color(&self) -> Color {
         self.prompt_color
     }
-    /// Get the default multilince prompt color
+    /// Get the default multiline prompt color
     fn get_prompt_multiline_color(&self) -> nu_ansi_term::Color {
         self.prompt_multiline_color
     }

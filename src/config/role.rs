@@ -1,8 +1,8 @@
 use super::message::{Message, MessageRole};
 
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-const TEMP_ROLE_NAME: &str = "temp";
 const INPUT_PLACEHOLDER: &str = "__INPUT__";
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -16,19 +16,13 @@ pub struct Role {
 }
 
 impl Role {
-    pub fn new(prompt: &str, temperature: Option<f64>) -> Self {
-        Self {
-            name: TEMP_ROLE_NAME.into(),
-            prompt: prompt.into(),
-            temperature,
-        }
+    pub fn info(&self) -> Result<String> {
+        let output = serde_yaml::to_string(&self)
+            .with_context(|| format!("Unable to show info about role {}", &self.name))?;
+        Ok(output)
     }
 
-    pub fn is_temp(&self) -> bool {
-        self.name == TEMP_ROLE_NAME
-    }
-
-    pub fn embeded(&self) -> bool {
+    pub fn embedded(&self) -> bool {
         self.prompt.contains(INPUT_PLACEHOLDER)
     }
 
@@ -48,7 +42,7 @@ impl Role {
     }
 
     pub fn echo_messages(&self, content: &str) -> String {
-        if self.embeded() {
+        if self.embedded() {
             merge_prompt_content(&self.prompt, content)
         } else {
             format!("{}\n{content}", self.prompt)
@@ -56,7 +50,7 @@ impl Role {
     }
 
     pub fn build_messages(&self, content: &str) -> Vec<Message> {
-        if self.embeded() {
+        if self.embedded() {
             let content = merge_prompt_content(&self.prompt, content);
             vec![Message {
                 role: MessageRole::User,

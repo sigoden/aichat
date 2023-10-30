@@ -1,10 +1,8 @@
 mod tiktoken;
 
-use self::tiktoken::cl100k_base;
-pub use self::tiktoken::{cl100k_base_singleton, count_tokens, text_to_tokens, tokens_to_text};
+pub use self::tiktoken::cl100k_base_singleton;
 
 use chrono::prelude::*;
-use crossterm::style::{Color, Stylize};
 use std::io::{stdout, Write};
 
 #[macro_export]
@@ -32,14 +30,34 @@ pub fn get_env_name(key: &str) -> String {
     )
 }
 
-#[allow(unused)]
-pub fn emphasis(text: &str) -> String {
-    text.stylize().with(Color::White).to_string()
+/// Split text to tokens
+pub fn tokenize(text: &str) -> Vec<String> {
+    let tokens = cl100k_base_singleton().lock().tokenize(text);
+    tokens.into_iter().map(|(_, text)| text).collect()
 }
 
-pub fn split_text(text: &str) -> Result<Vec<String>, anyhow::Error> {
-    let bpe = cl100k_base()?;
-    let tokens = bpe.encode_with_special_tokens(text);
-    let data: Result<Vec<String>, _> = tokens.into_iter().map(|v| bpe.decode(&[v])).collect();
-    data
+/// Count how many tokens a piece of text needs to consume
+pub fn count_tokens(text: &str) -> usize {
+    cl100k_base_singleton()
+        .lock()
+        .encode_with_special_tokens(text)
+        .len()
+}
+
+pub fn light_theme_from_colorfgbg(colorfgbg: &str) -> Option<bool> {
+    let parts: Vec<_> = colorfgbg.split(';').collect();
+    let bg = match parts.len() {
+        2 => &parts[1],
+        3 => &parts[2],
+        _ => {
+            return None;
+        }
+    };
+    let bg = bg.parse::<u8>().ok()?;
+    let (r, g, b) = ansi_colours::rgb_from_ansi256(bg);
+
+    let v = 0.2126 * r as f32 + 0.7152 * g as f32 + 0.0722 * b as f32;
+
+    let light = v > 128.0;
+    Some(light)
 }

@@ -1,6 +1,8 @@
 use super::message::{num_tokens_from_messages, Message, MessageRole};
 use super::role::Role;
 
+use crate::render::MarkdownRender;
+
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs::{self, read_to_string};
@@ -13,6 +15,7 @@ pub struct Session {
     pub path: Option<String>,
     pub model: String,
     pub tokens: usize,
+    pub temperature: Option<f64>,
     pub messages: Vec<Message>,
     #[serde(skip)]
     pub dirty: bool,
@@ -24,9 +27,11 @@ pub struct Session {
 
 impl Session {
     pub fn new(name: &str, model: &str, role: Option<Role>) -> Self {
+        let temperature = role.as_ref().and_then(|v| v.temperature);
         let mut value = Self {
             path: None,
             model: model.to_string(),
+            temperature,
             tokens: 0,
             messages: vec![],
             dirty: false,
@@ -41,7 +46,7 @@ impl Session {
         let content = read_to_string(path)
             .with_context(|| format!("Failed to load session {} at {}", name, path.display()))?;
         let mut session: Self =
-            serde_yaml::from_str(&content).with_context(|| format!("Invalid sesion {}", name))?;
+            serde_yaml::from_str(&content).with_context(|| format!("Invalid session {}", name))?;
 
         session.name = name.to_string();
         session.path = Some(path.display().to_string());
@@ -49,16 +54,56 @@ impl Session {
         Ok(session)
     }
 
-    pub fn info(&self) -> Result<String> {
+    pub fn export(&self) -> Result<String> {
         self.guard_save()?;
         let output = serde_yaml::to_string(&self)
             .with_context(|| format!("Unable to show info about session {}", &self.name))?;
         Ok(output)
     }
 
+    pub fn render(&self, render: &mut MarkdownRender) -> Result<String> {
+        let temperature = self
+            .temperature
+            .map_or_else(|| String::from("-"), |v| v.to_string());
+        let items = vec![
+            ("path", self.path.clone().unwrap_or_else(|| "-".into())),
+            ("model", self.model.clone()),
+            ("tokens", self.tokens.to_string()),
+            ("temperature", temperature),
+        ];
+        let mut lines = vec![];
+        for (name, value) in items {
+            lines.push(format!("{name:<20}{value}"));
+        }
+        lines.push("".into());
+        for message in &self.messages {
+            match message.role {
+                MessageRole::System => {
+                    continue;
+                }
+                MessageRole::Assistant => {
+                    lines.push(render.render(&message.content));
+                    lines.push("".into());
+                }
+                MessageRole::User => {
+                    lines.push(format!("{}）{}", self.name, message.content));
+                }
+            }
+        }
+        let output = lines.join("\n");
+        Ok(output)
+    }
+
     pub fn update_role(&mut self, role: Option<Role>) -> Result<()> {
         self.guard_empty()?;
+        self.temperature = role.as_ref().and_then(|v| v.temperature);
         self.role = role;
+        self.update_tokens();
+        Ok(())
+    }
+
+    pub fn set_model(&mut self, model: &str) -> Result<()> {
+        self.model = model.to_string();
         self.update_tokens();
         Ok(())
     }
@@ -110,7 +155,6 @@ impl Session {
         self.tokens = num_tokens_from_messages(&self.build_emssages(""));
     }
 
-    #[allow(clippy::unnecessary_wraps)]
     pub fn add_message(&mut self, input: &str, output: &str) -> Result<()> {
         let mut need_add_msg = true;
         if self.messages.is_empty() {

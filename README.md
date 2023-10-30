@@ -27,18 +27,16 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 
 ## Features
 
-- Supports multiple AIs, including openai and localai.
+- Supports multiple LLMs, including OpenAI and LocalAI.
 - Support chat and command modes
-- Predefine model [roles](#roles)
-- Use GPT prompt easily
+- Use [Roles](#roles)
 - Powerful [Chat REPL](#chat-repl)
 - Context-aware conversation/session
 - Syntax highlighting markdown and 200 other languages
 - Stream output with hand-typing effect
-- Support multiple models
-- Support proxy connection
+- Support proxy 
 - Dark/light theme
-- Save chat messages
+- Save chat messages/sessions
 
 ## Config
 
@@ -61,6 +59,8 @@ temperature: 1.0                 # See https://platform.openai.com/docs/api-refe
 save: true                       # If set true, aichat will save non-session chat messages to messages.md
 highlight: true                  # Set false to turn highlight
 light_theme: false               # If set true, use light theme
+wrap: no                         # Specify the text-wrapping mode (no*, auto, <max-width>)
+wrap_code: false                 # Whether wrap code block
 auto_copy: false                 # Automatically copy the last output to the clipboard
 keybindings: emacs               # REPL keybindings, possible values: emacs (default), vi
 
@@ -69,8 +69,6 @@ clients:                                              # Setup AIs
   - type: openai                                      # OpenAI configuration
     api_key: sk-xxx                                   # OpenAI api key, alternative to OPENAI_API_KEY
     organization_id: org-xxx                          # Organization ID. Optional
-    proxy: socks5://127.0.0.1:1080                    # Set proxy server. Optional
-    connect_timeout: 10                               # Set a timeout in seconds for connect to gpt. Optional
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
   - type: azure-openai                                # Azure openai configuration
@@ -89,8 +87,6 @@ clients:                                              # Setup AIs
     models:                                           # Support models
       - name: gpt4all-j
         max_tokens: 4096
-    proxy: socks5://127.0.0.1:1080                    # Set proxy server. Optional
-    connect_timeout: 10                               # Set a timeout in seconds for connect to gpt. Optional
 ```
 
 > You can use `.info` to view the current configuration file path and roles file path.
@@ -99,9 +95,7 @@ clients:                                              # Setup AIs
 
 ### Roles
 
-We can let ChatGPT play a certain role through `prompt` to have it better generate what we want.
-
-We can predefine a batch of roles in `roles.yaml`.
+We can define a batch of roles in `roles.yaml`.
 
 > We can get the location of `roles.yaml` through the repl's `.info` command or cli's `--info` option.
 
@@ -142,16 +136,56 @@ aichat has a powerful Chat REPL.
 
 The Chat REPL supports:
 
-- Emacs keybinding
+- Emacs/Vi keybinding
 - Command autocompletion
-- History search
-- Fish-style history autosuggestion hints
 - Edit/paste multiline input
 - Undo support
 
-### Multi-line input
+### `.help` - print help message
 
-AIChat suppoprts bracketed paste, so you can paste multi-lines text directly.
+```
+〉.help
+.help                    Print this help message
+.info                    Print system info
+.edit                    Multi-line editing (CTRL+S to finish)
+.model                   Switch LLM model
+.role                    Use role
+.info role               Show role info
+.exit role               Leave current role
+.session                 Start a context-aware chat session
+.info session            Show session info
+.exit session            End the current session
+.set                     Modify the configuration parameters
+.copy                    Copy the last reply to the clipboard
+.read                    Import from file and submit
+.exit                    Exit the REPL
+
+Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
+
+```
+
+### `.info` - view information
+
+```
+〉.info
+config_file         /home/alice/.config/aichat/config.yaml
+roles_file          /home/alice/.config/aichat/roles.yaml
+messages_file       /home/alice/.config/aichat/messages.md
+sessions_dir        /home/alice/.config/aichat/sessions
+model               openai:gpt-3.5-turbo
+temperature         -
+save                true
+highlight           true
+light_theme         false
+wrap                no
+wrap_code           false
+dry_run             false
+keybindings         emacs
+```
+
+### `.edit` -  multiline editing
+
+AIChat supports bracketed paste, so you can paste multi-lines text directly.
 
 AIChat also provides `.edit` command for multi-lines editing.
 
@@ -166,116 +200,52 @@ AIChat also provides `.edit` command for multi-lines editing.
 }
 ```
 
-> Submit the multi-line text with `Ctrl+S`.
+> Submit with `Ctrl+S`.
 
-### `.help` - Print help message
 
-```
-〉.help
-.info                    Print system-wide information
-.set                     Modify the configuration temporarily
-.model                   Choose a model
-.prompt                  Add a GPT prompt
-.role                    Select a role
-.clear role              Clear the currently selected role
-.session                 Start a session
-.clear session           End current session
-.copy                    Copy the last output to the clipboard
-.read                    Read the contents of a file and submit
-.edit                    Multi-line editing (CTRL+S to finish)
-.history                 Print the REPL history
-.clear history           Clear the REPL history
-.help                    Print this help message
-.exit                    Exit the REPL
-
-Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
-```
-
-### `.info` - View current configuration information
-
-```
-〉.info
-config_file         /home/alice/.config/aichat/config.yaml
-roles_file          /home/alice/.config/aichat/roles.yaml
-messages_file       /home/alice/.config/aichat/messages.md
-sessions_dir        /home/alice/.config/aichat/sessions
-model               openai:gpt-3.5-turbo
-temperature         0.7
-save                true
-highlight           true
-light_theme         false
-dry_run             false
-vi_keybindings      true
-```
-
-### `.set` - Modify the configuration temporarily
-
-```
-〉.set dry_run true
-〉.set highlight false
-〉.set save false
-〉.set temperature 1.2
-```
-
-### `.model` - Choose a model
+### `.model` - choose a model
 
 ```
 > .model openai:gpt-4
 > .model localai:gpt4all-j
 ```
 
-### `.prompt` - Set GPT prompt
+> You can easily enter enter model name using autocomplete.
 
-When you set up a prompt, every message sent later will carry the prompt.
-
-```
-〉{ .prompt
-I want you to translate the sentences I write into emojis.
-I will write the sentence, and you will express it with emojis.
-I just want you to express it with emojis.
-I want you to reply only with emojis.
-}
-Done
-
-Ｐ〉You are a genius
-👉🧠💡👨‍🎓
-
-Ｐ〉I'm embarrassed
-🙈😳
-```
-
-`.prompt` actually creates a temporary role internally, so **run `.clear role` to clear the prompt**.
-
-When you are satisfied with the prompt, add it to `roles.yaml` for later use.
-
-### `.role` - Let the AI play a role
+### `.role` - let the AI play a role
 
 Select a role:
 
 ```
 〉.role emoji
-name: emoji
-prompt: I want you to translate the sentences I write into emojis. I will write the sentence, and you will express it with emojis. I just want you to express it with emojis. I don't want you to reply with anything but emoji. When I need to tell you something in English, I will do it by wrapping it in curly brackets like {like this}.
-temperature: null
 ```
 
-AI takes the role we specified:
+Send message with the role:
 
 ```
 emoji〉hello
 👋
 ```
 
-Clear current selected role:
+Leave current role:
 
 ```
-emoji〉.clear role
+emoji〉.exit role
 
 〉hello
 Hello there! How can I assist you today?
 ```
 
-## Session - context-aware conversation
+Show role info:
+
+```
+emoji〉.info role
+name: emoji
+prompt: I want you to translate the sentences I write into emojis. I will write the sentence, and you will express it with emojis. I just want you to express it with emojis. I don't want you to reply with anything but emoji. When I need to tell you something in English, I will do it by wrapping it in curly brackets like {like this}.
+temperature: null
+```
+
+### `.session` - context-aware conversation
 
 By default, aichat behaves in a one-off request/response manner.
 
@@ -284,23 +254,77 @@ You should run aichat with `-s/--session` or use the `.session` command to start
 
 ```
 〉.session
-temp）1 to 5, odd only                                                                   4089
+temp）1 to 5, odd only                                                                    4089
 1, 3, 5
 
-temp）to 7                                                                               4070
+temp）to 7                                                                                4070
 1, 3, 5, 7
 
-temp）.clear session
+temp）.exit session
 
 〉
 ```
 
+
+### `.set` - modify the configuration temporarily
+
+```
+〉.set temperature 1.2
+〉.set dry_run true
+〉.set highlight false
+〉.set save false
+```
+
+## Command Line
+
+```
+Usage: aichat [OPTIONS] [TEXT]...
+
+Arguments:
+  [TEXT]...  Input text
+
+Options:
+  -m, --model <MODEL>        Choose a LLM model
+  -r, --role <ROLE>          Choose a role
+  -s, --session [<SESSION>]  Create or reuse a session
+  -H, --no-highlight         Disable syntax highlighting
+  -S, --no-stream            No stream output
+  -w, --wrap <WRAP>          Specify the text-wrapping mode (no*, auto, <max-width>)
+      --light-theme          Use light theme
+      --dry-run              Run in dry run mode
+      --info                 Print related information
+      --list-models          List all available models
+      --list-roles           List all available roles
+      --list-sessions        List all available sessions
+  -h, --help                 Print help
+  -V, --version              Print version
+```
+
+Here are some practical examples:
+
 ```sh
-aichat --list-sessions      # List sessions.
-aichat -s                   # Start with a new temp session.
-aichat -s temp              # Reuses previous temp session.
-aichat -s rust              # Reuses session named rust. If it does not exist, create a new session named rust.
-aichat -s rust --info       # Show session details.
+aichat -s                                    # Start REPL with a new temp session
+aichat -s temp                               # Reuse temp session
+aichat -r shell -s                           # Create a session with a role
+aichat -m openai:gpt-4-32k -s                # Create a session with a model
+aichat -s sh unzip a file                    # Run session in command mode
+
+aichat -r shell unzip a file                 # Use role in command mode
+aichat -s shell unzip a file                 # Use session in command mode
+
+cat config.json | aichat convert to yaml     # Read stdin
+cat config.json | aichat -r convert:yaml     # Read stdin with a role
+cat config.json | aichat -s i18n             # Read stdin with a session
+
+aichat --list-models                         # List all available models
+aichat --list-roles                          # List all available roles
+aichat --list-sessions                       # List all available models
+
+aichat --info                                # system-wide information
+aichat -s temp --info                        # Show session details
+aichat -r shell --info                       # Show role info
+
+$(echo "$data" | aichat -S -H to json)       # Use aichat in a script
 ```
 
 ## License

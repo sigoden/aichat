@@ -1,7 +1,7 @@
 use crate::client::init_client;
 use crate::config::SharedConfig;
 use crate::print_now;
-use crate::render::render_stream;
+use crate::render::{render_stream, MarkdownRender};
 use std::fs;
 use std::io::Read;
 
@@ -15,19 +15,19 @@ use std::cell::RefCell;
 
 pub enum ReplCmd {
     Submit(String),
+    Info,
+    RoleInfo,
+    SessionInfo,
     SetModel(String),
     SetRole(String),
-    UpdateConfig(String),
-    Prompt(String),
-    ClearRole,
-    ViewInfo,
+    ExitRole,
     StartSession(Option<String>),
-    EndSession,
+    ExitSession,
+    Set(String),
     Copy,
     ReadFile(String),
 }
 
-#[allow(clippy::module_name_repetitions)]
 pub struct ReplCmdHandler {
     config: SharedConfig,
     abort: SharedAbortSignal,
@@ -35,7 +35,6 @@ pub struct ReplCmdHandler {
 }
 
 impl ReplCmdHandler {
-    #[allow(clippy::unnecessary_wraps)]
     pub fn init(config: SharedConfig, abort: SharedAbortSignal) -> Result<Self> {
         let clipboard = Clipboard::new().map(RefCell::new);
         Ok(Self {
@@ -69,36 +68,48 @@ impl ReplCmdHandler {
                     let _ = self.copy(&buffer);
                 }
             }
+            ReplCmd::Info => {
+                let output = self.config.read().info()?;
+                print_now!("{}\n\n", output.trim_end());
+            }
             ReplCmd::SetModel(name) => {
                 self.config.write().set_model(&name)?;
                 print_now!("\n");
             }
             ReplCmd::SetRole(name) => {
-                let output = self.config.write().change_role(&name)?;
-                print_now!("{}\n\n", output.trim_end());
+                self.config.write().set_role(&name)?;
+                print_now!("\n");
             }
-            ReplCmd::ClearRole => {
+            ReplCmd::RoleInfo => {
+                if let Some(role) = &self.config.read().role {
+                    print_now!("{}\n\n", role.info()?);
+                } else {
+                    bail!("No role")
+                }
+            }
+            ReplCmd::ExitRole => {
                 self.config.write().clear_role()?;
-                print_now!("\n");
-            }
-            ReplCmd::Prompt(prompt) => {
-                self.config.write().add_prompt(&prompt)?;
-                print_now!("\n");
-            }
-            ReplCmd::ViewInfo => {
-                let output = self.config.read().info()?;
-                print_now!("{}\n\n", output.trim_end());
-            }
-            ReplCmd::UpdateConfig(input) => {
-                self.config.write().update(&input)?;
                 print_now!("\n");
             }
             ReplCmd::StartSession(name) => {
                 self.config.write().start_session(&name)?;
                 print_now!("\n");
             }
-            ReplCmd::EndSession => {
+            ReplCmd::SessionInfo => {
+                if let Some(session) = &self.config.read().session {
+                    let render_options = self.config.read().get_render_options();
+                    let mut markdown_render = MarkdownRender::init(render_options)?;
+                    print_now!("{}\n\n", session.render(&mut markdown_render)?);
+                } else {
+                    bail!("No session")
+                }
+            }
+            ReplCmd::ExitSession => {
                 self.config.write().end_session()?;
+                print_now!("\n");
+            }
+            ReplCmd::Set(input) => {
+                self.config.write().update(&input)?;
                 print_now!("\n");
             }
             ReplCmd::Copy => {
@@ -115,9 +126,9 @@ impl ReplCmdHandler {
             }
             ReplCmd::ReadFile(file) => {
                 let mut contents = String::new();
-                let mut file = fs::File::open(file).expect("Unable to open file");
+                let mut file = fs::File::open(file).with_context(|| "Unable to open file")?;
                 file.read_to_string(&mut contents)
-                    .expect("Unable to read file");
+                    .with_context(|| "Unable to read file")?;
                 self.handle(ReplCmd::Submit(contents))?;
             }
         }
@@ -135,25 +146,18 @@ impl ReplCmdHandler {
     }
 }
 
-#[allow(clippy::module_name_repetitions)]
 pub struct ReplyStreamHandler {
-    sender: Option<Sender<ReplyStreamEvent>>,
+    sender: Sender<ReplyStreamEvent>,
     buffer: String,
     abort: SharedAbortSignal,
-    repl: bool,
 }
 
 impl ReplyStreamHandler {
-    pub fn new(
-        sender: Option<Sender<ReplyStreamEvent>>,
-        repl: bool,
-        abort: SharedAbortSignal,
-    ) -> Self {
+    pub fn new(sender: Sender<ReplyStreamEvent>, abort: SharedAbortSignal) -> Self {
         Self {
             sender,
             abort,
             buffer: String::new(),
-            repl,
         }
     }
 
@@ -162,37 +166,20 @@ impl ReplyStreamHandler {
             return Ok(());
         }
         self.buffer.push_str(text);
-        match self.sender.as_ref() {
-            Some(tx) => {
-                let ret = tx
-                    .send(ReplyStreamEvent::Text(text.to_string()))
-                    .with_context(|| "Failed to send StreamEvent:Text");
-                self.safe_ret(ret)?;
-            }
-            None => {
-                print_now!("{}", text);
-            }
-        }
+        let ret = self
+            .sender
+            .send(ReplyStreamEvent::Text(text.to_string()))
+            .with_context(|| "Failed to send StreamEvent:Text");
+        self.safe_ret(ret)?;
         Ok(())
     }
 
     pub fn done(&mut self) -> Result<()> {
-        if let Some(tx) = self.sender.as_ref() {
-            let ret = tx
-                .send(ReplyStreamEvent::Done)
-                .with_context(|| "Failed to send StreamEvent:Done");
-            self.safe_ret(ret)?;
-        } else {
-            if !self.buffer.ends_with('\n') {
-                print_now!("\n");
-            }
-            if self.repl {
-                print_now!("\n");
-                if cfg!(macos) {
-                    print_now!("\n");
-                }
-            }
-        }
+        let ret = self
+            .sender
+            .send(ReplyStreamEvent::Done)
+            .with_context(|| "Failed to send StreamEvent:Done");
+        self.safe_ret(ret)?;
         Ok(())
     }
 

@@ -3,7 +3,6 @@ mod client;
 mod config;
 mod render;
 mod repl;
-mod term;
 #[macro_use]
 mod utils;
 
@@ -11,7 +10,7 @@ use crate::cli::Cli;
 use crate::client::Client;
 use crate::config::{Config, SharedConfig};
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use clap::Parser;
 use client::{init_client, list_models};
 use crossbeam::sync::WaitGroup;
@@ -47,34 +46,32 @@ fn main() -> Result<()> {
         println!("{sessions}");
         exit(0);
     }
+    if let Some(wrap) = &cli.wrap {
+        config.write().set_wrap(wrap)?;
+    }
+    if cli.light_theme {
+        config.write().light_theme = true;
+    }
     if cli.dry_run {
         config.write().dry_run = true;
-    }
-    if let Some(session) = &cli.session {
-        config.write().start_session(session)?;
     }
     if let Some(model) = &cli.model {
         config.write().set_model(model)?;
     }
-    let role = match &cli.role {
-        Some(name) => Some(
-            config
-                .read()
-                .get_role(name)
-                .ok_or_else(|| anyhow!("Unknown role '{name}'"))?,
-        ),
-        None => None,
-    };
-    config.write().role = role;
+    if let Some(name) = &cli.role {
+        config.write().set_role(name)?;
+    }
+    if let Some(session) = &cli.session {
+        config.write().start_session(session)?;
+    }
     if cli.no_highlight {
         config.write().highlight = false;
     }
-    if let Some(prompt) = &cli.prompt {
-        config.write().add_prompt(prompt)?;
-    }
     if cli.info {
         let info = if let Some(session) = &config.read().session {
-            session.info()?
+            session.export()?
+        } else if let Some(role) = &config.read().role {
+            role.info()?
         } else {
             config.read().info()?
         };
@@ -104,22 +101,18 @@ fn start_directive(
     input: &str,
     no_stream: bool,
 ) -> Result<()> {
-    if let Some(sesion) = &config.read().session {
-        sesion.guard_save()?;
+    if let Some(session) = &config.read().session {
+        session.guard_save()?;
     }
     if !stdout().is_terminal() {
         config.write().highlight = false;
     }
     config.read().maybe_print_send_tokens(input);
     let output = if no_stream {
-        let (highlight, light_theme) = config.read().get_render_options();
+        let render_options = config.read().get_render_options();
         let output = client.send_message(input)?;
-        if highlight {
-            let mut markdown_render = MarkdownRender::new(light_theme);
-            println!("{}", markdown_render.render(&output).trim());
-        } else {
-            println!("{}", output.trim());
-        }
+        let mut markdown_render = MarkdownRender::init(render_options)?;
+        println!("{}", markdown_render.render(&output).trim());
         output
     } else {
         let wg = WaitGroup::new();
