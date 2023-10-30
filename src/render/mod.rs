@@ -31,14 +31,16 @@ pub fn render_stream(
         let (tx, rx) = unbounded();
         let abort_clone = abort.clone();
         spawn(move || {
-            let err = if repl {
-                let mut render = MarkdownRender::new(render_options);
-                repl_render_stream(&rx, &mut render, &abort)
-            } else {
-                let mut render = MarkdownRender::new(render_options);
-                cmd_render_stream(&rx, &mut render, &abort)
+            let run = move || {
+                if repl {
+                    let mut render = MarkdownRender::init(render_options)?;
+                    repl_render_stream(&rx, &mut render, &abort)
+                } else {
+                    let mut render = MarkdownRender::init(render_options)?;
+                    cmd_render_stream(&rx, &mut render, &abort)
+                }
             };
-            if let Err(err) = err {
+            if let Err(err) = run() {
                 let err = format!("{err:?}");
                 print_now!("{}\n\n", err.trim());
             }

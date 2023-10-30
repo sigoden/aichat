@@ -79,8 +79,6 @@ pub struct Config {
     #[serde(skip)]
     pub model_info: ModelInfo,
     #[serde(skip)]
-    pub text_width: Option<u16>,
-    #[serde(skip)]
     pub last_message: Option<(String, String)>,
 }
 
@@ -102,7 +100,6 @@ impl Default for Config {
             role: None,
             session: None,
             model_info: Default::default(),
-            text_width: None,
             last_message: None,
         }
     }
@@ -315,15 +312,13 @@ impl Config {
     pub fn set_wrap(&mut self, value: &str) -> Result<()> {
         if value == "no" {
             self.wrap = None;
-            self.text_width = None;
         } else if value == "auto" {
             self.wrap = Some(value.into());
-            self.text_width = Some(0);
         } else {
-            let width = value
+            value
                 .parse::<u16>()
                 .map_err(|_| anyhow!("Invalid wrap value"))?;
-            self.text_width = Some(width);
+            self.wrap = Some(value.into())
         }
         Ok(())
     }
@@ -543,7 +538,7 @@ impl Config {
         RenderOptions::new(
             self.highlight,
             self.light_theme,
-            self.text_width,
+            self.wrap.clone(),
             self.wrap_code,
         )
     }

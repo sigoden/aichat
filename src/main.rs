@@ -120,7 +120,7 @@ fn start_directive(
     let output = if no_stream {
         let render_options = config.read().get_render_options();
         let output = client.send_message(input)?;
-        let mut markdown_render = MarkdownRender::new(render_options);
+        let mut markdown_render = MarkdownRender::init(render_options)?;
         println!("{}", markdown_render.render(&output).trim());
         output
     } else {

@@ -1,4 +1,6 @@
+use anyhow::{anyhow, Context, Result};
 use crossterm::style::{Color, Stylize};
+use crossterm::terminal;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use syntect::highlighting::{Color as SyntectColor, FontStyle, Style, Theme};
@@ -29,36 +31,55 @@ pub struct MarkdownRender {
     md_syntax: SyntaxReference,
     code_syntax: Option<SyntaxReference>,
     prev_line_type: LineType,
+    wrap_width: Option<u16>,
     options: RenderOptions,
 }
 
 impl MarkdownRender {
-    pub fn new(options: RenderOptions) -> Self {
-        let syntax_set: SyntaxSet =
-            bincode::deserialize_from(SYNTAXES).expect("invalid syntaxes binary");
+    pub fn init(options: RenderOptions) -> Result<Self> {
+        let syntax_set: SyntaxSet = bincode::deserialize_from(SYNTAXES)
+            .with_context(|| "MarkdownRender: invalid syntaxes binary")?;
 
         let md_theme: Option<Theme> = match (options.highlight, options.light_theme) {
             (false, _) => None,
-            (true, false) => {
-                Some(bincode::deserialize_from(MD_THEME).expect("invalid theme binary"))
-            }
-            (true, true) => {
-                Some(bincode::deserialize_from(MD_THEME_LIGHT).expect("invalid theme binary"))
-            }
+            (true, false) => Some(
+                bincode::deserialize_from(MD_THEME)
+                    .with_context(|| "MarkdownRender: invalid theme binary")?,
+            ),
+            (true, true) => Some(
+                bincode::deserialize_from(MD_THEME_LIGHT)
+                    .expect("MarkdownRender: invalid theme binary"),
+            ),
         };
         let code_color = md_theme.as_ref().map(get_code_color);
         let md_syntax = syntax_set.find_syntax_by_extension("md").unwrap().clone();
         let line_type = LineType::Normal;
-
-        Self {
+        let wrap_width = match options.wrap.as_deref() {
+            None => None,
+            Some("auto") => {
+                let (columns, _) =
+                    terminal::size().with_context(|| "Unable to get terminal size")?;
+                Some(columns)
+            }
+            Some(value) => {
+                let (columns, _) =
+                    terminal::size().with_context(|| "Unable to get terminal size")?;
+                let value = value
+                    .parse::<u16>()
+                    .map_err(|_| anyhow!("Invalid wrap value"))?;
+                Some(columns.min(value))
+            }
+        };
+        Ok(Self {
             syntax_set,
             md_theme,
             code_color,
             md_syntax,
             code_syntax: None,
             prev_line_type: line_type,
+            wrap_width,
             options,
-        }
+        })
     }
 
     pub fn render(&mut self, text: &str) -> String {
@@ -141,7 +162,7 @@ impl MarkdownRender {
     }
 
     fn wrap_line(&self, line: String, is_code: bool) -> String {
-        if let Some(width) = self.options.text_width {
+        if let Some(width) = self.wrap_width {
             if is_code && !self.options.wrap_code {
                 return line;
             }
@@ -167,7 +188,7 @@ impl MarkdownRender {
 pub struct RenderOptions {
     pub highlight: bool,
     pub light_theme: bool,
-    pub text_width: Option<u16>,
+    pub wrap: Option<String>,
     pub wrap_code: bool,
 }
 
@@ -176,7 +197,7 @@ impl Default for RenderOptions {
         Self {
             highlight: true,
             light_theme: false,
-            text_width: None,
+            wrap: None,
             wrap_code: false,
         }
     }
@@ -186,13 +207,13 @@ impl RenderOptions {
     pub(crate) fn new(
         highlight: bool,
         light_theme: bool,
-        text_width: Option<u16>,
+        wrap: Option<String>,
         wrap_code: bool,
     ) -> Self {
         Self {
             highlight,
             light_theme,
-            text_width,
+            wrap,
             wrap_code,
         }
     }
@@ -298,7 +319,7 @@ fn unzip_file(path: &str, output_dir: &str) -> Result<(), Box<dyn std::error::Er
     #[test]
     fn test_render() {
         let options = RenderOptions::default();
-        let render = MarkdownRender::new(options);
+        let render = MarkdownRender::init(options).unwrap();
         assert!(render.find_syntax("csharp").is_some());
     }
 
@@ -308,7 +329,7 @@ fn unzip_file(path: &str, output_dir: &str) -> Result<(), Box<dyn std::error::Er
             highlight: false,
             ..Default::default()
         };
-        let mut render = MarkdownRender::new(options);
+        let mut render = MarkdownRender::init(options).unwrap();
         let output = render.render(TEXT);
         assert_eq!(TEXT, output);
     }
