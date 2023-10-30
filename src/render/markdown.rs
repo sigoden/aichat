@@ -372,11 +372,9 @@ std::error::Error>> {
 
     #[test]
     fn no_wrap_code() {
-        let options = RenderOptions {
-            wrap: Some("80".into()),
-            ..Default::default()
-        };
+        let options = RenderOptions::default();
         let mut render = MarkdownRender::init(options).unwrap();
+        render.wrap_width = Some(80);
         let output = render.render(TEXT);
         assert_eq!(TEXT_NO_WRAP_CODE, output);
     }
@@ -384,11 +382,11 @@ std::error::Error>> {
     #[test]
     fn wrap_all() {
         let options = RenderOptions {
-            wrap: Some("80".into()),
             wrap_code: true,
             ..Default::default()
         };
         let mut render = MarkdownRender::init(options).unwrap();
+        render.wrap_width = Some(80);
         let output = render.render(TEXT);
         assert_eq!(TEXT_WRAP_ALL, output);
     }
