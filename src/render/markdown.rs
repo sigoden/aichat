@@ -56,19 +56,19 @@ impl MarkdownRender {
         let line_type = LineType::Normal;
         let wrap_width = match options.wrap.as_deref() {
             None => None,
-            Some("auto") => {
-                let (columns, _) =
-                    terminal::size().with_context(|| "Unable to get terminal size")?;
-                Some(columns)
-            }
-            Some(value) => {
-                let (columns, _) =
-                    terminal::size().with_context(|| "Unable to get terminal size")?;
-                let value = value
-                    .parse::<u16>()
-                    .map_err(|_| anyhow!("Invalid wrap value"))?;
-                Some(columns.min(value))
-            }
+            Some(value) => match terminal::size() {
+                Ok((columns, _)) => {
+                    if value == "auto" {
+                        Some(columns)
+                    } else {
+                        let value = value
+                            .parse::<u16>()
+                            .map_err(|_| anyhow!("Invalid wrap value"))?;
+                        Some(columns.min(value))
+                    }
+                }
+                Err(_) => None,
+            },
         };
         Ok(Self {
             syntax_set,
@@ -208,23 +208,12 @@ impl MarkdownRender {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct RenderOptions {
     pub highlight: bool,
     pub light_theme: bool,
     pub wrap: Option<String>,
     pub wrap_code: bool,
-}
-
-impl Default for RenderOptions {
-    fn default() -> Self {
-        Self {
-            highlight: true,
-            light_theme: false,
-            wrap: None,
-            wrap_code: false,
-        }
-    }
 }
 
 impl RenderOptions {
@@ -330,6 +319,32 @@ fn unzip_file(path: &str, output_dir: &str) -> Result<(), Box<dyn std::error::Er
 }
 ```
 "#;
+    const TEXT_NO_WRAP_CODE: &str = r#"
+To unzip a file in Rust, you can use the `zip` crate. Here's an example code
+that shows how to unzip a file:
+
+```rust
+use std::fs::File;
+
+fn unzip_file(path: &str, output_dir: &str) -> Result<(), Box<dyn std::error::Error>> {
+    todo!()
+}
+```
+"#;
+
+    const TEXT_WRAP_ALL: &str = r#"
+To unzip a file in Rust, you can use the `zip` crate. Here's an example code
+that shows how to unzip a file:
+
+```rust
+use std::fs::File;
+
+fn unzip_file(path: &str, output_dir: &str) -> Result<(), Box<dyn
+std::error::Error>> {
+    todo!()
+}
+```
+"#;
 
     #[test]
     fn test_assets() {
@@ -349,12 +364,32 @@ fn unzip_file(path: &str, output_dir: &str) -> Result<(), Box<dyn std::error::Er
 
     #[test]
     fn no_theme() {
+        let options = RenderOptions::default();
+        let mut render = MarkdownRender::init(options).unwrap();
+        let output = render.render(TEXT);
+        assert_eq!(TEXT, output);
+    }
+
+    #[test]
+    fn no_wrap_code() {
         let options = RenderOptions {
-            highlight: false,
+            wrap: Some("80".into()),
             ..Default::default()
         };
         let mut render = MarkdownRender::init(options).unwrap();
         let output = render.render(TEXT);
-        assert_eq!(TEXT, output);
+        assert_eq!(TEXT_NO_WRAP_CODE, output);
+    }
+
+    #[test]
+    fn wrap_all() {
+        let options = RenderOptions {
+            wrap: Some("80".into()),
+            wrap_code: true,
+            ..Default::default()
+        };
+        let mut render = MarkdownRender::init(options).unwrap();
+        let output = render.render(TEXT);
+        assert_eq!(TEXT_WRAP_ALL, output);
     }
 }
