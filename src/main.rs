@@ -47,6 +47,9 @@ fn main() -> Result<()> {
         println!("{sessions}");
         exit(0);
     }
+    if let Some(wrap) = &cli.wrap {
+        config.write().set_wrap(wrap)?;
+    }
     if cli.light_theme {
         config.write().light_theme = true;
     }
@@ -115,14 +118,10 @@ fn start_directive(
     }
     config.read().maybe_print_send_tokens(input);
     let output = if no_stream {
-        let (highlight, light_theme) = config.read().get_render_options();
+        let render_options = config.read().get_render_options();
         let output = client.send_message(input)?;
-        if highlight {
-            let mut markdown_render = MarkdownRender::new(light_theme);
-            println!("{}", markdown_render.render_block(&output).trim());
-        } else {
-            println!("{}", output.trim());
-        }
+        let mut markdown_render = MarkdownRender::init(render_options)?;
+        println!("{}", markdown_render.render(&output).trim());
         output
     } else {
         let wg = WaitGroup::new();

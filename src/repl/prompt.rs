@@ -41,15 +41,15 @@ impl ReplPrompt {
     }
 
     pub fn get_colors(config: &SharedConfig) -> (Color, nu_ansi_term::Color, Color, Color) {
-        let (highlight, light_theme) = config.read().get_render_options();
-        if highlight {
+        let render_options = config.read().get_render_options();
+        if render_options.highlight {
             (
                 PROMPT_COLOR,
                 PROMPT_MULTILINE_COLOR,
                 INDICATOR_COLOR,
                 PROMPT_RIGHT_COLOR,
             )
-        } else if light_theme {
+        } else if render_options.light_theme {
             (
                 Color::Black,
                 nu_ansi_term::Color::Black,

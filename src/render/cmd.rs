@@ -5,15 +5,16 @@ use crate::repl::{ReplyStreamEvent, SharedAbortSignal};
 
 use anyhow::Result;
 use crossbeam::channel::Receiver;
+use textwrap::core::display_width;
 
 #[allow(clippy::unnecessary_wraps, clippy::module_name_repetitions)]
 pub fn cmd_render_stream(
     rx: &Receiver<ReplyStreamEvent>,
-    light_theme: bool,
+    render: &mut MarkdownRender,
     abort: &SharedAbortSignal,
 ) -> Result<()> {
     let mut buffer = String::new();
-    let mut markdown_render = MarkdownRender::new(light_theme);
+    let mut col = 0;
     loop {
         if abort.aborted() {
             return Ok(());
@@ -23,28 +24,39 @@ pub fn cmd_render_stream(
                 ReplyStreamEvent::Text(text) => {
                     if text.contains('\n') {
                         let text = format!("{buffer}{text}");
-                        let mut lines: Vec<&str> = text.split('\n').collect();
-                        buffer = lines.pop().unwrap_or_default().to_string();
-                        let output = lines.join("\n");
-                        print_now!("{}\n", markdown_render.render_block(&output));
+                        let (head, tail) = split_line_tail(&text);
+                        buffer = tail.to_string();
+                        let input = format!("{}{head}", spaces(col));
+                        let output = render.render(&input);
+                        print_now!("{}\n", &output[col..]);
+                        col = 0;
                     } else {
                         buffer = format!("{buffer}{text}");
-                        if !(markdown_render.is_code_block()
-                            || buffer.len() < 60
+                        if !(render.is_code()
+                            || buffer.len() < 40
                             || buffer.starts_with('#')
                             || buffer.starts_with('>')
                             || buffer.starts_with('|'))
                         {
-                            if let Some((output, remain)) = split_line(&buffer) {
-                                print_now!("{}", markdown_render.render_line(&output));
+                            if let Some((head, remain)) = split_line_sematic(&buffer) {
                                 buffer = remain;
+                                let input = format!("{}{head}", spaces(col));
+                                let output = render.render(&input);
+                                let output = &output[col..];
+                                let (_, tail) = split_line_tail(output);
+                                if output.contains('\n') {
+                                    col = display_width(tail);
+                                } else {
+                                    col += display_width(output);
+                                }
+                                print_now!("{}", output);
                             }
                         }
                     }
                 }
                 ReplyStreamEvent::Done => {
-                    let output = markdown_render.render_block(&buffer);
-                    print_now!("{}\n", output.trim_end());
+                    let input = format!("{}{buffer}", spaces(col));
+                    print_now!("{}\n", render.render(&input));
                     break;
                 }
             }
@@ -53,9 +65,9 @@ pub fn cmd_render_stream(
     Ok(())
 }
 
-fn split_line(line: &str) -> Option<(String, String)> {
+fn split_line_sematic(text: &str) -> Option<(String, String)> {
     let mut balance: Vec<Kind> = Vec::new();
-    let chars: Vec<char> = line.chars().collect();
+    let chars: Vec<char> = text.chars().collect();
     let mut index = 0;
     let len = chars.len();
     while index < len - 1 {
@@ -80,6 +92,18 @@ fn split_line(line: &str) -> Option<(String, String)> {
     }
 
     None
+}
+
+pub(crate) fn split_line_tail(text: &str) -> (&str, &str) {
+    if let Some((head, tail)) = text.rsplit_once('\n') {
+        (head, tail)
+    } else {
+        ("", text)
+    }
+}
+
+fn spaces(n: usize) -> String {
+    " ".repeat(n)
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -176,12 +200,12 @@ mod tests {
     macro_rules! assert_split_line {
         ($a:literal, $b:literal, true) => {
             assert_eq!(
-                split_line(&format!("{}{}", $a, $b)),
+                split_line_sematic(&format!("{}{}", $a, $b)),
                 Some(($a.into(), $b.into()))
             );
         };
         ($a:literal, $b:literal, false) => {
-            assert_eq!(split_line(&format!("{}{}", $a, $b)), None);
+            assert_eq!(split_line_sematic(&format!("{}{}", $a, $b)), None);
         };
     }
 

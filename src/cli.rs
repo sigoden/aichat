@@ -7,7 +7,7 @@ pub struct Cli {
     /// List all models
     #[clap(long)]
     pub list_models: bool,
-    /// Choose a llm model
+    /// Choose a LLM model
     #[clap(short, long)]
     pub model: Option<String>,
     /// List all roles
@@ -25,6 +25,9 @@ pub struct Cli {
     /// Initiate or continue a session
     #[clap(short = 's', long)]
     pub session: Option<Option<String>>,
+    /// Specify the text-wrapping mode (no*, auto, <max-width>)
+    #[clap(short = 'w', long)]
+    pub wrap: Option<String>,
     /// Print information
     #[clap(long)]
     pub info: bool,

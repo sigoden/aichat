@@ -61,6 +61,8 @@ temperature: 1.0                 # See https://platform.openai.com/docs/api-refe
 save: true                       # If set true, aichat will save non-session chat messages to messages.md
 highlight: true                  # Set false to turn highlight
 light_theme: false               # If set true, use light theme
+wrap: no                         # Specify the text-wrapping mode (no*, auto, <max-width>)
+wrap_code: false                 # Whether wrap code block
 auto_copy: false                 # Automatically copy the last output to the clipboard
 keybindings: emacs               # REPL keybindings, possible values: emacs (default), vi
 

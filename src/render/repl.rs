@@ -1,4 +1,4 @@
-use super::MarkdownRender;
+use super::{cmd::split_line_tail, MarkdownRender};
 
 use crate::repl::{ReplyStreamEvent, SharedAbortSignal};
 
@@ -14,18 +14,18 @@ use std::{
     io::{self, Stdout, Write},
     time::{Duration, Instant},
 };
-use unicode_width::UnicodeWidthStr;
+use textwrap::core::display_width;
 
 #[allow(clippy::module_name_repetitions)]
 pub fn repl_render_stream(
     rx: &Receiver<ReplyStreamEvent>,
-    light_theme: bool,
+    render: &mut MarkdownRender,
     abort: &SharedAbortSignal,
 ) -> Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
 
-    let ret = repl_render_stream_inner(rx, light_theme, abort, &mut stdout);
+    let ret = repl_render_stream_inner(rx, render, abort, &mut stdout);
 
     disable_raw_mode()?;
 
@@ -34,15 +34,16 @@ pub fn repl_render_stream(
 
 fn repl_render_stream_inner(
     rx: &Receiver<ReplyStreamEvent>,
-    light_theme: bool,
+    render: &mut MarkdownRender,
     abort: &SharedAbortSignal,
     writer: &mut Stdout,
 ) -> Result<()> {
     let mut last_tick = Instant::now();
     let tick_rate = Duration::from_millis(50);
     let mut buffer = String::new();
-    let mut markdown_render = MarkdownRender::new(light_theme);
     let columns = terminal::size()?.0;
+
+    let mut clear_rows = 0;
     loop {
         if abort.aborted() {
             return Ok(());
@@ -51,44 +52,45 @@ fn repl_render_stream_inner(
         if let Ok(evt) = rx.try_recv() {
             match evt {
                 ReplyStreamEvent::Text(text) => {
-                    if !buffer.is_empty() {
-                        let buffer_width = buffer.width() as u16;
-                        let need_rows = (buffer_width + columns - 1) / columns;
-                        let (col, row) = cursor::position()?;
+                    let (col, mut row) = cursor::position()?;
 
-                        if row + 1 >= need_rows {
-                            if col == 0 {
-                                queue!(writer, cursor::MoveTo(0, row - need_rows))?;
-                            } else {
-                                queue!(writer, cursor::MoveTo(0, row + 1 - need_rows))?;
-                            }
-                        } else {
-                            queue!(
-                                writer,
-                                terminal::ScrollUp(need_rows - 1 - row),
-                                cursor::MoveTo(0, 0)
-                            )?;
-                        }
+                    // fix unxpected duplicate lines on kitty, see https://github.com/sigoden/aichat/issues/105
+                    if col == 0 && row > 0 && display_width(&buffer) == columns as usize {
+                        row -= 1;
+                    }
+
+                    if row + 1 >= clear_rows {
+                        queue!(writer, cursor::MoveTo(0, row - clear_rows))?;
+                    } else {
+                        let scroll_rows = clear_rows - row - 1;
+                        queue!(
+                            writer,
+                            terminal::ScrollUp(scroll_rows),
+                            cursor::MoveTo(0, 0),
+                        )?;
                     }
 
                     if text.contains('\n') {
                         let text = format!("{buffer}{text}");
-                        let mut lines: Vec<&str> = text.split('\n').collect();
-                        buffer = lines.pop().unwrap_or_default().to_string();
-                        let output = markdown_render.render_block(&lines.join("\n"));
-                        for line in output.split('\n') {
-                            queue!(
-                                writer,
-                                style::Print(line),
-                                style::Print("\n"),
-                                cursor::MoveLeft(columns),
-                            )?;
-                        }
+                        let (head, tail) = split_line_tail(&text);
+                        buffer = tail.to_string();
+                        let output = render.render(head);
+                        print_block(writer, &output, columns)?;
                         queue!(writer, style::Print(&buffer),)?;
+                        clear_rows = 0;
                     } else {
                         buffer = format!("{buffer}{text}");
-                        let output = markdown_render.render_line(&buffer);
-                        queue!(writer, style::Print(&output))?;
+                        let output = render.render_line(&buffer);
+                        if output.contains('\n') {
+                            let (head, tail) = split_line_tail(&output);
+                            clear_rows = print_block(writer, head, columns)?;
+                            queue!(writer, style::Print(&tail),)?;
+                        } else {
+                            queue!(writer, style::Print(&output))?;
+                            let buffer_width = display_width(&output) as u16;
+                            let need_rows = (buffer_width + columns - 1) / columns;
+                            clear_rows = need_rows.saturating_sub(1);
+                        }
                     }
 
                     writer.flush()?;
@@ -127,4 +129,18 @@ fn repl_render_stream_inner(
         }
     }
     Ok(())
+}
+
+fn print_block(writer: &mut Stdout, text: &str, columns: u16) -> Result<u16> {
+    let mut num = 0;
+    for line in text.split('\n') {
+        queue!(
+            writer,
+            style::Print(line),
+            style::Print("\n"),
+            cursor::MoveLeft(columns),
+        )?;
+        num += 1;
+    }
+    Ok(num)
 }
