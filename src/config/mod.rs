@@ -10,7 +10,7 @@ use crate::client::openai::{OpenAIClient, OpenAIConfig};
 use crate::client::{all_clients, create_client_config, list_models, ClientConfig, ModelInfo};
 use crate::config::message::num_tokens_from_messages;
 use crate::render::RenderOptions;
-use crate::utils::{get_env_name, now};
+use crate::utils::{get_env_name, light_theme_from_colorfgbg, now};
 
 use anyhow::{anyhow, bail, Context, Result};
 use inquire::{Confirm, Select, Text};
@@ -592,13 +592,11 @@ impl Config {
         if let Ok(value) = env::var(get_env_name("light_theme")) {
             set_bool(&mut self.light_theme, &value);
             return Ok(());
-        }
-        #[cfg(not(target_os = "windows"))]
-        if let Ok(crate::utils::termbg::Theme::Light) =
-            crate::utils::termbg::theme(std::time::Duration::from_millis(200))
-        {
-            self.light_theme = true;
-        }
+        } else if let Ok(value) = env::var("COLORFGBG") {
+            if let Some(light) = light_theme_from_colorfgbg(&value) {
+                self.light_theme = light
+            }
+        };
         Ok(())
     }
 
