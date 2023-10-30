@@ -160,7 +160,7 @@ impl Repl {
 }
 
 fn dump_unknown_command() {
-    print_now!("Error: Unknown command. Type \".help\" for more information.\n\n");
+    print_now!("Unknown command. Type \".help\" for more information.\n\n");
 }
 
 fn dump_repl_help() {

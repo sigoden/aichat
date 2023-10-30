@@ -47,7 +47,8 @@ pub struct Config {
     /// LLM model
     pub model: Option<String>,
     /// What sampling temperature to use, between 0 and 2
-    pub temperature: Option<f64>,
+    #[serde(rename(serialize = "temperature", deserialize = "temperature"))]
+    pub default_temperature: Option<f64>,
     /// Whether to persistently save non-session chat messages
     pub save: bool,
     /// Whether to disable highlight
@@ -79,13 +80,15 @@ pub struct Config {
     pub model_info: ModelInfo,
     #[serde(skip)]
     pub last_message: Option<(String, String)>,
+    #[serde(skip)]
+    pub temperature: Option<f64>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             model: None,
-            temperature: None,
+            default_temperature: None,
             save: false,
             highlight: true,
             dry_run: false,
@@ -100,6 +103,7 @@ impl Default for Config {
             session: None,
             model_info: Default::default(),
             last_message: None,
+            temperature: None,
         }
     }
 }
@@ -133,6 +137,8 @@ impl Config {
         if let Some(wrap) = config.wrap.clone() {
             config.set_wrap(&wrap)?;
         }
+
+        config.temperature = config.default_temperature;
 
         config.merge_env_vars();
         config.load_roles()?;
@@ -233,7 +239,7 @@ impl Config {
         Ok(path)
     }
 
-    pub fn change_role(&mut self, name: &str) -> Result<String> {
+    pub fn set_role(&mut self, name: &str) -> Result<String> {
         match self.get_role(name) {
             Some(role) => {
                 if let Some(session) = self.session.as_mut() {
@@ -241,10 +247,11 @@ impl Config {
                 }
                 let output = serde_yaml::to_string(&role)
                     .unwrap_or_else(|_| "Unable to echo role details".into());
+                self.temperature = role.temperature;
                 self.role = Some(role);
                 Ok(output)
             }
-            None => bail!("Error: Unknown role"),
+            None => bail!("Unknown role `{name}`"),
         }
     }
 
@@ -252,15 +259,21 @@ impl Config {
         if let Some(session) = self.session.as_mut() {
             session.update_role(None)?;
         }
+        self.temperature = self.default_temperature;
         self.role = None;
         Ok(())
     }
 
     pub fn get_temperature(&self) -> Option<f64> {
-        self.role
-            .as_ref()
-            .and_then(|v| v.temperature)
-            .or(self.temperature)
+        self.temperature
+    }
+
+    pub fn set_temperature(&mut self, value: Option<f64>) -> Result<()> {
+        self.temperature = value;
+        if let Some(session) = self.session.as_mut() {
+            session.temperature = value;
+        }
+        Ok(())
     }
 
     pub fn echo_messages(&self, content: &str) -> String {
@@ -318,7 +331,7 @@ impl Config {
             None => bail!("Invalid model"),
             Some(model_info) => {
                 if let Some(session) = self.session.as_mut() {
-                    session.model = model_info.stringify();
+                    session.set_model(&model_info.stringify())?;
                 }
                 self.model_info = model_info;
                 Ok(())
@@ -401,12 +414,13 @@ impl Config {
         let unset = value == "null";
         match key {
             "temperature" => {
-                if unset {
-                    self.temperature = None;
+                let value = if unset {
+                    None
                 } else {
                     let value = value.parse().with_context(|| "Invalid value")?;
-                    self.temperature = Some(value);
-                }
+                    Some(value)
+                };
+                self.set_temperature(value)?;
             }
             "save" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
@@ -420,7 +434,7 @@ impl Config {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.dry_run = value;
             }
-            _ => bail!("Error: Unknown key `{key}`"),
+            _ => bail!("Unknown key `{key}`"),
         }
         Ok(())
     }
@@ -451,13 +465,11 @@ impl Config {
                         self.role.clone(),
                     ));
                 } else {
-                    let mut session = Session::load(name, &session_path)?;
-                    if let Some(role) = &session.role {
-                        self.change_role(&role.name)?;
-                    }
-                    self.set_model(&session.model)?;
-                    session.update_tokens();
+                    let session = Session::load(name, &session_path)?;
+                    let model = session.model.clone();
+                    self.temperature = session.temperature;
                     self.session = Some(session);
+                    self.set_model(&model)?;
                 }
             }
         }
@@ -481,6 +493,7 @@ impl Config {
     pub fn end_session(&mut self) -> Result<()> {
         if let Some(mut session) = self.session.take() {
             self.last_message = None;
+            self.temperature = self.default_temperature;
             if session.should_save() {
                 let ans = Confirm::new("Save session?").with_default(true).prompt()?;
                 if !ans {

@@ -13,6 +13,7 @@ pub struct Session {
     pub path: Option<String>,
     pub model: String,
     pub tokens: usize,
+    pub temperature: Option<f64>,
     pub messages: Vec<Message>,
     #[serde(skip)]
     pub dirty: bool,
@@ -24,9 +25,11 @@ pub struct Session {
 
 impl Session {
     pub fn new(name: &str, model: &str, role: Option<Role>) -> Self {
+        let temperature = role.as_ref().and_then(|v| v.temperature);
         let mut value = Self {
             path: None,
             model: model.to_string(),
+            temperature,
             tokens: 0,
             messages: vec![],
             dirty: false,
@@ -58,7 +61,14 @@ impl Session {
 
     pub fn update_role(&mut self, role: Option<Role>) -> Result<()> {
         self.guard_empty()?;
+        self.temperature = role.as_ref().and_then(|v| v.temperature);
         self.role = role;
+        self.update_tokens();
+        Ok(())
+    }
+
+    pub fn set_model(&mut self, model: &str) -> Result<()> {
+        self.model = model.to_string();
         self.update_tokens();
         Ok(())
     }

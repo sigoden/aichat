@@ -11,7 +11,7 @@ use crate::cli::Cli;
 use crate::client::Client;
 use crate::config::{Config, SharedConfig};
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use clap::Parser;
 use client::{init_client, list_models};
 use crossbeam::sync::WaitGroup;
@@ -56,22 +56,15 @@ fn main() -> Result<()> {
     if cli.dry_run {
         config.write().dry_run = true;
     }
-    if let Some(session) = &cli.session {
-        config.write().start_session(session)?;
-    }
     if let Some(model) = &cli.model {
         config.write().set_model(model)?;
     }
-    let role = match &cli.role {
-        Some(name) => Some(
-            config
-                .read()
-                .get_role(name)
-                .ok_or_else(|| anyhow!("Unknown role '{name}'"))?,
-        ),
-        None => None,
-    };
-    config.write().role = role;
+    if let Some(name) = &cli.role {
+        config.write().set_role(name)?;
+    }
+    if let Some(session) = &cli.session {
+        config.write().start_session(session)?;
+    }
     if cli.no_highlight {
         config.write().highlight = false;
     }
