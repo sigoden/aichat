@@ -27,17 +27,16 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 
 ## Features
 
-- Supports multiple AIs, including openai and localai.
+- Supports multiple LLMs, including OpenAI and LocalAI.
 - Support chat and command modes
-- Use [roles](#roles)
+- Use [Roles](#roles)
 - Powerful [Chat REPL](#chat-repl)
 - Context-aware conversation/session
 - Syntax highlighting markdown and 200 other languages
 - Stream output with hand-typing effect
-- Support multiple models
-- Support proxy connection
+- Support proxy 
 - Dark/light theme
-- Save chat messages
+- Save chat messages/sessions
 
 ## Config
 
@@ -252,15 +251,6 @@ temp）.exit session
 〉
 ```
 
-```sh
-aichat --list-sessions            # List sessions.
-aichat -s                         # Start REPL with a new temp session
-aichat -s temp                    # Use temp session
-aichat -s temp --info             # Show session details
-aichat -r shell -s                # Create a session with a role
-aichat -m openai:gpt-4-32k -s     # Create a session with a model
-aichat -s sh unzip a file         # Run session in command mode
-```
 
 ### `.set` - modify the configuration temporarily
 
@@ -269,6 +259,57 @@ aichat -s sh unzip a file         # Run session in command mode
 〉.set dry_run true
 〉.set highlight false
 〉.set save false
+```
+
+## Command Line
+
+```
+Usage: aichat [OPTIONS] [TEXT]...
+
+Arguments:
+  [TEXT]...  Input text
+
+Options:
+  -m, --model <MODEL>        Choose a LLM model
+  -r, --role <ROLE>          Choose a role
+  -s, --session [<SESSION>]  Create or reuse a session
+  -H, --no-highlight         Disable syntax highlighting
+  -S, --no-stream            No stream output
+  -w, --wrap <WRAP>          Specify the text-wrapping mode (no*, auto, <max-width>)
+      --light-theme          Use light theme
+      --dry-run              Run in dry run mode
+      --info                 Print related information
+      --list-models          List all available models
+      --list-roles           List all available roles
+      --list-sessions        List all available sessions
+  -h, --help                 Print help
+  -V, --version              Print version
+```
+
+Examples:
+
+```sh
+aichat -s                                    # Start REPL with a new temp session
+aichat -s temp                               # Use temp session
+aichat -r shell -s                           # Create a session with a role
+aichat -m openai:gpt-4-32k -s                # Create a session with a model
+aichat -s sh unzip a file                    # Run session in command mode
+
+aichat --list-models                         # List all available models
+aichat --list-roles                          # List all available roles
+aichat --list-sessions                       # List all available models
+
+aichat --info                                # system-wide information
+aichat -s temp --info                        # Show session details
+aichat -r shell --info                       # Show role info
+
+
+aichat -r shell unzip a file                 # Use role in command mode
+aichat -s shell unzip a file                 # Use session in command mode
+
+cat config.json | aichat convert to yaml     # Read stdin
+cat config.json | aichat -r convert:yaml     # Read stdin with a role
+cat config.json | aichat -s i18n             # Read stdin with a session
 ```
 
 ## License

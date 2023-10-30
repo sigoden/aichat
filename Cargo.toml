@@ -1,14 +1,14 @@
 [package]
 name = "aichat"
-version = "0.9.0-rc2"
+version = "0.9.0-rc4"
 edition = "2021"
 authors = ["sigoden <sigoden@gmail.com>"]
-description = "A powerful chatgpt/localai cli."
+description = "Use ChatGPT, LocalAI and other LLMs in the terminal."
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/sigoden/aichat"
 repository = "https://github.com/sigoden/aichat"
 categories = ["command-line-utilities"]
-keywords = ["chatgpt", "ai", "gpt", "repl"]
+keywords = ["chatgpt", "localai", "gpt", "repl"]
 
 [dependencies]
 anyhow = "1.0.69"
