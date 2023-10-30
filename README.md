@@ -140,12 +140,14 @@ The Chat REPL supports:
 ```
 〉.help
 .help                    Print this help message
-.info                    Print system-wide information
+.info                    Print system info
 .edit                    Multi-line editing (CTRL+S to finish)
 .model                   Switch LLM model
 .role                    Use role
+.info role               Show role info
 .exit role               Leave current role
 .session                 Start a context-aware chat session
+.info session            Show session info
 .exit session            End the current session
 .set                     Modify the configuration parameters
 .copy                    Copy the last reply to the clipboard
@@ -156,7 +158,7 @@ Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
 
 ```
 
-### `.info` - view current configuration information
+### `.info` - view information
 
 ```
 〉.info
@@ -210,25 +212,31 @@ Select a role:
 
 ```
 〉.role emoji
-name: emoji
-prompt: I want you to translate the sentences I write into emojis. I will write the sentence, and you will express it with emojis. I just want you to express it with emojis. I don't want you to reply with anything but emoji. When I need to tell you something in English, I will do it by wrapping it in curly brackets like {like this}.
-temperature: null
 ```
 
-AI takes the role we specified:
+Send message with role:
 
 ```
 emoji〉hello
 👋
 ```
 
-Clear current selected role:
+Leave current role:
 
 ```
 emoji〉.exit role
 
 〉hello
 Hello there! How can I assist you today?
+```
+
+Show role info:
+
+```
+emoji〉.info role
+name: emoji
+prompt: I want you to translate the sentences I write into emojis. I will write the sentence, and you will express it with emojis. I just want you to express it with emojis. I don't want you to reply with anything but emoji. When I need to tell you something in English, I will do it by wrapping it in curly brackets like {like this}.
+temperature: null
 ```
 
 ## `.session` - context-aware conversation

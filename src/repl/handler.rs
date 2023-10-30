@@ -1,7 +1,7 @@
 use crate::client::init_client;
 use crate::config::SharedConfig;
 use crate::print_now;
-use crate::render::render_stream;
+use crate::render::{render_stream, MarkdownRender};
 use std::fs;
 use std::io::Read;
 
@@ -15,7 +15,9 @@ use std::cell::RefCell;
 
 pub enum ReplCmd {
     Submit(String),
-    ViewInfo,
+    Info,
+    RoleInfo,
+    SessionInfo,
     SetModel(String),
     SetRole(String),
     ExitRole,
@@ -66,7 +68,7 @@ impl ReplCmdHandler {
                     let _ = self.copy(&buffer);
                 }
             }
-            ReplCmd::ViewInfo => {
+            ReplCmd::Info => {
                 let output = self.config.read().info()?;
                 print_now!("{}\n\n", output.trim_end());
             }
@@ -75,8 +77,15 @@ impl ReplCmdHandler {
                 print_now!("\n");
             }
             ReplCmd::SetRole(name) => {
-                let output = self.config.write().set_role(&name)?;
-                print_now!("{}\n\n", output.trim_end());
+                self.config.write().set_role(&name)?;
+                print_now!("\n");
+            }
+            ReplCmd::RoleInfo => {
+                if let Some(role) = &self.config.read().role {
+                    print_now!("{}\n\n", role.info()?);
+                } else {
+                    bail!("No role")
+                }
             }
             ReplCmd::ExitRole => {
                 self.config.write().clear_role()?;
@@ -85,6 +94,15 @@ impl ReplCmdHandler {
             ReplCmd::StartSession(name) => {
                 self.config.write().start_session(&name)?;
                 print_now!("\n");
+            }
+            ReplCmd::SessionInfo => {
+                if let Some(session) = &self.config.read().session {
+                    let render_options = self.config.read().get_render_options();
+                    let mut markdown_render = MarkdownRender::init(render_options)?;
+                    print_now!("{}\n\n", session.render(&mut markdown_render)?);
+                } else {
+                    bail!("No session")
+                }
             }
             ReplCmd::ExitSession => {
                 self.config.write().end_session()?;
