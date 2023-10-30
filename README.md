@@ -3,7 +3,7 @@
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 
-se ChatGPT, Azure-OpenAI, LocalAI and other LLMs in the terminal.
+Use ChatGPT, Azure-OpenAI, LocalAI and other LLMs in the terminal.
 
 AIChat in chat mode:
 
