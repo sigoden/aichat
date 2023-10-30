@@ -19,17 +19,17 @@ use reedline::Signal;
 use std::rc::Rc;
 
 pub const REPL_COMMANDS: [(&str, &str); 12] = [
-    (".info", "Print system-wide information"),
-    (".set", "Modify the configuration temporarily"),
-    (".model", "Choose a model"),
-    (".role", "Select a role"),
-    (".clear role", "Clear the currently selected role"),
-    (".session", "Start a session"),
-    (".clear session", "End current session"),
-    (".copy", "Copy the last output to the clipboard"),
-    (".read", "Read the contents of a file and submit"),
-    (".edit", "Multi-line editing (CTRL+S to finish)"),
     (".help", "Print this help message"),
+    (".info", "Print system-wide information"),
+    (".edit", "Multi-line editing (CTRL+S to finish)"),
+    (".model", "Switch LLM model"),
+    (".role", "Use role"),
+    (".exit role", "Leave current role"),
+    (".session", "Start a context-aware chat session"),
+    (".exit session", "End the current session"),
+    (".set", "Modify the configuration parameters"),
+    (".copy", "Copy the last reply to the clipboard"),
+    (".read", "Import from file and submit"),
     (".exit", "Exit the REPL"),
 ];
 
@@ -85,24 +85,24 @@ impl Repl {
                 _ => {}
             }
         }
-        handler.handle(ReplCmd::EndSession)?;
+        handler.handle(ReplCmd::ExitSession)?;
         Ok(())
     }
 
     fn handle_line(&mut self, handler: &Rc<ReplCmdHandler>, line: &str) -> Result<bool> {
         match parse_command(line) {
             Some((cmd, args)) => match cmd {
-                ".exit" => {
-                    return Ok(true);
-                }
                 ".help" => {
                     dump_repl_help();
                 }
-                ".clear" => match args {
-                    Some("role") => handler.handle(ReplCmd::ClearRole)?,
-                    Some("session") => handler.handle(ReplCmd::EndSession)?,
-                    _ => dump_unknown_command(),
-                },
+                ".info" => {
+                    handler.handle(ReplCmd::ViewInfo)?;
+                }
+                ".edit" => {
+                    if let Some(text) = args {
+                        handler.handle(ReplCmd::Submit(text.to_string()))?;
+                    }
+                }
                 ".model" => match args {
                     Some(name) => handler.handle(ReplCmd::SetModel(name.to_string()))?,
                     None => print_now!("Usage: .model <name>\n\n"),
@@ -111,15 +111,12 @@ impl Repl {
                     Some(name) => handler.handle(ReplCmd::SetRole(name.to_string()))?,
                     None => print_now!("Usage: .role <name>\n\n"),
                 },
-                ".info" => {
-                    handler.handle(ReplCmd::ViewInfo)?;
-                }
-                ".set" => {
-                    handler.handle(ReplCmd::UpdateConfig(args.unwrap_or_default().to_string()))?;
-                    self.prompt.sync_config();
-                }
                 ".session" => {
                     handler.handle(ReplCmd::StartSession(args.map(|v| v.to_string())))?;
+                }
+                ".set" => {
+                    handler.handle(ReplCmd::Set(args.unwrap_or_default().to_string()))?;
+                    self.prompt.sync_config();
                 }
                 ".copy" => {
                     handler.handle(ReplCmd::Copy)?;
@@ -128,11 +125,24 @@ impl Repl {
                     Some(file) => handler.handle(ReplCmd::ReadFile(file.to_string()))?,
                     None => print_now!("Usage: .read <file name>\n\n"),
                 },
-                ".edit" => {
-                    if let Some(text) = args {
-                        handler.handle(ReplCmd::Submit(text.to_string()))?;
+                ".exit" => match args {
+                    Some("role") => handler.handle(ReplCmd::ExitRole)?,
+                    Some("session") => handler.handle(ReplCmd::ExitSession)?,
+                    Some(_) => dump_unknown_command(),
+                    None => {
+                        return Ok(true);
                     }
-                }
+                },
+                // deprecated
+                ".clear" => match args {
+                    Some("role") => {
+                        print_now!("Deprecated. Use '.exit role' instead.\n\n");
+                    }
+                    Some("session") => {
+                        print_now!("Deprecated. Use '.exit session' instead.\n\n");
+                    }
+                    _ => dump_unknown_command(),
+                },
                 _ => dump_unknown_command(),
             },
             None => {

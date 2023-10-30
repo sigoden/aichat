@@ -15,13 +15,13 @@ use std::cell::RefCell;
 
 pub enum ReplCmd {
     Submit(String),
+    ViewInfo,
     SetModel(String),
     SetRole(String),
-    UpdateConfig(String),
-    ClearRole,
-    ViewInfo,
+    ExitRole,
     StartSession(Option<String>),
-    EndSession,
+    ExitSession,
+    Set(String),
     Copy,
     ReadFile(String),
 }
@@ -66,6 +66,10 @@ impl ReplCmdHandler {
                     let _ = self.copy(&buffer);
                 }
             }
+            ReplCmd::ViewInfo => {
+                let output = self.config.read().info()?;
+                print_now!("{}\n\n", output.trim_end());
+            }
             ReplCmd::SetModel(name) => {
                 self.config.write().set_model(&name)?;
                 print_now!("\n");
@@ -74,24 +78,20 @@ impl ReplCmdHandler {
                 let output = self.config.write().set_role(&name)?;
                 print_now!("{}\n\n", output.trim_end());
             }
-            ReplCmd::ClearRole => {
+            ReplCmd::ExitRole => {
                 self.config.write().clear_role()?;
-                print_now!("\n");
-            }
-            ReplCmd::ViewInfo => {
-                let output = self.config.read().info()?;
-                print_now!("{}\n\n", output.trim_end());
-            }
-            ReplCmd::UpdateConfig(input) => {
-                self.config.write().update(&input)?;
                 print_now!("\n");
             }
             ReplCmd::StartSession(name) => {
                 self.config.write().start_session(&name)?;
                 print_now!("\n");
             }
-            ReplCmd::EndSession => {
+            ReplCmd::ExitSession => {
                 self.config.write().end_session()?;
+                print_now!("\n");
+            }
+            ReplCmd::Set(input) => {
+                self.config.write().update(&input)?;
                 print_now!("\n");
             }
             ReplCmd::Copy => {
