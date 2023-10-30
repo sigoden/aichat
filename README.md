@@ -140,20 +140,21 @@ The Chat REPL supports:
 
 ```
 〉.help
-.info                    Print system-wide information
-.set                     Modify the configuration temporarily
-.model                   Choose a model
-.role                    Select a role
-.clear role              Clear the currently selected role
-.session                 Start a session
-.clear session           End current session
-.copy                    Copy the last output to the clipboard
-.read                    Read the contents of a file and submit
-.edit                    Multi-line editing (CTRL+S to finish)
 .help                    Print this help message
+.info                    Print system-wide information
+.edit                    Multi-line editing (CTRL+S to finish)
+.model                   Switch LLM model
+.role                    Use role
+.exit role               Leave current role
+.session                 Start a context-aware chat session
+.exit session            End the current session
+.set                     Modify the configuration parameters
+.copy                    Copy the last reply to the clipboard
+.read                    Import from file and submit
 .exit                    Exit the REPL
 
 Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
+
 ```
 
 ### `.info` - view current configuration information
@@ -190,17 +191,7 @@ AIChat also provides `.edit` command for multi-lines editing.
 }
 ```
 
-> Submit the multi-line text with `Ctrl+S`.
-
-
-### `.set` - modify the configuration temporarily
-
-```
-〉.set dry_run true
-〉.set highlight false
-〉.set save false
-〉.set temperature 1.2
-```
+> Submit with `Ctrl+S`.
 
 
 ### `.model` - choose a model
@@ -233,7 +224,7 @@ emoji〉hello
 Clear current selected role:
 
 ```
-emoji〉.clear role
+emoji〉.exit role
 
 〉hello
 Hello there! How can I assist you today?
@@ -254,7 +245,7 @@ temp）1 to 5, odd only                                                         
 temp）to 7                                                                                4070
 1, 3, 5, 7
 
-temp）.clear session
+temp）.exit session
 
 〉
 ```
@@ -267,6 +258,15 @@ aichat -s temp --info             # Show session details
 aichat -r shell -s                # Create a session with a role
 aichat -m openai:gpt-4-32k -s     # Create a session with a model
 aichat -s sh unzip a file         # Run session in command mode
+```
+
+### `.set` - modify the configuration temporarily
+
+```
+〉.set temperature 1.2
+〉.set dry_run true
+〉.set highlight false
+〉.set save false
 ```
 
 ## License

@@ -3,28 +3,28 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
-    /// List all models
+    /// List all available models
     #[clap(long)]
     pub list_models: bool,
     /// Choose a LLM model
     #[clap(short, long)]
     pub model: Option<String>,
-    /// List all roles
+    /// List all available roles
     #[clap(long)]
     pub list_roles: bool,
-    /// Select a role
+    /// Choose a role
     #[clap(short, long)]
     pub role: Option<String>,
-    /// List sessions
+    /// List all available sessions
     #[clap(long)]
     pub list_sessions: bool,
-    /// Initiate or continue a session
+    /// Initiate or reuse a session
     #[clap(short = 's', long)]
     pub session: Option<Option<String>>,
     /// Specify the text-wrapping mode (no*, auto, <max-width>)
     #[clap(short = 'w', long)]
     pub wrap: Option<String>,
-    /// Print information
+    /// Print related information
     #[clap(long)]
     pub info: bool,
     /// Use light theme
