@@ -70,6 +70,14 @@ clients:                                              # Setup AIs
     api_key: sk-xxx                                   # OpenAI api key, alternative to OPENAI_API_KEY
     organization_id: org-xxx                          # Organization ID. Optional
 
+  # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
+  - type: azure-openai                                # Azure openai configuration
+    api_base: https://RESOURCE.openai.azure.com       # Azure openai base URL
+    api_key: xxx                                      # Azure openai api key, alternative to AZURE_OPENAI_KEY
+    models:                                           # Support models
+      - name: MyGPT4                                  # Model deployment name
+        max_tokens: 8192
+
   # See https://github.com/go-skynet/LocalAI
   - type: localai                                     # LocalAI configuration
     url: http://localhost:8080/v1/chat/completions    # LocalAI api server
