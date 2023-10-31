@@ -43,10 +43,12 @@ pub fn cmd_render_stream(
                                 let output = render.render(&input);
                                 let output = &output[col..];
                                 let (_, tail) = split_line_tail(output);
-                                if output.contains('\n') {
-                                    col = display_width(tail);
-                                } else {
-                                    col += display_width(output);
+                                if render.wrap_width().is_some() {
+                                    if output.contains('\n') {
+                                        col = display_width(tail);
+                                    } else {
+                                        col += display_width(output);
+                                    }
                                 }
                                 print_now!("{}", output);
                             }
