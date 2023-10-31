@@ -3,7 +3,7 @@
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 
-Use ChatGPT, LocalAI and other LLMs in the terminal.
+Use ChatGPT, LocalAI, and other LLMs in the terminal.
 
 AIChat in chat mode:
 
@@ -23,7 +23,7 @@ cargo install --force aichat
 
 ### Binaries for macOS, Linux, Windows
 
-Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), unzip and add aichat to your $PATH.
+Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), unzip and add `aichat` to your $PATH.
 
 ## Features
 
