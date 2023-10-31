@@ -54,24 +54,24 @@ const SET_COMPLETIONS: [&str; 7] = [
 pub struct Config {
     /// LLM model
     pub model: Option<String>,
-    /// What sampling temperature to use, between 0 and 2
+    /// GPT temperature, between 0 and 2
     #[serde(rename(serialize = "temperature", deserialize = "temperature"))]
     pub default_temperature: Option<f64>,
-    /// Whether to persistently save non-session chat messages
+    /// Whether to save the message
     pub save: bool,
     /// Whether to disable highlight
     pub highlight: bool,
     /// Used only for debugging
     pub dry_run: bool,
-    /// If set true, use light theme
+    /// Whether to use a light theme
     pub light_theme: bool,
-    /// Specify the text-wrapping mode (no*, auto, <max-width>)
+    /// Specify the text-wrapping mode (*no*, auto, <max-width>)
     pub wrap: Option<String>,
     /// Whether wrap code block
     pub wrap_code: bool,
     /// Automatically copy the last output to the clipboard
     pub auto_copy: bool,
-    /// REPL keybindings, possible values: emacs (default), vi
+    /// REPL keybindings. values: emacs, vi
     pub keybindings: Keybindings,
     /// Setup AIs
     pub clients: Vec<ClientConfig>,
@@ -741,6 +741,9 @@ fn create_config_file(config_path: &Path) -> Result<()> {
         let perms = std::fs::Permissions::from_mode(0o600);
         std::fs::set_permissions(config_path, perms)?;
     }
+
+    println!("✨ Saved config file to {}\n", config_path.display());
+
     Ok(())
 }
 

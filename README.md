@@ -46,59 +46,33 @@ On first launch, aichat will guide you through the configuration.
 > No config file, create a new one? Yes
 > AI Platform: openai
 > API Key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-> Save chat messages Yes
 ```
 
-On completion, it will automatically create the configuration file. Of course, you can also manually set the configuration file.
+Feel free to adjust the configuration according to your needs.
 
 ```yaml
-model: openai:gpt-3.5-turbo      # Choose a model
-temperature: 1.0                 # See https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
-save: true                       # If set true, aichat will save non-session chat messages to messages.md
+model: openai:gpt-3.5-turbo      # LLM model
+temperature: 1.0                 # GPT temperature, between 0 and 2
+save: true                       # Whether to save the message
 highlight: true                  # Set false to turn highlight
-light_theme: false               # If set true, use light theme
-wrap: no                         # Specify the text-wrapping mode (no*, auto, <max-width>)
+light_theme: false               # Whether to use a light theme
+wrap: no                         # Specify the text-wrapping mode (*no*, auto, <max-width>)
 wrap_code: false                 # Whether wrap code block
 auto_copy: false                 # Automatically copy the last output to the clipboard
-keybindings: emacs               # REPL keybindings, possible values: emacs (default), vi
+keybindings: emacs               # REPL keybindings. values: emacs, vi
 
 clients:
-  # All clients have the following configuration:
-  # ```
-  # - type: xxxx
-  #   name: nova                                      # Only use it to distinguish clients with the same client type. Optional
-  #   extra:
-  #     proxy: socks5://127.0.0.1:1080                # Specify https/socks5 proxy server. Note HTTPS_PROXY/ALL_PROXY also works.
-  #     connect_timeout: 10                           # Set a timeout in seconds for connect to server
-  # ```
-
-  # See https://platform.openai.com/docs/quickstart
   - type: openai
     api_key: sk-xxx
-    organization_id: org-xxx                          # Organization ID. Optional
+    organization_id:
 
-  # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
-  - type: azure-openai
-    api_base: https://RESOURCE.openai.azure.com
-    api_key: xxx
-    models:                                           # Support models
-      - name: MyGPT4                                  # Model deployment name
-        max_tokens: 8192
-
-
-  # See https://github.com/go-skynet/LocalAI
-  - type: localai
+  - type: local ai
     api_base: http://localhost:8080/v1
-    api_key: xxx
-    chat_endpoint: /chat/completions                  # Optional
-    models:                                           # Support models
-      - name: gpt4all-j
-        max_tokens: 8192
 ```
 
-> You can use `.info` to view the current configuration file path and roles file path.
+Check out [config.example.yaml](config.example.yaml) for all configuration items.
 
-> You can use [Environment Variables](https://github.com/sigoden/aichat/wiki/Environment-Variables) to customize certain configuration items.
+There are some configurations that can be set through environment variables. Please see the [Environment Variables](https://github.com/sigoden/aichat/wiki/Environment-Variables) for details.
 
 ### Roles
 

@@ -1,12 +1,12 @@
-model: openai:gpt-3.5-turbo      # Choose a model
-temperature: 1.0                 # See https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature
-save: true                       # If set true, aichat will save non-session chat messages to messages.md
+model: openai:gpt-3.5-turbo      # LLM model
+temperature: 1.0                 # GPT temperature, between 0 and 2
+save: true                       # Whether to save the message
 highlight: true                  # Set false to turn highlight
-light_theme: false               # If set true, use light theme
+light_theme: false               # Whether to use a light theme
 wrap: no                         # Specify the text-wrapping mode (no*, auto, <max-width>)
 wrap_code: false                 # Whether wrap code block
 auto_copy: false                 # Automatically copy the last output to the clipboard
-keybindings: emacs               # REPL keybindings, possible values: emacs (default), vi
+keybindings: emacs               # REPL keybindings. values: emacs, vi
 
 clients:
   # All clients have the following configuration:
