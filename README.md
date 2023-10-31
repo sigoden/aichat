@@ -56,7 +56,7 @@ temperature: 1.0                 # GPT temperature, between 0 and 2
 save: true                       # Whether to save the message
 highlight: true                  # Set false to turn highlight
 light_theme: false               # Whether to use a light theme
-wrap: no                         # Specify the text-wrapping mode (*no*, auto, <max-width>)
+wrap: no                         # Specify the text-wrapping mode (no, auto, <max-width>)
 wrap_code: false                 # Whether wrap code block
 auto_copy: false                 # Automatically copy the last output to the clipboard
 keybindings: emacs               # REPL keybindings. values: emacs, vi

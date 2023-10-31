@@ -18,7 +18,7 @@ pub struct Cli {
     /// No stream output
     #[clap(short = 'S', long)]
     pub no_stream: bool,
-    /// Specify the text-wrapping mode (no*, auto, <max-width>)
+    /// Specify the text-wrapping mode (no, auto, <max-width>)
     #[clap(short = 'w', long)]
     pub wrap: Option<String>,
     /// Use light theme

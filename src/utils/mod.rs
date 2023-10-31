@@ -1,5 +1,7 @@
+mod split_line;
 mod tiktoken;
 
+pub use self::split_line::*;
 pub use self::tiktoken::cl100k_base_singleton;
 
 use chrono::prelude::*;
