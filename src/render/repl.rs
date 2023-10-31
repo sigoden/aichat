@@ -1,6 +1,7 @@
-use super::{cmd::split_line_tail, MarkdownRender};
+use super::MarkdownRender;
 
 use crate::repl::{ReplyStreamEvent, SharedAbortSignal};
+use crate::utils::split_line_tail;
 
 use anyhow::Result;
 use crossbeam::channel::Receiver;

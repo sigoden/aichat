@@ -65,7 +65,7 @@ pub struct Config {
     pub dry_run: bool,
     /// Whether to use a light theme
     pub light_theme: bool,
-    /// Specify the text-wrapping mode (*no*, auto, <max-width>)
+    /// Specify the text-wrapping mode (no, auto, <max-width>)
     pub wrap: Option<String>,
     /// Whether wrap code block
     pub wrap_code: bool,
