@@ -24,7 +24,7 @@ pub fn render_stream(
     abort: SharedAbortSignal,
     wg: WaitGroup,
 ) -> Result<String> {
-    let render_options = config.read().get_render_options();
+    let render_options = config.read().get_render_options()?;
     let mut stream_handler = {
         let (tx, rx) = unbounded();
         let abort_clone = abort.clone();

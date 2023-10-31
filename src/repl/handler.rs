@@ -97,7 +97,7 @@ impl ReplCmdHandler {
             }
             ReplCmd::SessionInfo => {
                 if let Some(session) = &self.config.read().session {
-                    let render_options = self.config.read().get_render_options();
+                    let render_options = self.config.read().get_render_options()?;
                     let mut markdown_render = MarkdownRender::init(render_options)?;
                     print_now!("{}\n\n", session.render(&mut markdown_render)?);
                 } else {

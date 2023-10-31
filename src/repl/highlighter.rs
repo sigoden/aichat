@@ -3,16 +3,13 @@ use crate::config::SharedConfig;
 use nu_ansi_term::{Color, Style};
 use reedline::{Highlighter, StyledText};
 
-const MATCH_COLOR: Color = Color::Green;
-
 pub struct ReplHighlighter {
     external_commands: Vec<String>,
     config: SharedConfig,
 }
 
 impl ReplHighlighter {
-    /// Construct the default highlighter with a given set of extern commands/keywords to detect and highlight
-    pub fn new(config: SharedConfig, external_commands: Vec<String>) -> Self {
+    pub fn new(external_commands: Vec<String>, config: SharedConfig) -> Self {
         Self {
             external_commands,
             config,
@@ -22,17 +19,14 @@ impl ReplHighlighter {
 
 impl Highlighter for ReplHighlighter {
     fn highlight(&self, line: &str, _cursor: usize) -> StyledText {
-        let mut styled_text = StyledText::new();
-        let color = if self.config.read().light_theme {
-            Color::Black
-        } else {
-            Color::White
-        };
+        let color = Color::Default;
         let match_color = if self.config.read().highlight {
-            MATCH_COLOR
+            Color::Green
         } else {
             color
         };
+
+        let mut styled_text = StyledText::new();
 
         if self
             .external_commands

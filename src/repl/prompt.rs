@@ -12,57 +12,11 @@ const PROMPT_RIGHT_COLOR: Color = Color::AnsiValue(5);
 #[derive(Clone)]
 pub struct ReplPrompt {
     config: SharedConfig,
-    prompt_color: Color,
-    prompt_multiline_color: nu_ansi_term::Color,
-    indicator_color: Color,
-    prompt_right_color: Color,
 }
 
 impl ReplPrompt {
     pub fn new(config: SharedConfig) -> Self {
-        let (prompt_color, prompt_multiline_color, indicator_color, prompt_right_color) =
-            Self::get_colors(&config);
-        Self {
-            config,
-            prompt_color,
-            prompt_multiline_color,
-            indicator_color,
-            prompt_right_color,
-        }
-    }
-    pub fn sync_config(&mut self) {
-        let (prompt_color, prompt_multiline_color, indicator_color, prompt_right_color) =
-            Self::get_colors(&self.config);
-        self.prompt_color = prompt_color;
-        self.prompt_multiline_color = prompt_multiline_color;
-        self.indicator_color = indicator_color;
-        self.prompt_right_color = prompt_right_color;
-    }
-
-    pub fn get_colors(config: &SharedConfig) -> (Color, nu_ansi_term::Color, Color, Color) {
-        let render_options = config.read().get_render_options();
-        if render_options.highlight {
-            (
-                PROMPT_COLOR,
-                PROMPT_MULTILINE_COLOR,
-                INDICATOR_COLOR,
-                PROMPT_RIGHT_COLOR,
-            )
-        } else if render_options.light_theme {
-            (
-                Color::Black,
-                nu_ansi_term::Color::Black,
-                Color::Black,
-                Color::Black,
-            )
-        } else {
-            (
-                Color::White,
-                nu_ansi_term::Color::White,
-                Color::White,
-                Color::White,
-            )
-        }
+        Self { config }
     }
 }
 
@@ -114,18 +68,18 @@ impl Prompt for ReplPrompt {
     }
 
     fn get_prompt_color(&self) -> Color {
-        self.prompt_color
+        PROMPT_COLOR
     }
     /// Get the default multiline prompt color
     fn get_prompt_multiline_color(&self) -> nu_ansi_term::Color {
-        self.prompt_multiline_color
+        PROMPT_MULTILINE_COLOR
     }
     /// Get the default indicator color
     fn get_indicator_color(&self) -> Color {
-        self.indicator_color
+        INDICATOR_COLOR
     }
     /// Get the default right prompt color
     fn get_prompt_right_color(&self) -> Color {
-        self.prompt_right_color
+        PROMPT_RIGHT_COLOR
     }
 }

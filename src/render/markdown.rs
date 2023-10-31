@@ -7,9 +7,6 @@ use syntect::highlighting::{Color as SyntectColor, FontStyle, Style, Theme};
 use syntect::parsing::SyntaxSet;
 use syntect::{easy::HighlightLines, parsing::SyntaxReference};
 
-/// Monokai Extended
-const MD_THEME: &[u8] = include_bytes!("../../assets/monokai-extended.theme.bin");
-const MD_THEME_LIGHT: &[u8] = include_bytes!("../../assets/monokai-extended-light.theme.bin");
 /// Comes from https://github.com/sharkdp/bat/raw/5e77ca37e89c873e4490b42ff556370dc5c6ba4f/assets/syntaxes.bin
 const SYNTAXES: &[u8] = include_bytes!("../../assets/syntaxes.bin");
 
@@ -25,7 +22,6 @@ lazy_static! {
 pub struct MarkdownRender {
     options: RenderOptions,
     syntax_set: SyntaxSet,
-    md_theme: Option<Theme>,
     code_color: Option<Color>,
     md_syntax: SyntaxReference,
     code_syntax: Option<SyntaxReference>,
@@ -38,18 +34,7 @@ impl MarkdownRender {
         let syntax_set: SyntaxSet = bincode::deserialize_from(SYNTAXES)
             .with_context(|| "MarkdownRender: invalid syntaxes binary")?;
 
-        let md_theme: Option<Theme> = match (options.highlight, options.light_theme) {
-            (false, _) => None,
-            (true, false) => Some(
-                bincode::deserialize_from(MD_THEME)
-                    .with_context(|| "MarkdownRender: invalid theme binary")?,
-            ),
-            (true, true) => Some(
-                bincode::deserialize_from(MD_THEME_LIGHT)
-                    .expect("MarkdownRender: invalid theme binary"),
-            ),
-        };
-        let code_color = md_theme.as_ref().map(get_code_color);
+        let code_color = options.theme.as_ref().map(get_code_color);
         let md_syntax = syntax_set.find_syntax_by_extension("md").unwrap().clone();
         let line_type = LineType::Normal;
         let wrap_width = match options.wrap.as_deref() {
@@ -70,7 +55,6 @@ impl MarkdownRender {
         };
         Ok(Self {
             syntax_set,
-            md_theme,
             code_color,
             md_syntax,
             code_syntax: None,
@@ -161,7 +145,7 @@ impl MarkdownRender {
         let ws: String = line.chars().take_while(|c| c.is_whitespace()).collect();
         let trimed_line: &str = &line[ws.len()..];
         let mut line_highlighted = None;
-        if let Some(theme) = &self.md_theme {
+        if let Some(theme) = &self.options.theme {
             let mut highlighter = HighlightLines::new(syntax, theme);
             if let Ok(ranges) = highlighter.highlight_line(trimed_line, &self.syntax_set) {
                 line_highlighted = Some(format!("{ws}{}", as_terminal_escaped(&ranges)))
@@ -207,22 +191,15 @@ impl MarkdownRender {
 
 #[derive(Debug, Clone, Default)]
 pub struct RenderOptions {
-    pub highlight: bool,
-    pub light_theme: bool,
+    pub theme: Option<Theme>,
     pub wrap: Option<String>,
     pub wrap_code: bool,
 }
 
 impl RenderOptions {
-    pub(crate) fn new(
-        highlight: bool,
-        light_theme: bool,
-        wrap: Option<String>,
-        wrap_code: bool,
-    ) -> Self {
+    pub(crate) fn new(theme: Option<Theme>, wrap: Option<String>, wrap_code: bool) -> Self {
         Self {
-            highlight,
-            light_theme,
+            theme,
             wrap,
             wrap_code,
         }
@@ -342,15 +319,6 @@ std::error::Error>> {
 }
 ```
 "#;
-
-    #[test]
-    fn test_assets() {
-        let syntax_set: SyntaxSet =
-            bincode::deserialize_from(SYNTAXES).expect("invalid syntaxes.bin");
-        assert!(syntax_set.find_syntax_by_extension("md").is_some());
-        let md_theme: Theme = bincode::deserialize_from(MD_THEME).expect("invalid md_theme binary");
-        assert_eq!(md_theme.name, Some("Monokai Extended".into()));
-    }
 
     #[test]
     fn test_render() {
