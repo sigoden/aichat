@@ -8,6 +8,7 @@ const PROMPT_COLOR: Color = Color::Green;
 const PROMPT_MULTILINE_COLOR: nu_ansi_term::Color = nu_ansi_term::Color::LightBlue;
 const INDICATOR_COLOR: Color = Color::Cyan;
 const PROMPT_RIGHT_COLOR: Color = Color::AnsiValue(5);
+const DEFAULT_COLOR: Color = Color::AnsiValue(39);
 
 #[derive(Clone)]
 pub struct ReplPrompt {
@@ -40,27 +41,19 @@ impl ReplPrompt {
     }
 
     pub fn get_colors(config: &SharedConfig) -> (Color, nu_ansi_term::Color, Color, Color) {
-        let render_options = config.read().get_render_options();
-        if render_options.highlight {
+        if config.read().highlight {
             (
                 PROMPT_COLOR,
                 PROMPT_MULTILINE_COLOR,
                 INDICATOR_COLOR,
                 PROMPT_RIGHT_COLOR,
             )
-        } else if render_options.light_theme {
-            (
-                Color::Black,
-                nu_ansi_term::Color::Black,
-                Color::Black,
-                Color::Black,
-            )
         } else {
             (
-                Color::White,
-                nu_ansi_term::Color::White,
-                Color::White,
-                Color::White,
+                DEFAULT_COLOR,
+                nu_ansi_term::Color::Default,
+                DEFAULT_COLOR,
+                DEFAULT_COLOR,
             )
         }
     }

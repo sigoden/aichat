@@ -26,7 +26,7 @@ impl Repl {
             .collect();
 
         let completer = Self::create_completer(&config, &commands);
-        let highlighter = ReplHighlighter::new(config.clone(), commands);
+        let highlighter = ReplHighlighter::new(commands, config.clone());
         let menu = Self::create_menu();
         let edit_mode: Box<dyn EditMode> = if config.read().keybindings.is_vi() {
             let mut normal_keybindings = default_vi_normal_keybindings();
