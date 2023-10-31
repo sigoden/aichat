@@ -123,7 +123,6 @@ impl Repl {
                 }
                 ".set" => {
                     handler.handle(ReplCmd::Set(args.unwrap_or_default().to_string()))?;
-                    self.prompt.sync_config();
                 }
                 ".copy" => {
                     handler.handle(ReplCmd::Copy)?;
