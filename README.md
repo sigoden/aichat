@@ -44,10 +44,8 @@ On first launch, aichat will guide you through the configuration.
 
 ```
 > No config file, create a new one? Yes
-> Select AI? openai
-> API key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-> Has Organization? No
-> Use proxy? No
+> AI Platform: openai
+> API Key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 > Save chat messages Yes
 ```
 
@@ -64,24 +62,35 @@ wrap_code: false                 # Whether wrap code block
 auto_copy: false                 # Automatically copy the last output to the clipboard
 keybindings: emacs               # REPL keybindings, possible values: emacs (default), vi
 
-clients:                                              # Setup AIs
+clients:
+  # All clients have the following configuration:
+  # ```
+  # - type: xxxx
+  #   name: nova                                      # Only use it to distinguish clients with the same client type. Optional
+  #   extra:
+  #     proxy: socks5://127.0.0.1:1080                # Specify https/socks5 proxy server. Note HTTPS_PROXY/ALL_PROXY also works.
+  #     connect_timeout: 10                           # Set a timeout in seconds for connect to server
+  # ```
+
   # See https://platform.openai.com/docs/quickstart
-  - type: openai                                      # OpenAI configuration
-    api_key: sk-xxx                                   # OpenAI api key, alternative to OPENAI_API_KEY
+  - type: openai
+    api_key: sk-xxx
     organization_id: org-xxx                          # Organization ID. Optional
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
-  - type: azure-openai                                # Azure openai configuration
-    api_base: https://RESOURCE.openai.azure.com       # Azure openai base URL
-    api_key: xxx                                      # Azure openai api key, alternative to AZURE_OPENAI_KEY
+  - type: azure-openai
+    api_base: https://RESOURCE.openai.azure.com
+    api_key: xxx
     models:                                           # Support models
       - name: MyGPT4                                  # Model deployment name
         max_tokens: 8192
 
+
   # See https://github.com/go-skynet/LocalAI
-  - type: localai                                     # LocalAI configuration
-    url: http://localhost:8080/v1/chat/completions    # LocalAI api server
-    api_key: xxx                                      # Api key. alternative to LOCALAI_API_KEY
+  - type: localai
+    api_base: http://localhost:8080/v1
+    api_key: xxx
+    chat_endpoint: /chat/completions                  # Optional
     models:                                           # Support models
       - name: gpt4all-j
         max_tokens: 8192

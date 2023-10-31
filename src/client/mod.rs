@@ -8,19 +8,20 @@ use self::{
     openai::{OpenAIClient, OpenAIConfig},
 };
 
-use anyhow::{anyhow, bail, Context, Result};
-use async_trait::async_trait;
-use reqwest::{ClientBuilder, Proxy};
-use serde::Deserialize;
-use std::{env, time::Duration};
-use tokio::time::sleep;
-
 use crate::{
     client::localai::LocalAIClient,
-    config::{Config, SharedConfig},
+    config::{Config, Message, SharedConfig},
     repl::{ReplyStreamHandler, SharedAbortSignal},
     utils::tokenize,
 };
+
+use anyhow::{anyhow, bail, Context, Result};
+use async_trait::async_trait;
+use inquire::{required, Text};
+use reqwest::{Client as ReqwestClient, ClientBuilder, Proxy};
+use serde::Deserialize;
+use std::{env, time::Duration};
+use tokio::time::sleep;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type")]
@@ -32,7 +33,6 @@ pub enum ClientConfig {
     #[serde(rename = "azure-openai")]
     AzureOpenAI(AzureOpenAIConfig),
 }
-
 #[derive(Debug, Clone)]
 pub struct ModelInfo {
     pub client: String,
@@ -61,17 +61,43 @@ impl ModelInfo {
     }
 }
 
+#[derive(Debug)]
+pub struct SendData {
+    pub messages: Vec<Message>,
+    pub temperature: Option<f64>,
+    pub stream: bool,
+}
 #[async_trait]
 pub trait Client {
-    fn get_config(&self) -> &SharedConfig;
+    fn config(&self) -> &SharedConfig;
+
+    fn extra_config(&self) -> &Option<ExtraConfig>;
+
+    fn build_client(&self) -> Result<ReqwestClient> {
+        let mut builder = ReqwestClient::builder();
+        let options = self.extra_config();
+        let timeout = options
+            .as_ref()
+            .and_then(|v| v.connect_timeout)
+            .unwrap_or(10);
+        let proxy = options.as_ref().and_then(|v| v.proxy.clone());
+        builder = set_proxy(builder, &proxy)?;
+        let client = builder
+            .connect_timeout(Duration::from_secs(timeout))
+            .build()
+            .with_context(|| "Failed to build client")?;
+        Ok(client)
+    }
 
     fn send_message(&self, content: &str) -> Result<String> {
         init_tokio_runtime()?.block_on(async {
-            if self.get_config().read().dry_run {
-                let content = self.get_config().read().echo_messages(content);
+            if self.config().read().dry_run {
+                let content = self.config().read().echo_messages(content);
                 return Ok(content);
             }
-            self.send_message_inner(content)
+            let client = self.build_client()?;
+            let data = self.config().read().prepare_send_data(content, false)?;
+            self.send_message_inner(&client, data)
                 .await
                 .with_context(|| "Failed to fetch")
         })
@@ -94,8 +120,8 @@ pub trait Client {
         init_tokio_runtime()?.block_on(async {
             tokio::select! {
                 ret = async {
-                    if self.get_config().read().dry_run {
-                        let content = self.get_config().read().echo_messages(content);
+                    if self.config().read().dry_run {
+                        let content = self.config().read().echo_messages(content);
                         let tokens = tokenize(&content);
                         for token in tokens {
                             tokio::time::sleep(Duration::from_millis(25)).await;
@@ -103,7 +129,9 @@ pub trait Client {
                         }
                         return Ok(());
                     }
-                    self.send_message_streaming_inner(content, handler).await
+                    let client = self.build_client()?;
+                    let data = self.config().read().prepare_send_data(content, true)?;
+                    self.send_message_streaming_inner(&client, handler, data).await
                 } => {
                     handler.done()?;
                     ret.with_context(|| "Failed to fetch stream")
@@ -120,13 +148,20 @@ pub trait Client {
         })
     }
 
-    async fn send_message_inner(&self, content: &str) -> Result<String>;
+    async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String>;
 
     async fn send_message_streaming_inner(
         &self,
-        content: &str,
+        client: &ReqwestClient,
         handler: &mut ReplyStreamHandler,
+        data: SendData,
     ) -> Result<()>;
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ExtraConfig {
+    pub proxy: Option<String>,
+    pub connect_timeout: Option<u64>,
 }
 
 pub fn init_client(config: SharedConfig) -> Result<Box<dyn Client>> {
@@ -143,20 +178,20 @@ pub fn init_client(config: SharedConfig) -> Result<Box<dyn Client>> {
         })
 }
 
-pub fn all_clients() -> Vec<&'static str> {
+pub fn list_client_types() -> Vec<&'static str> {
     vec![
-        OpenAIClient::name(),
-        LocalAIClient::name(),
-        AzureOpenAIClient::name(),
+        OpenAIClient::NAME,
+        LocalAIClient::NAME,
+        AzureOpenAIClient::NAME,
     ]
 }
 
 pub fn create_client_config(client: &str) -> Result<String> {
-    if client == OpenAIClient::name() {
+    if client == OpenAIClient::NAME {
         OpenAIClient::create_config()
-    } else if client == LocalAIClient::name() {
+    } else if client == LocalAIClient::NAME {
         LocalAIClient::create_config()
-    } else if client == AzureOpenAIClient::name() {
+    } else if client == AzureOpenAIClient::NAME {
         AzureOpenAIClient::create_config()
     } else {
         bail!("Unknown client {}", &client)
@@ -176,14 +211,51 @@ pub fn list_models(config: &Config) -> Vec<ModelInfo> {
         .collect()
 }
 
-pub fn init_tokio_runtime() -> Result<tokio::runtime::Runtime> {
+pub(crate) fn init_tokio_runtime() -> Result<tokio::runtime::Runtime> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .with_context(|| "Failed to init tokio")
 }
 
-pub(crate) fn set_proxy(builder: ClientBuilder, proxy: &Option<String>) -> Result<ClientBuilder> {
+pub(crate) fn prompt_input_api_base() -> Result<String> {
+    Text::new("API Base:")
+        .with_validator(required!("This field is required"))
+        .prompt()
+        .map_err(prompt_op_err)
+}
+
+pub(crate) fn prompt_input_api_key() -> Result<String> {
+    Text::new("API Key:")
+        .with_validator(required!("This field is required"))
+        .prompt()
+        .map_err(prompt_op_err)
+}
+
+pub(crate) fn prompt_input_api_key_optional() -> Result<String> {
+    Text::new("API Key:").prompt().map_err(prompt_op_err)
+}
+
+pub(crate) fn prompt_input_model_name() -> Result<String> {
+    Text::new("Model Name:")
+        .with_validator(required!("This field is required"))
+        .prompt()
+        .map_err(prompt_op_err)
+}
+
+pub(crate) fn prompt_input_max_token() -> Result<String> {
+    Text::new("Max tokens:")
+        .with_default("4096")
+        .with_validator(required!("This field is required"))
+        .prompt()
+        .map_err(prompt_op_err)
+}
+
+pub(crate) fn prompt_op_err<T>(_: T) -> anyhow::Error {
+    anyhow!("An error happened, try again later.")
+}
+
+fn set_proxy(builder: ClientBuilder, proxy: &Option<String>) -> Result<ClientBuilder> {
     let proxy = if let Some(proxy) = proxy {
         if proxy.is_empty() || proxy == "false" || proxy == "-" {
             return Ok(builder);

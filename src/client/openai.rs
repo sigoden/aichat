@@ -1,65 +1,66 @@
-use super::{set_proxy, Client, ClientConfig, ModelInfo};
+use super::{prompt_input_api_key, Client, ClientConfig, ExtraConfig, ModelInfo, SendData};
 
 use crate::config::SharedConfig;
 use crate::repl::ReplyStreamHandler;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
 use eventsource_stream::Eventsource;
 use futures_util::StreamExt;
-use inquire::{Confirm, Text};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::env;
-use std::time::Duration;
 
 const API_BASE: &str = "https://api.openai.com/v1";
 
 #[derive(Debug)]
 pub struct OpenAIClient {
     global_config: SharedConfig,
-    local_config: OpenAIConfig,
+    config: OpenAIConfig,
     model_info: ModelInfo,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct OpenAIConfig {
+    pub name: Option<String>,
     pub api_key: Option<String>,
     pub organization_id: Option<String>,
-    pub proxy: Option<String>,
-    /// Set a timeout in seconds for connect to openai server
-    pub connect_timeout: Option<u64>,
+    pub extra: Option<ExtraConfig>,
 }
 
 #[async_trait]
 impl Client for OpenAIClient {
-    fn get_config(&self) -> &SharedConfig {
+    fn config(&self) -> &SharedConfig {
         &self.global_config
     }
 
-    async fn send_message_inner(&self, content: &str) -> Result<String> {
-        let builder = self.request_builder(content, false)?;
+    fn extra_config(&self) -> &Option<ExtraConfig> {
+        &self.config.extra
+    }
+
+    async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
+        let builder = self.request_builder(client, data)?;
         openai_send_message(builder).await
     }
 
     async fn send_message_streaming_inner(
         &self,
-        content: &str,
+        client: &ReqwestClient,
         handler: &mut ReplyStreamHandler,
+        data: SendData,
     ) -> Result<()> {
-        let builder = self.request_builder(content, true)?;
+        let builder = self.request_builder(client, data)?;
         openai_send_message_streaming(builder, handler).await
     }
 }
 
 impl OpenAIClient {
+    pub const NAME: &str = "openai";
+
     pub fn init(global_config: SharedConfig) -> Option<Box<dyn Client>> {
         let model_info = global_config.read().model_info.clone();
-        if model_info.client != OpenAIClient::name() {
-            return None;
-        }
-        let local_config = {
+        let config = {
             if let ClientConfig::OpenAI(c) = &global_config.read().clients[model_info.index] {
                 c.clone()
             } else {
@@ -68,16 +69,18 @@ impl OpenAIClient {
         };
         Some(Box::new(Self {
             global_config,
-            local_config,
+            config,
             model_info,
         }))
     }
 
-    pub fn name() -> &'static str {
-        "openai"
+    pub fn name(local_config: &OpenAIConfig) -> &str {
+        local_config.name.as_deref().unwrap_or(Self::NAME)
     }
 
-    pub fn list_models(_local_config: &OpenAIConfig, index: usize) -> Vec<ModelInfo> {
+    pub fn list_models(local_config: &OpenAIConfig, index: usize) -> Vec<ModelInfo> {
+        let client = Self::name(local_config);
+
         [
             ("gpt-3.5-turbo", 4096),
             ("gpt-3.5-turbo-16k", 16384),
@@ -85,90 +88,38 @@ impl OpenAIClient {
             ("gpt-4-32k", 32768),
         ]
         .into_iter()
-        .map(|(name, max_tokens)| ModelInfo::new(Self::name(), name, max_tokens, index))
+        .map(|(name, max_tokens)| ModelInfo::new(client, name, max_tokens, index))
         .collect()
     }
 
     pub fn create_config() -> Result<String> {
-        let mut client_config = format!("clients:\n  - type: {}\n", Self::name());
+        let mut client_config = format!("clients:\n  - type: {}\n", Self::NAME);
 
-        let api_key = Text::new("API key:")
-            .prompt()
-            .map_err(|_| anyhow!("An error happened when asking for api key, try again later."))?;
-
+        let api_key = prompt_input_api_key()?;
         client_config.push_str(&format!("    api_key: {api_key}\n"));
-
-        let ans = Confirm::new("Has Organization?")
-            .with_default(false)
-            .prompt()
-            .map_err(|_| anyhow!("Not finish questionnaire, try again later."))?;
-
-        if ans {
-            let organization_id = Text::new("Organization ID:").prompt().map_err(|_| {
-                anyhow!("An error happened when asking for proxy, try again later.")
-            })?;
-            client_config.push_str(&format!("    organization_id: {organization_id}\n"));
-        }
-
-        let ans = Confirm::new("Use proxy?")
-            .with_default(false)
-            .prompt()
-            .map_err(|_| anyhow!("Not finish questionnaire, try again later."))?;
-
-        if ans {
-            let proxy = Text::new("Set proxy:").prompt().map_err(|_| {
-                anyhow!("An error happened when asking for proxy, try again later.")
-            })?;
-            client_config.push_str(&format!("    proxy: {proxy}\n"));
-        }
 
         Ok(client_config)
     }
 
-    fn request_builder(&self, content: &str, stream: bool) -> Result<RequestBuilder> {
-        let api_key = if let Some(api_key) = &self.local_config.api_key {
-            api_key.to_string()
-        } else if let Ok(api_key) = env::var("OPENAI_API_KEY") {
-            api_key.to_string()
-        } else {
-            bail!("Miss api_key")
-        };
+    fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
+        let env_prefix = Self::name(&self.config).to_uppercase();
 
-        let messages = self.global_config.read().build_messages(content)?;
+        let api_key = self.config.api_key.clone();
+        let api_key = api_key
+            .or_else(|| env::var(format!("{env_prefix}_API_KEY")).ok())
+            .ok_or_else(|| anyhow!("Miss api_key"))?;
 
-        let mut body = json!({
-            "model": self.model_info.name,
-            "messages": messages,
-        });
+        let body = openai_build_body(data, self.model_info.name.clone());
 
-        if let Some(v) = self.global_config.read().get_temperature() {
-            body.as_object_mut()
-                .and_then(|m| m.insert("temperature".into(), json!(v)));
-        }
-
-        if stream {
-            body.as_object_mut()
-                .and_then(|m| m.insert("stream".into(), json!(true)));
-        }
-
-        let client = {
-            let mut builder = ReqwestClient::builder();
-            builder = set_proxy(builder, &self.local_config.proxy)?;
-            let timeout = Duration::from_secs(self.local_config.connect_timeout.unwrap_or(10));
-            builder
-                .connect_timeout(timeout)
-                .build()
-                .with_context(|| "Failed to build client")?
-        };
-
-        let api_base = env::var("OPENAI_API_BASE")
+        let api_base = env::var(format!("{env_prefix}_API_BASE"))
             .ok()
             .unwrap_or_else(|| API_BASE.to_string());
+
         let url = format!("{api_base}/chat/completions");
 
         let mut builder = client.post(url).bearer_auth(api_key).json(&body);
 
-        if let Some(organization_id) = &self.local_config.organization_id {
+        if let Some(organization_id) = &self.config.organization_id {
             builder = builder.header("OpenAI-Organization", organization_id);
         }
 
@@ -218,4 +169,27 @@ pub(crate) async fn openai_send_message_streaming(
     }
 
     Ok(())
+}
+
+pub(crate) fn openai_build_body(data: SendData, model: String) -> Value {
+    let SendData {
+        messages,
+        temperature,
+        stream,
+    } = data;
+    let mut body = json!({
+        "model": model,
+        "messages": messages,
+    });
+
+    if let Some(v) = temperature {
+        body.as_object_mut()
+            .and_then(|m| m.insert("temperature".into(), json!(v)));
+    }
+
+    if stream {
+        body.as_object_mut()
+            .and_then(|m| m.insert("stream".into(), json!(true)));
+    }
+    body
 }

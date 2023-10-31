@@ -1,33 +1,33 @@
-use super::openai::{openai_send_message, openai_send_message_streaming};
-use super::{set_proxy, Client, ClientConfig, ModelInfo};
+use super::openai::{openai_build_body, openai_send_message, openai_send_message_streaming};
+use super::{
+    prompt_input_api_base, prompt_input_api_key_optional, prompt_input_max_token,
+    prompt_input_model_name, Client, ClientConfig, ExtraConfig, ModelInfo, SendData,
+};
 
 use crate::config::SharedConfig;
 use crate::repl::ReplyStreamHandler;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::Result;
 use async_trait::async_trait;
-use inquire::{Confirm, Text};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
-use serde_json::json;
 use std::env;
-use std::time::Duration;
 
 #[derive(Debug)]
 pub struct LocalAIClient {
     global_config: SharedConfig,
-    local_config: LocalAIConfig,
+    config: LocalAIConfig,
     model_info: ModelInfo,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct LocalAIConfig {
-    pub url: String,
+    pub name: Option<String>,
+    pub api_base: String,
     pub api_key: Option<String>,
+    pub chat_endpoint: Option<String>,
     pub models: Vec<LocalAIModel>,
-    pub proxy: Option<String>,
-    /// Set a timeout in seconds for connect to server
-    pub connect_timeout: Option<u64>,
+    pub extra: Option<ExtraConfig>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -38,32 +38,36 @@ pub struct LocalAIModel {
 
 #[async_trait]
 impl Client for LocalAIClient {
-    fn get_config(&self) -> &SharedConfig {
+    fn config(&self) -> &SharedConfig {
         &self.global_config
     }
 
-    async fn send_message_inner(&self, content: &str) -> Result<String> {
-        let builder = self.request_builder(content, false)?;
+    fn extra_config(&self) -> &Option<ExtraConfig> {
+        &self.config.extra
+    }
+
+    async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
+        let builder = self.request_builder(client, data)?;
         openai_send_message(builder).await
     }
 
     async fn send_message_streaming_inner(
         &self,
-        content: &str,
+        client: &ReqwestClient,
         handler: &mut ReplyStreamHandler,
+        data: SendData,
     ) -> Result<()> {
-        let builder = self.request_builder(content, true)?;
+        let builder = self.request_builder(client, data)?;
         openai_send_message_streaming(builder, handler).await
     }
 }
 
 impl LocalAIClient {
+    pub const NAME: &str = "localai";
+
     pub fn init(global_config: SharedConfig) -> Option<Box<dyn Client>> {
         let model_info = global_config.read().model_info.clone();
-        if model_info.client != LocalAIClient::name() {
-            return None;
-        }
-        let local_config = {
+        let config = {
             if let ClientConfig::LocalAI(c) = &global_config.read().clients[model_info.index] {
                 c.clone()
             } else {
@@ -72,64 +76,37 @@ impl LocalAIClient {
         };
         Some(Box::new(Self {
             global_config,
-            local_config,
+            config,
             model_info,
         }))
     }
 
-    pub fn name() -> &'static str {
-        "localai"
+    pub fn name(local_config: &LocalAIConfig) -> &str {
+        local_config.name.as_deref().unwrap_or(Self::NAME)
     }
 
     pub fn list_models(local_config: &LocalAIConfig, index: usize) -> Vec<ModelInfo> {
+        let client = Self::name(local_config);
+
         local_config
             .models
             .iter()
-            .map(|v| ModelInfo::new(Self::name(), &v.name, v.max_tokens, index))
+            .map(|v| ModelInfo::new(client, &v.name, v.max_tokens, index))
             .collect()
     }
 
     pub fn create_config() -> Result<String> {
-        let mut client_config = format!("clients:\n  - type: {}\n", Self::name());
+        let mut client_config = format!("clients:\n  - type: {}\n", Self::NAME);
 
-        let url = Text::new("URL:")
-            .prompt()
-            .map_err(|_| anyhow!("An error happened when asking for url, try again later."))?;
+        let api_base = prompt_input_api_base()?;
+        client_config.push_str(&format!("    api_base: {api_base}\n"));
 
-        client_config.push_str(&format!("    url: {url}\n"));
+        let api_key = prompt_input_api_key_optional()?;
+        client_config.push_str(&format!("    api_key: {api_key}\n"));
 
-        let ans = Confirm::new("Use auth?")
-            .with_default(false)
-            .prompt()
-            .map_err(|_| anyhow!("Not finish questionnaire, try again later."))?;
+        let model_name = prompt_input_model_name()?;
 
-        if ans {
-            let api_key = Text::new("API key:").prompt().map_err(|_| {
-                anyhow!("An error happened when asking for api key, try again later.")
-            })?;
-
-            client_config.push_str(&format!("    api_key: {api_key}\n"));
-        }
-
-        let model_name = Text::new("Model Name:").prompt().map_err(|_| {
-            anyhow!("An error happened when asking for model name, try again later.")
-        })?;
-
-        let max_tokens = Text::new("Max tokens:").prompt().map_err(|_| {
-            anyhow!("An error happened when asking for max tokens, try again later.")
-        })?;
-
-        let ans = Confirm::new("Use proxy?")
-            .with_default(false)
-            .prompt()
-            .map_err(|_| anyhow!("Not finish questionnaire, try again later."))?;
-
-        if ans {
-            let proxy = Text::new("Set proxy:").prompt().map_err(|_| {
-                anyhow!("An error happened when asking for proxy, try again later.")
-            })?;
-            client_config.push_str(&format!("    proxy: {proxy}\n"));
-        }
+        let max_tokens = prompt_input_max_token()?;
 
         client_config.push_str(&format!(
             "    models:\n      - name: {model_name}\n        max_tokens: {max_tokens}\n"
@@ -138,41 +115,27 @@ impl LocalAIClient {
         Ok(client_config)
     }
 
-    fn request_builder(&self, content: &str, stream: bool) -> Result<RequestBuilder> {
-        let messages = self.global_config.read().build_messages(content)?;
-
-        let mut body = json!({
-            "model": self.model_info.name,
-            "messages": messages,
+    fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
+        let api_key = self.config.api_key.clone();
+        let api_key = api_key.or_else(|| {
+            let env_prefix = Self::name(&self.config).to_uppercase();
+            env::var(format!("{env_prefix}_API_KEY")).ok()
         });
 
-        if let Some(v) = self.global_config.read().get_temperature() {
-            body.as_object_mut()
-                .and_then(|m| m.insert("temperature".into(), json!(v)));
-        }
+        let body = openai_build_body(data, self.model_info.name.clone());
 
-        if stream {
-            body.as_object_mut()
-                .and_then(|m| m.insert("stream".into(), json!(true)));
-        }
+        let chat_endpoint = self
+            .config
+            .chat_endpoint
+            .as_deref()
+            .unwrap_or("/chat/completions");
 
-        let client = {
-            let mut builder = ReqwestClient::builder();
-            builder = set_proxy(builder, &self.local_config.proxy)?;
-            let timeout = Duration::from_secs(self.local_config.connect_timeout.unwrap_or(10));
-            builder
-                .connect_timeout(timeout)
-                .build()
-                .with_context(|| "Failed to build client")?
-        };
+        let url = format!("{}{chat_endpoint}", self.config.api_base);
 
-        let mut builder = client.post(&self.local_config.url);
-        if let Some(api_key) = &self.local_config.api_key {
-            builder = builder.bearer_auth(api_key);
-        } else if let Ok(api_key) = env::var("LOCALAI_API_KEY") {
+        let mut builder = client.post(url).json(&body);
+        if let Some(api_key) = api_key {
             builder = builder.bearer_auth(api_key);
         }
-        builder = builder.json(&body);
 
         Ok(builder)
     }

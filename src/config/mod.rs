@@ -2,12 +2,15 @@ mod message;
 mod role;
 mod session;
 
-use self::message::Message;
+pub use self::message::Message;
 use self::role::Role;
 use self::session::{Session, TEMP_SESSION_NAME};
 
 use crate::client::openai::{OpenAIClient, OpenAIConfig};
-use crate::client::{all_clients, create_client_config, list_models, ClientConfig, ModelInfo};
+use crate::client::{
+    create_client_config, list_client_types, list_models, prompt_op_err, ClientConfig, ExtraConfig,
+    ModelInfo, SendData,
+};
 use crate::config::message::num_tokens_from_messages;
 use crate::render::RenderOptions;
 use crate::utils::{get_env_name, light_theme_from_colorfgbg, now};
@@ -94,7 +97,7 @@ impl Default for Config {
         Self {
             model: None,
             default_temperature: None,
-            save: false,
+            save: true,
             highlight: true,
             dry_run: false,
             light_theme: false,
@@ -136,19 +139,17 @@ impl Config {
             config.compat_old_config(&config_path)?;
         }
 
-        if let Some(name) = config.model.clone() {
-            config.set_model(&name)?;
-        }
         if let Some(wrap) = config.wrap.clone() {
             config.set_wrap(&wrap)?;
         }
 
         config.temperature = config.default_temperature;
 
+        config.set_model_info()?;
         config.merge_env_vars();
         config.load_roles()?;
         config.ensure_sessions_dir()?;
-        config.check_term_theme()?;
+        config.detect_theme()?;
 
         Ok(config)
     }
@@ -327,7 +328,7 @@ impl Config {
             model_info = Some(model.clone());
         }
         match model_info {
-            None => bail!("Invalid model"),
+            None => bail!("Unknown model '{}'", value),
             Some(model_info) => {
                 if let Some(session) = self.session.as_mut() {
                     session.set_model(&model_info.stringify())?;
@@ -555,6 +556,15 @@ impl Config {
         Ok(RenderOptions::new(theme, wrap, self.wrap_code))
     }
 
+    pub fn prepare_send_data(&self, content: &str, stream: bool) -> Result<SendData> {
+        let messages = self.build_messages(content)?;
+        Ok(SendData {
+            messages,
+            temperature: self.get_temperature(),
+            stream,
+        })
+    }
+
     pub fn maybe_print_send_tokens(&self, input: &str) {
         if self.dry_run {
             if let Ok(messages) = self.build_messages(input) {
@@ -596,6 +606,22 @@ impl Config {
         Ok(())
     }
 
+    fn set_model_info(&mut self) -> Result<()> {
+        let model = match &self.model {
+            Some(v) => v.clone(),
+            None => {
+                let models = self::list_models(self);
+                if models.is_empty() {
+                    bail!("No available model");
+                }
+
+                models[0].stringify()
+            }
+        };
+        self.set_model(&model)?;
+        Ok(())
+    }
+
     fn merge_env_vars(&mut self) {
         if let Ok(value) = env::var("NO_COLOR") {
             let mut no_color = false;
@@ -616,7 +642,7 @@ impl Config {
         Ok(())
     }
 
-    fn check_term_theme(&mut self) -> Result<()> {
+    fn detect_theme(&mut self) -> Result<()> {
         if self.light_theme {
             return Ok(());
         }
@@ -640,7 +666,7 @@ impl Config {
 
         if let Some(model_name) = value.get("model").and_then(|v| v.as_str()) {
             if model_name.starts_with("gpt") {
-                self.model = Some(format!("{}:{}", OpenAIClient::name(), model_name));
+                self.model = Some(format!("{}:{}", OpenAIClient::NAME, model_name));
             }
         }
 
@@ -653,13 +679,17 @@ impl Config {
                 client_config.organization_id = Some(organization_id.to_string())
             }
 
+            let mut extra_config = ExtraConfig::default();
+
             if let Some(proxy) = value.get("proxy").and_then(|v| v.as_str()) {
-                client_config.proxy = Some(proxy.to_string())
+                extra_config.proxy = Some(proxy.to_string())
             }
 
             if let Some(connect_timeout) = value.get("connect_timeout").and_then(|v| v.as_i64()) {
-                client_config.connect_timeout = Some(connect_timeout as _)
+                extra_config.connect_timeout = Some(connect_timeout as _)
             }
+
+            client_config.extra = Some(extra_config);
         }
         Ok(())
     }
@@ -690,27 +720,19 @@ fn create_config_file(config_path: &Path) -> Result<()> {
     let ans = Confirm::new("No config file, create a new one?")
         .with_default(true)
         .prompt()
-        .map_err(|_| anyhow!("Not finish questionnaire, try again later."))?;
+        .map_err(prompt_op_err)?;
     if !ans {
         exit(0);
     }
 
-    let client = Select::new("Select AI?", all_clients())
+    let client = Select::new("AI Platform:", list_client_types())
         .prompt()
-        .map_err(|_| anyhow!("An error happened when selecting platform, try again later."))?;
+        .map_err(prompt_op_err)?;
 
     let mut raw_config = create_client_config(client)?;
 
     raw_config.push_str(&format!("model: {client}\n"));
 
-    let ans = Confirm::new("Save chat messages")
-        .with_default(true)
-        .prompt()
-        .map_err(|_| anyhow!("Not finish questionnaire, try again later."))?;
-
-    if ans {
-        raw_config.push_str("save: true\n");
-    }
     ensure_parent_exists(config_path)?;
     std::fs::write(config_path, raw_config).with_context(|| "Failed to write to config file")?;
     #[cfg(unix)]
