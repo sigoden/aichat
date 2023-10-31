@@ -71,6 +71,10 @@ impl MarkdownRender {
         )
     }
 
+    pub(crate) const fn wrap_width(&self) -> Option<u16> {
+        self.wrap_width
+    }
+
     pub fn render(&mut self, text: &str) -> String {
         text.split('\n')
             .map(|line| self.render_line_mut(line))
