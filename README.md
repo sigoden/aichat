@@ -235,16 +235,20 @@ You should run aichat with `-s/--session` or use the `.session` command to start
 
 ```
 〉.session
-temp）1 to 5, odd only                                                                    4089
+
+temp）1 to 5, odd only                                                                    0
 1, 3, 5
 
-temp）to 7                                                                                4070
+temp）to 7                                                                        19(0.46%)
 1, 3, 5, 7
 
-temp）.exit session
+temp）.exit session                                                               42(1.03%)
+? Save session? (y/N)  
 
-〉
 ```
+
+The prompt on the right side is about the current usage of tokens and the proportion of tokens used, 
+compared to the maximum number of tokens allowed by the model.
 
 
 ### `.set` - modify the configuration temporarily

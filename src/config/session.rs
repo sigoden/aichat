@@ -1,45 +1,47 @@
-use super::message::{num_tokens_from_messages, Message, MessageRole};
+use super::message::{Message, MessageRole};
 use super::role::Role;
+use super::ModelInfo;
 
 use crate::render::MarkdownRender;
 
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::fs::{self, read_to_string};
 use std::path::Path;
 
 pub const TEMP_SESSION_NAME: &str = "temp";
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct Session {
+    model: String,
+    temperature: Option<f64>,
+    messages: Vec<Message>,
+    #[serde(skip)]
+    pub name: String,
+    #[serde(skip)]
     pub path: Option<String>,
-    pub model: String,
-    pub tokens: usize,
-    pub temperature: Option<f64>,
-    pub messages: Vec<Message>,
     #[serde(skip)]
     pub dirty: bool,
     #[serde(skip)]
     pub role: Option<Role>,
     #[serde(skip)]
-    pub name: String,
+    pub model_info: ModelInfo,
 }
 
 impl Session {
-    pub fn new(name: &str, model: &str, role: Option<Role>) -> Self {
+    pub fn new(name: &str, model_info: ModelInfo, role: Option<Role>) -> Self {
         let temperature = role.as_ref().and_then(|v| v.temperature);
-        let mut value = Self {
-            path: None,
-            model: model.to_string(),
+        Self {
+            model: model_info.full_name(),
             temperature,
-            tokens: 0,
             messages: vec![],
+            name: name.to_string(),
+            path: None,
             dirty: false,
             role,
-            name: name.to_string(),
-        };
-        value.update_tokens();
-        value
+            model_info,
+        }
     }
 
     pub fn load(name: &str, path: &Path) -> Result<Self> {
@@ -54,22 +56,64 @@ impl Session {
         Ok(session)
     }
 
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn model(&self) -> &str {
+        &self.model
+    }
+
+    pub fn temperature(&self) -> Option<f64> {
+        self.temperature
+    }
+
+    pub fn tokens(&self) -> usize {
+        self.model_info.totatl_tokens(&self.messages)
+    }
+
     pub fn export(&self) -> Result<String> {
         self.guard_save()?;
-        let output = serde_yaml::to_string(&self)
+        let (tokens, percent) = self.tokens_and_percent();
+        let mut data = json!({
+            "path": self.path,
+            "model": self.model(),
+        });
+        if let Some(temperature) = self.temperature() {
+            data["temperature"] = temperature.into();
+        }
+        data["total-tokens"] = tokens.into();
+        if let Some(max_tokens) = self.model_info.max_tokens {
+            data["max-tokens"] = max_tokens.into();
+        }
+        if percent != 0.0 {
+            data["total/max-tokens"] = format!("{}%", percent).into();
+        }
+        data["messages"] = json!(self.messages);
+
+        let output = serde_yaml::to_string(&data)
             .with_context(|| format!("Unable to show info about session {}", &self.name))?;
         Ok(output)
     }
 
     pub fn render(&self, render: &mut MarkdownRender) -> Result<String> {
+        let path = self.path.clone().unwrap_or_else(|| "-".to_string());
+
         let temperature = self
-            .temperature
+            .temperature()
             .map_or_else(|| String::from("-"), |v| v.to_string());
+
+        let max_tokens = self
+            .model_info
+            .max_tokens
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| '-'.to_string());
+
         let items = vec![
-            ("path", self.path.clone().unwrap_or_else(|| "-".into())),
-            ("model", self.model.clone()),
-            ("tokens", self.tokens.to_string()),
+            ("path", path),
+            ("model", self.model().to_string()),
             ("temperature", temperature),
+            ("max_tokens", max_tokens),
         ];
         let mut lines = vec![];
         for (name, value) in items {
@@ -94,17 +138,32 @@ impl Session {
         Ok(output)
     }
 
+    pub fn tokens_and_percent(&self) -> (usize, f32) {
+        let tokens = self.tokens();
+        let max_tokens = self.model_info.max_tokens.unwrap_or_default();
+        let percent = if max_tokens == 0 {
+            0.0
+        } else {
+            let percent = tokens as f32 / max_tokens as f32 * 100.0;
+            (percent * 100.0).round() / 100.0
+        };
+        (tokens, percent)
+    }
+
     pub fn update_role(&mut self, role: Option<Role>) -> Result<()> {
         self.guard_empty()?;
         self.temperature = role.as_ref().and_then(|v| v.temperature);
         self.role = role;
-        self.update_tokens();
         Ok(())
     }
 
-    pub fn set_model(&mut self, model: &str) -> Result<()> {
-        self.model = model.to_string();
-        self.update_tokens();
+    pub fn set_temperature(&mut self, value: Option<f64>) {
+        self.temperature = value;
+    }
+
+    pub fn set_model(&mut self, model_info: ModelInfo) -> Result<()> {
+        self.model = model_info.full_name();
+        self.model_info = model_info;
         Ok(())
     }
 
@@ -112,7 +171,8 @@ impl Session {
         if !self.should_save() {
             return Ok(());
         }
-        self.dirty = false;
+        self.path = Some(session_path.display().to_string());
+
         let content = serde_yaml::to_string(&self)
             .with_context(|| format!("Failed to serde session {}", self.name))?;
         fs::write(session_path, content).with_context(|| {
@@ -122,6 +182,9 @@ impl Session {
                 session_path.display()
             )
         })?;
+
+        self.dirty = false;
+
         Ok(())
     }
 
@@ -151,10 +214,6 @@ impl Session {
         self.messages.is_empty()
     }
 
-    pub fn update_tokens(&mut self) {
-        self.tokens = num_tokens_from_messages(&self.build_emssages(""));
-    }
-
     pub fn add_message(&mut self, input: &str, output: &str) -> Result<()> {
         let mut need_add_msg = true;
         if self.messages.is_empty() {
@@ -173,7 +232,6 @@ impl Session {
             role: MessageRole::Assistant,
             content: output.to_string(),
         });
-        self.tokens = num_tokens_from_messages(&self.messages);
         self.dirty = true;
         Ok(())
     }

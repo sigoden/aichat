@@ -38,7 +38,7 @@ impl OpenAIClient {
         let client = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, max_tokens)| ModelInfo::new(client, name, Some(max_tokens), index))
+            .map(|(name, max_tokens)| openai_tokens_formula(ModelInfo::new(index, client, name).set_max_tokens(Some(max_tokens))))
             .collect()
     }
 
@@ -134,4 +134,8 @@ pub fn openai_build_body(data: SendData, model: String) -> Value {
         body["stream"] = true.into();
     }
     body
+}
+
+pub fn openai_tokens_formula(model: ModelInfo) -> ModelInfo {
+    model.set_tokens_formula(5, 2)
 }

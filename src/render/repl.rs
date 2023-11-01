@@ -60,7 +60,7 @@ fn repl_render_stream_inner(
                     }
 
                     if row + 1 >= clear_rows {
-                        queue!(writer, cursor::MoveTo(0, row - clear_rows))?;
+                        queue!(writer, cursor::MoveTo(0, row.saturating_sub(clear_rows)))?;
                     } else {
                         let scroll_rows = clear_rows - row - 1;
                         queue!(
