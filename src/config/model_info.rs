@@ -4,14 +4,15 @@ use crate::utils::count_tokens;
 
 use anyhow::{bail, Result};
 
+pub type TokensCountFactors = (usize, usize); // (per-messages, bias)
+
 #[derive(Debug, Clone)]
 pub struct ModelInfo {
     pub client: String,
     pub name: String,
     pub index: usize,
     pub max_tokens: Option<usize>,
-    pub per_message_tokens: usize,
-    pub bias_tokens: usize,
+    pub tokens_count_factors: TokensCountFactors,
 }
 
 impl Default for ModelInfo {
@@ -27,8 +28,7 @@ impl ModelInfo {
             client: client.into(),
             name: name.into(),
             max_tokens: None,
-            per_message_tokens: 0,
-            bias_tokens: 0,
+            tokens_count_factors: Default::default(),
         }
     }
 
@@ -40,9 +40,8 @@ impl ModelInfo {
         self
     }
 
-    pub fn set_tokens_formula(mut self, per_message_token: usize, bias_tokens: usize) -> Self {
-        self.per_message_tokens = per_message_token;
-        self.bias_tokens = bias_tokens;
+    pub fn set_tokens_count_factors(mut self, tokens_count_factors: TokensCountFactors) -> Self {
+        self.tokens_count_factors = tokens_count_factors;
         self
     }
 
@@ -60,15 +59,17 @@ impl ModelInfo {
         }
         let num_messages = messages.len();
         let message_tokens = self.messages_tokens(messages);
+        let (per_messages, _) = self.tokens_count_factors;
         if messages[num_messages - 1].role.is_user() {
-            num_messages * self.per_message_tokens + message_tokens
+            num_messages * per_messages + message_tokens
         } else {
-            (num_messages - 1) * self.per_message_tokens + message_tokens
+            (num_messages - 1) * per_messages + message_tokens
         }
     }
 
     pub fn max_tokens_limit(&self, messages: &[Message]) -> Result<()> {
-        let total_tokens = self.total_tokens(messages) + self.bias_tokens;
+        let (_, bias) = self.tokens_count_factors;
+        let total_tokens = self.total_tokens(messages) + bias;
         if let Some(max_tokens) = self.max_tokens {
             if total_tokens >= max_tokens {
                 bail!("Exceed max tokens limit")
