@@ -1,6 +1,6 @@
 [package]
 name = "aichat"
-version = "0.9.0-rc4"
+version = "0.9.0-rc5"
 edition = "2021"
 authors = ["sigoden <sigoden@gmail.com>"]
 description = "Use ChatGPT, LocalAI and other LLMs in the terminal."
@@ -15,7 +15,6 @@ anyhow = "1.0.69"
 bytes = "1.4.0"
 clap = { version = "4.1.8", features = ["derive", "string"] }
 dirs = "5.0.0"
-eventsource-stream = "0.2.3"
 futures-util = "0.3.26"
 inquire = "0.6.2"
 is-terminal = "0.4.9"
@@ -40,6 +39,7 @@ arboard = { version = "3.2.0", default-features = false }
 async-trait = "0.1.74"
 textwrap = "0.16.0"
 ansi_colours = "1.2.2"
+reqwest-eventsource = "0.5.0"
 
 [dependencies.reqwest]
 version = "0.11.14"

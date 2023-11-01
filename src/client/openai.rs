@@ -5,9 +5,9 @@ use crate::repl::ReplyStreamHandler;
 
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
-use eventsource_stream::Eventsource;
 use futures_util::StreamExt;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
+use reqwest_eventsource::{Error as EventSourceError, Event, RequestBuilderExt};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::env;
@@ -104,23 +104,35 @@ pub async fn openai_send_message_streaming(
     builder: RequestBuilder,
     handler: &mut ReplyStreamHandler,
 ) -> Result<()> {
-    let res = builder.send().await?;
-    if !res.status().is_success() {
-        let data: Value = res.json().await?;
-        if let Some(err_msg) = data["error"]["message"].as_str() {
-            bail!("{err_msg}");
-        }
-        bail!("Request failed");
-    }
-    let mut stream = res.bytes_stream().eventsource();
-    while let Some(part) = stream.next().await {
-        let chunk = part?.data;
-        if chunk == "[DONE]" {
-            break;
-        }
-        let data: Value = serde_json::from_str(&chunk)?;
-        if let Some(text) = data["choices"][0]["delta"]["content"].as_str() {
-            handler.text(text)?;
+    let mut es = builder.eventsource()?;
+    while let Some(event) = es.next().await {
+        match event {
+            Ok(Event::Open) => {}
+            Ok(Event::Message(message)) => {
+                if message.data == "[DONE]" {
+                    break;
+                }
+                let data: Value = serde_json::from_str(&message.data)?;
+                if let Some(text) = data["choices"][0]["delta"]["content"].as_str() {
+                    handler.text(text)?;
+                }
+            }
+            Err(err) => {
+                match err {
+                    EventSourceError::InvalidStatusCode(_, res) => {
+                        let data: Value = res.json().await?;
+                        if let Some(err_msg) = data["error"]["message"].as_str() {
+                            bail!("{err_msg}");
+                        }
+                        bail!("Request failed");
+                    }
+                    EventSourceError::StreamEnded => {}
+                    _ => {
+                        bail!("{}", err);
+                    }
+                }
+                es.close();
+            }
         }
     }
 

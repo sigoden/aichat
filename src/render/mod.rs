@@ -40,7 +40,7 @@ pub fn render_stream(
             };
             if let Err(err) = run() {
                 let err = format!("{err:?}");
-                print_now!("{}\n\n", err.trim());
+                print_now!("\n{}\n\n", err.trim());
             }
             drop(wg);
         });
