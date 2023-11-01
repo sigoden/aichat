@@ -1,4 +1,4 @@
-use super::openai::openai_build_body;
+use super::openai::{openai_build_body, openai_tokens_formula};
 use super::{ExtraConfig, LocalAIClient, ModelInfo, PromptKind, PromptType, SendData};
 
 use anyhow::Result;
@@ -45,7 +45,7 @@ impl LocalAIClient {
         local_config
             .models
             .iter()
-            .map(|v| ModelInfo::new(client, &v.name, v.max_tokens, index))
+            .map(|v| openai_tokens_formula(ModelInfo::new(index, client, &v.name).set_max_tokens(v.max_tokens)))
             .collect()
     }
 

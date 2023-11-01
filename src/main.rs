@@ -37,7 +37,7 @@ fn main() -> Result<()> {
     }
     if cli.list_models {
         for model in all_models(&config.read()) {
-            println!("{}", model.stringify());
+            println!("{}", model.full_name());
         }
         exit(0);
     }
@@ -55,14 +55,14 @@ fn main() -> Result<()> {
     if cli.dry_run {
         config.write().dry_run = true;
     }
-    if let Some(model) = &cli.model {
-        config.write().set_model(model)?;
-    }
     if let Some(name) = &cli.role {
         config.write().set_role(name)?;
     }
     if let Some(session) = &cli.session {
         config.write().start_session(session)?;
+    }
+    if let Some(model) = &cli.model {
+        config.write().set_model(model)?;
     }
     if cli.no_highlight {
         config.write().highlight = false;

@@ -12,7 +12,6 @@ use crate::client::{
     all_models, create_client_config, list_client_types, ClientConfig, ExtraConfig, OpenAIClient,
     SendData,
 };
-use crate::config::message::num_tokens_from_messages;
 use crate::render::RenderOptions;
 use crate::utils::{get_env_name, light_theme_from_colorfgbg, now, prompt_op_err};
 
@@ -274,7 +273,7 @@ impl Config {
     pub fn set_temperature(&mut self, value: Option<f64>) -> Result<()> {
         self.temperature = value;
         if let Some(session) = self.session.as_mut() {
-            session.temperature = value;
+            session.set_temperature(value);
         }
         Ok(())
     }
@@ -298,13 +297,6 @@ impl Config {
             let message = Message::new(content);
             vec![message]
         };
-        let tokens = num_tokens_from_messages(&messages);
-        if let Some(max_tokens) = self.model_info.max_tokens {
-            if tokens >= max_tokens {
-                bail!("Exceed max tokens limit")
-            }
-        }
-
         Ok(messages)
     }
 
@@ -326,7 +318,7 @@ impl Config {
         let models = all_models(self);
         let mut model_info = None;
         if value.contains(':') {
-            if let Some(model) = models.iter().find(|v| v.stringify() == value) {
+            if let Some(model) = models.iter().find(|v| v.full_name() == value) {
                 model_info = Some(model.clone());
             }
         } else if let Some(model) = models.iter().find(|v| v.client == value) {
@@ -336,7 +328,7 @@ impl Config {
             None => bail!("Unknown model '{}'", value),
             Some(model_info) => {
                 if let Some(session) = self.session.as_mut() {
-                    session.set_model(&model_info.stringify())?;
+                    session.set_model(model_info.clone())?;
                 }
                 self.model_info = model_info;
                 Ok(())
@@ -361,7 +353,7 @@ impl Config {
             ("roles_file", path_info(&Self::roles_file()?)),
             ("messages_file", path_info(&Self::messages_file()?)),
             ("sessions_dir", path_info(&Self::sessions_dir()?)),
-            ("model", self.model_info.stringify()),
+            ("model", self.model_info.full_name()),
             ("temperature", temperature),
             ("save", self.save.to_string()),
             ("highlight", self.highlight.to_string()),
@@ -389,7 +381,7 @@ impl Config {
         completion.extend(
             all_models(self)
                 .iter()
-                .map(|v| format!(".model {}", v.stringify())),
+                .map(|v| format!(".model {}", v.full_name())),
         );
         let sessions = self.list_sessions().unwrap_or_default();
         completion.extend(sessions.iter().map(|v| format!(".session {}", v)));
@@ -444,7 +436,7 @@ impl Config {
                 }
                 self.session = Some(Session::new(
                     TEMP_SESSION_NAME,
-                    &self.model_info.stringify(),
+                    self.model_info.clone(),
                     self.role.clone(),
                 ));
             }
@@ -453,13 +445,13 @@ impl Config {
                 if !session_path.exists() {
                     self.session = Some(Session::new(
                         name,
-                        &self.model_info.stringify(),
+                        self.model_info.clone(),
                         self.role.clone(),
                     ));
                 } else {
                     let session = Session::load(name, &session_path)?;
-                    let model = session.model.clone();
-                    self.temperature = session.temperature;
+                    let model = session.model().to_string();
+                    self.temperature = session.temperature();
                     self.session = Some(session);
                     self.set_model(&model)?;
                 }
@@ -472,7 +464,8 @@ impl Config {
                         "Start a session that incorporates the last question and answer?",
                     )
                     .with_default(false)
-                    .prompt()?;
+                    .prompt()
+                    .map_err(prompt_op_err)?;
                     if ans {
                         session.add_message(input, output)?;
                     }
@@ -487,13 +480,19 @@ impl Config {
             self.last_message = None;
             self.temperature = self.default_temperature;
             if session.should_save() {
-                let ans = Confirm::new("Save session?").with_default(true).prompt()?;
+                let ans = Confirm::new("Save session?")
+                    .with_default(false)
+                    .prompt()
+                    .map_err(prompt_op_err)?;
                 if !ans {
                     return Ok(());
                 }
-                let mut name = session.name.clone();
+                let mut name = session.name().to_string();
                 if session.is_temp() {
-                    name = Text::new("Session name:").with_default(&name).prompt()?;
+                    name = Text::new("Session name:")
+                        .with_default(&name)
+                        .prompt()
+                        .map_err(prompt_op_err)?;
                 }
                 let session_path = Self::session_file(&name)?;
                 let sessions_dir = session_path.parent().ok_or_else(|| {
@@ -558,17 +557,13 @@ impl Config {
 
     pub fn render_prompt_right(&self) -> String {
         if let Some(session) = &self.session {
-            let tokens = session.tokens;
-            // 10000(%32)
-            match self.model_info.max_tokens {
-                Some(max_tokens) => {
-                    let ratio = tokens as f32 / max_tokens as f32;
-                    let percent = ratio * 100.0;
-                    let percent = (percent * 100.0).round() / 100.0;
-                    format!("{tokens}({percent}%)")
-                }
-                None => format!("{tokens}"),
-            }
+            let (tokens, percent) = session.tokens_and_percent();
+            let percent = if percent == 0.0 {
+                String::new()
+            } else {
+                format!("({percent}%)")
+            };
+            format!("{tokens}{percent}")
         } else {
             String::new()
         }
@@ -576,6 +571,7 @@ impl Config {
 
     pub fn prepare_send_data(&self, content: &str, stream: bool) -> Result<SendData> {
         let messages = self.build_messages(content)?;
+        self.model_info.max_tokens_limit(&messages)?;
         Ok(SendData {
             messages,
             temperature: self.get_temperature(),
@@ -586,7 +582,7 @@ impl Config {
     pub fn maybe_print_send_tokens(&self, input: &str) {
         if self.dry_run {
             if let Ok(messages) = self.build_messages(input) {
-                let tokens = num_tokens_from_messages(&messages);
+                let tokens = self.model_info.totatl_tokens(&messages);
                 println!(">>> This message consumes {tokens} tokens. <<<");
             }
         }
@@ -642,7 +638,7 @@ impl Config {
                     bail!("No available model");
                 }
 
-                models[0].stringify()
+                models[0].full_name()
             }
         };
         self.set_model(&model)?;

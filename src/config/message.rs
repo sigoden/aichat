@@ -1,5 +1,3 @@
-use crate::utils::count_tokens;
-
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -25,22 +23,19 @@ pub enum MessageRole {
     User,
 }
 
+#[allow(dead_code)]
 impl MessageRole {
-    #[allow(dead_code)]
     pub fn is_system(&self) -> bool {
         matches!(self, MessageRole::System)
     }
-}
 
-pub fn num_tokens_from_messages(messages: &[Message]) -> usize {
-    let mut num_tokens = 0;
-    for message in messages.iter() {
-        num_tokens += 4;
-        num_tokens += count_tokens(&message.content);
-        num_tokens += 1; // role always take 1 token
+    pub fn is_user(&self) -> bool {
+        matches!(self, MessageRole::User)
     }
-    num_tokens += 2;
-    num_tokens
+
+    pub fn is_assistant(&self) -> bool {
+        matches!(self, MessageRole::Assistant)
+    }
 }
 
 #[cfg(test)]

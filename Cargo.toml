@@ -13,7 +13,7 @@ keywords = ["chatgpt", "localai", "gpt", "repl"]
 [dependencies]
 anyhow = "1.0.69"
 bytes = "1.4.0"
-clap = { version = "4.1.8", features = ["derive", "string"] }
+clap = { version = "4.1.8", features = ["derive"] }
 dirs = "5.0.0"
 futures-util = "0.3.26"
 inquire = "0.6.2"
@@ -43,7 +43,7 @@ reqwest-eventsource = "0.5.0"
 
 [dependencies.reqwest]
 version = "0.11.14"
-features = ["json", "stream", "socks", "rustls-tls", "rustls-tls-native-roots"]
+features = ["json", "socks", "rustls-tls", "rustls-tls-native-roots"]
 default-features = false
 
 [dependencies.syntect]

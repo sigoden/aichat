@@ -23,7 +23,7 @@ impl ReplPrompt {
 impl Prompt for ReplPrompt {
     fn render_prompt_left(&self) -> Cow<str> {
         if let Some(session) = &self.config.read().session {
-            Cow::Owned(session.name.clone())
+            Cow::Owned(session.name().to_string())
         } else if let Some(role) = &self.config.read().role {
             Cow::Owned(role.name.clone())
         } else {
