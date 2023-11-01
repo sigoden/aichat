@@ -32,11 +32,7 @@ impl Prompt for ReplPrompt {
     }
 
     fn render_prompt_right(&self) -> Cow<str> {
-        if self.config.read().session.is_none() {
-            Cow::Borrowed("")
-        } else {
-            self.config.read().get_reamind_tokens().to_string().into()
-        }
+        Cow::Owned(self.config.read().render_prompt_right())
     }
 
     fn render_prompt_indicator(&self, _prompt_mode: reedline::PromptEditMode) -> Cow<str> {

@@ -10,33 +10,30 @@ keybindings: emacs               # REPL keybindings. values: emacs, vi
 
 clients:
   # All clients have the following configuration:
-  # ```
   # - type: xxxx
   #   name: nova                                      # Only use it to distinguish clients with the same client type. Optional
   #   extra:
   #     proxy: socks5://127.0.0.1:1080                # Specify https/socks5 proxy server. Note HTTPS_PROXY/ALL_PROXY also works.
   #     connect_timeout: 10                           # Set a timeout in seconds for connect to server
-  # ```
 
   # See https://platform.openai.com/docs/quickstart
   - type: openai
     api_key: sk-xxx
-    organization_id: org-xxx                          # Organization ID. Optional
+    organization_id:
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
   - type: azure-openai
     api_base: https://RESOURCE.openai.azure.com
     api_key: xxx
-    models:                                           # Support models
+    models:
       - name: MyGPT4                                  # Model deployment name
         max_tokens: 8192
-
 
   # See https://github.com/go-skynet/LocalAI
   - type: localai
     api_base: http://localhost:8080/v1
     api_key: xxx
-    chat_endpoint: /chat/completions                  # Optional
-    models:                                           # Support models
+    chat_endpoint: /chat/completions
+    models:
       - name: gpt4all-j
         max_tokens: 8192

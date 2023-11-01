@@ -1,6 +1,8 @@
+mod prompt_input;
 mod split_line;
 mod tiktoken;
 
+pub use self::prompt_input::*;
 pub use self::split_line::*;
 pub use self::tiktoken::cl100k_base_singleton;
 
@@ -62,4 +64,12 @@ pub fn light_theme_from_colorfgbg(colorfgbg: &str) -> Option<bool> {
 
     let light = v > 128.0;
     Some(light)
+}
+
+pub fn init_tokio_runtime() -> anyhow::Result<tokio::runtime::Runtime> {
+    use anyhow::Context;
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .with_context(|| "Failed to init tokio")
 }

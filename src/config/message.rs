@@ -17,12 +17,19 @@ impl Message {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MessageRole {
     System,
     Assistant,
     User,
+}
+
+impl MessageRole {
+    #[allow(dead_code)]
+    pub fn is_system(&self) -> bool {
+        matches!(self, MessageRole::System)
+    }
 }
 
 pub fn num_tokens_from_messages(messages: &[Message]) -> usize {
