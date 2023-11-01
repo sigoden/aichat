@@ -3,7 +3,11 @@ mod common;
 
 pub use common::*;
 
-use crate::{config::ModelInfo, repl::ReplyStreamHandler, utils::PromptKind};
+use crate::{
+    config::{ModelInfo, TokensCountFactors},
+    repl::ReplyStreamHandler,
+    utils::PromptKind,
+};
 
 register_client!(
     (openai, "openai", OpenAI, OpenAIConfig, OpenAIClient),

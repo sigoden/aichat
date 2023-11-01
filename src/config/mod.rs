@@ -4,7 +4,7 @@ mod role;
 mod session;
 
 pub use self::message::Message;
-pub use self::model_info::ModelInfo;
+pub use self::model_info::{ModelInfo, TokensCountFactors};
 use self::role::Role;
 use self::session::{Session, TEMP_SESSION_NAME};
 

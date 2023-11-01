@@ -1,4 +1,7 @@
-use super::{ExtraConfig, ModelInfo, OpenAIClient, PromptKind, PromptType, SendData, ReplyStreamHandler};
+use super::{
+    ExtraConfig, ModelInfo, OpenAIClient, PromptKind, PromptType, ReplyStreamHandler, SendData,
+    TokensCountFactors,
+};
 
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
@@ -17,6 +20,8 @@ const MODELS: [(&str, usize); 4] = [
     ("gpt-4", 8192),
     ("gpt-4-32k", 32768),
 ];
+
+pub const OPENAI_TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct OpenAIConfig {
@@ -38,7 +43,11 @@ impl OpenAIClient {
         let client = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, max_tokens)| openai_tokens_formula(ModelInfo::new(index, client, name).set_max_tokens(Some(max_tokens))))
+            .map(|(name, max_tokens)| {
+                ModelInfo::new(index, client, name)
+                    .set_max_tokens(Some(max_tokens))
+                    .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
+            })
             .collect()
     }
 
@@ -134,8 +143,4 @@ pub fn openai_build_body(data: SendData, model: String) -> Value {
         body["stream"] = true.into();
     }
     body
-}
-
-pub fn openai_tokens_formula(model: ModelInfo) -> ModelInfo {
-    model.set_tokens_formula(5, 2)
 }
