@@ -1,14 +1,10 @@
-use super::openai::{openai_build_body, openai_send_message, openai_send_message_streaming};
-use super::{Client, ExtraConfig, LocalAIClient, ModelInfo, PromptKind, PromptType, SendData};
-
-use crate::config::SharedConfig;
-use crate::repl::ReplyStreamHandler;
+use super::openai::openai_build_body;
+use super::{ExtraConfig, LocalAIClient, ModelInfo, PromptKind, PromptType, SendData};
 
 use anyhow::Result;
 use async_trait::async_trait;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
-use std::env;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct LocalAIConfig {
@@ -26,27 +22,7 @@ pub struct LocalAIModel {
     max_tokens: Option<usize>,
 }
 
-#[async_trait]
-impl Client for LocalAIClient {
-    fn config(&self) -> (&SharedConfig, &Option<ExtraConfig>) {
-        (&self.global_config, &self.config.extra)
-    }
-
-    async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
-        let builder = self.request_builder(client, data)?;
-        openai_send_message(builder).await
-    }
-
-    async fn send_message_streaming_inner(
-        &self,
-        client: &ReqwestClient,
-        handler: &mut ReplyStreamHandler,
-        data: SendData,
-    ) -> Result<()> {
-        let builder = self.request_builder(client, data)?;
-        openai_send_message_streaming(builder, handler).await
-    }
-}
+openai_compatible_client!(LocalAIClient);
 
 impl LocalAIClient {
     config_get_fn!(api_key, get_api_key);

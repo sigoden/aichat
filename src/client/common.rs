@@ -15,12 +15,18 @@ use tokio::time::sleep;
 use super::{openai::OpenAIConfig, ClientConfig};
 
 #[macro_export]
-macro_rules! register_role {
+macro_rules! register_client {
     (
-        $(($name:literal, $config_key:ident, $config:ident, $client:ident),)+
+        $(($module:ident, $name:literal, $config_key:ident, $config:ident, $client:ident),)+
     ) => {
+        $(
+            mod $module;
+        )+
+        $(
+            use self::$module::$config;
+        )+
 
-        #[derive(Debug, Clone, Deserialize)]
+        #[derive(Debug, Clone, serde::Deserialize)]
         #[serde(tag = "type")]
         pub enum ClientConfig {
             $(
@@ -35,15 +41,15 @@ macro_rules! register_role {
         $(
             #[derive(Debug)]
             pub struct $client {
-                global_config: SharedConfig,
+                global_config: $crate::config::SharedConfig,
                 config: $config,
-                model_info: ModelInfo,
+                model_info: $crate::config::ModelInfo,
             }
 
             impl $client {
                 pub const NAME: &str = $name;
 
-                pub fn init(global_config: SharedConfig) -> Option<Box<dyn Client>> {
+                pub fn init(global_config: $crate::config::SharedConfig) -> Option<Box<dyn Client>> {
                     let model_info = global_config.read().model_info.clone();
                     let config = {
                         if let ClientConfig::$config_key(c) = &global_config.read().clients[model_info.index] {
@@ -66,12 +72,12 @@ macro_rules! register_role {
 
         )+
 
-        pub fn init_client(config: SharedConfig) -> Result<Box<dyn Client>> {
+        pub fn init_client(config: $crate::config::SharedConfig) -> anyhow::Result<Box<dyn Client>> {
                 None
                 $(.or_else(|| $client::init(config.clone())))+
                 .ok_or_else(|| {
                     let model_info = config.read().model_info.clone();
-                    anyhow!(
+                    anyhow::anyhow!(
                         "Unknown client {} at config.clients[{}]",
                         &model_info.client,
                         &model_info.index
@@ -83,16 +89,16 @@ macro_rules! register_role {
             vec![$($client::NAME,)+]
         }
 
-        pub fn create_client_config(client: &str) -> Result<Value> {
+        pub fn create_client_config(client: &str) -> anyhow::Result<serde_json::Value> {
             $(
                 if client == $client::NAME {
                     return create_config(&$client::PROMPTS, $client::NAME)
                 }
             )+
-            bail!("Unknown client {}", client)
+            anyhow::bail!("Unknown client {}", client)
         }
 
-        pub fn all_models(config: &Config) -> Vec<ModelInfo> {
+        pub fn all_models(config: &$crate::config::Config) -> Vec<$crate::config::ModelInfo> {
             config
                 .clients
                 .iter()
@@ -107,16 +113,53 @@ macro_rules! register_role {
     };
 }
 
+#[macro_export]
+macro_rules! openai_compatible_client {
+    ($client:ident) => {
+        #[async_trait]
+        impl $crate::client::Client for $crate::client::$client {
+            fn config(
+                &self,
+            ) -> (
+                &$crate::config::SharedConfig,
+                &Option<$crate::client::ExtraConfig>,
+            ) {
+                (&self.global_config, &self.config.extra)
+            }
+
+            async fn send_message_inner(
+                &self,
+                client: &reqwest::Client,
+                data: $crate::client::SendData,
+            ) -> anyhow::Result<String> {
+                let builder = self.request_builder(client, data)?;
+                $crate::client::openai::openai_send_message(builder).await
+            }
+
+            async fn send_message_streaming_inner(
+                &self,
+                client: &reqwest::Client,
+                handler: &mut $crate::repl::ReplyStreamHandler,
+                data: $crate::client::SendData,
+            ) -> Result<()> {
+                let builder = self.request_builder(client, data)?;
+                $crate::client::openai::openai_send_message_streaming(builder, handler).await
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! config_get_fn {
     ($field_name:ident, $fn_name:ident) => {
-        fn $fn_name(&self) -> Result<String> {
+        fn $fn_name(&self) -> anyhow::Result<String> {
             let api_key = self.config.$field_name.clone();
             api_key
                 .or_else(|| {
                     let env_prefix = Self::name(&self.config);
                     let env_name =
                         format!("{}_{}", env_prefix, stringify!($field_name)).to_ascii_uppercase();
-                    env::var(&env_name).ok()
+                    std::env::var(&env_name).ok()
                 })
                 .ok_or_else(|| anyhow::anyhow!("Miss {}", stringify!($field_name)))
         }

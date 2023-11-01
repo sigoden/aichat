@@ -1,29 +1,15 @@
 #[macro_use]
 mod common;
 
-pub mod azure_openai;
-pub mod localai;
-pub mod openai;
-
 pub use common::*;
 
-use self::azure_openai::AzureOpenAIConfig;
-use self::localai::LocalAIConfig;
-use self::openai::OpenAIConfig;
+use crate::{config::ModelInfo, repl::ReplyStreamHandler, utils::PromptKind};
 
-use crate::{
-    config::{Config, ModelInfo, SharedConfig},
-    utils::PromptKind,
-};
-
-use anyhow::{anyhow, bail, Result};
-use serde::Deserialize;
-use serde_json::Value;
-
-register_role!(
-    ("openai", OpenAI, OpenAIConfig, OpenAIClient),
-    ("localai", LocalAI, LocalAIConfig, LocalAIClient),
+register_client!(
+    (openai, "openai", OpenAI, OpenAIConfig, OpenAIClient),
+    (localai, "localai", LocalAI, LocalAIConfig, LocalAIClient),
     (
+        azure_openai,
         "azure-openai",
         AzureOpenAI,
         AzureOpenAIConfig,
