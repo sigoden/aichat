@@ -69,7 +69,7 @@ impl Session {
     }
 
     pub fn tokens(&self) -> usize {
-        self.model_info.totatl_tokens(&self.messages)
+        self.model_info.total_tokens(&self.messages)
     }
 
     pub fn export(&self) -> Result<String> {

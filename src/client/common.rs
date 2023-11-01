@@ -197,7 +197,7 @@ pub trait Client {
             let data = global_config.read().prepare_send_data(content, false)?;
             self.send_message_inner(&client, data)
                 .await
-                .with_context(|| "Failed to get awswer")
+                .with_context(|| "Failed to get answer")
         })
     }
 
@@ -233,7 +233,7 @@ pub trait Client {
                     self.send_message_streaming_inner(&client, handler, data).await
                 } => {
                     handler.done()?;
-                    ret.with_context(|| "Failed to get awswer")
+                    ret.with_context(|| "Failed to get answer")
                 }
                 _ = watch_abort(abort.clone()) => {
                     handler.done()?;

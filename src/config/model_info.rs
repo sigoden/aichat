@@ -54,7 +54,7 @@ impl ModelInfo {
         messages.iter().map(|v| count_tokens(&v.content)).sum()
     }
 
-    pub fn totatl_tokens(&self, messages: &[Message]) -> usize {
+    pub fn total_tokens(&self, messages: &[Message]) -> usize {
         if messages.is_empty() {
             return 0;
         }
@@ -68,7 +68,7 @@ impl ModelInfo {
     }
 
     pub fn max_tokens_limit(&self, messages: &[Message]) -> Result<()> {
-        let total_tokens = self.totatl_tokens(messages) + self.bias_tokens;
+        let total_tokens = self.total_tokens(messages) + self.bias_tokens;
         if let Some(max_tokens) = self.max_tokens {
             if total_tokens >= max_tokens {
                 bail!("Exceed max tokens limit")

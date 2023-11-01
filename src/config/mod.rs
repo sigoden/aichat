@@ -582,7 +582,7 @@ impl Config {
     pub fn maybe_print_send_tokens(&self, input: &str) {
         if self.dry_run {
             if let Ok(messages) = self.build_messages(input) {
-                let tokens = self.model_info.totatl_tokens(&messages);
+                let tokens = self.model_info.total_tokens(&messages);
                 println!(">>> This message consumes {tokens} tokens. <<<");
             }
         }
