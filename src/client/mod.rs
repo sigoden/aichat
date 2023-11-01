@@ -2,63 +2,28 @@ pub mod azure_openai;
 pub mod localai;
 pub mod openai;
 
-use self::{
-    azure_openai::{AzureOpenAIClient, AzureOpenAIConfig},
-    localai::LocalAIConfig,
-    openai::{OpenAIClient, OpenAIConfig},
-};
+use self::azure_openai::AzureOpenAIConfig;
+use self::localai::LocalAIConfig;
+use self::openai::OpenAIConfig;
 
 use crate::{
-    client::localai::LocalAIClient,
-    config::{Config, Message, SharedConfig},
+    config::{Config, Message, ModelInfo, SharedConfig},
     repl::{ReplyStreamHandler, SharedAbortSignal},
-    utils::tokenize,
+    utils::{prompt_input_integer, prompt_input_string, tokenize, PromptKind},
 };
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
-use inquire::{required, Text};
 use reqwest::{Client as ReqwestClient, ClientBuilder, Proxy};
 use serde::Deserialize;
+use serde_json::{json, Value};
 use std::{env, time::Duration};
 use tokio::time::sleep;
 
-#[derive(Debug, Clone, Deserialize)]
-#[serde(tag = "type")]
-pub enum ClientConfig {
-    #[serde(rename = "openai")]
-    OpenAI(OpenAIConfig),
-    #[serde(rename = "localai")]
-    LocalAI(LocalAIConfig),
-    #[serde(rename = "azure-openai")]
-    AzureOpenAI(AzureOpenAIConfig),
-}
-#[derive(Debug, Clone)]
-pub struct ModelInfo {
-    pub client: String,
-    pub name: String,
-    pub max_tokens: usize,
-    pub index: usize,
-}
-
-impl Default for ModelInfo {
-    fn default() -> Self {
-        OpenAIClient::list_models(&OpenAIConfig::default(), 0)[0].clone()
-    }
-}
-
-impl ModelInfo {
-    pub fn new(client: &str, name: &str, max_tokens: usize, index: usize) -> Self {
-        Self {
-            client: client.into(),
-            name: name.into(),
-            max_tokens,
-            index,
-        }
-    }
-    pub fn stringify(&self) -> String {
-        format!("{}:{}", self.client, self.name)
-    }
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ExtraConfig {
+    pub proxy: Option<String>,
+    pub connect_timeout: Option<u64>,
 }
 
 #[derive(Debug)]
@@ -67,15 +32,14 @@ pub struct SendData {
     pub temperature: Option<f64>,
     pub stream: bool,
 }
+
 #[async_trait]
 pub trait Client {
-    fn config(&self) -> &SharedConfig;
-
-    fn extra_config(&self) -> &Option<ExtraConfig>;
+    fn config(&self) -> (&SharedConfig, &Option<ExtraConfig>);
 
     fn build_client(&self) -> Result<ReqwestClient> {
         let mut builder = ReqwestClient::builder();
-        let options = self.extra_config();
+        let options = self.config().1;
         let timeout = options
             .as_ref()
             .and_then(|v| v.connect_timeout)
@@ -91,15 +55,16 @@ pub trait Client {
 
     fn send_message(&self, content: &str) -> Result<String> {
         init_tokio_runtime()?.block_on(async {
-            if self.config().read().dry_run {
-                let content = self.config().read().echo_messages(content);
+            let global_config = self.config().0;
+            if global_config.read().dry_run {
+                let content = global_config.read().echo_messages(content);
                 return Ok(content);
             }
             let client = self.build_client()?;
-            let data = self.config().read().prepare_send_data(content, false)?;
+            let data = global_config.read().prepare_send_data(content, false)?;
             self.send_message_inner(&client, data)
                 .await
-                .with_context(|| "Failed to fetch")
+                .with_context(|| "Failed to get awswer")
         })
     }
 
@@ -120,8 +85,9 @@ pub trait Client {
         init_tokio_runtime()?.block_on(async {
             tokio::select! {
                 ret = async {
-                    if self.config().read().dry_run {
-                        let content = self.config().read().echo_messages(content);
+                    let global_config = self.config().0;
+                    if global_config.read().dry_run {
+                        let content = global_config.read().echo_messages(content);
                         let tokens = tokenize(&content);
                         for token in tokens {
                             tokio::time::sleep(Duration::from_millis(25)).await;
@@ -130,11 +96,11 @@ pub trait Client {
                         return Ok(());
                     }
                     let client = self.build_client()?;
-                    let data = self.config().read().prepare_send_data(content, true)?;
+                    let data = global_config.read().prepare_send_data(content, true)?;
                     self.send_message_streaming_inner(&client, handler, data).await
                 } => {
                     handler.done()?;
-                    ret.with_context(|| "Failed to fetch stream")
+                    ret.with_context(|| "Failed to get awswer")
                 }
                 _ = watch_abort(abort.clone()) => {
                     handler.done()?;
@@ -158,101 +124,184 @@ pub trait Client {
     ) -> Result<()>;
 }
 
-#[derive(Debug, Clone, Deserialize, Default)]
-pub struct ExtraConfig {
-    pub proxy: Option<String>,
-    pub connect_timeout: Option<u64>,
+macro_rules! register_role {
+    (
+        $(($name:literal, $config_key:ident, $config:ident, $client:ident),)+
+    ) => {
+
+        #[derive(Debug, Clone, Deserialize)]
+        #[serde(tag = "type")]
+        pub enum ClientConfig {
+            $(
+                #[serde(rename = $name)]
+                $config_key($config),
+            )+
+            #[serde(other)]
+            Unknown,
+        }
+
+
+        $(
+            #[derive(Debug)]
+            pub struct $client {
+                global_config: SharedConfig,
+                config: $config,
+                model_info: ModelInfo,
+            }
+
+            impl $client {
+                pub const NAME: &str = $name;
+
+                pub fn init(global_config: SharedConfig) -> Option<Box<dyn Client>> {
+                    let model_info = global_config.read().model_info.clone();
+                    let config = {
+                        if let ClientConfig::$config_key(c) = &global_config.read().clients[model_info.index] {
+                            c.clone()
+                        } else {
+                            return None;
+                        }
+                    };
+                    Some(Box::new(Self {
+                        global_config,
+                        config,
+                        model_info,
+                    }))
+                }
+
+                pub fn name(local_config: &$config) -> &str {
+                    local_config.name.as_deref().unwrap_or(Self::NAME)
+                }
+            }
+
+        )+
+
+        pub fn init_client(config: SharedConfig) -> Result<Box<dyn Client>> {
+                None
+                $(.or_else(|| $client::init(config.clone())))+
+                .ok_or_else(|| {
+                    let model_info = config.read().model_info.clone();
+                    anyhow!(
+                        "Unknown client {} at config.clients[{}]",
+                        &model_info.client,
+                        &model_info.index
+                    )
+                })
+        }
+
+        pub fn list_client_types() -> Vec<&'static str> {
+            vec![$($client::NAME,)+]
+        }
+
+        pub fn create_client_config(client: &str) -> Result<Value> {
+            $(
+                if client == $client::NAME {
+                    return create_config(&$client::PROMPTS, $client::NAME)
+                }
+            )+
+            bail!("Unknown client {}", client)
+        }
+
+        pub fn all_models(config: &Config) -> Vec<ModelInfo> {
+            config
+                .clients
+                .iter()
+                .enumerate()
+                .flat_map(|(i, v)| match v {
+                    $(ClientConfig::$config_key(c) => $client::list_models(c, i),)+
+                    ClientConfig::Unknown => vec![],
+                })
+                .collect()
+        }
+
+    };
 }
 
-pub fn init_client(config: SharedConfig) -> Result<Box<dyn Client>> {
-    OpenAIClient::init(config.clone())
-        .or_else(|| LocalAIClient::init(config.clone()))
-        .or_else(|| AzureOpenAIClient::init(config.clone()))
-        .ok_or_else(|| {
-            let model_info = config.read().model_info.clone();
-            anyhow!(
-                "Unknown client {} at config.clients[{}]",
-                &model_info.client,
-                &model_info.index
-            )
-        })
-}
+register_role!(
+    ("openai", OpenAI, OpenAIConfig, OpenAIClient),
+    ("localai", LocalAI, LocalAIConfig, LocalAIClient),
+    (
+        "azure-openai",
+        AzureOpenAI,
+        AzureOpenAIConfig,
+        AzureOpenAIClient
+    ),
+);
 
-pub fn list_client_types() -> Vec<&'static str> {
-    vec![
-        OpenAIClient::NAME,
-        LocalAIClient::NAME,
-        AzureOpenAIClient::NAME,
-    ]
-}
-
-pub fn create_client_config(client: &str) -> Result<String> {
-    if client == OpenAIClient::NAME {
-        OpenAIClient::create_config()
-    } else if client == LocalAIClient::NAME {
-        LocalAIClient::create_config()
-    } else if client == AzureOpenAIClient::NAME {
-        AzureOpenAIClient::create_config()
-    } else {
-        bail!("Unknown client {}", &client)
+impl Default for ClientConfig {
+    fn default() -> Self {
+        Self::OpenAI(OpenAIConfig::default())
     }
 }
 
-pub fn list_models(config: &Config) -> Vec<ModelInfo> {
-    config
-        .clients
-        .iter()
-        .enumerate()
-        .flat_map(|(i, v)| match v {
-            ClientConfig::OpenAI(c) => OpenAIClient::list_models(c, i),
-            ClientConfig::LocalAI(c) => LocalAIClient::list_models(c, i),
-            ClientConfig::AzureOpenAI(c) => AzureOpenAIClient::list_models(c, i),
-        })
-        .collect()
-}
+type PromptType<'a> = (&'a str, &'a str, bool, PromptKind);
 
-pub(crate) fn init_tokio_runtime() -> Result<tokio::runtime::Runtime> {
+fn init_tokio_runtime() -> Result<tokio::runtime::Runtime> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .with_context(|| "Failed to init tokio")
 }
 
-pub(crate) fn prompt_input_api_base() -> Result<String> {
-    Text::new("API Base:")
-        .with_validator(required!("This field is required"))
-        .prompt()
-        .map_err(prompt_op_err)
+fn create_config(list: &[PromptType], client: &str) -> Result<Value> {
+    let mut config = json!({
+        "type": client,
+    });
+    for (path, desc, required, kind) in list {
+        match kind {
+            PromptKind::String => {
+                let value = prompt_input_string(desc, *required)?;
+                set_config_value(&mut config, path, kind, &value);
+            }
+            PromptKind::Integer => {
+                let value = prompt_input_integer(desc, *required)?;
+                set_config_value(&mut config, path, kind, &value);
+            }
+        }
+    }
+
+    let clients = json!(vec![config]);
+    Ok(clients)
 }
 
-pub(crate) fn prompt_input_api_key() -> Result<String> {
-    Text::new("API Key:")
-        .with_validator(required!("This field is required"))
-        .prompt()
-        .map_err(prompt_op_err)
+fn set_config_value(json: &mut Value, path: &str, kind: &PromptKind, value: &str) {
+    let segs: Vec<&str> = path.split('.').collect();
+    match segs.as_slice() {
+        [name] => json[name] = to_json(kind, value),
+        [scope, name] => match scope.split_once('[') {
+            None => {
+                if json.get(scope).is_none() {
+                    let mut obj = json!({});
+                    obj[name] = to_json(kind, value);
+                    json[scope] = obj;
+                } else {
+                    json[scope][name] = to_json(kind, value);
+                }
+            }
+            Some((scope, _)) => {
+                if json.get(scope).is_none() {
+                    let mut obj = json!({});
+                    obj[name] = to_json(kind, value);
+                    json[scope] = json!([obj]);
+                } else {
+                    json[scope][0][name] = to_json(kind, value);
+                }
+            }
+        },
+        _ => {}
+    }
 }
 
-pub(crate) fn prompt_input_api_key_optional() -> Result<String> {
-    Text::new("API Key:").prompt().map_err(prompt_op_err)
-}
-
-pub(crate) fn prompt_input_model_name() -> Result<String> {
-    Text::new("Model Name:")
-        .with_validator(required!("This field is required"))
-        .prompt()
-        .map_err(prompt_op_err)
-}
-
-pub(crate) fn prompt_input_max_token() -> Result<String> {
-    Text::new("Max tokens:")
-        .with_default("4096")
-        .with_validator(required!("This field is required"))
-        .prompt()
-        .map_err(prompt_op_err)
-}
-
-pub(crate) fn prompt_op_err<T>(_: T) -> anyhow::Error {
-    anyhow!("An error happened, try again later.")
+fn to_json(kind: &PromptKind, value: &str) -> Value {
+    if value.is_empty() {
+        return Value::Null;
+    }
+    match kind {
+        PromptKind::String => value.into(),
+        PromptKind::Integer => match value.parse::<i32>() {
+            Ok(value) => value.into(),
+            Err(_) => value.into(),
+        },
+    }
 }
 
 fn set_proxy(builder: ClientBuilder, proxy: &Option<String>) -> Result<ClientBuilder> {

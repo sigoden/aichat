@@ -1,6 +1,8 @@
+mod prompt_input;
 mod split_line;
 mod tiktoken;
 
+pub use self::prompt_input::*;
 pub use self::split_line::*;
 pub use self::tiktoken::cl100k_base_singleton;
 

@@ -12,7 +12,7 @@ use crate::config::{Config, SharedConfig};
 
 use anyhow::Result;
 use clap::Parser;
-use client::{init_client, list_models};
+use client::{all_models, init_client};
 use crossbeam::sync::WaitGroup;
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
@@ -36,7 +36,7 @@ fn main() -> Result<()> {
         exit(0);
     }
     if cli.list_models {
-        for model in list_models(&config.read()) {
+        for model in all_models(&config.read()) {
             println!("{}", model.stringify());
         }
         exit(0);
