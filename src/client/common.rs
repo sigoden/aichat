@@ -107,6 +107,22 @@ macro_rules! register_role {
     };
 }
 
+macro_rules! config_get_fn {
+    ($field_name:ident, $fn_name:ident) => {
+        fn $fn_name(&self) -> Result<String> {
+            let api_key = self.config.$field_name.clone();
+            api_key
+                .or_else(|| {
+                    let env_prefix = Self::name(&self.config);
+                    let env_name =
+                        format!("{}_{}", env_prefix, stringify!($field_name)).to_ascii_uppercase();
+                    env::var(&env_name).ok()
+                })
+                .ok_or_else(|| anyhow::anyhow!("Miss {}", stringify!($field_name)))
+        }
+    };
+}
+
 #[async_trait]
 pub trait Client {
     fn config(&self) -> (&SharedConfig, &Option<ExtraConfig>);

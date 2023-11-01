@@ -49,6 +49,8 @@ impl Client for LocalAIClient {
 }
 
 impl LocalAIClient {
+    config_get_fn!(api_key, get_api_key);
+
     pub const PROMPTS: [PromptType<'static>; 4] = [
         ("api_base", "API Base:", true, PromptKind::String),
         ("api_key", "API Key:", false, PromptKind::String),
@@ -72,11 +74,7 @@ impl LocalAIClient {
     }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
-        let api_key = self.config.api_key.clone();
-        let api_key = api_key.or_else(|| {
-            let env_prefix = Self::name(&self.config).to_uppercase();
-            env::var(format!("{env_prefix}_API_KEY")).ok()
-        });
+        let api_key = self.get_api_key().ok();
 
         let body = openai_build_body(data, self.model_info.name.clone());
 

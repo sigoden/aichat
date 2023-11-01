@@ -52,6 +52,8 @@ impl Client for OpenAIClient {
 }
 
 impl OpenAIClient {
+    config_get_fn!(api_key, get_api_key);
+
     pub const PROMPTS: [PromptType<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
@@ -64,15 +66,11 @@ impl OpenAIClient {
     }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
-        let env_prefix = Self::name(&self.config).to_uppercase();
-
-        let api_key = self.config.api_key.clone();
-        let api_key = api_key
-            .or_else(|| env::var(format!("{env_prefix}_API_KEY")).ok())
-            .ok_or_else(|| anyhow!("Miss api_key"))?;
+        let api_key = self.get_api_key()?;
 
         let body = openai_build_body(data, self.model_info.name.clone());
 
+        let env_prefix = Self::name(&self.config).to_uppercase();
         let api_base = env::var(format!("{env_prefix}_API_BASE"))
             .ok()
             .unwrap_or_else(|| API_BASE.to_string());
