@@ -1,7 +1,7 @@
 use super::openai::{openai_build_body, OPENAI_TOKENS_COUNT_FACTORS};
-use super::{AzureOpenAIClient, ExtraConfig, PromptType, SendData};
+use super::{AzureOpenAIClient, ExtraConfig, PromptType, SendData, ModelInfo};
 
-use crate::{config::ModelInfo, utils::PromptKind};
+use crate::utils::PromptKind;
 
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;

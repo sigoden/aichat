@@ -1,7 +1,7 @@
-use super::message::{Message, MessageRole};
 use super::role::Role;
 use super::ModelInfo;
 
+use crate::client::{Message, MessageRole};
 use crate::render::MarkdownRender;
 
 use anyhow::{bail, Context, Result};

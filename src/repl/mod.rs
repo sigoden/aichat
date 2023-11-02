@@ -1,17 +1,15 @@
-mod abort;
 mod highlighter;
 mod prompt;
 mod validator;
-
-pub use self::abort::{create_abort_signal, AbortSignal};
 
 use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 use self::validator::ReplValidator;
 
 use crate::client::init_client;
-use crate::config::SharedConfig;
+use crate::config::GlobalConfig;
 use crate::render::{render_error, render_stream};
+use crate::utils::{create_abort_signal, AbortSignal};
 
 use anyhow::{bail, Context, Result};
 use arboard::Clipboard;
@@ -52,7 +50,7 @@ lazy_static! {
 }
 
 pub struct Repl {
-    config: SharedConfig,
+    config: GlobalConfig,
     editor: Reedline,
     prompt: ReplPrompt,
     abort: AbortSignal,
@@ -60,7 +58,7 @@ pub struct Repl {
 }
 
 impl Repl {
-    pub fn init(config: SharedConfig) -> Result<Self> {
+    pub fn init(config: GlobalConfig) -> Result<Self> {
         let commands: Vec<String> = REPL_COMMANDS
             .into_iter()
             .map(|(v, _)| v.to_string())
@@ -283,7 +281,7 @@ Type ".help" for more information.
         )
     }
 
-    fn create_completer(config: &SharedConfig, commands: &[String]) -> DefaultCompleter {
+    fn create_completer(config: &GlobalConfig, commands: &[String]) -> DefaultCompleter {
         let mut completion = commands.to_vec();
         completion.extend(config.read().repl_completions());
         let mut completer =

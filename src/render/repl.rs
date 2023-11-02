@@ -1,7 +1,6 @@
 use super::{MarkdownRender, ReplyEvent};
 
-use crate::repl::AbortSignal;
-use crate::utils::split_line_tail;
+use crate::utils::{split_line_tail, AbortSignal};
 
 use anyhow::Result;
 use crossbeam::channel::Receiver;

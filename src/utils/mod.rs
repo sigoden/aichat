@@ -1,7 +1,9 @@
+mod abort_signal;
 mod prompt_input;
 mod split_line;
 mod tiktoken;
 
+pub use self::abort_signal::{create_abort_signal, AbortSignal};
 pub use self::prompt_input::*;
 pub use self::split_line::*;
 pub use self::tiktoken::cl100k_base_singleton;

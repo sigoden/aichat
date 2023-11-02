@@ -1,16 +1,12 @@
-mod message;
-mod model_info;
 mod role;
 mod session;
 
-pub use self::message::Message;
-pub use self::model_info::{ModelInfo, TokensCountFactors};
 use self::role::Role;
 use self::session::{Session, TEMP_SESSION_NAME};
 
 use crate::client::{
-    all_models, create_client_config, list_client_types, ClientConfig, ExtraConfig, OpenAIClient,
-    SendData,
+    all_models, create_client_config, list_client_types, ClientConfig, ExtraConfig, Message,
+    ModelInfo, OpenAIClient, SendData,
 };
 use crate::render::{MarkdownRender, RenderOptions};
 use crate::utils::{get_env_name, light_theme_from_colorfgbg, now, prompt_op_err};
@@ -118,7 +114,7 @@ impl Default for Config {
     }
 }
 
-pub type SharedConfig = Arc<RwLock<Config>>;
+pub type GlobalConfig = Arc<RwLock<Config>>;
 
 impl Config {
     pub fn init(is_interactive: bool) -> Result<Self> {
