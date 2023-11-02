@@ -101,7 +101,7 @@ macro_rules! register_client {
             anyhow::bail!("Unknown client {}", client)
         }
 
-        pub fn all_models(config: &$crate::config::Config) -> Vec<$crate::client::ModelInfo> {
+        pub fn list_models(config: &$crate::config::Config) -> Vec<$crate::client::ModelInfo> {
             config
                 .clients
                 .iter()

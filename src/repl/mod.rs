@@ -1,7 +1,9 @@
+mod completer;
 mod highlighter;
 mod prompt;
 mod validator;
 
+use self::completer::ReplCompleter;
 use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 use self::validator::ReplValidator;
@@ -19,8 +21,8 @@ use lazy_static::lazy_static;
 use reedline::Signal;
 use reedline::{
     default_emacs_keybindings, default_vi_insert_keybindings, default_vi_normal_keybindings,
-    ColumnarMenu, DefaultCompleter, EditMode, Emacs, KeyCode, KeyModifiers, Keybindings, Reedline,
-    ReedlineEvent, ReedlineMenu, Vi,
+    ColumnarMenu, EditMode, Emacs, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent,
+    ReedlineMenu, Vi,
 };
 use std::cell::RefCell;
 use std::io::Read;
@@ -45,7 +47,7 @@ const REPL_COMMANDS: [(&str, &str); 14] = [
 ];
 
 lazy_static! {
-    static ref COMMAND_RE: Regex = Regex::new(r"^\s*(\.\S+)\s*").unwrap();
+    static ref COMMAND_RE: Regex = Regex::new(r"^\s*(\.\S*)\s*").unwrap();
     static ref EDIT_RE: Regex = Regex::new(r"^\s*\.edit\s*").unwrap();
 }
 
@@ -59,36 +61,7 @@ pub struct Repl {
 
 impl Repl {
     pub fn init(config: GlobalConfig) -> Result<Self> {
-        let commands: Vec<String> = REPL_COMMANDS
-            .into_iter()
-            .map(|(v, _)| v.to_string())
-            .collect();
-
-        let completer = Self::create_completer(&config, &commands);
-        let highlighter = ReplHighlighter::new(commands, config.clone());
-        let menu = Self::create_menu();
-        let edit_mode: Box<dyn EditMode> = if config.read().keybindings.is_vi() {
-            let mut normal_keybindings = default_vi_normal_keybindings();
-            let mut insert_keybindings = default_vi_insert_keybindings();
-            Self::extra_keybindings(&mut normal_keybindings);
-            Self::extra_keybindings(&mut insert_keybindings);
-            Box::new(Vi::new(insert_keybindings, normal_keybindings))
-        } else {
-            let mut keybindings = default_emacs_keybindings();
-            Self::extra_keybindings(&mut keybindings);
-            Box::new(Emacs::new(keybindings))
-        };
-        let mut editor = Reedline::create()
-            .with_completer(Box::new(completer))
-            .with_highlighter(Box::new(highlighter))
-            .with_menu(menu)
-            .with_edit_mode(edit_mode)
-            .with_quick_completions(true)
-            .with_partial_completions(true)
-            .with_validator(Box::new(ReplValidator))
-            .with_ansi_colors(true);
-
-        editor.enable_bracketed_paste()?;
+        let editor = Self::create_editor(&config)?;
 
         let prompt = ReplPrompt::new(config.clone());
 
@@ -281,13 +254,24 @@ Type ".help" for more information.
         )
     }
 
-    fn create_completer(config: &GlobalConfig, commands: &[String]) -> DefaultCompleter {
-        let mut completion = commands.to_vec();
-        completion.extend(config.read().repl_completions());
-        let mut completer =
-            DefaultCompleter::with_inclusions(&['.', '-', '_', ':']).set_min_word_len(2);
-        completer.insert(completion.clone());
-        completer
+    fn create_editor(config: &GlobalConfig) -> Result<Reedline> {
+        let completer = ReplCompleter::new(config);
+        let highlighter = ReplHighlighter::new(config);
+        let menu = Self::create_menu();
+        let edit_mode = Self::create_edit_mode(config);
+        let mut editor = Reedline::create()
+            .with_completer(Box::new(completer))
+            .with_highlighter(Box::new(highlighter))
+            .with_menu(menu)
+            .with_edit_mode(edit_mode)
+            .with_quick_completions(true)
+            .with_partial_completions(true)
+            .with_validator(Box::new(ReplValidator))
+            .with_ansi_colors(true);
+
+        editor.enable_bracketed_paste()?;
+
+        Ok(editor)
     }
 
     fn extra_keybindings(keybindings: &mut Keybindings) {
@@ -304,6 +288,21 @@ Type ".help" for more information.
             KeyCode::Char('s'),
             ReedlineEvent::Submit,
         );
+    }
+
+    fn create_edit_mode(config: &GlobalConfig) -> Box<dyn EditMode> {
+        let edit_mode: Box<dyn EditMode> = if config.read().keybindings.is_vi() {
+            let mut normal_keybindings = default_vi_normal_keybindings();
+            let mut insert_keybindings = default_vi_insert_keybindings();
+            Self::extra_keybindings(&mut normal_keybindings);
+            Self::extra_keybindings(&mut insert_keybindings);
+            Box::new(Vi::new(insert_keybindings, normal_keybindings))
+        } else {
+            let mut keybindings = default_emacs_keybindings();
+            Self::extra_keybindings(&mut keybindings);
+            Box::new(Emacs::new(keybindings))
+        };
+        edit_mode
     }
 
     fn create_menu() -> ReedlineMenu {
@@ -343,15 +342,15 @@ Press Ctrl+C to abort readline, Ctrl+D to exit the REPL"###,
 }
 
 fn parse_command(line: &str) -> Option<(&str, Option<&str>)> {
-    if let Ok(Some(captures)) = COMMAND_RE.captures(line) {
-        if let Some(cmd) = captures.get(1) {
-            let cmd = cmd.as_str();
+    match COMMAND_RE.captures(line) {
+        Ok(Some(captures)) => {
+            let cmd = captures.get(1)?.as_str();
             let args = line[captures[0].len()..].trim();
             let args = if args.is_empty() { None } else { Some(args) };
-            return Some((cmd, args));
+            Some((cmd, args))
         }
+        _ => None,
     }
-    None
 }
 #[cfg(test)]
 mod tests {
@@ -359,6 +358,7 @@ mod tests {
 
     #[test]
     fn test_process_command_line() {
+        assert_eq!(parse_command(" ."), Some((".", None)));
         assert_eq!(parse_command(" .role"), Some((".role", None)));
         assert_eq!(parse_command(" .role  "), Some((".role", None)));
         assert_eq!(

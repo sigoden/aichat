@@ -45,7 +45,7 @@ impl ModelInfo {
         self
     }
 
-    pub fn full_name(&self) -> String {
+    pub fn id(&self) -> String {
         format!("{}:{}", self.client, self.name)
     }
 

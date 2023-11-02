@@ -33,7 +33,7 @@ impl Session {
     pub fn new(name: &str, model_info: ModelInfo, role: Option<Role>) -> Self {
         let temperature = role.as_ref().and_then(|v| v.temperature);
         Self {
-            model: model_info.full_name(),
+            model: model_info.id(),
             temperature,
             messages: vec![],
             name: name.to_string(),
@@ -103,7 +103,7 @@ impl Session {
             items.push(("path", path.to_string()));
         }
 
-        items.push(("model", self.model_info.full_name()));
+        items.push(("model", self.model_info.id()));
 
         if let Some(temperature) = self.temperature() {
             items.push(("temperature", temperature.to_string()));
@@ -165,7 +165,7 @@ impl Session {
     }
 
     pub fn set_model(&mut self, model_info: ModelInfo) -> Result<()> {
-        self.model = model_info.full_name();
+        self.model = model_info.id();
         self.model_info = model_info;
         Ok(())
     }
