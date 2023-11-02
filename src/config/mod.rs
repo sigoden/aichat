@@ -139,6 +139,8 @@ impl Config {
         config.setup_highlight();
         config.setup_light_theme()?;
 
+        setup_logger()?;
+
         Ok(config)
     }
 
@@ -821,4 +823,20 @@ fn set_bool(target: &mut bool, value: &str) {
         "0" | "false" => *target = false,
         _ => {}
     }
+}
+
+#[cfg(debug_assertions)]
+fn setup_logger() -> Result<()> {
+    use simplelog::WriteLogger;
+    let file = std::fs::File::create(Config::local_path("debug.log")?)?;
+    let config = simplelog::ConfigBuilder::new()
+        .add_filter_allow_str("aichat")
+        .build();
+    WriteLogger::init(log::LevelFilter::Debug, config, file)?;
+    Ok(())
+}
+
+#[cfg(not(debug_assertions))]
+fn setup_logger() -> Result<()> {
+    Ok(())
 }

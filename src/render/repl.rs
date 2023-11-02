@@ -39,10 +39,12 @@ fn repl_render_stream_inner(
 ) -> Result<()> {
     let mut last_tick = Instant::now();
     let tick_rate = Duration::from_millis(50);
+
     let mut buffer = String::new();
+    let mut buffer_rows = 1;
+
     let columns = terminal::size()?.0;
 
-    let mut clear_rows = 0;
     loop {
         if abort.aborted() {
             return Ok(());
@@ -53,21 +55,22 @@ fn repl_render_stream_inner(
                 ReplyEvent::Text(text) => {
                     let (col, mut row) = cursor::position()?;
 
-                    // fix unexpected duplicate lines on kitty, see https://github.com/sigoden/aichat/issues/105
+                    // Fix unexpected duplicate lines on kitty, see https://github.com/sigoden/aichat/issues/105
                     if col == 0 && row > 0 && display_width(&buffer) == columns as usize {
                         row -= 1;
                     }
 
-                    if row + 1 >= clear_rows {
-                        queue!(writer, cursor::MoveTo(0, row.saturating_sub(clear_rows)))?;
+                    if row + 1 >= buffer_rows {
+                        queue!(writer, cursor::MoveTo(0, row + 1 - buffer_rows),)?;
                     } else {
-                        let scroll_rows = clear_rows - row - 1;
+                        let scroll_rows = buffer_rows - row - 1;
                         queue!(
                             writer,
                             terminal::ScrollUp(scroll_rows),
                             cursor::MoveTo(0, 0),
                         )?;
                     }
+                    queue!(writer, terminal::Clear(terminal::ClearType::UntilNewLine))?;
 
                     if text.contains('\n') {
                         let text = format!("{buffer}{text}");
@@ -76,19 +79,18 @@ fn repl_render_stream_inner(
                         let output = render.render(head);
                         print_block(writer, &output, columns)?;
                         queue!(writer, style::Print(&buffer),)?;
-                        clear_rows = 0;
+                        buffer_rows = need_rows(&buffer, columns);
                     } else {
                         buffer = format!("{buffer}{text}");
                         let output = render.render_line(&buffer);
                         if output.contains('\n') {
                             let (head, tail) = split_line_tail(&output);
-                            clear_rows = print_block(writer, head, columns)?;
+                            buffer_rows = print_block(writer, head, columns)?;
                             queue!(writer, style::Print(&tail),)?;
+                            buffer_rows += need_rows(tail, columns);
                         } else {
                             queue!(writer, style::Print(&output))?;
-                            let buffer_width = display_width(&output) as u16;
-                            let need_rows = (buffer_width + columns - 1) / columns;
-                            clear_rows = need_rows.saturating_sub(1);
+                            buffer_rows = need_rows(&output, columns);
                         }
                     }
 
@@ -146,4 +148,9 @@ fn print_block(writer: &mut Stdout, text: &str, columns: u16) -> Result<u16> {
         num += 1;
     }
     Ok(num)
+}
+
+fn need_rows(text: &str, columns: u16) -> u16 {
+    let buffer_width = display_width(text) as u16;
+    (buffer_width + columns - 1) / columns
 }

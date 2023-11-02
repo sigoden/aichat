@@ -3,6 +3,9 @@ mod client;
 mod config;
 mod render;
 mod repl;
+
+#[macro_use]
+extern crate log;
 #[macro_use]
 mod utils;
 

@@ -35,10 +35,6 @@ pub fn split_line_tail(text: &str) -> (&str, &str) {
     }
 }
 
-pub fn spaces(n: usize) -> String {
-    " ".repeat(n)
-}
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum Kind {
     ParentheseStart,
