@@ -56,7 +56,9 @@ pub fn cmd_render_stream(
                 }
                 ReplyEvent::Done => {
                     let input = format!("{}{buffer}", spaces(col));
-                    println!("{}", render.render(&input));
+                    let output = render.render(&input);
+                    let output = &output[col..];
+                    println!("{}", output);
                     break;
                 }
             }
