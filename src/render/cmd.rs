@@ -1,7 +1,6 @@
-use super::MarkdownRender;
+use super::{MarkdownRender, ReplyEvent};
 
-use crate::print_now;
-use crate::repl::{ReplyStreamEvent, SharedAbortSignal};
+use crate::repl::AbortSignal;
 use crate::utils::{spaces, split_line_sematic, split_line_tail};
 
 use anyhow::Result;
@@ -9,9 +8,9 @@ use crossbeam::channel::Receiver;
 use textwrap::core::display_width;
 
 pub fn cmd_render_stream(
-    rx: &Receiver<ReplyStreamEvent>,
+    rx: &Receiver<ReplyEvent>,
     render: &mut MarkdownRender,
-    abort: &SharedAbortSignal,
+    abort: &AbortSignal,
 ) -> Result<()> {
     let mut buffer = String::new();
     let mut col = 0;
@@ -21,14 +20,14 @@ pub fn cmd_render_stream(
         }
         if let Ok(evt) = rx.try_recv() {
             match evt {
-                ReplyStreamEvent::Text(text) => {
+                ReplyEvent::Text(text) => {
                     if text.contains('\n') {
                         let text = format!("{buffer}{text}");
                         let (head, tail) = split_line_tail(&text);
                         buffer = tail.to_string();
                         let input = format!("{}{head}", spaces(col));
                         let output = render.render(&input);
-                        print_now!("{}\n", &output[col..]);
+                        println!("{}", &output[col..]);
                         col = 0;
                     } else {
                         buffer = format!("{buffer}{text}");
@@ -51,14 +50,14 @@ pub fn cmd_render_stream(
                                         col += display_width(output);
                                     }
                                 }
-                                print_now!("{}", output);
+                                print!("{}", output);
                             }
                         }
                     }
                 }
-                ReplyStreamEvent::Done => {
+                ReplyEvent::Done => {
                     let input = format!("{}{buffer}", spaces(col));
-                    print_now!("{}\n", render.render(&input));
+                    println!("{}", render.render(&input));
                     break;
                 }
             }

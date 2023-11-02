@@ -1,6 +1,6 @@
-use super::MarkdownRender;
+use super::{MarkdownRender, ReplyEvent};
 
-use crate::repl::{ReplyStreamEvent, SharedAbortSignal};
+use crate::repl::AbortSignal;
 use crate::utils::split_line_tail;
 
 use anyhow::Result;
@@ -18,9 +18,9 @@ use std::{
 use textwrap::core::display_width;
 
 pub fn repl_render_stream(
-    rx: &Receiver<ReplyStreamEvent>,
+    rx: &Receiver<ReplyEvent>,
     render: &mut MarkdownRender,
-    abort: &SharedAbortSignal,
+    abort: &AbortSignal,
 ) -> Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -33,9 +33,9 @@ pub fn repl_render_stream(
 }
 
 fn repl_render_stream_inner(
-    rx: &Receiver<ReplyStreamEvent>,
+    rx: &Receiver<ReplyEvent>,
     render: &mut MarkdownRender,
-    abort: &SharedAbortSignal,
+    abort: &AbortSignal,
     writer: &mut Stdout,
 ) -> Result<()> {
     let mut last_tick = Instant::now();
@@ -51,7 +51,7 @@ fn repl_render_stream_inner(
 
         if let Ok(evt) = rx.try_recv() {
             match evt {
-                ReplyStreamEvent::Text(text) => {
+                ReplyEvent::Text(text) => {
                     let (col, mut row) = cursor::position()?;
 
                     // fix unexpected duplicate lines on kitty, see https://github.com/sigoden/aichat/issues/105
@@ -95,7 +95,7 @@ fn repl_render_stream_inner(
 
                     writer.flush()?;
                 }
-                ReplyStreamEvent::Done => {
+                ReplyEvent::Done => {
                     #[cfg(target_os = "windows")]
                     let eol = "\n\n";
                     #[cfg(not(target_os = "windows"))]

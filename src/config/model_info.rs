@@ -1,4 +1,4 @@
-use super::Message;
+use super::message::Message;
 
 use crate::utils::count_tokens;
 

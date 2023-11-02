@@ -82,12 +82,12 @@ impl Session {
         if let Some(temperature) = self.temperature() {
             data["temperature"] = temperature.into();
         }
-        data["total-tokens"] = tokens.into();
+        data["total_tokens"] = tokens.into();
         if let Some(max_tokens) = self.model_info.max_tokens {
-            data["max-tokens"] = max_tokens.into();
+            data["max_tokens"] = max_tokens.into();
         }
         if percent != 0.0 {
-            data["total/max-tokens"] = format!("{}%", percent).into();
+            data["total/max"] = format!("{}%", percent).into();
         }
         data["messages"] = json!(self.messages);
 
@@ -97,43 +97,46 @@ impl Session {
     }
 
     pub fn render(&self, render: &mut MarkdownRender) -> Result<String> {
-        let path = self.path.clone().unwrap_or_else(|| "-".to_string());
+        let mut items = vec![];
 
-        let temperature = self
-            .temperature()
-            .map_or_else(|| String::from("-"), |v| v.to_string());
-
-        let max_tokens = self
-            .model_info
-            .max_tokens
-            .map(|v| v.to_string())
-            .unwrap_or_else(|| '-'.to_string());
-
-        let items = vec![
-            ("path", path),
-            ("model", self.model().to_string()),
-            ("temperature", temperature),
-            ("max_tokens", max_tokens),
-        ];
-        let mut lines = vec![];
-        for (name, value) in items {
-            lines.push(format!("{name:<20}{value}"));
+        if let Some(path) = &self.path {
+            items.push(("path", path.to_string()));
         }
-        lines.push("".into());
-        for message in &self.messages {
-            match message.role {
-                MessageRole::System => {
-                    continue;
-                }
-                MessageRole::Assistant => {
-                    lines.push(render.render(&message.content));
-                    lines.push("".into());
-                }
-                MessageRole::User => {
-                    lines.push(format!("{}）{}", self.name, message.content));
+
+        items.push(("model", self.model_info.full_name()));
+
+        if let Some(temperature) = self.temperature() {
+            items.push(("temperature", temperature.to_string()));
+        }
+
+        if let Some(max_tokens) = self.model_info.max_tokens {
+            items.push(("max_tokens", max_tokens.to_string()));
+        }
+
+        let mut lines: Vec<String> = items
+            .iter()
+            .map(|(name, value)| format!("{name:<20}{value}"))
+            .collect();
+
+        if !self.is_empty() {
+            lines.push("".into());
+
+            for message in &self.messages {
+                match message.role {
+                    MessageRole::System => {
+                        continue;
+                    }
+                    MessageRole::Assistant => {
+                        lines.push(render.render(&message.content));
+                        lines.push("".into());
+                    }
+                    MessageRole::User => {
+                        lines.push(format!("{}）{}", self.name, message.content));
+                    }
                 }
             }
         }
+
         let output = lines.join("\n");
         Ok(output)
     }
