@@ -1,6 +1,11 @@
 use super::{
-    ExtraConfig, ModelInfo, OpenAIClient, PromptKind, PromptType, ReplyStreamHandler, SendData,
-    TokensCountFactors,
+    ExtraConfig, OpenAIClient, PromptType, SendData,
+};
+
+use crate::{
+    config::{ModelInfo, TokensCountFactors},
+    render::ReplyHandler,
+    utils::PromptKind,
 };
 
 use anyhow::{anyhow, bail, Result};
@@ -88,7 +93,7 @@ pub async fn openai_send_message(builder: RequestBuilder) -> Result<String> {
 
 pub async fn openai_send_message_streaming(
     builder: RequestBuilder,
-    handler: &mut ReplyStreamHandler,
+    handler: &mut ReplyHandler,
 ) -> Result<()> {
     let mut es = builder.eventsource()?;
     while let Some(event) = es.next().await {

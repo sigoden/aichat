@@ -3,15 +3,19 @@ use std::sync::{
     Arc,
 };
 
-pub type SharedAbortSignal = Arc<AbortSignal>;
+pub type AbortSignal = Arc<AbortSignalInner>;
 
-pub struct AbortSignal {
+pub struct AbortSignalInner {
     ctrlc: AtomicBool,
     ctrld: AtomicBool,
 }
 
-impl AbortSignal {
-    pub fn new() -> SharedAbortSignal {
+pub fn create_abort_signal() -> AbortSignal {
+    AbortSignalInner::new()
+}
+
+impl AbortSignalInner {
+    pub fn new() -> AbortSignal {
         Arc::new(Self {
             ctrlc: AtomicBool::new(false),
             ctrld: AtomicBool::new(false),

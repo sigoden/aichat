@@ -1,6 +1,7 @@
 use crate::{
     config::{Message, SharedConfig},
-    repl::{ReplyStreamHandler, SharedAbortSignal},
+    render::ReplyHandler,
+    repl::AbortSignal,
     utils::{init_tokio_runtime, prompt_input_integer, prompt_input_string, tokenize, PromptKind},
 };
 
@@ -139,7 +140,7 @@ macro_rules! openai_compatible_client {
             async fn send_message_streaming_inner(
                 &self,
                 client: &reqwest::Client,
-                handler: &mut $crate::repl::ReplyStreamHandler,
+                handler: &mut $crate::render::ReplyHandler,
                 data: $crate::client::SendData,
             ) -> Result<()> {
                 let builder = self.request_builder(client, data)?;
@@ -201,12 +202,8 @@ pub trait Client {
         })
     }
 
-    fn send_message_streaming(
-        &self,
-        content: &str,
-        handler: &mut ReplyStreamHandler,
-    ) -> Result<()> {
-        async fn watch_abort(abort: SharedAbortSignal) {
+    fn send_message_streaming(&self, content: &str, handler: &mut ReplyHandler) -> Result<()> {
+        async fn watch_abort(abort: AbortSignal) {
             loop {
                 if abort.aborted() {
                     break;
@@ -252,7 +249,7 @@ pub trait Client {
     async fn send_message_streaming_inner(
         &self,
         client: &ReqwestClient,
-        handler: &mut ReplyStreamHandler,
+        handler: &mut ReplyHandler,
         data: SendData,
     ) -> Result<()>;
 }

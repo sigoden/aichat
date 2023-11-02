@@ -19,7 +19,7 @@ impl Role {
     pub fn info(&self) -> Result<String> {
         let output = serde_yaml::to_string(&self)
             .with_context(|| format!("Unable to show info about role {}", &self.name))?;
-        Ok(output)
+        Ok(output.trim_end().to_string())
     }
 
     pub fn embedded(&self) -> bool {

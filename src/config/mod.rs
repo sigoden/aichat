@@ -12,7 +12,7 @@ use crate::client::{
     all_models, create_client_config, list_client_types, ClientConfig, ExtraConfig, OpenAIClient,
     SendData,
 };
-use crate::render::RenderOptions;
+use crate::render::{MarkdownRender, RenderOptions};
 use crate::utils::{get_env_name, light_theme_from_colorfgbg, now, prompt_op_err};
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -336,7 +336,7 @@ impl Config {
         }
     }
 
-    pub fn info(&self) -> Result<String> {
+    pub fn sys_info(&self) -> Result<String> {
         let path_info = |path: &Path| {
             let state = if path.exists() { "" } else { " ⚠️" };
             format!("{}{state}", path.display())
@@ -349,25 +349,61 @@ impl Config {
             .clone()
             .map_or_else(|| String::from("no"), |v| v.to_string());
         let items = vec![
+            ("model", self.model_info.full_name()),
+            ("temperature", temperature),
+            ("dry_run", self.dry_run.to_string()),
+            ("save", self.save.to_string()),
+            ("highlight", self.highlight.to_string()),
+            ("wrap", wrap),
+            ("wrap_code", self.wrap_code.to_string()),
+            ("light_theme", self.light_theme.to_string()),
+            ("keybindings", self.keybindings.stringify().into()),
             ("config_file", path_info(&Self::config_file()?)),
             ("roles_file", path_info(&Self::roles_file()?)),
             ("messages_file", path_info(&Self::messages_file()?)),
             ("sessions_dir", path_info(&Self::sessions_dir()?)),
-            ("model", self.model_info.full_name()),
-            ("temperature", temperature),
-            ("save", self.save.to_string()),
-            ("highlight", self.highlight.to_string()),
-            ("light_theme", self.light_theme.to_string()),
-            ("wrap", wrap),
-            ("wrap_code", self.wrap_code.to_string()),
-            ("dry_run", self.dry_run.to_string()),
-            ("keybindings", self.keybindings.stringify().into()),
         ];
-        let mut output = String::new();
-        for (name, value) in items {
-            output.push_str(&format!("{name:<20}{value}\n"));
-        }
+        let output = items
+            .iter()
+            .map(|(name, value)| format!("{name:<20}{value}"))
+            .collect::<Vec<String>>()
+            .join("\n");
         Ok(output)
+    }
+
+    pub fn role_info(&self) -> Result<String> {
+        if let Some(role) = &self.role {
+            role.info()
+        } else {
+            bail!("No role")
+        }
+    }
+
+    pub fn session_info(&self) -> Result<String> {
+        if let Some(session) = &self.session {
+            let render_options = self.get_render_options()?;
+            let mut markdown_render = MarkdownRender::init(render_options)?;
+            session.render(&mut markdown_render)
+        } else {
+            bail!("No session")
+        }
+    }
+
+    pub fn info(&self) -> Result<String> {
+        if let Some(session) = &self.session {
+            session.export()
+        } else if let Some(role) = &self.role {
+            role.info()
+        } else {
+            self.sys_info()
+        }
+    }
+
+    pub fn last_reply(&self) -> &str {
+        self.last_message
+            .as_ref()
+            .map(|(_, reply)| reply.as_str())
+            .unwrap_or_default()
     }
 
     pub fn repl_completions(&self) -> Vec<String> {
@@ -423,7 +459,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn start_session(&mut self, session: &Option<String>) -> Result<()> {
+    pub fn start_session(&mut self, session: Option<&str>) -> Result<()> {
         if self.session.is_some() {
             bail!("Already in a session, please use '.clear session' to exit the session first?");
         }

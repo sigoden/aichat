@@ -8,12 +8,12 @@ use self::repl::repl_render_stream;
 
 use crate::client::Client;
 use crate::config::SharedConfig;
-use crate::print_now;
-use crate::repl::{ReplyStreamHandler, SharedAbortSignal};
+use crate::repl::AbortSignal;
 
-use anyhow::Result;
-use crossbeam::channel::unbounded;
+use anyhow::{Context, Result};
+use crossbeam::channel::{unbounded, Sender};
 use crossbeam::sync::WaitGroup;
+use nu_ansi_term::{Color, Style};
 use std::thread::spawn;
 
 pub fn render_stream(
@@ -21,13 +21,14 @@ pub fn render_stream(
     client: &dyn Client,
     config: &SharedConfig,
     repl: bool,
-    abort: SharedAbortSignal,
+    abort: AbortSignal,
     wg: WaitGroup,
 ) -> Result<String> {
     let render_options = config.read().get_render_options()?;
     let mut stream_handler = {
         let (tx, rx) = unbounded();
         let abort_clone = abort.clone();
+        let highlight = config.read().highlight;
         spawn(move || {
             let run = move || {
                 if repl {
@@ -39,14 +40,81 @@ pub fn render_stream(
                 }
             };
             if let Err(err) = run() {
-                let err = format!("{err:?}");
-                print_now!("\n{}\n\n", err.trim());
+                render_error(err, highlight);
             }
             drop(wg);
         });
-        ReplyStreamHandler::new(tx, abort_clone)
+        ReplyHandler::new(tx, abort_clone)
     };
     client.send_message_streaming(input, &mut stream_handler)?;
     let buffer = stream_handler.get_buffer();
     Ok(buffer.to_string())
+}
+
+pub fn render_error(err: anyhow::Error, highlight: bool) {
+    let err = format!("{err:?}\n");
+    if highlight {
+        let style = Style::new().fg(Color::Red);
+        println!("{}", style.paint(err.trim()));
+    } else {
+        println!("{}", err.trim());
+    }
+}
+
+pub struct ReplyHandler {
+    sender: Sender<ReplyEvent>,
+    buffer: String,
+    abort: AbortSignal,
+}
+
+impl ReplyHandler {
+    pub fn new(sender: Sender<ReplyEvent>, abort: AbortSignal) -> Self {
+        Self {
+            sender,
+            abort,
+            buffer: String::new(),
+        }
+    }
+
+    pub fn text(&mut self, text: &str) -> Result<()> {
+        if self.buffer.is_empty() && text == "\n\n" {
+            return Ok(());
+        }
+        self.buffer.push_str(text);
+        let ret = self
+            .sender
+            .send(ReplyEvent::Text(text.to_string()))
+            .with_context(|| "Failed to send ReplyEvent:Text");
+        self.safe_ret(ret)?;
+        Ok(())
+    }
+
+    pub fn done(&mut self) -> Result<()> {
+        let ret = self
+            .sender
+            .send(ReplyEvent::Done)
+            .with_context(|| "Failed to send ReplyEvent::Done");
+        self.safe_ret(ret)?;
+        Ok(())
+    }
+
+    pub fn get_buffer(&self) -> &str {
+        &self.buffer
+    }
+
+    pub fn get_abort(&self) -> AbortSignal {
+        self.abort.clone()
+    }
+
+    fn safe_ret(&self, ret: Result<()>) -> Result<()> {
+        if ret.is_err() && self.abort.aborted() {
+            return Ok(());
+        }
+        ret
+    }
+}
+
+pub enum ReplyEvent {
+    Text(String),
+    Done,
 }

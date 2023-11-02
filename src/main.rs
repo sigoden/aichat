@@ -17,7 +17,7 @@ use crossbeam::sync::WaitGroup;
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use render::{render_stream, MarkdownRender};
-use repl::{AbortSignal, Repl};
+use repl::{create_abort_signal, Repl};
 use std::io::{stdin, Read};
 use std::sync::Arc;
 use std::{io::stdout, process::exit};
@@ -59,7 +59,9 @@ fn main() -> Result<()> {
         config.write().set_role(name)?;
     }
     if let Some(session) = &cli.session {
-        config.write().start_session(session)?;
+        config
+            .write()
+            .start_session(session.as_ref().map(|v| v.as_str()))?;
     }
     if let Some(model) = &cli.model {
         config.write().set_model(model)?;
@@ -68,14 +70,8 @@ fn main() -> Result<()> {
         config.write().highlight = false;
     }
     if cli.info {
-        let info = if let Some(session) = &config.read().session {
-            session.export()?
-        } else if let Some(role) = &config.read().role {
-            role.info()?
-        } else {
-            config.read().info()?
-        };
-        println!("{info}");
+        let info = config.read().info()?;
+        println!("{}", info);
         exit(0);
     }
     let no_stream = cli.no_stream;
@@ -116,12 +112,12 @@ fn start_directive(
         output
     } else {
         let wg = WaitGroup::new();
-        let abort = AbortSignal::new();
+        let abort = create_abort_signal();
         let abort_clone = abort.clone();
         ctrlc::set_handler(move || {
             abort_clone.set_ctrlc();
         })
-        .expect("Error setting Ctrl-C handler");
+        .expect("Failed to setting Ctrl-C handler");
         let output = render_stream(input, client, config, false, abort, wg.clone())?;
         wg.wait();
         output
@@ -132,5 +128,5 @@ fn start_directive(
 fn start_interactive(config: SharedConfig) -> Result<()> {
     cl100k_base_singleton();
     let mut repl: Repl = Repl::init(config.clone())?;
-    repl.run(config)
+    repl.run()
 }
