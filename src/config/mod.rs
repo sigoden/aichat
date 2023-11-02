@@ -404,6 +404,7 @@ impl Config {
                     format!("save {}", !self.save),
                     format!("highlight {}", !self.highlight),
                     format!("dry_run {}", !self.dry_run),
+                    format!("auto_copy {}", !self.auto_copy),
                 ]
             }
             _ => vec![],
@@ -445,6 +446,10 @@ impl Config {
             "dry_run" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.dry_run = value;
+            }
+            "auto_copy" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                self.auto_copy = value;
             }
             _ => bail!("Unknown key `{key}`"),
         }

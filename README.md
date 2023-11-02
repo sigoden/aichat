@@ -149,10 +149,6 @@ Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
 
 ```
 〉.info
-config_file         /home/alice/.config/aichat/config.yaml
-roles_file          /home/alice/.config/aichat/roles.yaml
-messages_file       /home/alice/.config/aichat/messages.md
-sessions_dir        /home/alice/.config/aichat/sessions
 model               openai:gpt-3.5-turbo
 temperature         -
 save                true
@@ -162,6 +158,10 @@ wrap                no
 wrap_code           false
 dry_run             false
 keybindings         emacs
+config_file         /home/alice/.config/aichat/config.yaml
+roles_file          /home/alice/.config/aichat/roles.yaml
+messages_file       /home/alice/.config/aichat/messages.md
+sessions_dir        /home/alice/.config/aichat/sessions
 ```
 
 ### `.edit` -  multiline editing
@@ -258,6 +258,7 @@ compared to the maximum number of tokens allowed by the model.
 〉.set dry_run true
 〉.set highlight false
 〉.set save false
+〉.set auto_copy true
 ```
 
 ## Command Line
