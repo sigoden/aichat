@@ -5,7 +5,7 @@ use self::role::Role;
 use self::session::{Session, TEMP_SESSION_NAME};
 
 use crate::client::{
-    all_models, create_client_config, list_client_types, ClientConfig, ExtraConfig, Message,
+    create_client_config, list_client_types, list_models, ClientConfig, ExtraConfig, Message,
     ModelInfo, OpenAIClient, SendData,
 };
 use crate::render::{MarkdownRender, RenderOptions};
@@ -34,16 +34,6 @@ const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
 const MESSAGES_FILE_NAME: &str = "messages.md";
 const SESSIONS_DIR_NAME: &str = "sessions";
-
-const SET_COMPLETIONS: [&str; 7] = [
-    ".set temperature",
-    ".set save true",
-    ".set save false",
-    ".set highlight true",
-    ".set highlight false",
-    ".set dry_run true",
-    ".set dry_run false",
-];
 
 const CLIENTS_FIELD: &str = "clients";
 
@@ -311,10 +301,11 @@ impl Config {
     }
 
     pub fn set_model(&mut self, value: &str) -> Result<()> {
-        let models = all_models(self);
+        let models = list_models(self);
         let mut model_info = None;
+        let value = value.trim_end_matches(':');
         if value.contains(':') {
-            if let Some(model) = models.iter().find(|v| v.full_name() == value) {
+            if let Some(model) = models.iter().find(|v| v.id() == value) {
                 model_info = Some(model.clone());
             }
         } else if let Some(model) = models.iter().find(|v| v.client == value) {
@@ -345,7 +336,7 @@ impl Config {
             .clone()
             .map_or_else(|| String::from("no"), |v| v.to_string());
         let items = vec![
-            ("model", self.model_info.full_name()),
+            ("model", self.model_info.id()),
             ("temperature", temperature),
             ("dry_run", self.dry_run.to_string()),
             ("save", self.save.to_string()),
@@ -402,22 +393,27 @@ impl Config {
             .unwrap_or_default()
     }
 
-    pub fn repl_completions(&self) -> Vec<String> {
-        let mut completion: Vec<String> = self
-            .roles
-            .iter()
-            .map(|v| format!(".role {}", v.name))
+    pub fn repl_complete(&self, cmd: &str, args: &str) -> Vec<String> {
+        let possible_values = match cmd {
+            ".role" => self.roles.iter().map(|v| v.name.clone()).collect(),
+            ".model" => list_models(self).into_iter().map(|v| v.id()).collect(),
+            ".session" => self.list_sessions(),
+            ".set" => {
+                vec![
+                    "temperature ".into(),
+                    format!("save {}", !self.save),
+                    format!("highlight {}", !self.highlight),
+                    format!("dry_run {}", !self.dry_run),
+                ]
+            }
+            _ => vec![],
+        };
+        let mut possible_values: Vec<String> = possible_values
+            .into_iter()
+            .filter(|v| v.starts_with(args))
             .collect();
-
-        completion.extend(SET_COMPLETIONS.map(std::string::ToString::to_string));
-        completion.extend(
-            all_models(self)
-                .iter()
-                .map(|v| format!(".model {}", v.full_name())),
-        );
-        let sessions = self.list_sessions().unwrap_or_default();
-        completion.extend(sessions.iter().map(|v| format!(".session {}", v)));
-        completion
+        possible_values.sort_unstable();
+        possible_values
     }
 
     pub fn update(&mut self, data: &str) -> Result<()> {
@@ -541,21 +537,23 @@ impl Config {
         Ok(())
     }
 
-    pub fn list_sessions(&self) -> Result<Vec<String>> {
-        let sessions_dir = Self::sessions_dir()?;
+    pub fn list_sessions(&self) -> Vec<String> {
+        let sessions_dir = match Self::sessions_dir() {
+            Ok(dir) => dir,
+            Err(_) => return vec![],
+        };
         match read_dir(&sessions_dir) {
             Ok(rd) => {
                 let mut names = vec![];
-                for entry in rd {
-                    let entry = entry?;
+                for entry in rd.flatten() {
                     let name = entry.file_name();
                     if let Some(name) = name.to_string_lossy().strip_suffix(".yaml") {
                         names.push(name.to_string());
                     }
                 }
-                Ok(names)
+                names
             }
-            Err(_) => Ok(vec![]),
+            Err(_) => vec![],
         }
     }
 
@@ -665,12 +663,12 @@ impl Config {
         let model = match &self.model {
             Some(v) => v.clone(),
             None => {
-                let models = all_models(self);
+                let models = list_models(self);
                 if models.is_empty() {
                     bail!("No available model");
                 }
 
-                models[0].full_name()
+                models[0].id()
             }
         };
         self.set_model(&model)?;

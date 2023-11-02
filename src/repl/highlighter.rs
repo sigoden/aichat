@@ -1,18 +1,18 @@
+use super::REPL_COMMANDS;
+
 use crate::config::GlobalConfig;
 
 use nu_ansi_term::{Color, Style};
 use reedline::{Highlighter, StyledText};
 
 pub struct ReplHighlighter {
-    external_commands: Vec<String>,
     config: GlobalConfig,
 }
 
 impl ReplHighlighter {
-    pub fn new(external_commands: Vec<String>, config: GlobalConfig) -> Self {
+    pub fn new(config: &GlobalConfig) -> Self {
         Self {
-            external_commands,
-            config,
+            config: config.clone(),
         }
     }
 }
@@ -28,17 +28,11 @@ impl Highlighter for ReplHighlighter {
 
         let mut styled_text = StyledText::new();
 
-        if self
-            .external_commands
-            .clone()
-            .iter()
-            .any(|x| line.contains(x))
-        {
-            let matches: Vec<&str> = self
-                .external_commands
+        if REPL_COMMANDS.iter().any(|(cmd, _)| line.contains(cmd)) {
+            let matches: Vec<&str> = REPL_COMMANDS
                 .iter()
-                .filter(|c| line.contains(*c))
-                .map(std::ops::Deref::deref)
+                .filter(|(cmd, _)| line.contains(*cmd))
+                .map(|(cmd, _)| *cmd)
                 .collect();
             let longest_match = matches.iter().fold(String::new(), |acc, &item| {
                 if item.len() > acc.len() {
