@@ -46,16 +46,16 @@ macro_rules! register_client {
             pub struct $client {
                 global_config: $crate::config::GlobalConfig,
                 config: $config,
-                model_info: $crate::client::ModelInfo,
+                model: $crate::client::Model,
             }
 
             impl $client {
                 pub const NAME: &str = $name;
 
                 pub fn init(global_config: $crate::config::GlobalConfig) -> Option<Box<dyn Client>> {
-                    let model_info = global_config.read().model_info.clone();
+                    let model = global_config.read().model.clone();
                     let config = {
-                        if let ClientConfig::$config_key(c) = &global_config.read().clients[model_info.index] {
+                        if let ClientConfig::$config_key(c) = &global_config.read().clients[model.client_index] {
                             c.clone()
                         } else {
                             return None;
@@ -64,7 +64,7 @@ macro_rules! register_client {
                     Some(Box::new(Self {
                         global_config,
                         config,
-                        model_info,
+                        model,
                     }))
                 }
 
@@ -79,11 +79,11 @@ macro_rules! register_client {
                 None
                 $(.or_else(|| $client::init(config.clone())))+
                 .ok_or_else(|| {
-                    let model_info = config.read().model_info.clone();
+                    let model = config.read().model.clone();
                     anyhow::anyhow!(
-                        "Unknown client {} at config.clients[{}]",
-                        &model_info.client,
-                        &model_info.index
+                        "Unknown client '{}' at config.clients[{}]",
+                        &model.client_name,
+                        &model.client_index
                     )
                 })
         }
@@ -101,7 +101,7 @@ macro_rules! register_client {
             anyhow::bail!("Unknown client {}", client)
         }
 
-        pub fn list_models(config: &$crate::config::Config) -> Vec<$crate::client::ModelInfo> {
+        pub fn list_models(config: &$crate::config::Config) -> Vec<$crate::client::Model> {
             config
                 .clients
                 .iter()

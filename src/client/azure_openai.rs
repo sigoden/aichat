@@ -1,5 +1,5 @@
 use super::openai::{openai_build_body, OPENAI_TOKENS_COUNT_FACTORS};
-use super::{AzureOpenAIClient, ExtraConfig, PromptType, SendData, ModelInfo};
+use super::{AzureOpenAIClient, ExtraConfig, PromptType, SendData, Model};
 
 use crate::utils::PromptKind;
 
@@ -42,14 +42,14 @@ impl AzureOpenAIClient {
         ),
     ];
 
-    pub fn list_models(local_config: &AzureOpenAIConfig, index: usize) -> Vec<ModelInfo> {
-        let client = Self::name(local_config);
+    pub fn list_models(local_config: &AzureOpenAIConfig, client_index: usize) -> Vec<Model> {
+        let client_name = Self::name(local_config);
 
         local_config
             .models
             .iter()
             .map(|v| {
-                ModelInfo::new(index, client, &v.name)
+                Model::new(client_index, client_name, &v.name)
                     .set_max_tokens(v.max_tokens)
                     .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })
@@ -70,11 +70,11 @@ impl AzureOpenAIClient {
 
         let api_base = self.get_api_base()?;
 
-        let body = openai_build_body(data, self.model_info.name.clone());
+        let body = openai_build_body(data, self.model.llm_name.clone());
 
         let url = format!(
             "{}/openai/deployments/{}/chat/completions?api-version=2023-05-15",
-            &api_base, self.model_info.name
+            &api_base, self.model.llm_name
         );
 
         let builder = client.post(url).header("api-key", api_key).json(&body);

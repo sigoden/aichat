@@ -1,5 +1,5 @@
 use super::openai::{openai_build_body, OPENAI_TOKENS_COUNT_FACTORS};
-use super::{ExtraConfig, LocalAIClient, PromptType, SendData, ModelInfo};
+use super::{ExtraConfig, LocalAIClient, PromptType, SendData, Model};
 
 use crate::utils::PromptKind;
 
@@ -41,14 +41,14 @@ impl LocalAIClient {
         ),
     ];
 
-    pub fn list_models(local_config: &LocalAIConfig, index: usize) -> Vec<ModelInfo> {
-        let client = Self::name(local_config);
+    pub fn list_models(local_config: &LocalAIConfig, client_index: usize) -> Vec<Model> {
+        let client_name = Self::name(local_config);
 
         local_config
             .models
             .iter()
             .map(|v| {
-                ModelInfo::new(index, client, &v.name)
+                Model::new(client_index, client_name, &v.name)
                     .set_max_tokens(v.max_tokens)
                     .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })
@@ -58,7 +58,7 @@ impl LocalAIClient {
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
 
-        let body = openai_build_body(data, self.model_info.name.clone());
+        let body = openai_build_body(data, self.model.llm_name.clone());
 
         let chat_endpoint = self
             .config

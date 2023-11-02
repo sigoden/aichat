@@ -1,6 +1,6 @@
 use super::{
     ExtraConfig, OpenAIClient, PromptType, SendData,
-    ModelInfo, TokensCountFactors,
+    Model, TokensCountFactors,
 };
 
 use crate::{
@@ -44,12 +44,12 @@ impl OpenAIClient {
     pub const PROMPTS: [PromptType<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    pub fn list_models(local_config: &OpenAIConfig, index: usize) -> Vec<ModelInfo> {
-        let client = Self::name(local_config);
+    pub fn list_models(local_config: &OpenAIConfig, client_index: usize) -> Vec<Model> {
+        let client_name = Self::name(local_config);
         MODELS
             .into_iter()
             .map(|(name, max_tokens)| {
-                ModelInfo::new(index, client, name)
+                Model::new(client_index, client_name, name)
                     .set_max_tokens(Some(max_tokens))
                     .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })
@@ -59,7 +59,7 @@ impl OpenAIClient {
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
 
-        let body = openai_build_body(data, self.model_info.name.clone());
+        let body = openai_build_body(data, self.model.llm_name.clone());
 
         let env_prefix = Self::name(&self.config).to_uppercase();
         let api_base = env::var(format!("{env_prefix}_API_BASE"))
