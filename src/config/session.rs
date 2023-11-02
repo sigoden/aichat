@@ -1,5 +1,5 @@
 use super::role::Role;
-use super::ModelInfo;
+use super::Model;
 
 use crate::client::{Message, MessageRole};
 use crate::render::MarkdownRender;
@@ -14,7 +14,8 @@ pub const TEMP_SESSION_NAME: &str = "temp";
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct Session {
-    model: String,
+    #[serde(rename(serialize = "model", deserialize = "model"))]
+    model_id: String,
     temperature: Option<f64>,
     messages: Vec<Message>,
     #[serde(skip)]
@@ -26,21 +27,21 @@ pub struct Session {
     #[serde(skip)]
     pub role: Option<Role>,
     #[serde(skip)]
-    pub model_info: ModelInfo,
+    pub model: Model,
 }
 
 impl Session {
-    pub fn new(name: &str, model_info: ModelInfo, role: Option<Role>) -> Self {
+    pub fn new(name: &str, model: Model, role: Option<Role>) -> Self {
         let temperature = role.as_ref().and_then(|v| v.temperature);
         Self {
-            model: model_info.id(),
+            model_id: model.id(),
             temperature,
             messages: vec![],
             name: name.to_string(),
             path: None,
             dirty: false,
             role,
-            model_info,
+            model,
         }
     }
 
@@ -61,7 +62,7 @@ impl Session {
     }
 
     pub fn model(&self) -> &str {
-        &self.model
+        &self.model_id
     }
 
     pub fn temperature(&self) -> Option<f64> {
@@ -69,7 +70,7 @@ impl Session {
     }
 
     pub fn tokens(&self) -> usize {
-        self.model_info.total_tokens(&self.messages)
+        self.model.total_tokens(&self.messages)
     }
 
     pub fn export(&self) -> Result<String> {
@@ -83,7 +84,7 @@ impl Session {
             data["temperature"] = temperature.into();
         }
         data["total_tokens"] = tokens.into();
-        if let Some(max_tokens) = self.model_info.max_tokens {
+        if let Some(max_tokens) = self.model.max_tokens {
             data["max_tokens"] = max_tokens.into();
         }
         if percent != 0.0 {
@@ -103,13 +104,13 @@ impl Session {
             items.push(("path", path.to_string()));
         }
 
-        items.push(("model", self.model_info.id()));
+        items.push(("model", self.model.id()));
 
         if let Some(temperature) = self.temperature() {
             items.push(("temperature", temperature.to_string()));
         }
 
-        if let Some(max_tokens) = self.model_info.max_tokens {
+        if let Some(max_tokens) = self.model.max_tokens {
             items.push(("max_tokens", max_tokens.to_string()));
         }
 
@@ -143,7 +144,7 @@ impl Session {
 
     pub fn tokens_and_percent(&self) -> (usize, f32) {
         let tokens = self.tokens();
-        let max_tokens = self.model_info.max_tokens.unwrap_or_default();
+        let max_tokens = self.model.max_tokens.unwrap_or_default();
         let percent = if max_tokens == 0 {
             0.0
         } else {
@@ -164,9 +165,9 @@ impl Session {
         self.temperature = value;
     }
 
-    pub fn set_model(&mut self, model_info: ModelInfo) -> Result<()> {
-        self.model = model_info.id();
-        self.model_info = model_info;
+    pub fn set_model(&mut self, model: Model) -> Result<()> {
+        self.model_id = model.id();
+        self.model = model;
         Ok(())
     }
 

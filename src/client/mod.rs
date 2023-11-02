@@ -1,11 +1,11 @@
 #[macro_use]
 mod common;
 mod message;
-mod model_info;
+mod model;
 
 pub use common::*;
 pub use message::*;
-pub use model_info::*;
+pub use model::*;
 
 register_client!(
     (openai, "openai", OpenAI, OpenAIConfig, OpenAIClient),

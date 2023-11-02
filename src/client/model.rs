@@ -7,29 +7,33 @@ use anyhow::{bail, Result};
 pub type TokensCountFactors = (usize, usize); // (per-messages, bias)
 
 #[derive(Debug, Clone)]
-pub struct ModelInfo {
-    pub client: String,
-    pub name: String,
-    pub index: usize,
+pub struct Model {
+    pub client_index: usize,
+    pub client_name: String,
+    pub llm_name: String,
     pub max_tokens: Option<usize>,
     pub tokens_count_factors: TokensCountFactors,
 }
 
-impl Default for ModelInfo {
+impl Default for Model {
     fn default() -> Self {
-        ModelInfo::new(0, "", "")
+        Model::new(0, "", "")
     }
 }
 
-impl ModelInfo {
-    pub fn new(index: usize, client: &str, name: &str) -> Self {
+impl Model {
+    pub fn new(client_index: usize, client_name: &str, name: &str) -> Self {
         Self {
-            index,
-            client: client.into(),
-            name: name.into(),
+            client_index,
+            client_name: client_name.into(),
+            llm_name: name.into(),
             max_tokens: None,
             tokens_count_factors: Default::default(),
         }
+    }
+
+    pub fn id(&self) -> String {
+        format!("{}:{}", self.client_name, self.llm_name)
     }
 
     pub fn set_max_tokens(mut self, max_tokens: Option<usize>) -> Self {
@@ -43,10 +47,6 @@ impl ModelInfo {
     pub fn set_tokens_count_factors(mut self, tokens_count_factors: TokensCountFactors) -> Self {
         self.tokens_count_factors = tokens_count_factors;
         self
-    }
-
-    pub fn id(&self) -> String {
-        format!("{}:{}", self.client, self.name)
     }
 
     pub fn messages_tokens(&self, messages: &[Message]) -> usize {

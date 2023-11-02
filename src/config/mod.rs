@@ -6,7 +6,7 @@ use self::session::{Session, TEMP_SESSION_NAME};
 
 use crate::client::{
     create_client_config, list_client_types, list_models, ClientConfig, ExtraConfig, Message,
-    ModelInfo, OpenAIClient, SendData,
+    Model, OpenAIClient, SendData,
 };
 use crate::render::{MarkdownRender, RenderOptions};
 use crate::utils::{get_env_name, light_theme_from_colorfgbg, now, prompt_op_err};
@@ -41,7 +41,8 @@ const CLIENTS_FIELD: &str = "clients";
 #[serde(default)]
 pub struct Config {
     /// LLM model
-    pub model: Option<String>,
+    #[serde(rename(serialize = "model", deserialize = "model"))]
+    pub model_id: Option<String>,
     /// GPT temperature, between 0 and 2
     #[serde(rename(serialize = "temperature", deserialize = "temperature"))]
     pub default_temperature: Option<f64>,
@@ -73,7 +74,7 @@ pub struct Config {
     #[serde(skip)]
     pub session: Option<Session>,
     #[serde(skip)]
-    pub model_info: ModelInfo,
+    pub model: Model,
     #[serde(skip)]
     pub last_message: Option<(String, String)>,
     #[serde(skip)]
@@ -83,7 +84,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            model: None,
+            model_id: None,
             default_temperature: None,
             save: true,
             highlight: true,
@@ -97,7 +98,7 @@ impl Default for Config {
             roles: vec![],
             role: None,
             session: None,
-            model_info: Default::default(),
+            model: Default::default(),
             last_message: None,
             temperature: None,
         }
@@ -135,7 +136,7 @@ impl Config {
 
         config.load_roles()?;
 
-        config.setup_model_info()?;
+        config.setup_model()?;
         config.setup_highlight();
         config.setup_light_theme()?;
 
@@ -304,22 +305,22 @@ impl Config {
 
     pub fn set_model(&mut self, value: &str) -> Result<()> {
         let models = list_models(self);
-        let mut model_info = None;
+        let mut model = None;
         let value = value.trim_end_matches(':');
         if value.contains(':') {
-            if let Some(model) = models.iter().find(|v| v.id() == value) {
-                model_info = Some(model.clone());
+            if let Some(found) = models.iter().find(|v| v.id() == value) {
+                model = Some(found.clone());
             }
-        } else if let Some(model) = models.iter().find(|v| v.client == value) {
-            model_info = Some(model.clone());
+        } else if let Some(found) = models.iter().find(|v| v.client_name == value) {
+            model = Some(found.clone());
         }
-        match model_info {
+        match model {
             None => bail!("Unknown model '{}'", value),
-            Some(model_info) => {
+            Some(model) => {
                 if let Some(session) = self.session.as_mut() {
-                    session.set_model(model_info.clone())?;
+                    session.set_model(model.clone())?;
                 }
-                self.model_info = model_info;
+                self.model = model;
                 Ok(())
             }
         }
@@ -338,7 +339,7 @@ impl Config {
             .clone()
             .map_or_else(|| String::from("no"), |v| v.to_string());
         let items = vec![
-            ("model", self.model_info.id()),
+            ("model", self.model.id()),
             ("temperature", temperature),
             ("dry_run", self.dry_run.to_string()),
             ("save", self.save.to_string()),
@@ -471,18 +472,14 @@ impl Config {
                 }
                 self.session = Some(Session::new(
                     TEMP_SESSION_NAME,
-                    self.model_info.clone(),
+                    self.model.clone(),
                     self.role.clone(),
                 ));
             }
             Some(name) => {
                 let session_path = Self::session_file(name)?;
                 if !session_path.exists() {
-                    self.session = Some(Session::new(
-                        name,
-                        self.model_info.clone(),
-                        self.role.clone(),
-                    ));
+                    self.session = Some(Session::new(name, self.model.clone(), self.role.clone()));
                 } else {
                     let session = Session::load(name, &session_path)?;
                     let model = session.model().to_string();
@@ -608,7 +605,7 @@ impl Config {
 
     pub fn prepare_send_data(&self, content: &str, stream: bool) -> Result<SendData> {
         let messages = self.build_messages(content)?;
-        self.model_info.max_tokens_limit(&messages)?;
+        self.model.max_tokens_limit(&messages)?;
         Ok(SendData {
             messages,
             temperature: self.get_temperature(),
@@ -619,7 +616,7 @@ impl Config {
     pub fn maybe_print_send_tokens(&self, input: &str) {
         if self.dry_run {
             if let Ok(messages) = self.build_messages(input) {
-                let tokens = self.model_info.total_tokens(&messages);
+                let tokens = self.model.total_tokens(&messages);
                 println!(">>> This message consumes {tokens} tokens. <<<");
             }
         }
@@ -666,8 +663,8 @@ impl Config {
         Ok(())
     }
 
-    fn setup_model_info(&mut self) -> Result<()> {
-        let model = match &self.model {
+    fn setup_model(&mut self) -> Result<()> {
+        let model = match &self.model_id {
             Some(v) => v.clone(),
             None => {
                 let models = list_models(self);
@@ -716,7 +713,7 @@ impl Config {
 
         if let Some(model_name) = value.get("model").and_then(|v| v.as_str()) {
             if model_name.starts_with("gpt") {
-                self.model = Some(format!("{}:{}", OpenAIClient::NAME, model_name));
+                self.model_id = Some(format!("{}:{}", OpenAIClient::NAME, model_name));
             }
         }
 
