@@ -103,6 +103,7 @@ impl Repl {
                         }
                         Err(err) => {
                             render_error(err, self.config.read().highlight);
+                            println!()
                         }
                     }
                 }

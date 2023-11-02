@@ -52,7 +52,7 @@ pub fn render_stream(
 }
 
 pub fn render_error(err: anyhow::Error, highlight: bool) {
-    let err = format!("{err:?}\n");
+    let err = format!("{err:?}");
     if highlight {
         let style = Style::new().fg(Color::Red);
         println!("{}", style.paint(err.trim()));
