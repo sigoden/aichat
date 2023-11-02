@@ -77,6 +77,7 @@ impl ReplyHandler {
     }
 
     pub fn text(&mut self, text: &str) -> Result<()> {
+        debug!("ReplyText: {}", text);
         if self.buffer.is_empty() && text == "\n\n" {
             return Ok(());
         }
@@ -90,6 +91,7 @@ impl ReplyHandler {
     }
 
     pub fn done(&mut self) -> Result<()> {
+        debug!("ReplyDone");
         let ret = self
             .sender
             .send(ReplyEvent::Done)

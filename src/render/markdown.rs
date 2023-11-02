@@ -82,6 +82,16 @@ impl MarkdownRender {
             .join("\n")
     }
 
+    pub fn render_with_indent(&mut self, text: &str, padding: usize) -> String {
+        let text = format!("{}{}", " ".repeat(padding), text);
+        let output = self.render(&text);
+        if output.starts_with('\n') {
+            output
+        } else {
+            output.chars().skip(padding).collect()
+        }
+    }
+
     pub fn render_line(&self, line: &str) -> String {
         let (_, code_syntax, is_code) = self.check_line(line);
         if is_code {
@@ -358,5 +368,18 @@ std::error::Error>> {
         render.wrap_width = Some(80);
         let output = render.render(TEXT);
         assert_eq!(TEXT_WRAP_ALL, output);
+    }
+
+    #[test]
+    fn wrap_with_indent() {
+        let options = RenderOptions::default();
+        let mut render = MarkdownRender::init(options).unwrap();
+        render.wrap_width = Some(80);
+
+        let input = "To unzip a file in Rust, you can use the `zip` crate. Here's an example code";
+        let output = render.render_with_indent(input, 40);
+        let expect =
+            "To unzip a file in Rust, you can use the\n`zip` crate. Here's an example code";
+        assert_eq!(output, expect);
     }
 }
