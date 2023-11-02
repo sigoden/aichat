@@ -8,7 +8,7 @@ mod utils;
 
 use crate::cli::Cli;
 use crate::client::Client;
-use crate::config::{Config, SharedConfig};
+use crate::config::{Config, GlobalConfig};
 
 use anyhow::Result;
 use clap::Parser;
@@ -17,11 +17,11 @@ use crossbeam::sync::WaitGroup;
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use render::{render_stream, MarkdownRender};
-use repl::{create_abort_signal, Repl};
+use repl::Repl;
 use std::io::{stdin, Read};
 use std::sync::Arc;
 use std::{io::stdout, process::exit};
-use utils::cl100k_base_singleton;
+use utils::{cl100k_base_singleton, create_abort_signal};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -93,7 +93,7 @@ fn main() -> Result<()> {
 
 fn start_directive(
     client: &dyn Client,
-    config: &SharedConfig,
+    config: &GlobalConfig,
     input: &str,
     no_stream: bool,
 ) -> Result<()> {
@@ -125,7 +125,7 @@ fn start_directive(
     config.write().save_message(input, &output)
 }
 
-fn start_interactive(config: SharedConfig) -> Result<()> {
+fn start_interactive(config: GlobalConfig) -> Result<()> {
     cl100k_base_singleton();
     let mut repl: Repl = Repl::init(config.clone())?;
     repl.run()

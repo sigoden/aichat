@@ -1,8 +1,12 @@
+use super::{openai::OpenAIConfig, ClientConfig, Message};
+
 use crate::{
-    config::{Message, SharedConfig},
+    config::GlobalConfig,
     render::ReplyHandler,
-    repl::AbortSignal,
-    utils::{init_tokio_runtime, prompt_input_integer, prompt_input_string, tokenize, PromptKind},
+    utils::{
+        init_tokio_runtime, prompt_input_integer, prompt_input_string, tokenize, AbortSignal,
+        PromptKind,
+    },
 };
 
 use anyhow::{Context, Result};
@@ -12,8 +16,6 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{env, time::Duration};
 use tokio::time::sleep;
-
-use super::{openai::OpenAIConfig, ClientConfig};
 
 #[macro_export]
 macro_rules! register_client {
@@ -42,15 +44,15 @@ macro_rules! register_client {
         $(
             #[derive(Debug)]
             pub struct $client {
-                global_config: $crate::config::SharedConfig,
+                global_config: $crate::config::GlobalConfig,
                 config: $config,
-                model_info: $crate::config::ModelInfo,
+                model_info: $crate::client::ModelInfo,
             }
 
             impl $client {
                 pub const NAME: &str = $name;
 
-                pub fn init(global_config: $crate::config::SharedConfig) -> Option<Box<dyn Client>> {
+                pub fn init(global_config: $crate::config::GlobalConfig) -> Option<Box<dyn Client>> {
                     let model_info = global_config.read().model_info.clone();
                     let config = {
                         if let ClientConfig::$config_key(c) = &global_config.read().clients[model_info.index] {
@@ -73,7 +75,7 @@ macro_rules! register_client {
 
         )+
 
-        pub fn init_client(config: $crate::config::SharedConfig) -> anyhow::Result<Box<dyn Client>> {
+        pub fn init_client(config: $crate::config::GlobalConfig) -> anyhow::Result<Box<dyn Client>> {
                 None
                 $(.or_else(|| $client::init(config.clone())))+
                 .ok_or_else(|| {
@@ -99,7 +101,7 @@ macro_rules! register_client {
             anyhow::bail!("Unknown client {}", client)
         }
 
-        pub fn all_models(config: &$crate::config::Config) -> Vec<$crate::config::ModelInfo> {
+        pub fn all_models(config: &$crate::config::Config) -> Vec<$crate::client::ModelInfo> {
             config
                 .clients
                 .iter()
@@ -122,7 +124,7 @@ macro_rules! openai_compatible_client {
             fn config(
                 &self,
             ) -> (
-                &$crate::config::SharedConfig,
+                &$crate::config::GlobalConfig,
                 &Option<$crate::client::ExtraConfig>,
             ) {
                 (&self.global_config, &self.config.extra)
@@ -169,7 +171,7 @@ macro_rules! config_get_fn {
 
 #[async_trait]
 pub trait Client {
-    fn config(&self) -> (&SharedConfig, &Option<ExtraConfig>);
+    fn config(&self) -> (&GlobalConfig, &Option<ExtraConfig>);
 
     fn build_client(&self) -> Result<ReqwestClient> {
         let mut builder = ReqwestClient::builder();

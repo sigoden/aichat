@@ -1,4 +1,4 @@
-use crate::config::SharedConfig;
+use crate::config::GlobalConfig;
 
 use crossterm::style::Color;
 use reedline::{Prompt, PromptHistorySearch, PromptHistorySearchStatus};
@@ -11,11 +11,11 @@ const PROMPT_RIGHT_COLOR: Color = Color::AnsiValue(5);
 
 #[derive(Clone)]
 pub struct ReplPrompt {
-    config: SharedConfig,
+    config: GlobalConfig,
 }
 
 impl ReplPrompt {
-    pub fn new(config: SharedConfig) -> Self {
+    pub fn new(config: GlobalConfig) -> Self {
         Self { config }
     }
 }

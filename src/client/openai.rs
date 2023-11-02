@@ -1,9 +1,9 @@
 use super::{
     ExtraConfig, OpenAIClient, PromptType, SendData,
+    ModelInfo, TokensCountFactors,
 };
 
 use crate::{
-    config::{ModelInfo, TokensCountFactors},
     render::ReplyHandler,
     utils::PromptKind,
 };

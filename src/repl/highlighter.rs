@@ -1,15 +1,15 @@
-use crate::config::SharedConfig;
+use crate::config::GlobalConfig;
 
 use nu_ansi_term::{Color, Style};
 use reedline::{Highlighter, StyledText};
 
 pub struct ReplHighlighter {
     external_commands: Vec<String>,
-    config: SharedConfig,
+    config: GlobalConfig,
 }
 
 impl ReplHighlighter {
-    pub fn new(external_commands: Vec<String>, config: SharedConfig) -> Self {
+    pub fn new(external_commands: Vec<String>, config: GlobalConfig) -> Self {
         Self {
             external_commands,
             config,

@@ -7,8 +7,8 @@ pub use self::markdown::{MarkdownRender, RenderOptions};
 use self::repl::repl_render_stream;
 
 use crate::client::Client;
-use crate::config::SharedConfig;
-use crate::repl::AbortSignal;
+use crate::config::GlobalConfig;
+use crate::utils::AbortSignal;
 
 use anyhow::{Context, Result};
 use crossbeam::channel::{unbounded, Sender};
@@ -19,7 +19,7 @@ use std::thread::spawn;
 pub fn render_stream(
     input: &str,
     client: &dyn Client,
-    config: &SharedConfig,
+    config: &GlobalConfig,
     repl: bool,
     abort: AbortSignal,
     wg: WaitGroup,

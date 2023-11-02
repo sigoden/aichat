@@ -1,4 +1,4 @@
-use super::message::{Message, MessageRole};
+use crate::client::{Message, MessageRole};
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
