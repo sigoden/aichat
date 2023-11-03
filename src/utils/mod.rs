@@ -23,8 +23,23 @@ pub fn get_env_name(key: &str) -> String {
 
 /// Split text to tokens
 pub fn tokenize(text: &str) -> Vec<String> {
-    let tokens = cl100k_base_singleton().lock().tokenize(text);
-    tokens.into_iter().map(|(_, text)| text).collect()
+    let tokens = cl100k_base_singleton()
+        .lock()
+        .encode_with_special_tokens(text);
+    let token_bytes: Vec<Vec<u8>> = tokens
+        .into_iter()
+        .map(|v| cl100k_base_singleton().lock().decode_bytes(vec![v]))
+        .collect();
+    let mut output = vec![];
+    let mut current_bytes = vec![];
+    for bytes in token_bytes {
+        current_bytes.extend(bytes);
+        if let Ok(v) = std::str::from_utf8(&current_bytes) {
+            output.push(v.to_string());
+            current_bytes.clear();
+        }
+    }
+    output
 }
 
 /// Count how many tokens a piece of text needs to consume
@@ -59,4 +74,15 @@ pub fn init_tokio_runtime() -> anyhow::Result<tokio::runtime::Runtime> {
         .enable_all()
         .build()
         .with_context(|| "Failed to init tokio")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tokenize() {
+        assert_eq!(tokenize("😊 hello world"), ["😊", " hello", " world"]);
+        assert_eq!(tokenize("世界"), ["世", "界"]);
+    }
 }

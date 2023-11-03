@@ -82,13 +82,13 @@ impl MarkdownRender {
             .join("\n")
     }
 
-    pub fn render_with_indent(&mut self, text: &str, padding: usize) -> String {
-        let text = format!("{}{}", " ".repeat(padding), text);
+    pub fn render_with_indent(&mut self, text: &str, indent: usize) -> String {
+        let text = format!("{}{}", " ".repeat(indent), text);
         let output = self.render(&text);
         if output.starts_with('\n') {
             output
         } else {
-            output.chars().skip(padding).collect()
+            output.chars().skip(indent).collect()
         }
     }
 
@@ -186,7 +186,7 @@ impl MarkdownRender {
             if is_code && !self.options.wrap_code {
                 return line;
             }
-            textwrap::wrap(&line, width as usize).join("\n")
+            wrap(&line, width as usize)
         } else {
             line
         }
@@ -201,6 +201,12 @@ impl MarkdownRender {
                 .or_else(|| self.syntax_set.find_syntax_by_extension(lang))
         }
     }
+}
+
+fn wrap(text: &str, width: usize) -> String {
+    let indent: usize = text.chars().take_while(|c| *c == ' ').count();
+    let wrap_options = textwrap::Options::new(width).initial_indent(&text[0..indent]);
+    textwrap::wrap(&text[indent..], wrap_options).join("\n")
 }
 
 #[derive(Debug, Clone, Default)]
@@ -380,6 +386,12 @@ std::error::Error>> {
         let output = render.render_with_indent(input, 40);
         let expect =
             "To unzip a file in Rust, you can use the\n`zip` crate. Here's an example code";
+        assert_eq!(output, expect);
+
+        let input = "Unzip a file";
+        let output = render.render_with_indent(input, 76);
+        let expect = "\nUnzip a file";
+
         assert_eq!(output, expect);
     }
 }
