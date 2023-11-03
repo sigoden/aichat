@@ -824,10 +824,12 @@ fn set_bool(target: &mut bool, value: &str) {
 
 #[cfg(debug_assertions)]
 fn setup_logger() -> Result<()> {
-    use simplelog::WriteLogger;
+    use simplelog::{LevelFilter, WriteLogger};
     let file = std::fs::File::create(Config::local_path("debug.log")?)?;
     let config = simplelog::ConfigBuilder::new()
         .add_filter_allow_str("aichat")
+        .set_thread_level(LevelFilter::Off)
+        .set_time_level(LevelFilter::Off)
         .build();
     WriteLogger::init(log::LevelFilter::Debug, config, file)?;
     Ok(())

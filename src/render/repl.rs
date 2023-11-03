@@ -70,7 +70,9 @@ fn repl_render_stream_inner(
                             cursor::MoveTo(0, 0),
                         )?;
                     }
-                    queue!(writer, terminal::Clear(terminal::ClearType::UntilNewLine))?;
+
+                    // No guarantee that text returned by render will not be re-layouted, so it is better to clear it.
+                    queue!(writer, terminal::Clear(terminal::ClearType::FromCursorDown))?;
 
                     if text.contains('\n') {
                         let text = format!("{buffer}{text}");
@@ -79,6 +81,9 @@ fn repl_render_stream_inner(
                         let output = render.render(head);
                         print_block(writer, &output, columns)?;
                         queue!(writer, style::Print(&buffer),)?;
+
+                        // No guarantee the buffer width of the buffer will not exceed the number of columns.
+                        // So we calcuate the number of rows needed, rather than setting it directly to 1.
                         buffer_rows = need_rows(&buffer, columns);
                     } else {
                         buffer = format!("{buffer}{text}");
@@ -87,6 +92,8 @@ fn repl_render_stream_inner(
                             let (head, tail) = split_line_tail(&output);
                             buffer_rows = print_block(writer, head, columns)?;
                             queue!(writer, style::Print(&tail),)?;
+
+                            // Same as above.
                             buffer_rows += need_rows(tail, columns);
                         } else {
                             queue!(writer, style::Print(&output))?;
