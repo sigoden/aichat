@@ -10,11 +10,5 @@ pub use model::*;
 register_client!(
     (openai, "openai", OpenAI, OpenAIConfig, OpenAIClient),
     (localai, "localai", LocalAI, LocalAIConfig, LocalAIClient),
-    (
-        azure_openai,
-        "azure-openai",
-        AzureOpenAI,
-        AzureOpenAIConfig,
-        AzureOpenAIClient
-    ),
+    (azure, "azure", Azure, AzureConfig, AzureClient),
 );
