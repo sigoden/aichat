@@ -78,7 +78,7 @@ impl ReplyHandler {
 
     pub fn text(&mut self, text: &str) -> Result<()> {
         debug!("ReplyText: {}", text);
-        if self.buffer.is_empty() && text == "\n\n" {
+        if text.is_empty() {
             return Ok(());
         }
         self.buffer.push_str(text);
