@@ -66,8 +66,11 @@ clients:
     api_key: sk-xxx
     organization_id:
 
-  - type: local ai
+  - type: localai
     api_base: http://localhost:8080/v1
+    models:
+      - name: gpt4all-j
+        max_tokens: 8192
 ```
 
 Check out [config.example.yaml](config.example.yaml) for all configuration items.

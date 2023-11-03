@@ -22,7 +22,7 @@ clients:
     organization_id:
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
-  - type: azure-openai
+  - type: azure
     api_base: https://RESOURCE.openai.azure.com
     api_key: xxx
     models:
