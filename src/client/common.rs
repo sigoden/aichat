@@ -20,7 +20,7 @@ use tokio::time::sleep;
 #[macro_export]
 macro_rules! register_client {
     (
-        $(($module:ident, $name:literal, $config_key:ident, $config:ident, $client:ident),)+
+        $(($module:ident, $name:literal, $config:ident, $client:ident),)+
     ) => {
         $(
             mod $module;
@@ -34,7 +34,7 @@ macro_rules! register_client {
         pub enum ClientConfig {
             $(
                 #[serde(rename = $name)]
-                $config_key($config),
+                $config($config),
             )+
             #[serde(other)]
             Unknown,
@@ -55,7 +55,7 @@ macro_rules! register_client {
                 pub fn init(global_config: $crate::config::GlobalConfig) -> Option<Box<dyn Client>> {
                     let model = global_config.read().model.clone();
                     let config = {
-                        if let ClientConfig::$config_key(c) = &global_config.read().clients[model.client_index] {
+                        if let ClientConfig::$config(c) = &global_config.read().clients[model.client_index] {
                             c.clone()
                         } else {
                             return None;
@@ -107,7 +107,7 @@ macro_rules! register_client {
                 .iter()
                 .enumerate()
                 .flat_map(|(i, v)| match v {
-                    $(ClientConfig::$config_key(c) => $client::list_models(c, i),)+
+                    $(ClientConfig::$config(c) => $client::list_models(c, i),)+
                     ClientConfig::Unknown => vec![],
                 })
                 .collect()
@@ -258,7 +258,7 @@ pub trait Client {
 
 impl Default for ClientConfig {
     fn default() -> Self {
-        Self::OpenAI(OpenAIConfig::default())
+        Self::OpenAIConfig(OpenAIConfig::default())
     }
 }
 
