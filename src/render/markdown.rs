@@ -205,7 +205,9 @@ impl MarkdownRender {
 
 fn wrap(text: &str, width: usize) -> String {
     let indent: usize = text.chars().take_while(|c| *c == ' ').count();
-    let wrap_options = textwrap::Options::new(width).initial_indent(&text[0..indent]);
+    let wrap_options = textwrap::Options::new(width)
+        .wrap_algorithm(textwrap::WrapAlgorithm::FirstFit)
+        .initial_indent(&text[0..indent]);
     textwrap::wrap(&text[indent..], wrap_options).join("\n")
 }
 
