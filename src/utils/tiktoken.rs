@@ -57,12 +57,6 @@ pub async fn encode_async(bpe: Arc<Mutex<CoreBPE>>, text: &str) -> Result<Vec<us
     Ok(r)
 }
 
-pub async fn tokenize_async(bpe: Arc<Mutex<CoreBPE>>, text: &str) -> Result<Vec<(usize, String)>> {
-    let text = text.to_string();
-    let r = task::spawn_blocking(move || bpe.lock().tokenize(&text)).await?;
-    Ok(r)
-}
-
 fn _byte_pair_merge(piece: &[u8], ranks: &HashMap<Vec<u8>, usize>) -> Vec<std::ops::Range<usize>> {
     let mut parts: Vec<_> = (0..piece.len()).map(|i| i..i + 1).collect();
 
@@ -190,102 +184,6 @@ impl CoreBPE {
             ret.extend(&byte_pair_encode(piece, &self.encoder));
         }
         ret
-    }
-
-    fn _tokenize(&self, text: &str) -> Vec<(usize, String)> {
-        let regex = self._get_regex();
-        let mut results = vec![];
-
-        for mat in regex.find_iter(text) {
-            let string = mat.unwrap().as_str();
-            let piece = string.as_bytes();
-            if let Some(token) = self.encoder.get(piece) {
-                results.push((*token, string.to_string()));
-                continue;
-            }
-
-            results.extend(Self::_tokenize_byte_pair_encode(piece, &self.encoder));
-        }
-        results
-    }
-
-    // Copy of _encode_native but returns both the tokens and the associated string in a tuple
-    // As needed in tokenize function
-    fn _tokenize_with_spe_regex(
-        &self,
-        text: &str,
-        allowed_special: &HashSet<&str>,
-    ) -> Vec<(usize, String)> {
-        let special_regex = self._get_special_regex();
-        let regex = self._get_regex();
-        let mut ret = vec![];
-
-        let mut start = 0;
-        loop {
-            let mut next_special;
-            let mut start_find = start;
-            loop {
-                // Find the next allowed special token, if any
-                next_special = special_regex.find_from_pos(text, start_find).unwrap();
-                match next_special {
-                    Some(m) => {
-                        if allowed_special.contains(&text[m.start()..m.end()]) {
-                            break;
-                        }
-                        start_find = m.start() + 1;
-                    }
-                    None => break,
-                }
-            }
-            let end = next_special.map_or(text.len(), |m| m.start());
-
-            // Okay, here we go, compare this logic to _encode_ordinary_native
-            for mat in regex.find_iter(&text[start..end]) {
-                let string = mat.unwrap().as_str();
-                let piece = string.as_bytes();
-                if let Some(token) = self.encoder.get(piece) {
-                    ret.push((*token, string.to_string()));
-                    continue;
-                }
-                ret.extend(Self::_tokenize_byte_pair_encode(piece, &self.encoder));
-            }
-
-            match next_special {
-                // And here we push the special token
-                Some(m) => {
-                    let piece = m.as_str();
-                    let token = self.special_tokens_encoder[piece];
-                    ret.push((token, piece.to_string()));
-                    start = m.end();
-                }
-                None => break,
-            }
-        }
-        ret
-    }
-
-    /**
-     * Implemented to match the logic in _encode_ordinary_native
-     * Used in tokenize function
-     */
-    pub fn _tokenize_byte_pair_encode(
-        piece: &[u8],
-        ranks: &HashMap<Vec<u8>, usize>,
-    ) -> Vec<(usize, String)> {
-        if piece.len() == 1 {
-            let string = String::from_utf8_lossy(piece);
-            return vec![(ranks[piece], string.to_string())];
-        }
-
-        _byte_pair_merge(piece, ranks)
-            .iter()
-            .map(|p| {
-                (
-                    ranks[&piece[p.start..p.end]],
-                    String::from_utf8_lossy(&piece[p.start..p.end]).to_string(),
-                )
-            })
-            .collect()
     }
 
     fn _encode_native(&self, text: &str, allowed_special: &HashSet<&str>) -> (Vec<usize>, usize) {
@@ -551,15 +449,6 @@ impl CoreBPE {
 
     pub fn encode(&self, text: &str, allowed_special: HashSet<&str>) -> Vec<usize> {
         self._encode_native(text, &allowed_special).0
-    }
-
-    pub fn tokenize(&self, text: &str) -> Vec<(usize, String)> {
-        let allowed_special = self
-            .special_tokens_encoder
-            .keys()
-            .map(|s| s.as_str())
-            .collect();
-        self._tokenize_with_spe_regex(text, &allowed_special)
     }
 
     pub fn encode_with_special_tokens(&self, text: &str) -> Vec<usize> {
