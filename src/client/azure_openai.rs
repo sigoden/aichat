@@ -1,5 +1,5 @@
 use super::openai::{openai_build_body, OPENAI_TOKENS_COUNT_FACTORS};
-use super::{AzureClient, ExtraConfig, PromptType, SendData, Model};
+use super::{AzureOpenAIClient, ExtraConfig, PromptType, SendData, Model};
 
 use crate::utils::PromptKind;
 
@@ -9,23 +9,23 @@ use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct AzureConfig {
+pub struct AzureOpenAIConfig {
     pub name: Option<String>,
     pub api_base: Option<String>,
     pub api_key: Option<String>,
-    pub models: Vec<AzureModel>,
+    pub models: Vec<AzureOpenAIModel>,
     pub extra: Option<ExtraConfig>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct AzureModel {
+pub struct AzureOpenAIModel {
     name: String,
     max_tokens: Option<usize>,
 }
 
-openai_compatible_client!(AzureClient);
+openai_compatible_client!(AzureOpenAIClient);
 
-impl AzureClient {
+impl AzureOpenAIClient {
     config_get_fn!(api_base, get_api_base);
     config_get_fn!(api_key, get_api_key);
 
@@ -41,7 +41,7 @@ impl AzureClient {
         ),
     ];
 
-    pub fn list_models(local_config: &AzureConfig, client_index: usize) -> Vec<Model> {
+    pub fn list_models(local_config: &AzureOpenAIConfig, client_index: usize) -> Vec<Model> {
         let client_name = Self::name(local_config);
 
         local_config

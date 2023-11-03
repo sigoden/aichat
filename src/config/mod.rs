@@ -717,7 +717,7 @@ impl Config {
             }
         }
 
-        if let Some(ClientConfig::OpenAI(client_config)) = self.clients.get_mut(0) {
+        if let Some(ClientConfig::OpenAIConfig(client_config)) = self.clients.get_mut(0) {
             if let Some(api_key) = value.get("api_key").and_then(|v| v.as_str()) {
                 client_config.api_key = Some(api_key.to_string())
             }
