@@ -37,3 +37,7 @@ clients:
     models:
       - name: gpt4all-j
         max_tokens: 8192
+
+  # See https://developers.generativeai.google/guide
+  - type: palm
+    api_key: sk-xxx
