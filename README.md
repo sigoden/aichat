@@ -29,7 +29,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 
 - OpenAI: gpt-3.5/gpt-4
 - LocalAI: opensource models 
-- Azure-OpenAI:  user deployed gpt3.5/gpt4
+- Azure-OpenAI: user deployed gpt3.5/gpt4
 - PaLM: chat-bison-001 
 
 ## Features
