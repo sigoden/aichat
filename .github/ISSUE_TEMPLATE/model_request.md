@@ -2,7 +2,7 @@
 name: Model Request
 about: Support a new LLM Model or AI Platform.
 title: ''
-labels: enhancement
+labels: 'new model'
 assignees: ''
 
 ---
