@@ -41,3 +41,8 @@ clients:
   # See https://developers.generativeai.google/guide
   - type: palm
     api_key: sk-xxx
+
+  # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
+  - type: ernie
+    api_key: xxx
+    secret_key: xxx
