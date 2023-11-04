@@ -17,4 +17,5 @@ register_client!(
         AzureOpenAIClient
     ),
     (palm, "palm", PaLMConfig, PaLMClient),
+    (ernie, "ernie", ErnieConfig, ErnieClient),
 );

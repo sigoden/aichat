@@ -31,6 +31,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - LocalAI: opensource models 
 - Azure-OpenAI: user deployed gpt3.5/gpt4
 - PaLM: chat-bison-001 
+- Ernie: eb-instant/ernie-bot/ernie-bot-4
 
 ## Features
 
