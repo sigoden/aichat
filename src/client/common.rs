@@ -11,10 +11,10 @@ use crate::{
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use reqwest::{Client as ReqwestClient, ClientBuilder, Proxy};
+use reqwest::{Client as ReqwestClient, ClientBuilder, Proxy, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::{env, time::Duration};
+use std::{env, future::Future, time::Duration};
 use tokio::time::sleep;
 
 #[macro_export]
@@ -296,6 +296,22 @@ pub fn create_config(list: &[PromptType], client: &str) -> Result<Value> {
 
     let clients = json!(vec![config]);
     Ok(clients)
+}
+
+pub async fn send_message_as_streaming<F, Fut>(
+    builder: RequestBuilder,
+    handler: &mut ReplyHandler,
+    f: F,
+) -> Result<()>
+where
+    F: FnOnce(RequestBuilder) -> Fut,
+    Fut: Future<Output = Result<String>>,
+{
+    let text = f(builder).await?;
+    handler.text(&text)?;
+    handler.done()?;
+
+    Ok(())
 }
 
 fn set_config_value(json: &mut Value, path: &str, kind: &PromptKind, value: &str) {

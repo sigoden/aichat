@@ -16,4 +16,5 @@ register_client!(
         AzureOpenAIConfig,
         AzureOpenAIClient
     ),
+    (palm, "palm", PaLMConfig, PaLMClient),
 );

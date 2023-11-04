@@ -25,9 +25,15 @@ cargo install --force aichat
 
 Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), unzip and add aichat to your $PATH.
 
+## Support Models
+
+- OpenAI: gpt-3.5/gpt-4
+- LocalAI: opensource models 
+- Azure-OpenAI: user deployed gpt3.5/gpt4
+- PaLM: chat-bison-001 
+
 ## Features
 
-- Supports multiple LLMs, including OpenAI and LocalAI.
 - Support chat and command modes
 - Use [Roles](#roles)
 - Powerful [Chat REPL](#chat-repl)
