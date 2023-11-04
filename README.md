@@ -32,6 +32,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - Azure-OpenAI: user deployed gpt3.5/gpt4
 - PaLM: chat-bison-001 
 - Ernie: eb-instant/ernie-bot/ernie-bot-4
+- Qianwen: qwen-turbo/qwen-plus
 
 ## Features
 

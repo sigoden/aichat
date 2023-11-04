@@ -18,4 +18,5 @@ register_client!(
     ),
     (palm, "palm", PaLMConfig, PaLMClient),
     (ernie, "ernie", ErnieConfig, ErnieClient),
+    (qianwen, "qianwen", QianwenConfig, QianwenClient),
 );
