@@ -46,3 +46,7 @@ clients:
   - type: ernie
     api_key: xxx
     secret_key: xxx
+
+  # See https://help.aliyun.com/zh/dashscope/
+  - type: qianwen
+    api_key: xxx
