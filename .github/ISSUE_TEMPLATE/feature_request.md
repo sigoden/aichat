@@ -10,6 +10,8 @@ assignees: ''
 Your issue may already be reported!
 Please search on the [issue tracker](https://github.com/sigoden/aichat/issues) before creating one.
 
+If you are requesting support for the new model, goto [model-request](https://github.com/sigoden/aichat/issues/new?assignees=&labels=enhancement&projects=&template=model_request.md&title=).
+
 **Is your feature request related to a problem? Please describe.**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
