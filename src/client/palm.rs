@@ -86,7 +86,13 @@ async fn send_message(builder: RequestBuilder) -> Result<String> {
 
     let output = data["candidates"][0]["content"]
         .as_str()
-        .ok_or_else(|| anyhow!("Unexpected response {data}"))?;
+        .ok_or_else(|| {
+            if let Some(reason) = data["filters"][0]["reason"].as_str() {
+                anyhow!("Content Filtering: {reason}")
+            } else {
+                anyhow!("Unexpected response")
+            }
+        })?;
 
     Ok(output.to_string())
 }
@@ -96,7 +102,7 @@ fn check_error(data: &Value) -> Result<()> {
         if let Some(message) = error["message"].as_str() {
             bail!("{message}");
         } else {
-            bail!("Request failed. {}", data);
+            bail!("Error {}", Value::Object(error.clone()));
         }
     }
     Ok(())
