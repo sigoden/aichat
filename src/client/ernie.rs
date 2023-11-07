@@ -73,9 +73,9 @@ impl ErnieClient {
     }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
-        let body = build_body(data, self.model.llm_name.clone());
+        let body = build_body(data, self.model.name.clone());
 
-        let model = self.model.llm_name.clone();
+        let model = self.model.name.clone();
         let (_, chat_endpoint) = MODELS
             .iter()
             .find(|(v, _)| v == &model)
