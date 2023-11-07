@@ -46,12 +46,12 @@ pub struct Config {
     /// GPT temperature, between 0 and 2
     #[serde(rename(serialize = "temperature", deserialize = "temperature"))]
     pub default_temperature: Option<f64>,
+    /// Dry-run flag
+    pub dry_run: bool,
     /// Whether to save the message
     pub save: bool,
     /// Whether to disable highlight
     pub highlight: bool,
-    /// Dry-run flag
-    pub dry_run: bool,
     /// Whether to use a light theme
     pub light_theme: bool,
     /// Specify the text-wrapping mode (no, auto, <max-width>)
@@ -366,9 +366,10 @@ impl Config {
             ("dry_run", self.dry_run.to_string()),
             ("save", self.save.to_string()),
             ("highlight", self.highlight.to_string()),
+            ("light_theme", self.light_theme.to_string()),
             ("wrap", wrap),
             ("wrap_code", self.wrap_code.to_string()),
-            ("light_theme", self.light_theme.to_string()),
+            ("auto_copy", self.auto_copy.to_string()),
             ("keybindings", self.keybindings.stringify().into()),
             ("prelude", prelude),
             ("config_file", display_path(&Self::config_file()?)),

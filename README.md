@@ -163,12 +163,13 @@ Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
 〉.info
 model               openai:gpt-3.5-turbo
 temperature         -
+dry_run             false
 save                true
 highlight           true
 light_theme         false
 wrap                no
 wrap_code           false
-dry_run             false
+auto_copy           false
 keybindings         emacs
 prelude             -
 config_file         /home/alice/.config/aichat/config.yaml

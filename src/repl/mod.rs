@@ -43,7 +43,7 @@ const REPL_COMMANDS: [(&str, &str); 13] = [
 
 lazy_static! {
     static ref COMMAND_RE: Regex = Regex::new(r"^\s*(\.\S*)\s*").unwrap();
-    static ref MULTILINE_RE: Regex = Regex::new(r#"(?ms)^\s*"""\s*(.*)\s*"""\s*$"#).unwrap();
+    static ref MULTILINE_RE: Regex = Regex::new(r#"(?s)^\s*"""\s*(.*)\s*"""\s*$"#).unwrap();
 }
 
 pub struct Repl {
