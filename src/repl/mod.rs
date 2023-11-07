@@ -1,12 +1,10 @@
 mod completer;
 mod highlighter;
 mod prompt;
-mod validator;
 
 use self::completer::ReplCompleter;
 use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
-use self::validator::ReplValidator;
 
 use crate::client::init_client;
 use crate::config::GlobalConfig;
@@ -21,16 +19,15 @@ use reedline::Signal;
 use reedline::{
     default_emacs_keybindings, default_vi_insert_keybindings, default_vi_normal_keybindings,
     ColumnarMenu, EditMode, Emacs, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent,
-    ReedlineMenu, Vi,
+    ReedlineMenu, ValidationResult, Validator, Vi,
 };
 use std::io::Read;
 
 const MENU_NAME: &str = "completion_menu";
 
-const REPL_COMMANDS: [(&str, &str); 14] = [
+const REPL_COMMANDS: [(&str, &str); 13] = [
     (".help", "Print this help message"),
     (".info", "Print system info"),
-    (".edit", "Multi-line editing (CTRL+S to finish)"),
     (".model", "Switch LLM model"),
     (".role", "Use a role"),
     (".info role", "Show role info"),
@@ -46,7 +43,7 @@ const REPL_COMMANDS: [(&str, &str); 14] = [
 
 lazy_static! {
     static ref COMMAND_RE: Regex = Regex::new(r"^\s*(\.\S*)\s*").unwrap();
-    static ref EDIT_RE: Regex = Regex::new(r"^\s*\.edit\s*").unwrap();
+    static ref MULTILINE_RE: Regex = Regex::new(r#"(?ms)^\s*"""\s*(.*)\s*"""\s*$"#).unwrap();
 }
 
 pub struct Repl {
@@ -120,7 +117,12 @@ impl Repl {
         Ok(())
     }
 
-    fn handle(&self, line: &str) -> Result<bool> {
+    fn handle(&self, mut line: &str) -> Result<bool> {
+        if let Ok(Some(captures)) = MULTILINE_RE.captures(line) {
+            if let Some(text_match) = captures.get(1) {
+                line = text_match.as_str();
+            }
+        }
         match parse_command(line) {
             Some((cmd, args)) => match cmd {
                 ".help" => {
@@ -142,9 +144,7 @@ impl Repl {
                     }
                 },
                 ".edit" => {
-                    if let Some(text) = args {
-                        self.ask(text)?;
-                    }
+                    println!(r#"Deprecated. Use """ instead."#);
                 }
                 ".model" => match args {
                     Some(name) => {
@@ -278,11 +278,6 @@ Type ".help" for more information.
                 ReedlineEvent::MenuNext,
             ]),
         );
-        keybindings.add_binding(
-            KeyModifiers::CONTROL,
-            KeyCode::Char('s'),
-            ReedlineEvent::Submit,
-        );
     }
 
     fn create_edit_mode(config: &GlobalConfig) -> Box<dyn EditMode> {
@@ -314,6 +309,20 @@ Type ".help" for more information.
     }
 }
 
+/// A default validator which checks for mismatched quotes and brackets
+struct ReplValidator;
+
+impl Validator for ReplValidator {
+    fn validate(&self, line: &str) -> ValidationResult {
+        let line = line.trim();
+        if line.starts_with(r#"""""#) && !line[3..].ends_with(r#"""""#) {
+            ValidationResult::Incomplete
+        } else {
+            ValidationResult::Complete
+        }
+    }
+}
+
 fn unknown_command() -> Result<()> {
     bail!(r#"Unknown command. Type ".help" for more information."#);
 }
@@ -327,7 +336,8 @@ fn dump_repl_help() {
     println!(
         r###"{head}
 
-Press Ctrl+C to abort readline, Ctrl+D to exit the REPL"###,
+Type """ to begin multi-line editing, type """ to end it.
+Press Ctrl+C to abort aichat, Ctrl+D to exit the REPL"###,
     );
 }
 
@@ -342,6 +352,7 @@ fn parse_command(line: &str) -> Option<(&str, Option<&str>)> {
         _ => None,
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -362,10 +373,6 @@ mod tests {
         assert_eq!(
             parse_command(".prompt \nabc\n"),
             Some((".prompt", Some("abc")))
-        );
-        assert_eq!(
-            parse_command(".edit\r\nabc\r\n"),
-            Some((".edit", Some("abc")))
         );
     }
 }
