@@ -140,7 +140,6 @@ The Chat REPL supports:
 〉.help
 .help                    Print this help message
 .info                    Print system info
-.edit                    Multi-line editing (CTRL+S to finish)
 .model                   Switch LLM model
 .role                    Use a role
 .info role               Show role info
@@ -153,6 +152,7 @@ The Chat REPL supports:
 .read                    Import from file and submit
 .exit                    Exit the REPL
 
+Type """ to begin multi-line editing, type """ to end it.
 Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
 
 ```
@@ -175,26 +175,6 @@ roles_file          /home/alice/.config/aichat/roles.yaml
 messages_file       /home/alice/.config/aichat/messages.md
 sessions_dir        /home/alice/.config/aichat/sessions
 ```
-
-### `.edit` -  multiline editing
-
-AIChat supports bracketed paste, so you can paste multi-lines text directly.
-
-AIChat also provides `.edit` command for multi-lines editing.
-
-```
-〉.edit convert json below to toml
-{
-  "an": [
-    "arbitrarily",
-    "nested"
-  ],
-  "data": "structure"
-}
-```
-
-> Submit with `Ctrl+S`.
-
 
 ### `.model` - choose a model
 
