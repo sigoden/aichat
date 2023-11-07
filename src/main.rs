@@ -77,6 +77,7 @@ fn main() -> Result<()> {
         println!("{}", info);
         exit(0);
     }
+    config.write().onstart()?;
     let no_stream = cli.no_stream;
     let client = init_client(&config)?;
     if stdin().is_terminal() {

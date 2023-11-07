@@ -60,9 +60,11 @@ pub struct Config {
     pub wrap_code: bool,
     /// Automatically copy the last output to the clipboard
     pub auto_copy: bool,
-    /// REPL keybindings. values: emacs, vi
+    /// REPL keybindings. (emacs, vi)
     pub keybindings: Keybindings,
-    /// Setup AIs
+    /// Set a default role or session (role:<name>, session:<name>)
+    pub prelude: String,
+    /// Setup clients
     pub clients: Vec<ClientConfig>,
     /// Predefined roles
     #[serde(skip)]
@@ -94,6 +96,7 @@ impl Default for Config {
             wrap_code: false,
             auto_copy: false,
             keybindings: Default::default(),
+            prelude: String::new(),
             clients: vec![ClientConfig::default()],
             roles: vec![],
             role: None,
@@ -143,6 +146,28 @@ impl Config {
         setup_logger()?;
 
         Ok(config)
+    }
+
+    pub fn onstart(&mut self) -> Result<()> {
+        let prelude = self.prelude.clone();
+        let err_msg = || format!("Invalid prelude '{}", prelude);
+        match prelude.split_once(':') {
+            Some(("role", name)) => {
+                if self.role.is_none() && self.session.is_none() {
+                    self.set_role(name).with_context(err_msg)?;
+                }
+            }
+            Some(("session", name)) => {
+                if self.session.is_none() {
+                    self.start_session(Some(name)).with_context(err_msg)?;
+                }
+            }
+            Some(_) => {
+                bail!("{}", err_msg())
+            }
+            None => {}
+        }
+        Ok(())
     }
 
     pub fn retrieve_role(&self, name: &str) -> Result<Role> {

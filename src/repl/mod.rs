@@ -32,7 +32,7 @@ const REPL_COMMANDS: [(&str, &str); 14] = [
     (".info", "Print system info"),
     (".edit", "Multi-line editing (CTRL+S to finish)"),
     (".model", "Switch LLM model"),
-    (".role", "Use role"),
+    (".role", "Use a role"),
     (".info role", "Show role info"),
     (".exit role", "Leave current role"),
     (".session", "Start a context-aware chat session"),

@@ -68,6 +68,7 @@ wrap: no                         # Specify the text-wrapping mode (no, auto, <ma
 wrap_code: false                 # Whether wrap code block
 auto_copy: false                 # Automatically copy the last output to the clipboard
 keybindings: emacs               # REPL keybindings. values: emacs, vi
+prelude: ''                      # Set a default role or session (role:<name>, session:<name>)
 
 clients:
   - type: openai
@@ -141,7 +142,7 @@ The Chat REPL supports:
 .info                    Print system info
 .edit                    Multi-line editing (CTRL+S to finish)
 .model                   Switch LLM model
-.role                    Use role
+.role                    Use a role
 .info role               Show role info
 .exit role               Leave current role
 .session                 Start a context-aware chat session
