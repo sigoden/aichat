@@ -78,11 +78,11 @@ fn main() -> Result<()> {
         exit(0);
     }
     let no_stream = cli.no_stream;
-    let client = init_client(config.clone())?;
+    let client = init_client(&config)?;
     if stdin().is_terminal() {
         match text {
             Some(text) => start_directive(client.as_ref(), &config, &text, no_stream),
-            None => start_interactive(config),
+            None => start_interactive(&config),
         }
     } else {
         let mut input = String::new();
@@ -128,8 +128,8 @@ fn start_directive(
     config.write().save_message(input, &output)
 }
 
-fn start_interactive(config: GlobalConfig) -> Result<()> {
+fn start_interactive(config: &GlobalConfig) -> Result<()> {
     cl100k_base_singleton();
-    let mut repl: Repl = Repl::init(config.clone())?;
+    let mut repl: Repl = Repl::init(config)?;
     repl.run()
 }
