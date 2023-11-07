@@ -11,10 +11,9 @@ use self::validator::ReplValidator;
 use crate::client::init_client;
 use crate::config::GlobalConfig;
 use crate::render::{render_error, render_stream};
-use crate::utils::{create_abort_signal, AbortSignal};
+use crate::utils::{create_abort_signal, set_text, AbortSignal};
 
 use anyhow::{bail, Context, Result};
-use arboard::Clipboard;
 use crossbeam::sync::WaitGroup;
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
@@ -24,7 +23,6 @@ use reedline::{
     ColumnarMenu, EditMode, Emacs, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent,
     ReedlineMenu, Vi,
 };
-use std::cell::RefCell;
 use std::io::Read;
 
 const MENU_NAME: &str = "completion_menu";
@@ -56,7 +54,6 @@ pub struct Repl {
     editor: Reedline,
     prompt: ReplPrompt,
     abort: AbortSignal,
-    clipboard: std::result::Result<RefCell<Clipboard>, arboard::Error>,
 }
 
 impl Repl {
@@ -67,13 +64,10 @@ impl Repl {
 
         let abort = create_abort_signal();
 
-        let clipboard = Clipboard::new().map(RefCell::new);
-
         Ok(Self {
             config: config.clone(),
             editor,
             prompt,
-            clipboard,
             abort,
         })
     }
@@ -315,13 +309,8 @@ Type ".help" for more information.
         if text.is_empty() {
             bail!("No text")
         }
-        match self.clipboard.as_ref() {
-            Err(err) => bail!("{}", err),
-            Ok(clip) => {
-                clip.borrow_mut().set_text(text)?;
-                Ok(())
-            }
-        }
+        set_text(text)?;
+        Ok(())
     }
 }
 
