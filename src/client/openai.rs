@@ -44,12 +44,12 @@ impl OpenAIClient {
     pub const PROMPTS: [PromptType<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    pub fn list_models(local_config: &OpenAIConfig, client_index: usize) -> Vec<Model> {
+    pub fn list_models(local_config: &OpenAIConfig) -> Vec<Model> {
         let client_name = Self::name(local_config);
         MODELS
             .into_iter()
             .map(|(name, max_tokens)| {
-                Model::new(client_index, client_name, name)
+                Model::new(client_name, name)
                     .set_max_tokens(Some(max_tokens))
                     .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })

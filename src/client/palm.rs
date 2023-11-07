@@ -8,9 +8,9 @@ use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta2";
+const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta2/models/";
 
-const MODELS: [(&str, usize, &str); 1] = [("chat-bison-001", 4096, "/models/chat-bison-001")];
+const MODELS: [(&str, usize); 1] = [("chat-bison-001", 4096)];
 
 const TOKENS_COUNT_FACTORS: TokensCountFactors = (3, 8);
 
@@ -49,12 +49,12 @@ impl PaLMClient {
     pub const PROMPTS: [PromptType<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    pub fn list_models(local_config: &PaLMConfig, client_index: usize) -> Vec<Model> {
+    pub fn list_models(local_config: &PaLMConfig) -> Vec<Model> {
         let client_name = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, max_tokens, _)| {
-                Model::new(client_index, client_name, name)
+            .map(|(name, max_tokens)| {
+                Model::new(client_name, name)
                     .set_max_tokens(Some(max_tokens))
                     .set_tokens_count_factors(TOKENS_COUNT_FACTORS)
             })
@@ -67,12 +67,8 @@ impl PaLMClient {
         let body = build_body(data, self.model.name.clone());
 
         let model = self.model.name.clone();
-        let (_, _, endpoint) = MODELS
-            .iter()
-            .find(|(v, _, _)| v == &model)
-            .ok_or_else(|| anyhow!("Miss Model '{}' in {}", model, self.model.client_name))?;
 
-        let url = format!("{API_BASE}{endpoint}:generateMessage?key={}", api_key);
+        let url = format!("{API_BASE}{}:generateMessage?key={}", model, api_key);
 
         let builder = client.post(url).json(&body);
 
