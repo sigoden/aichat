@@ -278,11 +278,6 @@ Type ".help" for more information.
                 ReedlineEvent::MenuNext,
             ]),
         );
-        keybindings.add_binding(
-            KeyModifiers::CONTROL,
-            KeyCode::Char('s'),
-            ReedlineEvent::Submit,
-        );
     }
 
     fn create_edit_mode(config: &GlobalConfig) -> Box<dyn EditMode> {
