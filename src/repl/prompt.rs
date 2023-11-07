@@ -15,8 +15,10 @@ pub struct ReplPrompt {
 }
 
 impl ReplPrompt {
-    pub fn new(config: GlobalConfig) -> Self {
-        Self { config }
+    pub fn new(config: &GlobalConfig) -> Self {
+        Self {
+            config: config.clone(),
+        }
     }
 }
 

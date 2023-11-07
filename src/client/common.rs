@@ -52,7 +52,7 @@ macro_rules! register_client {
             impl $client {
                 pub const NAME: &str = $name;
 
-                pub fn init(global_config: $crate::config::GlobalConfig) -> Option<Box<dyn Client>> {
+                pub fn init(global_config: &$crate::config::GlobalConfig) -> Option<Box<dyn Client>> {
                     let model = global_config.read().model.clone();
                     let config = {
                         if let ClientConfig::$config(c) = &global_config.read().clients[model.client_index] {
@@ -62,7 +62,7 @@ macro_rules! register_client {
                         }
                     };
                     Some(Box::new(Self {
-                        global_config,
+                        global_config: global_config.clone(),
                         config,
                         model,
                     }))
@@ -75,9 +75,9 @@ macro_rules! register_client {
 
         )+
 
-        pub fn init_client(config: $crate::config::GlobalConfig) -> anyhow::Result<Box<dyn Client>> {
+        pub fn init_client(config: &$crate::config::GlobalConfig) -> anyhow::Result<Box<dyn Client>> {
                 None
-                $(.or_else(|| $client::init(config.clone())))+
+                $(.or_else(|| $client::init(config)))+
                 .ok_or_else(|| {
                     let model = config.read().model.clone();
                     anyhow::anyhow!(

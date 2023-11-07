@@ -60,17 +60,17 @@ pub struct Repl {
 }
 
 impl Repl {
-    pub fn init(config: GlobalConfig) -> Result<Self> {
-        let editor = Self::create_editor(&config)?;
+    pub fn init(config: &GlobalConfig) -> Result<Self> {
+        let editor = Self::create_editor(config)?;
 
-        let prompt = ReplPrompt::new(config.clone());
+        let prompt = ReplPrompt::new(config);
 
         let abort = create_abort_signal();
 
         let clipboard = Clipboard::new().map(RefCell::new);
 
         Ok(Self {
-            config,
+            config: config.clone(),
             editor,
             prompt,
             clipboard,
@@ -228,7 +228,7 @@ impl Repl {
         }
         self.config.read().maybe_print_send_tokens(input);
         let wg = WaitGroup::new();
-        let client = init_client(self.config.clone())?;
+        let client = init_client(&self.config)?;
         let ret = render_stream(
             input,
             client.as_ref(),
