@@ -153,10 +153,24 @@ impl Repl {
                     None => println!("Usage: .model <name>"),
                 },
                 ".role" => match args {
-                    Some(name) => {
-                        self.config.write().set_role(name)?;
-                    }
-                    None => println!("Usage: .role <name>"),
+                    Some(args) => match args.split_once(|c| c == '\n' || c == ' ') {
+                        Some((name, text)) => {
+                            let name = name.trim();
+                            let text = text.trim();
+                            let old_role =
+                                self.config.read().role.as_ref().map(|v| v.name.to_string());
+                            self.config.write().set_role(name)?;
+                            self.ask(text)?;
+                            match old_role {
+                                Some(old_role) => self.config.write().set_role(&old_role)?,
+                                None => self.config.write().clear_role()?,
+                            }
+                        }
+                        None => {
+                            self.config.write().set_role(args)?;
+                        }
+                    },
+                    None => println!(r#"Usage: .role <name> [text...]"#),
                 },
                 ".session" => {
                     self.config.write().start_session(args)?;

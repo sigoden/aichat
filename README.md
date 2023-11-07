@@ -170,6 +170,7 @@ wrap                no
 wrap_code           false
 dry_run             false
 keybindings         emacs
+prelude             -
 config_file         /home/alice/.config/aichat/config.yaml
 roles_file          /home/alice/.config/aichat/roles.yaml
 messages_file       /home/alice/.config/aichat/messages.md
@@ -216,6 +217,16 @@ emoji〉.info role
 name: emoji
 prompt: I want you to translate the sentences I write into emojis. I will write the sentence, and you will express it with emojis. I just want you to express it with emojis. I don't want you to reply with anything but emoji. When I need to tell you something in English, I will do it by wrapping it in curly brackets like {like this}.
 temperature: null
+```
+
+Temporarily use a role to send a message.
+```
+〉""" .role emoji
+hello world
+"""
+👋🌍
+
+〉
 ```
 
 ### `.session` - context-aware conversation

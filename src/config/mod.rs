@@ -344,7 +344,7 @@ impl Config {
     }
 
     pub fn sys_info(&self) -> Result<String> {
-        let path_info = |path: &Path| {
+        let display_path = |path: &Path| {
             let state = if path.exists() { "" } else { " ⚠️" };
             format!("{}{state}", path.display())
         };
@@ -355,6 +355,11 @@ impl Config {
             .wrap
             .clone()
             .map_or_else(|| String::from("no"), |v| v.to_string());
+        let prelude = if self.prelude.is_empty() {
+            String::from("-")
+        } else {
+            self.prelude.clone()
+        };
         let items = vec![
             ("model", self.model.id()),
             ("temperature", temperature),
@@ -365,10 +370,11 @@ impl Config {
             ("wrap_code", self.wrap_code.to_string()),
             ("light_theme", self.light_theme.to_string()),
             ("keybindings", self.keybindings.stringify().into()),
-            ("config_file", path_info(&Self::config_file()?)),
-            ("roles_file", path_info(&Self::roles_file()?)),
-            ("messages_file", path_info(&Self::messages_file()?)),
-            ("sessions_dir", path_info(&Self::sessions_dir()?)),
+            ("prelude", prelude),
+            ("config_file", display_path(&Self::config_file()?)),
+            ("roles_file", display_path(&Self::roles_file()?)),
+            ("messages_file", display_path(&Self::messages_file()?)),
+            ("sessions_dir", display_path(&Self::sessions_dir()?)),
         ];
         let output = items
             .iter()
