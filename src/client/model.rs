@@ -10,7 +10,7 @@ pub type TokensCountFactors = (usize, usize); // (per-messages, bias)
 pub struct Model {
     pub client_index: usize,
     pub client_name: String,
-    pub llm_name: String,
+    pub name: String,
     pub max_tokens: Option<usize>,
     pub tokens_count_factors: TokensCountFactors,
 }
@@ -26,14 +26,14 @@ impl Model {
         Self {
             client_index,
             client_name: client_name.into(),
-            llm_name: name.into(),
+            name: name.into(),
             max_tokens: None,
             tokens_count_factors: Default::default(),
         }
     }
 
     pub fn id(&self) -> String {
-        format!("{}:{}", self.client_name, self.llm_name)
+        format!("{}:{}", self.client_name, self.name)
     }
 
     pub fn set_max_tokens(mut self, max_tokens: Option<usize>) -> Self {

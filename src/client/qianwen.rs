@@ -66,7 +66,7 @@ impl QianwenClient {
         let api_key = self.get_api_key()?;
 
         let stream = data.stream;
-        let body = build_body(data, self.model.llm_name.clone());
+        let body = build_body(data, self.model.name.clone());
 
         let mut builder = client.post(API_URL).bearer_auth(api_key).json(&body);
         if stream {
