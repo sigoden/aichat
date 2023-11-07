@@ -83,7 +83,7 @@ fn repl_render_stream_inner(
                         queue!(writer, style::Print(&buffer),)?;
 
                         // No guarantee the buffer width of the buffer will not exceed the number of columns.
-                        // So we calcuate the number of rows needed, rather than setting it directly to 1.
+                        // So we calculate the number of rows needed, rather than setting it directly to 1.
                         buffer_rows = need_rows(&buffer, columns);
                     } else {
                         buffer = format!("{buffer}{text}");
