@@ -413,28 +413,44 @@ impl Config {
             .unwrap_or_default()
     }
 
-    pub fn repl_complete(&self, cmd: &str, args: &str) -> Vec<String> {
-        let possible_values = match cmd {
-            ".role" => self.roles.iter().map(|v| v.name.clone()).collect(),
-            ".model" => list_models(self).into_iter().map(|v| v.id()).collect(),
-            ".session" => self.list_sessions(),
-            ".set" => {
-                vec![
-                    "temperature ".into(),
-                    format!("save {}", !self.save),
-                    format!("highlight {}", !self.highlight),
-                    format!("dry_run {}", !self.dry_run),
-                    format!("auto_copy {}", !self.auto_copy),
+    pub fn repl_complete(&self, cmd: &str, args: &[&str]) -> Vec<String> {
+        let (values, filter) = if args.len() == 1 {
+            let values = match cmd {
+                ".role" => self.roles.iter().map(|v| v.name.clone()).collect(),
+                ".model" => list_models(self).into_iter().map(|v| v.id()).collect(),
+                ".session" => self.list_sessions(),
+                ".set" => vec![
+                    "temperature ",
+                    "save ",
+                    "highlight ",
+                    "dry_run ",
+                    "auto_copy ",
                 ]
-            }
-            _ => vec![],
+                .into_iter()
+                .map(|v| v.to_string())
+                .collect(),
+                _ => vec![],
+            };
+            (values, args[0])
+        } else if args.len() == 2 {
+            let to_vec = |v: bool| vec![v.to_string()];
+            let values = match args[0] {
+                "save" => to_vec(!self.save),
+                "highlight" => to_vec(!self.highlight),
+                "dry_run" => to_vec(!self.dry_run),
+                "auto_copy" => to_vec(!self.auto_copy),
+                _ => vec![],
+            };
+            (values, args[1])
+        } else {
+            return vec![];
         };
-        let mut possible_values: Vec<String> = possible_values
+        let mut values: Vec<String> = values
             .into_iter()
-            .filter(|v| v.starts_with(args))
+            .filter(|v| v.starts_with(filter))
             .collect();
-        possible_values.sort_unstable();
-        possible_values
+        values.sort_unstable();
+        values
     }
 
     pub fn update(&mut self, data: &str) -> Result<()> {

@@ -1,54 +1,69 @@
-use std::collections::HashMap;
-
-use super::{parse_command, REPL_COMMANDS};
+use super::REPL_COMMANDS;
 
 use crate::config::GlobalConfig;
 
 use reedline::{Completer, Span, Suggestion};
+use std::collections::HashMap;
 
 impl Completer for ReplCompleter {
     fn complete(&mut self, line: &str, pos: usize) -> Vec<Suggestion> {
         let mut suggestions = vec![];
-        if line.len() != pos {
+        let line = &line[0..pos];
+        let mut parts = split_line(line);
+        if parts.is_empty() {
             return suggestions;
         }
-        let line = &line[0..pos];
-        if let Some((cmd, args)) = parse_command(line) {
-            let commands: Vec<_> = self
-                .commands
-                .iter()
-                .filter(|(cmd_name, _)| match args {
-                    Some(args) => cmd_name.starts_with(&format!("{cmd} {args}")),
-                    None => cmd_name.starts_with(cmd),
-                })
-                .collect();
+        if parts[0].0 == r#"""""# {
+            parts.remove(0);
+        }
 
-            if args.is_some() || line.ends_with(' ') {
-                let args = args.unwrap_or_default();
-                let start = line.chars().take_while(|c| *c == ' ').count() + cmd.len() + 1;
-                let span = Span::new(start, pos);
-                suggestions.extend(
-                    self.config
-                        .read()
-                        .repl_complete(cmd, args)
-                        .iter()
-                        .map(|name| create_suggestion(name.clone(), None, span)),
-                )
-            }
+        let parts_len = parts.len();
+        if parts_len == 0 {
+            return suggestions;
+        }
+        let (cmd, cmd_start) = parts[0];
 
-            if suggestions.is_empty() {
-                let start = line.chars().take_while(|c| *c == ' ').count();
-                let span = Span::new(start, pos);
-                suggestions.extend(commands.iter().map(|(name, desc)| {
-                    let has_group = self.groups.get(name).map(|v| *v > 1).unwrap_or_default();
-                    let name = if has_group {
-                        name.to_string()
-                    } else {
-                        format!("{name} ")
-                    };
-                    create_suggestion(name, Some(desc.to_string()), span)
-                }))
-            }
+        if !cmd.starts_with('.') {
+            return suggestions;
+        }
+
+        let commands: Vec<_> = self
+            .commands
+            .iter()
+            .filter(|(cmd_name, _)| {
+                let line = parts
+                    .iter()
+                    .take(2)
+                    .map(|(v, _)| *v)
+                    .collect::<Vec<&str>>()
+                    .join(" ");
+                cmd_name.starts_with(&line)
+            })
+            .collect();
+
+        if parts_len > 1 {
+            let span = Span::new(parts[parts_len - 1].1, pos);
+            let args: Vec<&str> = parts.iter().skip(1).map(|(v, _)| *v).collect();
+            suggestions.extend(
+                self.config
+                    .read()
+                    .repl_complete(cmd, &args)
+                    .iter()
+                    .map(|name| create_suggestion(name.clone(), None, span)),
+            )
+        }
+
+        if suggestions.is_empty() {
+            let span = Span::new(cmd_start, pos);
+            suggestions.extend(commands.iter().map(|(name, desc)| {
+                let has_group = self.groups.get(name).map(|v| *v > 1).unwrap_or_default();
+                let name = if has_group {
+                    name.to_string()
+                } else {
+                    format!("{name} ")
+                };
+                create_suggestion(name, Some(desc.to_string()), span)
+            }))
         }
         suggestions
     }
@@ -91,4 +106,42 @@ fn create_suggestion(value: String, description: Option<String>, span: Span) -> 
         span,
         append_whitespace: false,
     }
+}
+
+fn split_line(line: &str) -> Vec<(&str, usize)> {
+    let mut parts = vec![];
+    let mut part_start = None;
+    for (i, ch) in line.char_indices() {
+        if ch == ' ' {
+            if let Some(s) = part_start {
+                parts.push((&line[s..i], s));
+                part_start = None;
+            }
+        } else if part_start.is_none() {
+            part_start = Some(i)
+        }
+    }
+    if let Some(s) = part_start {
+        parts.push((&line[s..], s));
+    } else {
+        parts.push(("", line.len()))
+    }
+    parts
+}
+
+#[test]
+fn test_split_line() {
+    assert_eq!(split_line(".role coder"), vec![(".role", 0), ("coder", 6)],);
+    assert_eq!(
+        split_line(" .role   coder"),
+        vec![(".role", 1), ("coder", 9)],
+    );
+    assert_eq!(
+        split_line(".set highlight "),
+        vec![(".set", 0), ("highlight", 5), ("", 15)],
+    );
+    assert_eq!(
+        split_line(".set highlight t"),
+        vec![(".set", 0), ("highlight", 5), ("t", 15)],
+    );
 }
