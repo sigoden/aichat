@@ -305,17 +305,9 @@ impl Config {
 
     pub fn set_model(&mut self, value: &str) -> Result<()> {
         let models = list_models(self);
-        let mut model = None;
-        let value = value.trim_end_matches(':');
-        if value.contains(':') {
-            if let Some(found) = models.iter().find(|v| v.id() == value) {
-                model = Some(found.clone());
-            }
-        } else if let Some(found) = models.iter().find(|v| v.client_name == value) {
-            model = Some(found.clone());
-        }
+        let model = Model::find(&models, value);
         match model {
-            None => bail!("Unknown model '{}'", value),
+            None => bail!("Invalid model '{}'", value),
             Some(model) => {
                 if let Some(session) = self.session.as_mut() {
                     session.set_model(model.clone())?;

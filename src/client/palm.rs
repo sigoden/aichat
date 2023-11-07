@@ -70,6 +70,8 @@ impl PaLMClient {
 
         let url = format!("{API_BASE}{}:generateMessage?key={}", model, api_key);
 
+        debug!("PaLM Request: {url} {body}");
+
         let builder = client.post(url).json(&body);
 
         Ok(builder)
