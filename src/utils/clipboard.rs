@@ -1,11 +1,11 @@
-use arboard::Clipboard;
 use lazy_static::lazy_static;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+#[cfg(not(any(target_os = "android", target_os = "emscripten")))]
 lazy_static! {
-    static ref CLIPBOARD: Arc<Mutex<Option<Clipboard>>> =
-        Arc::new(Mutex::new(Clipboard::new().ok()));
+    static ref CLIPBOARD: Arc<Mutex<Option<arboard::Clipboard>>> =
+        Arc::new(Mutex::new(arboard::Clipboard::new().ok()));
 }
 
 #[cfg(not(any(target_os = "android", target_os = "emscripten")))]
