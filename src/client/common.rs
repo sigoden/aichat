@@ -54,13 +54,15 @@ macro_rules! register_client {
 
                 pub fn init(global_config: &$crate::config::GlobalConfig) -> Option<Box<dyn Client>> {
                     let model = global_config.read().model.clone();
-                    let config = {
-                        if let ClientConfig::$config(c) = &global_config.read().clients[model.client_index] {
-                            c.clone()
-                        } else {
-                            return None;
+                    let config = global_config.read().clients.iter().find_map(|client_config| {
+                        if let ClientConfig::$config(c) = client_config {
+                            if Self::name(c) == &model.client_name {
+                                return Some(c.clone())
+                            }
                         }
-                    };
+                        None
+                    })?;
+
                     Some(Box::new(Self {
                         global_config: global_config.clone(),
                         config,
@@ -68,8 +70,8 @@ macro_rules! register_client {
                     }))
                 }
 
-                pub fn name(local_config: &$config) -> &str {
-                    local_config.name.as_deref().unwrap_or(Self::NAME)
+                pub fn name(config: &$config) -> &str {
+                    config.name.as_deref().unwrap_or(Self::NAME)
                 }
             }
 
@@ -80,11 +82,7 @@ macro_rules! register_client {
                 $(.or_else(|| $client::init(config)))+
                 .ok_or_else(|| {
                     let model = config.read().model.clone();
-                    anyhow::anyhow!(
-                        "Unknown client '{}' at config.clients[{}]",
-                        &model.client_name,
-                        &model.client_index
-                    )
+                    anyhow::anyhow!("Unknown client '{}'", &model.client_name)
                 })
         }
 
@@ -105,9 +103,8 @@ macro_rules! register_client {
             config
                 .clients
                 .iter()
-                .enumerate()
-                .flat_map(|(i, v)| match v {
-                    $(ClientConfig::$config(c) => $client::list_models(c, i),)+
+                .flat_map(|v| match v {
+                    $(ClientConfig::$config(c) => $client::list_models(c),)+
                     ClientConfig::Unknown => vec![],
                 })
                 .collect()

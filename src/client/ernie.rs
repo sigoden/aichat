@@ -64,11 +64,11 @@ impl ErnieClient {
         ("secret_key", "Secret Key:", true, PromptKind::String),
     ];
 
-    pub fn list_models(local_config: &ErnieConfig, client_index: usize) -> Vec<Model> {
+    pub fn list_models(local_config: &ErnieConfig) -> Vec<Model> {
         let client_name = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, _)| Model::new(client_index, client_name, name))
+            .map(|(name, _)| Model::new(client_name, name))
             .collect()
     }
 
@@ -79,7 +79,7 @@ impl ErnieClient {
         let (_, chat_endpoint) = MODELS
             .iter()
             .find(|(v, _)| v == &model)
-            .ok_or_else(|| anyhow!("Miss Model '{}' in {}", model, self.model.client_name))?;
+            .ok_or_else(|| anyhow!("Miss Model '{}'", self.model.id()))?;
 
         let url = format!("{API_BASE}{chat_endpoint}?access_token={}", unsafe {
             &ACCESS_TOKEN

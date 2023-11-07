@@ -41,14 +41,14 @@ impl LocalAIClient {
         ),
     ];
 
-    pub fn list_models(local_config: &LocalAIConfig, client_index: usize) -> Vec<Model> {
+    pub fn list_models(local_config: &LocalAIConfig) -> Vec<Model> {
         let client_name = Self::name(local_config);
 
         local_config
             .models
             .iter()
             .map(|v| {
-                Model::new(client_index, client_name, &v.name)
+                Model::new(client_name, &v.name)
                     .set_max_tokens(v.max_tokens)
                     .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })
