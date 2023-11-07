@@ -68,6 +68,8 @@ impl LocalAIClient {
 
         let url = format!("{}{chat_endpoint}", self.config.api_base);
 
+        debug!("LocalAI Request: {url} {body}");
+
         let mut builder = client.post(url).json(&body);
         if let Some(api_key) = api_key {
             builder = builder.bearer_auth(api_key);

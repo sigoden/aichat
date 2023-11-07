@@ -68,6 +68,8 @@ impl QianwenClient {
         let stream = data.stream;
         let body = build_body(data, self.model.name.clone());
 
+        debug!("Qianwen Request: {API_URL} {body}");
+
         let mut builder = client.post(API_URL).bearer_auth(api_key).json(&body);
         if stream {
             builder = builder.header("X-DashScope-SSE", "enable");

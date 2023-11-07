@@ -30,6 +30,37 @@ impl Model {
         }
     }
 
+    pub fn find(models: &[Self], value: &str) -> Option<Self> {
+        let mut model = None;
+        let (client_name, model_name) = match value.split_once(':') {
+            Some((client_name, model_name)) => {
+                if model_name.is_empty() {
+                    (client_name, None)
+                } else {
+                    (client_name, Some(model_name))
+                }
+            }
+            None => (value, None),
+        };
+        match model_name {
+            Some(model_name) => {
+                if let Some(found) = models.iter().find(|v| v.id() == value) {
+                    model = Some(found.clone());
+                } else if let Some(found) = models.iter().find(|v| v.client_name == client_name) {
+                    let mut found = found.clone();
+                    found.name = model_name.to_string();
+                    model = Some(found)
+                }
+            }
+            None => {
+                if let Some(found) = models.iter().find(|v| v.client_name == client_name) {
+                    model = Some(found.clone());
+                }
+            }
+        }
+        model
+    }
+
     pub fn id(&self) -> String {
         format!("{}:{}", self.client_name, self.name)
     }

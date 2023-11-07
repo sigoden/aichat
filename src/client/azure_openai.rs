@@ -66,6 +66,8 @@ impl AzureOpenAIClient {
             &api_base, self.model.name
         );
 
+        debug!("AzureOpenAI Request: {url} {body}");
+
         let builder = client.post(url).header("api-key", api_key).json(&body);
 
         Ok(builder)

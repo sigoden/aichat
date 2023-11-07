@@ -85,6 +85,8 @@ impl ErnieClient {
             &ACCESS_TOKEN
         });
 
+        debug!("Ernie Request: {url} {body}");
+
         let builder = client.post(url).json(&body);
 
         Ok(builder)

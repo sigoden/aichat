@@ -68,6 +68,8 @@ impl OpenAIClient {
 
         let url = format!("{api_base}/chat/completions");
 
+        debug!("OpenAI Request: {url} {body}");
+
         let mut builder = client.post(url).bearer_auth(api_key).json(&body);
 
         if let Some(organization_id) = &self.config.organization_id {
