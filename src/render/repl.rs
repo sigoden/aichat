@@ -158,6 +158,6 @@ fn print_block(writer: &mut Stdout, text: &str, columns: u16) -> Result<u16> {
 }
 
 fn need_rows(text: &str, columns: u16) -> u16 {
-    let buffer_width = display_width(text) as u16;
+    let buffer_width = display_width(text).max(1) as u16;
     (buffer_width + columns - 1) / columns
 }
