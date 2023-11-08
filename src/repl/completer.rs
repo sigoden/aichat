@@ -13,7 +13,7 @@ impl Completer for ReplCompleter {
         if parts.is_empty() {
             return suggestions;
         }
-        if parts[0].0 == r#"""""# {
+        if parts[0].0 == r#":::"# {
             parts.remove(0);
         }
 
