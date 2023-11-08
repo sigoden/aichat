@@ -64,14 +64,21 @@ fn markdown_stream_inner(
 
     let columns = terminal::size()?.0;
 
+    let mut spinner = Spinner::new(" Generating");
+
     loop {
         if abort.aborted() {
             return Ok(());
         }
+        spinner.step(writer)?;
 
         if let Ok(evt) = rx.try_recv() {
             match evt {
                 ReplyEvent::Text(text) => {
+                    if spinner.is_running() {
+                        spinner.stop(writer)?;
+                    }
+
                     let (col, mut row) = cursor::position()?;
 
                     // Fix unexpected duplicate lines on kitty, see https://github.com/sigoden/aichat/issues/105
@@ -153,6 +160,59 @@ fn markdown_stream_inner(
         }
     }
     Ok(())
+}
+
+struct Spinner {
+    index: usize,
+    message: String,
+    stopped: bool,
+}
+
+impl Spinner {
+    const DATA: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+
+    fn new(message: &str) -> Self {
+        Spinner {
+            index: 0,
+            message: message.to_string(),
+            stopped: false,
+        }
+    }
+
+    fn is_running(&self) -> bool {
+        !self.stopped
+    }
+
+    fn step(&mut self, writer: &mut Stdout) -> Result<()> {
+        if self.stopped {
+            return Ok(());
+        }
+        let frame = Self::DATA[self.index % Self::DATA.len()];
+        let dots = ".".repeat((self.index / 8) % 4);
+        let line = format!("{frame}{}{dots}", self.message);
+        queue!(writer, cursor::MoveToColumn(0), style::Print(line),)?;
+        if self.index == 0 {
+            queue!(writer, cursor::Hide)?;
+        }
+        writer.flush()?;
+        self.index += 1;
+        Ok(())
+    }
+
+    fn stop(&mut self, writer: &mut Stdout) -> Result<()> {
+        if self.stopped {
+            return Ok(());
+        }
+        self.stopped = true;
+        queue!(
+            writer,
+            cursor::MoveToColumn(0),
+            terminal::Clear(terminal::ClearType::FromCursorDown),
+            cursor::Show
+        )?;
+        writer.flush()?;
+        Ok(())
+    }
 }
 
 fn print_block(writer: &mut Stdout, text: &str, columns: u16) -> Result<u16> {
