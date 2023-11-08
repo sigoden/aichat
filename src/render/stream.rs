@@ -1,6 +1,6 @@
 use super::{MarkdownRender, ReplyEvent};
 
-use crate::utils::{split_line_tail, AbortSignal};
+use crate::utils::AbortSignal;
 
 use anyhow::Result;
 use crossbeam::channel::Receiver;
@@ -16,7 +16,7 @@ use std::{
 };
 use textwrap::core::display_width;
 
-pub fn repl_render_stream(
+pub fn markdown_stream(
     rx: &Receiver<ReplyEvent>,
     render: &mut MarkdownRender,
     abort: &AbortSignal,
@@ -24,14 +24,33 @@ pub fn repl_render_stream(
     enable_raw_mode()?;
     let mut stdout = io::stdout();
 
-    let ret = repl_render_stream_inner(rx, render, abort, &mut stdout);
+    let ret = markdown_stream_inner(rx, render, abort, &mut stdout);
 
     disable_raw_mode()?;
 
     ret
 }
 
-fn repl_render_stream_inner(
+pub fn raw_stream(rx: &Receiver<ReplyEvent>, abort: &AbortSignal) -> Result<()> {
+    loop {
+        if abort.aborted() {
+            return Ok(());
+        }
+        if let Ok(evt) = rx.try_recv() {
+            match evt {
+                ReplyEvent::Text(text) => {
+                    print!("{}", text);
+                }
+                ReplyEvent::Done => {
+                    break;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn markdown_stream_inner(
     rx: &Receiver<ReplyEvent>,
     render: &mut MarkdownRender,
     abort: &AbortSignal,
@@ -104,13 +123,6 @@ fn repl_render_stream_inner(
                     writer.flush()?;
                 }
                 ReplyEvent::Done => {
-                    #[cfg(target_os = "windows")]
-                    let eol = "\n\n";
-                    #[cfg(not(target_os = "windows"))]
-                    let eol = "\n";
-                    queue!(writer, style::Print(eol))?;
-                    writer.flush()?;
-
                     break;
                 }
             }
@@ -155,6 +167,14 @@ fn print_block(writer: &mut Stdout, text: &str, columns: u16) -> Result<u16> {
         num += 1;
     }
     Ok(num)
+}
+
+fn split_line_tail(text: &str) -> (&str, &str) {
+    if let Some((head, tail)) = text.rsplit_once('\n') {
+        (head, tail)
+    } else {
+        ("", text)
+    }
 }
 
 fn need_rows(text: &str, columns: u16) -> u16 {

@@ -64,32 +64,11 @@ impl MarkdownRender {
         })
     }
 
-    pub(crate) const fn is_code(&self) -> bool {
-        matches!(
-            self.prev_line_type,
-            LineType::CodeBegin | LineType::CodeInner
-        )
-    }
-
-    pub(crate) const fn wrap_width(&self) -> Option<u16> {
-        self.wrap_width
-    }
-
     pub fn render(&mut self, text: &str) -> String {
         text.split('\n')
             .map(|line| self.render_line_mut(line))
             .collect::<Vec<String>>()
             .join("\n")
-    }
-
-    pub fn render_with_indent(&mut self, text: &str, indent: usize) -> String {
-        let text = format!("{}{}", " ".repeat(indent), text);
-        let output = self.render(&text);
-        if output.starts_with('\n') {
-            output
-        } else {
-            output.chars().skip(indent).collect()
-        }
     }
 
     pub fn render_line(&self, line: &str) -> String {
@@ -376,24 +355,5 @@ std::error::Error>> {
         render.wrap_width = Some(80);
         let output = render.render(TEXT);
         assert_eq!(TEXT_WRAP_ALL, output);
-    }
-
-    #[test]
-    fn wrap_with_indent() {
-        let options = RenderOptions::default();
-        let mut render = MarkdownRender::init(options).unwrap();
-        render.wrap_width = Some(80);
-
-        let input = "To unzip a file in Rust, you can use the `zip` crate. Here's an example code";
-        let output = render.render_with_indent(input, 40);
-        let expect =
-            "To unzip a file in Rust, you can use the\n`zip` crate. Here's an example code";
-        assert_eq!(output, expect);
-
-        let input = "Unzip a file";
-        let output = render.render_with_indent(input, 76);
-        let expect = "\nUnzip a file";
-
-        assert_eq!(output, expect);
     }
 }

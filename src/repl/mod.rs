@@ -12,7 +12,6 @@ use crate::render::{render_error, render_stream};
 use crate::utils::{create_abort_signal, set_text, AbortSignal};
 
 use anyhow::{bail, Context, Result};
-use crossbeam::sync::WaitGroup;
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
 use reedline::Signal;
@@ -235,21 +234,11 @@ impl Repl {
             return Ok(());
         }
         self.config.read().maybe_print_send_tokens(input);
-        let wg = WaitGroup::new();
         let client = init_client(&self.config)?;
-        let ret = render_stream(
-            input,
-            client.as_ref(),
-            &self.config,
-            true,
-            self.abort.clone(),
-            wg.clone(),
-        );
-        wg.wait();
-        let buffer = ret?;
-        self.config.write().save_message(input, &buffer)?;
+        let output = render_stream(input, client.as_ref(), &self.config, self.abort.clone())?;
+        self.config.write().save_message(input, &output)?;
         if self.config.read().auto_copy {
-            let _ = self.copy(&buffer);
+            let _ = self.copy(&output);
         }
         Ok(())
     }

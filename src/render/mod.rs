@@ -1,10 +1,8 @@
-mod cmd;
 mod markdown;
-mod repl;
+mod stream;
 
-use self::cmd::cmd_render_stream;
 pub use self::markdown::{MarkdownRender, RenderOptions};
-use self::repl::repl_render_stream;
+use self::stream::{markdown_stream, raw_stream};
 
 use crate::client::Client;
 use crate::config::GlobalConfig;
@@ -13,17 +11,19 @@ use crate::utils::AbortSignal;
 use anyhow::{Context, Result};
 use crossbeam::channel::{unbounded, Sender};
 use crossbeam::sync::WaitGroup;
+use is_terminal::IsTerminal;
 use nu_ansi_term::{Color, Style};
+use std::io::stdout;
 use std::thread::spawn;
 
 pub fn render_stream(
     input: &str,
     client: &dyn Client,
     config: &GlobalConfig,
-    repl: bool,
     abort: AbortSignal,
-    wg: WaitGroup,
 ) -> Result<String> {
+    let wg = WaitGroup::new();
+    let wg_cloned = wg.clone();
     let render_options = config.read().get_render_options()?;
     let mut stream_handler = {
         let (tx, rx) = unbounded();
@@ -31,33 +31,44 @@ pub fn render_stream(
         let highlight = config.read().highlight;
         spawn(move || {
             let run = move || {
-                if repl {
+                if stdout().is_terminal() {
                     let mut render = MarkdownRender::init(render_options)?;
-                    repl_render_stream(&rx, &mut render, &abort)
+                    markdown_stream(&rx, &mut render, &abort)
                 } else {
-                    let mut render = MarkdownRender::init(render_options)?;
-                    cmd_render_stream(&rx, &mut render, &abort)
+                    raw_stream(&rx, &abort)
                 }
             };
             if let Err(err) = run() {
                 render_error(err, highlight);
             }
-            drop(wg);
+            drop(wg_cloned);
         });
         ReplyHandler::new(tx, abort_clone)
     };
-    client.send_message_streaming(input, &mut stream_handler)?;
-    let buffer = stream_handler.get_buffer();
-    Ok(buffer.to_string())
+    let ret = client.send_message_streaming(input, &mut stream_handler);
+    wg.wait();
+    let output = stream_handler.get_buffer().to_string();
+    match ret {
+        Ok(_) => {
+            println!();
+            Ok(output)
+        }
+        Err(err) => {
+            if !output.is_empty() {
+                println!();
+            }
+            Err(err)
+        }
+    }
 }
 
 pub fn render_error(err: anyhow::Error, highlight: bool) {
     let err = format!("{err:?}");
     if highlight {
         let style = Style::new().fg(Color::Red);
-        println!("{}", style.paint(err.trim()));
+        eprintln!("{}", style.paint(err));
     } else {
-        println!("{}", err.trim());
+        eprintln!("{err}");
     }
 }
 
