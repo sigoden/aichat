@@ -1,13 +1,11 @@
 mod abort_signal;
 mod clipboard;
 mod prompt_input;
-mod split_line;
 mod tiktoken;
 
 pub use self::abort_signal::{create_abort_signal, AbortSignal};
 pub use self::clipboard::set_text;
 pub use self::prompt_input::*;
-pub use self::split_line::*;
 pub use self::tiktoken::cl100k_base_singleton;
 
 pub fn now() -> String {

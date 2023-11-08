@@ -1,10 +1,8 @@
-mod cmd;
 mod markdown;
-mod repl;
+mod stream;
 
-use self::cmd::cmd_render_stream;
 pub use self::markdown::{MarkdownRender, RenderOptions};
-use self::repl::repl_render_stream;
+use self::stream::{markdown_stream, raw_stream};
 
 use crate::client::Client;
 use crate::config::GlobalConfig;
@@ -13,14 +11,15 @@ use crate::utils::AbortSignal;
 use anyhow::{Context, Result};
 use crossbeam::channel::{unbounded, Sender};
 use crossbeam::sync::WaitGroup;
+use is_terminal::IsTerminal;
 use nu_ansi_term::{Color, Style};
+use std::io::stdout;
 use std::thread::spawn;
 
 pub fn render_stream(
     input: &str,
     client: &dyn Client,
     config: &GlobalConfig,
-    repl: bool,
     abort: AbortSignal,
     wg: WaitGroup,
 ) -> Result<String> {
@@ -31,12 +30,11 @@ pub fn render_stream(
         let highlight = config.read().highlight;
         spawn(move || {
             let run = move || {
-                if repl {
+                if stdout().is_terminal() {
                     let mut render = MarkdownRender::init(render_options)?;
-                    repl_render_stream(&rx, &mut render, &abort)
+                    markdown_stream(&rx, &mut render, &abort)
                 } else {
-                    let mut render = MarkdownRender::init(render_options)?;
-                    cmd_render_stream(&rx, &mut render, &abort)
+                    raw_stream(&rx, &abort)
                 }
             };
             if let Err(err) = run() {

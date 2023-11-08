@@ -241,7 +241,6 @@ impl Repl {
             input,
             client.as_ref(),
             &self.config,
-            true,
             self.abort.clone(),
             wg.clone(),
         );

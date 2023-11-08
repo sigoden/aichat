@@ -104,15 +104,16 @@ fn start_directive(
     if let Some(session) = &config.read().session {
         session.guard_save()?;
     }
-    if !stdout().is_terminal() {
-        config.write().highlight = false;
-    }
     config.read().maybe_print_send_tokens(input);
     let output = if no_stream {
-        let render_options = config.read().get_render_options()?;
         let output = client.send_message(input)?;
-        let mut markdown_render = MarkdownRender::init(render_options)?;
-        println!("{}", markdown_render.render(&output).trim());
+        if stdout().is_terminal() {
+            let render_options = config.read().get_render_options()?;
+            let mut markdown_render = MarkdownRender::init(render_options)?;
+            println!("{}", markdown_render.render(&output).trim());
+        } else {
+            println!("{}", output);
+        }
         output
     } else {
         let wg = WaitGroup::new();
@@ -122,7 +123,7 @@ fn start_directive(
             abort_clone.set_ctrlc();
         })
         .expect("Failed to setting Ctrl-C handler");
-        let output = render_stream(input, client, config, false, abort, wg.clone())?;
+        let output = render_stream(input, client, config, abort, wg.clone())?;
         wg.wait();
         output
     };
