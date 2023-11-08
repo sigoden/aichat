@@ -43,7 +43,7 @@ const REPL_COMMANDS: [(&str, &str); 13] = [
 
 lazy_static! {
     static ref COMMAND_RE: Regex = Regex::new(r"^\s*(\.\S*)\s*").unwrap();
-    static ref MULTILINE_RE: Regex = Regex::new(r#"(?s)^\s*"""\s*(.*)\s*"""\s*$"#).unwrap();
+    static ref MULTILINE_RE: Regex = Regex::new(r"(?s)^\s*:::\s*(.*)\s*:::\s*$").unwrap();
 }
 
 pub struct Repl {
@@ -144,7 +144,7 @@ impl Repl {
                     }
                 },
                 ".edit" => {
-                    println!(r#"Deprecated. Use """ instead."#);
+                    println!(r#"Deprecated. Use ::: instead."#);
                 }
                 ".model" => match args {
                     Some(name) => {
@@ -329,7 +329,7 @@ struct ReplValidator;
 impl Validator for ReplValidator {
     fn validate(&self, line: &str) -> ValidationResult {
         let line = line.trim();
-        if line.starts_with(r#"""""#) && !line[3..].ends_with(r#"""""#) {
+        if line.starts_with(r#":::"#) && !line[3..].ends_with(r#":::"#) {
             ValidationResult::Incomplete
         } else {
             ValidationResult::Complete
@@ -350,7 +350,7 @@ fn dump_repl_help() {
     println!(
         r###"{head}
 
-Type """ to begin multi-line editing, type """ to end it.
+Type ::: to begin multi-line editing, type ::: to end it.
 Press Ctrl+C to abort aichat, Ctrl+D to exit the REPL"###,
     );
 }

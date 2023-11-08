@@ -152,7 +152,7 @@ The Chat REPL supports:
 .read                    Import from file and submit
 .exit                    Exit the REPL
 
-Type """ to begin multi-line editing, type """ to end it.
+Type ::: to begin multi-line editing, type ::: to end it.
 Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
 
 ```
@@ -222,9 +222,9 @@ temperature: null
 
 Temporarily use a role to send a message.
 ```
-〉""" .role emoji
+〉::: .role emoji
 hello world
-"""
+:::
 👋🌍
 
 〉
