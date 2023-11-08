@@ -21,8 +21,9 @@ pub fn render_stream(
     client: &dyn Client,
     config: &GlobalConfig,
     abort: AbortSignal,
-    wg: WaitGroup,
 ) -> Result<String> {
+    let wg = WaitGroup::new();
+    let wg_cloned = wg.clone();
     let render_options = config.read().get_render_options()?;
     let mut stream_handler = {
         let (tx, rx) = unbounded();
@@ -40,18 +41,29 @@ pub fn render_stream(
             if let Err(err) = run() {
                 render_error(err, highlight);
             }
-            drop(wg);
+            drop(wg_cloned);
         });
         ReplyHandler::new(tx, abort_clone)
     };
-    client.send_message_streaming(input, &mut stream_handler)?;
-    let buffer = stream_handler.get_buffer();
-    Ok(buffer.to_string())
+    let ret = client.send_message_streaming(input, &mut stream_handler);
+    wg.wait();
+    let output = stream_handler.get_buffer().to_string();
+    match ret {
+        Ok(_) => {
+            println!();
+            Ok(output)
+        }
+        Err(err) => {
+            if !output.is_empty() {
+                println!();
+            }
+            Err(err)
+        }
+    }
 }
 
 pub fn render_error(err: anyhow::Error, highlight: bool) {
     let err = format!("{err:?}");
-    let err = err.trim();
     if highlight {
         let style = Style::new().fg(Color::Red);
         eprintln!("{}", style.paint(err));

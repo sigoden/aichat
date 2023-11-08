@@ -42,7 +42,6 @@ pub fn raw_stream(rx: &Receiver<ReplyEvent>, abort: &AbortSignal) -> Result<()> 
                     print!("{}", text);
                 }
                 ReplyEvent::Done => {
-                    println!();
                     break;
                 }
             }
@@ -124,14 +123,6 @@ fn markdown_stream_inner(
                     writer.flush()?;
                 }
                 ReplyEvent::Done => {
-                    #[cfg(target_os = "windows")]
-                    let eol = "\n\n";
-                    #[cfg(not(target_os = "windows"))]
-                    let eol = "\n";
-                    queue!(writer, style::Print(eol))?;
-                    queue!(writer, cursor::MoveToColumn(0))?;
-                    writer.flush()?;
-
                     break;
                 }
             }

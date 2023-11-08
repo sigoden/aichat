@@ -15,7 +15,6 @@ use crate::config::{Config, GlobalConfig};
 use anyhow::Result;
 use clap::Parser;
 use client::{init_client, list_models};
-use crossbeam::sync::WaitGroup;
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use render::{render_error, render_stream, MarkdownRender};
@@ -117,17 +116,13 @@ fn start_directive(config: &GlobalConfig, input: &str, no_stream: bool) -> Resul
         }
         output
     } else {
-        let wg = WaitGroup::new();
         let abort = create_abort_signal();
         let abort_clone = abort.clone();
         ctrlc::set_handler(move || {
             abort_clone.set_ctrlc();
         })
         .expect("Failed to setting Ctrl-C handler");
-        let ret = render_stream(input, client.as_ref(), config, abort, wg.clone());
-        wg.wait();
-        
-        ret?
+        render_stream(input, client.as_ref(), config, abort)?
     };
     config.write().save_message(input, &output)
 }
