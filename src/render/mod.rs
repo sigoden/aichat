@@ -51,11 +51,12 @@ pub fn render_stream(
 
 pub fn render_error(err: anyhow::Error, highlight: bool) {
     let err = format!("{err:?}");
+    let err = err.trim();
     if highlight {
         let style = Style::new().fg(Color::Red);
-        println!("{}", style.paint(err.trim()));
+        eprintln!("{}", style.paint(err));
     } else {
-        println!("{}", err.trim());
+        eprintln!("{err}");
     }
 }
 
