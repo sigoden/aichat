@@ -12,6 +12,7 @@ use crossterm::{
 };
 use std::{
     io::{self, Stdout, Write},
+    ops::Div,
     time::{Duration, Instant},
 };
 use textwrap::core::display_width;
@@ -66,19 +67,17 @@ fn markdown_stream_inner(
 
     let mut spinner = Spinner::new(" Generating");
 
-    loop {
+    'outer: loop {
         if abort.aborted() {
             return Ok(());
         }
         spinner.step(writer)?;
 
-        if let Ok(evt) = rx.try_recv() {
-            match evt {
-                ReplyEvent::Text(text) => {
-                    if spinner.is_running() {
-                        spinner.stop(writer)?;
-                    }
+        for reply_event in gather_events(rx) {
+            spinner.stop(writer)?;
 
+            match reply_event {
+                ReplyEvent::Text(text) => {
                     let (col, mut row) = cursor::position()?;
 
                     // Fix unexpected duplicate lines on kitty, see https://github.com/sigoden/aichat/issues/105
@@ -130,25 +129,24 @@ fn markdown_stream_inner(
                     writer.flush()?;
                 }
                 ReplyEvent::Done => {
-                    break;
+                    break 'outer;
                 }
             }
-            continue;
         }
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
-            .unwrap_or_else(|| Duration::from_secs(0));
+            .unwrap_or_else(|| tick_rate.div(2));
         if crossterm::event::poll(timeout)? {
             if let Event::Key(key) = event::read()? {
                 match key.code {
                     KeyCode::Char('c') if key.modifiers == KeyModifiers::CONTROL => {
                         abort.set_ctrlc();
-                        return Ok(());
+                        break;
                     }
                     KeyCode::Char('d') if key.modifiers == KeyModifiers::CONTROL => {
                         abort.set_ctrld();
-                        return Ok(());
+                        break;
                     }
                     _ => {}
                 }
@@ -159,6 +157,9 @@ fn markdown_stream_inner(
             last_tick = Instant::now();
         }
     }
+
+    spinner.stop(writer)?;
+
     Ok(())
 }
 
@@ -179,17 +180,13 @@ impl Spinner {
         }
     }
 
-    fn is_running(&self) -> bool {
-        !self.stopped
-    }
-
     fn step(&mut self, writer: &mut Stdout) -> Result<()> {
         if self.stopped {
             return Ok(());
         }
         let frame = Self::DATA[self.index % Self::DATA.len()];
-        let dots = ".".repeat((self.index / 8) % 4);
-        let line = format!("{frame}{}{dots}", self.message);
+        let dots = ".".repeat((self.index / 5) % 4);
+        let line = format!("{frame}{}{:<3}", self.message, dots);
         queue!(writer, cursor::MoveToColumn(0), style::Print(line),)?;
         if self.index == 0 {
             queue!(writer, cursor::Hide)?;
@@ -213,6 +210,27 @@ impl Spinner {
         writer.flush()?;
         Ok(())
     }
+}
+
+fn gather_events(rx: &Receiver<ReplyEvent>) -> Vec<ReplyEvent> {
+    let mut texts = vec![];
+    let mut done = false;
+    for reply_event in rx.try_iter() {
+        match reply_event {
+            ReplyEvent::Text(v) => texts.push(v),
+            ReplyEvent::Done => {
+                done = true;
+            }
+        }
+    }
+    let mut events = vec![];
+    if !texts.is_empty() {
+        events.push(ReplyEvent::Text(texts.join("")))
+    }
+    if done {
+        events.push(ReplyEvent::Done)
+    }
+    events
 }
 
 fn print_block(writer: &mut Stdout, text: &str, columns: u16) -> Result<u16> {

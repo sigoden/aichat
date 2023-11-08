@@ -219,7 +219,7 @@ pub trait Client {
                         let content = global_config.read().echo_messages(content);
                         let tokens = tokenize(&content);
                         for token in tokens {
-                            tokio::time::sleep(Duration::from_millis(25)).await;
+                            tokio::time::sleep(Duration::from_millis(10)).await;
                             handler.text(&token)?;
                         }
                         return Ok(());
@@ -235,10 +235,6 @@ pub trait Client {
                     handler.done()?;
                     Ok(())
                  },
-                _ =  tokio::signal::ctrl_c() => {
-                    abort.set_ctrlc();
-                    Ok(())
-                }
             }
         })
     }
