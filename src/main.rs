@@ -117,11 +117,6 @@ fn start_directive(config: &GlobalConfig, input: &str, no_stream: bool) -> Resul
         output
     } else {
         let abort = create_abort_signal();
-        let abort_clone = abort.clone();
-        ctrlc::set_handler(move || {
-            abort_clone.set_ctrlc();
-        })
-        .expect("Failed to setting Ctrl-C handler");
         render_stream(input, client.as_ref(), config, abort)?
     };
     config.write().save_message(input, &output)
