@@ -94,7 +94,6 @@ async fn send_message_streaming(
     handler: &mut ReplyHandler,
 ) -> Result<()> {
     let mut es = builder.eventsource()?;
-    let mut offset = 0;
 
     while let Some(event) = es.next().await {
         match event {
@@ -102,10 +101,7 @@ async fn send_message_streaming(
             Ok(Event::Message(message)) => {
                 let data: Value = serde_json::from_str(&message.data)?;
                 if let Some(text) = data["output"]["text"].as_str() {
-
-                    let text = &text[offset..];
                     handler.text(text)?;
-                    offset += text.len();
                 }
             }
             Err(err) => {
@@ -143,10 +139,14 @@ fn build_body(data: SendData, model: String) -> Value {
     let SendData {
         messages,
         temperature,
-        stream: _,
+        stream,
     } = data;
 
     let mut parameters = json!({});
+
+    if stream {
+        parameters["incremental_output"] = true.into();
+    }
 
     if let Some(v) = temperature {
         parameters["temperature"] = v.into();
