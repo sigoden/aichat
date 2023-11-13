@@ -149,7 +149,7 @@ The Chat REPL supports:
 .exit session            End the current session
 .set                     Modify the configuration parameters
 .copy                    Copy the last reply to the clipboard
-.read                    Import from file and submit
+.read                    Read files into the message and submit
 .exit                    Exit the REPL
 
 Type ::: to begin multi-line editing, type ::: to end it.

@@ -36,7 +36,7 @@ const REPL_COMMANDS: [(&str, &str); 13] = [
     (".exit session", "End the current session"),
     (".set", "Modify the configuration parameters"),
     (".copy", "Copy the last reply to the clipboard"),
-    (".read", "Import from file and submit"),
+    (".read", "Read files into the message and submit"),
     (".exit", "Exit the REPL"),
 ];
 
@@ -185,15 +185,28 @@ impl Repl {
                         .with_context(|| "Failed to copy the last output")?;
                 }
                 ".read" => match args {
-                    Some(file) => {
-                        let mut content = String::new();
-                        let mut file =
-                            std::fs::File::open(file).with_context(|| "Unable to open file")?;
-                        file.read_to_string(&mut content)
-                            .with_context(|| "Unable to read file")?;
+                    Some(args) => {
+                        let (files, text) = match args.split_once(" -- ") {
+                            Some((files, text)) => (files.trim(), text.trim()),
+                            None => (args, ""),
+                        };
+                        let files = shell_words::split(files).with_context(|| "Invalid files")?;
+                        let mut texts = vec![];
+                        if !text.is_empty() {
+                            texts.push(text.to_string());
+                        }
+                        for file_path in files.into_iter() {
+                            let mut text = String::new();
+                            let mut file = std::fs::File::open(&file_path)
+                                .with_context(|| format!("Unable to open file '{file_path}'"))?;
+                            file.read_to_string(&mut text)
+                                .with_context(|| format!("Unable to read file '{file_path}'"))?;
+                            texts.push(text);
+                        }
+                        let content = texts.join("\n");
                         self.ask(&content)?;
                     }
-                    None => println!("Usage: .read <textfile>"),
+                    None => println!("Usage: .read <files>...[ -- <text>...]"),
                 },
                 ".exit" => match args {
                     Some("role") => {
