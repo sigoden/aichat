@@ -113,19 +113,16 @@ fn build_body(data: SendData, _model: String) -> Value {
         ..
     } = data;
 
-    let mut context = None;
     if messages[0].role.is_system() {
-        let message = messages.remove(0);
-        context = Some(message.content);
+        let system_message = messages.remove(0);
+        if let Some(message) = messages.get_mut(0) {
+            message.content = format!("{}\n\n{}", system_message.content, message.content)
+        }
     }
     
     let messages: Vec<Value> = messages.into_iter().map(|v| json!({ "content": v.content })).collect();
 
-    let mut prompt = json!({ "messages": messages });
-
-    if let Some(context) = context {
-        prompt["context"] = context.into();
-    };
+    let prompt = json!({ "messages": messages });
 
     let mut body = json!({
         "prompt": prompt,
