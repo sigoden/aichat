@@ -45,7 +45,7 @@ impl Role {
         if self.embedded() {
             merge_prompt_content(&self.prompt, content)
         } else {
-            format!("{}\n{content}", self.prompt)
+            format!("{}\n\n{content}", self.prompt)
         }
     }
 
@@ -76,7 +76,7 @@ fn merge_prompt_content(prompt: &str, content: &str) -> String {
 }
 
 fn complete_prompt_args(prompt: &str, name: &str) -> String {
-    let mut prompt = prompt.to_string();
+    let mut prompt = prompt.trim().to_string();
     for (i, arg) in name.split(':').skip(1).enumerate() {
         prompt = prompt.replace(&format!("__ARG{}__", i + 1), arg);
     }
