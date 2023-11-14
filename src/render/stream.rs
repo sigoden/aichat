@@ -102,28 +102,25 @@ fn markdown_stream_inner(
                     if text.contains('\n') {
                         let text = format!("{buffer}{text}");
                         let (head, tail) = split_line_tail(&text);
-                        buffer = tail.to_string();
                         let output = render.render(head);
                         print_block(writer, &output, columns)?;
-                        queue!(writer, style::Print(&buffer),)?;
+                        buffer = tail.to_string();
+                    } else {
+                        buffer = format!("{buffer}{text}");
+                    }
+
+                    let output = render.render_line(&buffer);
+                    if output.contains('\n') {
+                        let (head, tail) = split_line_tail(&output);
+                        buffer_rows = print_block(writer, head, columns)?;
+                        queue!(writer, style::Print(&tail),)?;
 
                         // No guarantee the buffer width of the buffer will not exceed the number of columns.
                         // So we calculate the number of rows needed, rather than setting it directly to 1.
-                        buffer_rows = need_rows(&buffer, columns);
+                        buffer_rows += need_rows(tail, columns);
                     } else {
-                        buffer = format!("{buffer}{text}");
-                        let output = render.render_line(&buffer);
-                        if output.contains('\n') {
-                            let (head, tail) = split_line_tail(&output);
-                            buffer_rows = print_block(writer, head, columns)?;
-                            queue!(writer, style::Print(&tail),)?;
-
-                            // Same as above.
-                            buffer_rows += need_rows(tail, columns);
-                        } else {
-                            queue!(writer, style::Print(&output))?;
-                            buffer_rows = need_rows(&output, columns);
-                        }
+                        queue!(writer, style::Print(&output))?;
+                        buffer_rows = need_rows(&output, columns);
                     }
 
                     writer.flush()?;
