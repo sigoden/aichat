@@ -196,18 +196,17 @@ fn build_body(data: SendData, _model: String) -> Value {
         stream,
     } = data;
 
-    let mut system = None;
     if messages[0].role.is_system() {
-        let message = messages.remove(0);
-        system = Some(message.content);
+        let system_message = messages.remove(0);
+        if let Some(message) = messages.get_mut(0) {
+            message.content = format!("{}\n\n{}", system_message.content, message.content)
+        }
     }
 
     let mut body = json!({
         "messages": messages,
     });
-    if let Some(system) = system {
-        body["system"] = system.into();
-    };
+
     if let Some(temperature) = temperature {
         body["temperature"] = (temperature / 2.0).into();
     }
