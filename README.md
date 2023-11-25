@@ -150,7 +150,7 @@ The Chat REPL supports:
 .session                 Start a context-aware chat session
 .info session            Show session info
 .exit session            End the current session
-.include                 Incluce files in the message before submit
+.file                    Attach files to the message and then submit it
 .set                     Modify the configuration parameters
 .copy                    Copy the last reply to the clipboard
 .exit                    Exit the REPL
@@ -280,6 +280,7 @@ Options:
   -m, --model <MODEL>        Choose a LLM model
   -r, --role <ROLE>          Choose a role
   -s, --session [<SESSION>]  Create or reuse a session
+  -f, --file <FILE>...       Attach files to the message to be sent
   -H, --no-highlight         Disable syntax highlighting
   -S, --no-stream            No stream output
   -w, --wrap <WRAP>          Specify the text-wrapping mode (no*, auto, <max-width>)

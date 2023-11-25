@@ -15,6 +15,7 @@ use crate::config::{Config, GlobalConfig};
 use anyhow::Result;
 use clap::Parser;
 use client::{init_client, list_models};
+use config::Input;
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use render::{render_error, render_stream, MarkdownRender};
@@ -75,18 +76,22 @@ fn main() -> Result<()> {
         return Ok(());
     }
     config.write().onstart()?;
-    let no_stream = cli.no_stream;
-    if let Err(err) = start(&config, text, no_stream) {
+    if let Err(err) = start(&config, text, cli.file, cli.no_stream) {
         let highlight = stderr().is_terminal() && config.read().highlight;
         render_error(err, highlight)
     }
     Ok(())
 }
 
-fn start(config: &GlobalConfig, text: Option<String>, no_stream: bool) -> Result<()> {
+fn start(
+    config: &GlobalConfig,
+    text: Option<String>,
+    include: Option<Vec<String>>,
+    no_stream: bool,
+) -> Result<()> {
     if stdin().is_terminal() {
         match text {
-            Some(text) => start_directive(config, &text, no_stream),
+            Some(text) => start_directive(config, &text, include, no_stream),
             None => start_interactive(config),
         }
     } else {
@@ -95,18 +100,24 @@ fn start(config: &GlobalConfig, text: Option<String>, no_stream: bool) -> Result
         if let Some(text) = text {
             input = format!("{text}\n{input}");
         }
-        start_directive(config, &input, no_stream)
+        start_directive(config, &input, include, no_stream)
     }
 }
 
-fn start_directive(config: &GlobalConfig, input: &str, no_stream: bool) -> Result<()> {
+fn start_directive(
+    config: &GlobalConfig,
+    text: &str,
+    include: Option<Vec<String>>,
+    no_stream: bool,
+) -> Result<()> {
     if let Some(session) = &config.read().session {
         session.guard_save()?;
     }
+    let input = Input::new(text, include.unwrap_or_default())?;
     let client = init_client(config)?;
-    config.read().maybe_print_send_tokens(input);
+    config.read().maybe_print_send_tokens(&input);
     let output = if no_stream {
-        let output = client.send_message(input)?;
+        let output = client.send_message(input.clone())?;
         if stdout().is_terminal() {
             let render_options = config.read().get_render_options()?;
             let mut markdown_render = MarkdownRender::init(render_options)?;
@@ -117,7 +128,7 @@ fn start_directive(config: &GlobalConfig, input: &str, no_stream: bool) -> Resul
         output
     } else {
         let abort = create_abort_signal();
-        render_stream(input, client.as_ref(), config, abort)?
+        render_stream(&input, client.as_ref(), config, abort)?
     };
     config.write().save_message(input, &output)
 }

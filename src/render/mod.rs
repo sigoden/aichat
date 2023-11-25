@@ -5,7 +5,7 @@ pub use self::markdown::{MarkdownRender, RenderOptions};
 use self::stream::{markdown_stream, raw_stream};
 
 use crate::client::Client;
-use crate::config::GlobalConfig;
+use crate::config::{GlobalConfig, Input};
 use crate::utils::AbortSignal;
 
 use anyhow::{Context, Result};
@@ -17,7 +17,7 @@ use std::io::stdout;
 use std::thread::spawn;
 
 pub fn render_stream(
-    input: &str,
+    input: &Input,
     client: &dyn Client,
     config: &GlobalConfig,
     abort: AbortSignal,

@@ -1,7 +1,7 @@
 use super::role::Role;
-use super::Model;
+use super::{Input, Model};
 
-use crate::client::{Message, MessageRole};
+use crate::client::{Message, MessageContent, MessageRole};
 use crate::render::MarkdownRender;
 
 use anyhow::{bail, Context, Result};
@@ -128,11 +128,13 @@ impl Session {
                         continue;
                     }
                     MessageRole::Assistant => {
-                        lines.push(render.render(&message.content));
+                        if let MessageContent::Text(text) = &message.content {
+                            lines.push(render.render(text));
+                        }
                         lines.push("".into());
                     }
                     MessageRole::User => {
-                        lines.push(format!("{}）{}", self.name, message.content));
+                        lines.push(format!("{}）{}", self.name, message.content.render_input()));
                     }
                 }
             }
@@ -218,7 +220,7 @@ impl Session {
         self.messages.is_empty()
     }
 
-    pub fn add_message(&mut self, input: &str, output: &str) -> Result<()> {
+    pub fn add_message(&mut self, input: &Input, output: &str) -> Result<()> {
         let mut need_add_msg = true;
         if self.messages.is_empty() {
             if let Some(role) = self.role.as_ref() {
@@ -229,35 +231,35 @@ impl Session {
         if need_add_msg {
             self.messages.push(Message {
                 role: MessageRole::User,
-                content: input.to_string(),
+                content: input.to_message_content(),
             });
         }
         self.messages.push(Message {
             role: MessageRole::Assistant,
-            content: output.to_string(),
+            content: MessageContent::Text(output.to_string()),
         });
         self.dirty = true;
         Ok(())
     }
 
-    pub fn echo_messages(&self, content: &str) -> String {
-        let messages = self.build_emssages(content);
+    pub fn echo_messages(&self, input: &Input) -> String {
+        let messages = self.build_emssages(input);
         serde_yaml::to_string(&messages).unwrap_or_else(|_| "Unable to echo message".into())
     }
 
-    pub fn build_emssages(&self, content: &str) -> Vec<Message> {
+    pub fn build_emssages(&self, input: &Input) -> Vec<Message> {
         let mut messages = self.messages.clone();
         let mut need_add_msg = true;
         if messages.is_empty() {
             if let Some(role) = self.role.as_ref() {
-                messages = role.build_messages(content);
+                messages = role.build_messages(input);
                 need_add_msg = false;
             }
         };
         if need_add_msg {
             messages.push(Message {
                 role: MessageRole::User,
-                content: content.into(),
+                content: input.to_message_content(),
             });
         }
         messages

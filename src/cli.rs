@@ -12,9 +12,9 @@ pub struct Cli {
     /// Create or reuse a session
     #[clap(short = 's', long)]
     pub session: Option<Option<String>>,
-    /// Include files in the message to be sent.
-    #[clap(short = 'i', long, num_args = 1.., value_name = "FILE")]
-    pub include: Option<Vec<String>>,
+    /// Attach files to the message to be sent.
+    #[clap(short = 'f', long, num_args = 1.., value_name = "FILE")]
+    pub file: Option<Vec<String>>,
     /// Disable syntax highlighting
     #[clap(short = 'H', long)]
     pub no_highlight: bool,
@@ -31,7 +31,7 @@ pub struct Cli {
     #[clap(long)]
     pub dry_run: bool,
     /// Print related information
-    #[clap(short = 'I', long)]
+    #[clap(long)]
     pub info: bool,
     /// List all available models
     #[clap(long)]
