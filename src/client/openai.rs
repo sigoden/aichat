@@ -146,6 +146,12 @@ pub fn openai_build_body(data: SendData, model: String) -> Value {
         "model": model,
         "messages": messages,
     });
+
+    // The default max_tokens of gpt-4-vision-preview is only 16, we need to make it larger
+    if model == "gpt-4-vision-preview" {
+        body["max_tokens"] = json!(4096);
+    }
+
     if let Some(v) = temperature {
         body["temperature"] = v.into();
     }
