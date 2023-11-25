@@ -586,7 +586,7 @@ impl Config {
             Ok(dir) => dir,
             Err(_) => return vec![],
         };
-        match read_dir(&sessions_dir) {
+        match read_dir(sessions_dir) {
             Ok(rd) => {
                 let mut names = vec![];
                 for entry in rd.flatten() {

@@ -50,7 +50,7 @@ macro_rules! register_client {
             }
 
             impl $client {
-                pub const NAME: &str = $name;
+                pub const NAME: &'static str = $name;
 
                 pub fn init(global_config: &$crate::config::GlobalConfig) -> Option<Box<dyn Client>> {
                     let model = global_config.read().model.clone();
