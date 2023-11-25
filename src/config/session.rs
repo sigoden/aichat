@@ -1,3 +1,4 @@
+use super::input::resolve_data_url;
 use super::role::Role;
 use super::{Input, Model};
 
@@ -7,6 +8,7 @@ use crate::render::MarkdownRender;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::HashMap;
 use std::fs::{self, read_to_string};
 use std::path::Path;
 
@@ -18,6 +20,7 @@ pub struct Session {
     model_id: String,
     temperature: Option<f64>,
     messages: Vec<Message>,
+    data_urls: HashMap<String, String>,
     #[serde(skip)]
     pub name: String,
     #[serde(skip)]
@@ -37,6 +40,7 @@ impl Session {
             model_id: model.id(),
             temperature,
             messages: vec![],
+            data_urls: Default::default(),
             name: name.to_string(),
             path: None,
             dirty: false,
@@ -121,6 +125,7 @@ impl Session {
 
         if !self.is_empty() {
             lines.push("".into());
+            let resolve_url_fn = |url: &str| resolve_data_url(&self.data_urls, url.to_string());
 
             for message in &self.messages {
                 match message.role {
@@ -134,7 +139,11 @@ impl Session {
                         lines.push("".into());
                     }
                     MessageRole::User => {
-                        lines.push(format!("{}）{}", self.name, message.content.render_input()));
+                        lines.push(format!(
+                            "{}）{}",
+                            self.name,
+                            message.content.render_input(resolve_url_fn)
+                        ));
                     }
                 }
             }
@@ -234,6 +243,7 @@ impl Session {
                 content: input.to_message_content(),
             });
         }
+        self.data_urls.extend(input.data_urls());
         self.messages.push(Message {
             role: MessageRole::Assistant,
             content: MessageContent::Text(output.to_string()),

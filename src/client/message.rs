@@ -48,7 +48,7 @@ pub enum MessageContent {
 }
 
 impl MessageContent {
-    pub fn render_input(&self) -> String {
+    pub fn render_input(&self, resolve_url_fn: impl Fn(&str) -> String) -> String {
         match self {
             MessageContent::Text(text) => text.to_string(),
             MessageContent::Array(list) => {
@@ -58,8 +58,8 @@ impl MessageContent {
                         MessageContentPart::Text { text } => {
                             concated_text = format!("{concated_text} {text}")
                         }
-                        MessageContentPart::ImageUrl { image_url, path } => {
-                            files.push(path.clone().unwrap_or_else(|| image_url.url.to_string()))
+                        MessageContentPart::ImageUrl { image_url } => {
+                            files.push(resolve_url_fn(&image_url.url))
                         }
                     }
                 }
@@ -90,14 +90,8 @@ impl MessageContent {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum MessageContentPart {
-    Text {
-        text: String,
-    },
-    ImageUrl {
-        image_url: ImageUrl,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        path: Option<String>,
-    },
+    Text { text: String },
+    ImageUrl { image_url: ImageUrl },
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

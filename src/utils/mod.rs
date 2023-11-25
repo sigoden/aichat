@@ -8,6 +8,8 @@ pub use self::clipboard::set_text;
 pub use self::prompt_input::*;
 pub use self::tiktoken::cl100k_base_singleton;
 
+use sha2::{Digest, Sha256};
+
 pub fn now() -> String {
     let now = chrono::Local::now();
     now.to_rfc3339_opts(chrono::SecondsFormat::Secs, false)
@@ -74,6 +76,13 @@ pub fn init_tokio_runtime() -> anyhow::Result<tokio::runtime::Runtime> {
         .enable_all()
         .build()
         .with_context(|| "Failed to init tokio")
+}
+
+pub fn sha256sum(input: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(input);
+    let result = hasher.finalize();
+    format!("{:x}", result)
 }
 
 #[cfg(test)]
