@@ -62,7 +62,7 @@ impl Input {
         }
 
         Ok(Self {
-            text: texts.join(" "),
+            text: texts.join("\n"),
             medias,
             data_urls,
         })
