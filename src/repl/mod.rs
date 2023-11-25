@@ -34,9 +34,9 @@ const REPL_COMMANDS: [(&str, &str); 13] = [
     (".session", "Start a context-aware chat session"),
     (".info session", "Show session info"),
     (".exit session", "End the current session"),
+    (".include", "Incluce files in the message before submit"),
     (".set", "Modify the configuration parameters"),
     (".copy", "Copy the last reply to the clipboard"),
-    (".read", "Read files into the message and submit"),
     (".exit", "Exit the REPL"),
 ];
 
@@ -184,7 +184,10 @@ impl Repl {
                     self.copy(config.last_reply())
                         .with_context(|| "Failed to copy the last output")?;
                 }
-                ".read" => match args {
+                ".read" => {
+                    println!(r#"Deprecated. Use '.read' instead."#);
+                }
+                ".include" => match args {
                     Some(args) => {
                         let (files, text) = match args.split_once(" -- ") {
                             Some((files, text)) => (files.trim(), text.trim()),
@@ -206,7 +209,7 @@ impl Repl {
                         let content = texts.join("\n");
                         self.ask(&content)?;
                     }
-                    None => println!("Usage: .read <files>...[ -- <text>...]"),
+                    None => println!("Usage: .include <files>...[ -- <text>...]"),
                 },
                 ".exit" => match args {
                     Some("role") => {

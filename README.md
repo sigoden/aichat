@@ -80,6 +80,9 @@ clients:
     models:
       - name: gpt4all-j
         max_tokens: 8192
+      - name: llava
+        max_tokens: 8192
+        vision: true
 ```
 
 Check out [config.example.yaml](config.example.yaml) for all configuration items.
@@ -147,9 +150,9 @@ The Chat REPL supports:
 .session                 Start a context-aware chat session
 .info session            Show session info
 .exit session            End the current session
+.include                 Incluce files in the message before submit
 .set                     Modify the configuration parameters
 .copy                    Copy the last reply to the clipboard
-.read                    Read files into the message and submit
 .exit                    Exit the REPL
 
 Type ::: to begin multi-line editing, type ::: to end it.
