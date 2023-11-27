@@ -1,10 +1,6 @@
-use super::{QianwenClient, Client, ExtraConfig, PromptType, SendData, Model};
+use super::{Client, ExtraConfig, Model, PromptType, QianwenClient, SendData};
 
-use crate::{
-    config::GlobalConfig,
-    render::ReplyHandler,
-    utils::PromptKind,
-};
+use crate::{config::GlobalConfig, render::ReplyHandler, utils::PromptKind};
 
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
@@ -17,7 +13,11 @@ use serde_json::{json, Value};
 const API_URL: &str =
     "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation";
 
-const MODELS: [(&str, usize); 2] = [("qwen-turbo", 6144), ("qwen-plus", 6144)];
+const MODELS: [(&str, usize); 3] = [
+    ("qwen-turbo", 6144),
+    ("qwen-plus", 6144),
+    ("qwen-max", 6144),
+];
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct QianwenConfig {
@@ -58,7 +58,9 @@ impl QianwenClient {
         let client_name = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, max_tokens)| Model::new(client_name, name).set_max_tokens(Some(max_tokens)))
+            .map(|(name, max_tokens)| {
+                Model::new(client_name, name).set_max_tokens(Some(max_tokens))
+            })
             .collect()
     }
 
@@ -83,16 +85,14 @@ async fn send_message(builder: RequestBuilder) -> Result<String> {
     let data: Value = builder.send().await?.json().await?;
     check_error(&data)?;
 
-    let output = data["output"]["text"].as_str()
+    let output = data["output"]["text"]
+        .as_str()
         .ok_or_else(|| anyhow!("Unexpected response {data}"))?;
 
     Ok(output.to_string())
 }
 
-async fn send_message_streaming(
-    builder: RequestBuilder,
-    handler: &mut ReplyHandler,
-) -> Result<()> {
+async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHandler) -> Result<()> {
     let mut es = builder.eventsource()?;
 
     while let Some(event) = es.next().await {
