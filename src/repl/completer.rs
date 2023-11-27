@@ -1,4 +1,4 @@
-use super::REPL_COMMANDS;
+use super::{ReplCommand, REPL_COMMANDS};
 
 use crate::config::GlobalConfig;
 
@@ -27,17 +27,22 @@ impl Completer for ReplCompleter {
             return suggestions;
         }
 
+        let state = self.config.read().get_state();
+
         let commands: Vec<_> = self
             .commands
             .iter()
-            .filter(|(cmd_name, _)| {
+            .filter(|cmd| {
+                if cmd.unavailable(&state) {
+                    return false;
+                }
                 let line = parts
                     .iter()
                     .take(2)
                     .map(|(v, _)| *v)
                     .collect::<Vec<&str>>()
                     .join(" ");
-                cmd_name.starts_with(&line)
+                cmd.name.starts_with(&line)
             })
             .collect();
 
@@ -55,14 +60,16 @@ impl Completer for ReplCompleter {
 
         if suggestions.is_empty() {
             let span = Span::new(cmd_start, pos);
-            suggestions.extend(commands.iter().map(|(name, desc)| {
+            suggestions.extend(commands.iter().map(|cmd| {
+                let name = cmd.name;
+                let description = cmd.description;
                 let has_group = self.groups.get(name).map(|v| *v > 1).unwrap_or_default();
                 let name = if has_group {
                     name.to_string()
                 } else {
                     format!("{name} ")
                 };
-                create_suggestion(name, Some(desc.to_string()), span)
+                create_suggestion(name, Some(description.to_string()), span)
             }))
         }
         suggestions
@@ -71,7 +78,7 @@ impl Completer for ReplCompleter {
 
 pub struct ReplCompleter {
     config: GlobalConfig,
-    commands: Vec<(&'static str, &'static str)>,
+    commands: Vec<ReplCommand>,
     groups: HashMap<&'static str, usize>,
 }
 
@@ -79,14 +86,15 @@ impl ReplCompleter {
     pub fn new(config: &GlobalConfig) -> Self {
         let mut groups = HashMap::new();
 
-        let mut commands = REPL_COMMANDS.to_vec();
-        commands.sort_by(|(a, _), (b, _)| a.cmp(b));
+        let mut commands: Vec<ReplCommand> = REPL_COMMANDS.to_vec();
+        commands.sort_by(|a, b| a.name.cmp(b.name));
 
-        for (name, _) in REPL_COMMANDS.iter() {
+        for cmd in REPL_COMMANDS.iter() {
+            let name = cmd.name;
             if let Some(count) = groups.get(name) {
-                groups.insert(*name, count + 1);
+                groups.insert(name, count + 1);
             } else {
-                groups.insert(*name, 1);
+                groups.insert(name, 1);
             }
         }
 

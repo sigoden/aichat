@@ -7,7 +7,7 @@ use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
 use crate::client::init_client;
-use crate::config::{GlobalConfig, Input};
+use crate::config::{GlobalConfig, Input, State};
 use crate::render::{render_error, render_stream};
 use crate::utils::{create_abort_signal, set_text, AbortSignal};
 
@@ -23,23 +23,50 @@ use reedline::{
 
 const MENU_NAME: &str = "completion_menu";
 
-const REPL_COMMANDS: [(&str, &str); 13] = [
-    (".help", "Print this help message"),
-    (".info", "Print system info"),
-    (".model", "Switch LLM model"),
-    (".role", "Use a role"),
-    (".info role", "Show role info"),
-    (".exit role", "Leave current role"),
-    (".session", "Start a context-aware chat session"),
-    (".info session", "Show session info"),
-    (".exit session", "End the current session"),
-    (".file", "Attach files to the message and then submit it"),
-    (".set", "Modify the configuration parameters"),
-    (".copy", "Copy the last reply to the clipboard"),
-    (".exit", "Exit the REPL"),
-];
-
 lazy_static! {
+    static ref REPL_COMMANDS: [ReplCommand; 13] = [
+        ReplCommand::new(".help", "Print this help message", vec![]),
+        ReplCommand::new(".info", "Print system info", vec![]),
+        ReplCommand::new(".model", "Switch LLM model", vec![]),
+        ReplCommand::new(".role", "Use a role", vec![State::Session]),
+        ReplCommand::new(
+            ".info role",
+            "Show role info",
+            vec![State::Normal, State::EmptySession, State::Session]
+        ),
+        ReplCommand::new(
+            ".exit role",
+            "Leave current role",
+            vec![State::Normal, State::EmptySession, State::Session]
+        ),
+        ReplCommand::new(
+            ".session",
+            "Start a context-aware chat session",
+            vec![
+                State::EmptySession,
+                State::EmptySessionWithRole,
+                State::Session
+            ]
+        ),
+        ReplCommand::new(
+            ".info session",
+            "Show session info",
+            vec![State::Normal, State::Role]
+        ),
+        ReplCommand::new(
+            ".exit session",
+            "End the current session",
+            vec![State::Normal, State::Role]
+        ),
+        ReplCommand::new(
+            ".file",
+            "Attach files to the message and then submit it",
+            vec![]
+        ),
+        ReplCommand::new(".set", "Modify the configuration parameters", vec![]),
+        ReplCommand::new(".copy", "Copy the last reply to the clipboard", vec![]),
+        ReplCommand::new(".exit", "Exit the REPL", vec![]),
+    ];
     static ref COMMAND_RE: Regex = Regex::new(r"^\s*(\.\S*)\s*").unwrap();
     static ref MULTILINE_RE: Regex = Regex::new(r"(?s)^\s*:::\s*(.*)\s*:::\s*$").unwrap();
 }
@@ -318,6 +345,27 @@ Type ".help" for more information.
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct ReplCommand {
+    name: &'static str,
+    description: &'static str,
+    unavailable_states: Vec<State>,
+}
+
+impl ReplCommand {
+    fn new(name: &'static str, desc: &'static str, unavailable_states: Vec<State>) -> Self {
+        Self {
+            name,
+            description: desc,
+            unavailable_states,
+        }
+    }
+
+    fn unavailable(&self, state: &State) -> bool {
+        self.unavailable_states.contains(state)
+    }
+}
+
 /// A default validator which checks for mismatched quotes and brackets
 struct ReplValidator;
 
@@ -339,7 +387,7 @@ fn unknown_command() -> Result<()> {
 fn dump_repl_help() {
     let head = REPL_COMMANDS
         .iter()
-        .map(|(name, desc)| format!("{name:<24} {desc}"))
+        .map(|cmd| format!("{:<24} {}", cmd.name, cmd.description))
         .collect::<Vec<String>>()
         .join("\n");
     println!(
