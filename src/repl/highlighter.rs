@@ -28,11 +28,11 @@ impl Highlighter for ReplHighlighter {
 
         let mut styled_text = StyledText::new();
 
-        if REPL_COMMANDS.iter().any(|(cmd, _)| line.contains(cmd)) {
+        if REPL_COMMANDS.iter().any(|cmd| line.contains(cmd.name)) {
             let matches: Vec<&str> = REPL_COMMANDS
                 .iter()
-                .filter(|(cmd, _)| line.contains(*cmd))
-                .map(|(cmd, _)| *cmd)
+                .filter(|cmd| line.contains(cmd.name))
+                .map(|cmd| cmd.name)
                 .collect();
             let longest_match = matches.iter().fold(String::new(), |acc, &item| {
                 if item.len() > acc.len() {

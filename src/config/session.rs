@@ -20,6 +20,7 @@ pub struct Session {
     model_id: String,
     temperature: Option<f64>,
     messages: Vec<Message>,
+    #[serde(default)]
     data_urls: HashMap<String, String>,
     #[serde(skip)]
     pub name: String,
@@ -248,6 +249,7 @@ impl Session {
             role: MessageRole::Assistant,
             content: MessageContent::Text(output.to_string()),
         });
+        self.role = None;
         self.dirty = true;
         Ok(())
     }

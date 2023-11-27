@@ -283,6 +283,24 @@ impl Config {
         Ok(())
     }
 
+    pub fn get_state(&self) -> State {
+        if let Some(session) = &self.session {
+            if session.is_empty() {
+                if session.role.is_some() {
+                    State::EmptySessionWithRole
+                } else {
+                    State::EmptySession
+                }
+            } else {
+                State::Session
+            }
+        } else if self.role.is_some() {
+            State::Role
+        } else {
+            State::Normal
+        }
+    }
+
     pub fn get_temperature(&self) -> Option<f64> {
         self.temperature
     }
@@ -804,6 +822,15 @@ impl Keybindings {
             Keybindings::Vi => "vi",
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub enum State {
+    Normal,
+    Role,
+    EmptySession,
+    EmptySessionWithRole,
+    Session,
 }
 
 fn create_config_file(config_path: &Path) -> Result<()> {
