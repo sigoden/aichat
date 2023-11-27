@@ -314,6 +314,11 @@ Type ".help" for more information.
                 ReedlineEvent::MenuNext,
             ]),
         );
+        keybindings.add_binding(
+            KeyModifiers::SHIFT,
+            KeyCode::BackTab,
+            ReedlineEvent::MenuPrevious,
+        );
     }
 
     fn create_edit_mode(config: &GlobalConfig) -> Box<dyn EditMode> {
