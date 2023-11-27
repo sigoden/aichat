@@ -167,7 +167,7 @@ struct Spinner {
 }
 
 impl Spinner {
-    const DATA: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+    const DATA: [&'static str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
     fn new(message: &str) -> Self {
         Spinner {

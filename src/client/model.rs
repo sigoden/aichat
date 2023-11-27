@@ -1,4 +1,4 @@
-use super::message::Message;
+use super::message::{Message, MessageContent};
 
 use crate::utils::count_tokens;
 
@@ -79,7 +79,15 @@ impl Model {
     }
 
     pub fn messages_tokens(&self, messages: &[Message]) -> usize {
-        messages.iter().map(|v| count_tokens(&v.content)).sum()
+        messages
+            .iter()
+            .map(|v| {
+                match &v.content {
+                    MessageContent::Text(text) => count_tokens(text),
+                    MessageContent::Array(_) => 0, // TODO
+                }
+            })
+            .sum()
     }
 
     pub fn total_tokens(&self, messages: &[Message]) -> usize {

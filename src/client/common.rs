@@ -1,7 +1,7 @@
 use super::{openai::OpenAIConfig, ClientConfig, Message};
 
 use crate::{
-    config::GlobalConfig,
+    config::{GlobalConfig, Input},
     render::ReplyHandler,
     utils::{
         init_tokio_runtime, prompt_input_integer, prompt_input_string, tokenize, AbortSignal,
@@ -50,7 +50,7 @@ macro_rules! register_client {
             }
 
             impl $client {
-                pub const NAME: &str = $name;
+                pub const NAME: &'static str = $name;
 
                 pub fn init(global_config: &$crate::config::GlobalConfig) -> Option<Box<dyn Client>> {
                     let model = global_config.read().model.clone();
@@ -186,22 +186,22 @@ pub trait Client {
         Ok(client)
     }
 
-    fn send_message(&self, content: &str) -> Result<String> {
+    fn send_message(&self, input: Input) -> Result<String> {
         init_tokio_runtime()?.block_on(async {
             let global_config = self.config().0;
             if global_config.read().dry_run {
-                let content = global_config.read().echo_messages(content);
+                let content = global_config.read().echo_messages(&input);
                 return Ok(content);
             }
             let client = self.build_client()?;
-            let data = global_config.read().prepare_send_data(content, false)?;
+            let data = global_config.read().prepare_send_data(&input, false)?;
             self.send_message_inner(&client, data)
                 .await
                 .with_context(|| "Failed to get answer")
         })
     }
 
-    fn send_message_streaming(&self, content: &str, handler: &mut ReplyHandler) -> Result<()> {
+    fn send_message_streaming(&self, input: &Input, handler: &mut ReplyHandler) -> Result<()> {
         async fn watch_abort(abort: AbortSignal) {
             loop {
                 if abort.aborted() {
@@ -211,12 +211,13 @@ pub trait Client {
             }
         }
         let abort = handler.get_abort();
-        init_tokio_runtime()?.block_on(async {
+        let input = input.clone();
+        init_tokio_runtime()?.block_on(async move {
             tokio::select! {
                 ret = async {
                     let global_config = self.config().0;
                     if global_config.read().dry_run {
-                        let content = global_config.read().echo_messages(content);
+                        let content = global_config.read().echo_messages(&input);
                         let tokens = tokenize(&content);
                         for token in tokens {
                             tokio::time::sleep(Duration::from_millis(10)).await;
@@ -225,7 +226,7 @@ pub trait Client {
                         return Ok(());
                     }
                     let client = self.build_client()?;
-                    let data = global_config.read().prepare_send_data(content, true)?;
+                    let data = global_config.read().prepare_send_data(&input, true)?;
                     self.send_message_streaming_inner(&client, handler, data).await
                 } => {
                     handler.done()?;

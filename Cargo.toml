@@ -41,6 +41,8 @@ reqwest-eventsource = "0.5.0"
 simplelog = "0.12.1"
 log = "0.4.20"
 shell-words = "1.1.0"
+mime_guess = "2.0.4"
+sha2 = "0.10.8"
 
 [dependencies.reqwest]
 version = "0.11.14"

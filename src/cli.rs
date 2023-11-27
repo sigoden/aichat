@@ -12,6 +12,9 @@ pub struct Cli {
     /// Create or reuse a session
     #[clap(short = 's', long)]
     pub session: Option<Option<String>>,
+    /// Attach files to the message to be sent.
+    #[clap(short = 'f', long, num_args = 1.., value_name = "FILE")]
+    pub file: Option<Vec<String>>,
     /// Disable syntax highlighting
     #[clap(short = 'H', long)]
     pub no_highlight: bool,

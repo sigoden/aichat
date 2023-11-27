@@ -19,13 +19,14 @@ use std::env;
 
 const API_BASE: &str = "https://api.openai.com/v1";
 
-const MODELS: [(&str, usize); 6] = [
+const MODELS: [(&str, usize); 7] = [
     ("gpt-3.5-turbo", 4096),
     ("gpt-3.5-turbo-16k", 16385),
     ("gpt-3.5-turbo-1106", 16385),
+    ("gpt-4-1106-preview", 128000),
+    ("gpt-4-vision-preview", 128000),
     ("gpt-4", 8192),
     ("gpt-4-32k", 32768),
-    ("gpt-4-1106-preview", 128000),
 ];
 
 pub const OPENAI_TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
@@ -145,6 +146,12 @@ pub fn openai_build_body(data: SendData, model: String) -> Value {
         "model": model,
         "messages": messages,
     });
+
+    // The default max_tokens of gpt-4-vision-preview is only 16, we need to make it larger
+    if model == "gpt-4-vision-preview" {
+        body["max_tokens"] = json!(4096);
+    }
+
     if let Some(v) = temperature {
         body["temperature"] = v.into();
     }

@@ -39,6 +39,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - Support chat and command modes
 - Use [Roles](#roles)
 - Powerful [Chat REPL](#chat-repl)
+- Support vision
 - Context-aware conversation/session
 - Syntax highlighting markdown and 200 other languages
 - Stream output with hand-typing effect
@@ -147,9 +148,9 @@ The Chat REPL supports:
 .session                 Start a context-aware chat session
 .info session            Show session info
 .exit session            End the current session
+.file                    Attach files to the message and then submit it
 .set                     Modify the configuration parameters
 .copy                    Copy the last reply to the clipboard
-.read                    Read files into the message and submit
 .exit                    Exit the REPL
 
 Type ::: to begin multi-line editing, type ::: to end it.
@@ -255,6 +256,17 @@ The prompt on the right side is about the current usage of tokens and the propor
 compared to the maximum number of tokens allowed by the model.
 
 
+### `.file` - attach files to the message 
+
+```
+Usage: .file <file>... [-- text...]
+
+.file message.txt
+.file config.yaml -- convert to toml
+.file a.jpg b.jpg -- What’s in these images?
+.file https://ibb.co/a.png https://ibb.co/b.png -- what is the difference?
+```
+
 ### `.set` - modify the configuration temporarily
 
 ```
@@ -277,6 +289,7 @@ Options:
   -m, --model <MODEL>        Choose a LLM model
   -r, --role <ROLE>          Choose a role
   -s, --session [<SESSION>]  Create or reuse a session
+  -f, --file <FILE>...       Attach files to the message to be sent
   -H, --no-highlight         Disable syntax highlighting
   -S, --no-stream            No stream output
   -w, --wrap <WRAP>          Specify the text-wrapping mode (no*, auto, <max-width>)
@@ -305,6 +318,9 @@ aichat -s shell unzip a file                 # Use session in command mode
 cat config.json | aichat convert to yaml     # Read stdin
 cat config.json | aichat -r convert:yaml     # Read stdin with a role
 cat config.json | aichat -s i18n             # Read stdin with a session
+
+aichat --file a.png b.png -- diff images     # Attach files
+aichat --file screenshot.png -r ocr          # Attach files with a role
 
 aichat --list-models                         # List all available models
 aichat --list-roles                          # List all available roles

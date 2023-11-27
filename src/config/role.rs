@@ -1,7 +1,9 @@
-use crate::client::{Message, MessageRole};
+use crate::client::{Message, MessageContent, MessageRole};
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+
+use super::Input;
 
 const INPUT_PLACEHOLDER: &str = "__INPUT__";
 
@@ -41,17 +43,20 @@ impl Role {
         }
     }
 
-    pub fn echo_messages(&self, content: &str) -> String {
+    pub fn echo_messages(&self, input: &Input) -> String {
+        let input_markdown = input.render();
         if self.embedded() {
-            merge_prompt_content(&self.prompt, content)
+            self.prompt.replace(INPUT_PLACEHOLDER, &input_markdown)
         } else {
-            format!("{}\n\n{content}", self.prompt)
+            format!("{}\n\n{}", self.prompt, input.render())
         }
     }
 
-    pub fn build_messages(&self, content: &str) -> Vec<Message> {
+    pub fn build_messages(&self, input: &Input) -> Vec<Message> {
+        let mut content = input.to_message_content();
+
         if self.embedded() {
-            let content = merge_prompt_content(&self.prompt, content);
+            content.merge_prompt(|v: &str| self.prompt.replace(INPUT_PLACEHOLDER, v));
             vec![Message {
                 role: MessageRole::User,
                 content,
@@ -60,19 +65,15 @@ impl Role {
             vec![
                 Message {
                     role: MessageRole::System,
-                    content: self.prompt.clone(),
+                    content: MessageContent::Text(self.prompt.clone()),
                 },
                 Message {
                     role: MessageRole::User,
-                    content: content.to_string(),
+                    content,
                 },
             ]
         }
     }
-}
-
-fn merge_prompt_content(prompt: &str, content: &str) -> String {
-    prompt.replace(INPUT_PLACEHOLDER, content)
 }
 
 fn complete_prompt_args(prompt: &str, name: &str) -> String {

@@ -7,7 +7,7 @@ use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
 use crate::client::init_client;
-use crate::config::GlobalConfig;
+use crate::config::{GlobalConfig, Input};
 use crate::render::{render_error, render_stream};
 use crate::utils::{create_abort_signal, set_text, AbortSignal};
 
@@ -20,7 +20,6 @@ use reedline::{
     ColumnarMenu, EditMode, Emacs, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent,
     ReedlineMenu, ValidationResult, Validator, Vi,
 };
-use std::io::Read;
 
 const MENU_NAME: &str = "completion_menu";
 
@@ -34,9 +33,9 @@ const REPL_COMMANDS: [(&str, &str); 13] = [
     (".session", "Start a context-aware chat session"),
     (".info session", "Show session info"),
     (".exit session", "End the current session"),
+    (".file", "Attach files to the message and then submit it"),
     (".set", "Modify the configuration parameters"),
     (".copy", "Copy the last reply to the clipboard"),
-    (".read", "Read files into the message and submit"),
     (".exit", "Exit the REPL"),
 ];
 
@@ -159,7 +158,7 @@ impl Repl {
                             let old_role =
                                 self.config.read().role.as_ref().map(|v| v.name.to_string());
                             self.config.write().set_role(name)?;
-                            self.ask(text)?;
+                            self.ask(text, vec![])?;
                             match old_role {
                                 Some(old_role) => self.config.write().set_role(&old_role)?,
                                 None => self.config.write().clear_role()?,
@@ -184,29 +183,19 @@ impl Repl {
                     self.copy(config.last_reply())
                         .with_context(|| "Failed to copy the last output")?;
                 }
-                ".read" => match args {
+                ".read" => {
+                    println!(r#"Deprecated. Use '.read' instead."#);
+                }
+                ".file" => match args {
                     Some(args) => {
                         let (files, text) = match args.split_once(" -- ") {
                             Some((files, text)) => (files.trim(), text.trim()),
                             None => (args, ""),
                         };
-                        let files = shell_words::split(files).with_context(|| "Invalid files")?;
-                        let mut texts = vec![];
-                        if !text.is_empty() {
-                            texts.push(text.to_string());
-                        }
-                        for file_path in files.into_iter() {
-                            let mut text = String::new();
-                            let mut file = std::fs::File::open(&file_path)
-                                .with_context(|| format!("Unable to open file '{file_path}'"))?;
-                            file.read_to_string(&mut text)
-                                .with_context(|| format!("Unable to read file '{file_path}'"))?;
-                            texts.push(text);
-                        }
-                        let content = texts.join("\n");
-                        self.ask(&content)?;
+                        let files = shell_words::split(files).with_context(|| "Invalid args")?;
+                        self.ask(text, files)?;
                     }
-                    None => println!("Usage: .read <files>...[ -- <text>...]"),
+                    None => println!("Usage: .file <files>...[ -- <text>...]"),
                 },
                 ".exit" => match args {
                     Some("role") => {
@@ -233,7 +222,7 @@ impl Repl {
                 _ => unknown_command()?,
             },
             None => {
-                self.ask(line)?;
+                self.ask(line, vec![])?;
             }
         }
 
@@ -242,13 +231,18 @@ impl Repl {
         Ok(false)
     }
 
-    fn ask(&self, input: &str) -> Result<()> {
-        if input.is_empty() {
+    fn ask(&self, text: &str, files: Vec<String>) -> Result<()> {
+        if text.is_empty() && files.is_empty() {
             return Ok(());
         }
-        self.config.read().maybe_print_send_tokens(input);
+        let input = if files.is_empty() {
+            Input::from_str(text)
+        } else {
+            Input::new(text, files)?
+        };
+        self.config.read().maybe_print_send_tokens(&input);
         let client = init_client(&self.config)?;
-        let output = render_stream(input, client.as_ref(), &self.config, self.abort.clone())?;
+        let output = render_stream(&input, client.as_ref(), &self.config, self.abort.clone())?;
         self.config.write().save_message(input, &output)?;
         if self.config.read().auto_copy {
             let _ = self.copy(&output);
