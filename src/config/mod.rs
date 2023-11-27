@@ -473,12 +473,10 @@ impl Config {
         } else {
             return vec![];
         };
-        let mut values: Vec<String> = values
+        values
             .into_iter()
             .filter(|v| v.starts_with(filter))
-            .collect();
-        values.sort_unstable();
-        values
+            .collect()
     }
 
     pub fn update(&mut self, data: &str) -> Result<()> {
@@ -616,6 +614,7 @@ impl Config {
                         names.push(name.to_string());
                     }
                 }
+                names.sort_unstable();
                 names
             }
             Err(_) => vec![],

@@ -86,8 +86,7 @@ impl ReplCompleter {
     pub fn new(config: &GlobalConfig) -> Self {
         let mut groups = HashMap::new();
 
-        let mut commands: Vec<ReplCommand> = REPL_COMMANDS.to_vec();
-        commands.sort_by(|a, b| a.name.cmp(b.name));
+        let commands: Vec<ReplCommand> = REPL_COMMANDS.to_vec();
 
         for cmd in REPL_COMMANDS.iter() {
             let name = cmd.name;
