@@ -3,9 +3,9 @@
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 
-Use ChatGPT, LocalAI and other LLMs in the terminal.
+Use GPT-4(V), LocalAI and other LLMs in the terminal.
 
-AIChat in chat mode:
+AIChat in chat REPL mode:
 
 ![chat mode](https://user-images.githubusercontent.com/4012553/226499667-4c6b261a-d897-41c7-956b-979b69da5982.gif)
 
@@ -15,10 +15,31 @@ AIChat in command mode:
 
 ## Install
 
-### With cargo
+### With package management tools
 
+For Rust programmer
+```sh
+cargo install aichat
 ```
-cargo install --force aichat
+
+For macOS Homebrew or a Linuxbrew user
+```sh
+brew install aichat
+```
+
+For Windows Scoop user
+```sh
+scoop install aichat
+```
+
+For Arch Linux use
+```sh
+sudo pacman -S ripgrep
+```
+
+For Android termux user
+```sh
+pkg install aichat
 ```
 
 ### Binaries for macOS, Linux, Windows
@@ -27,25 +48,24 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 
 ## Support Models
 
-- OpenAI: gpt-3.5/gpt-4
-- LocalAI: opensource models 
-- Azure-OpenAI: user deployed gpt3.5/gpt4
-- PaLM: chat-bison-001 
-- Ernie: eb-instant/ernie-bot/ernie-bot-4
-- Qianwen: qwen-turbo/qwen-plus
+- [x] OpenAI: gpt-3.5/gpt-4/gpt-4-vision
+- [x] LocalAI: user deployed opensource LLMs 
+- [x] Azure-OpenAI: user created gpt3.5/gpt4
+- [x] PaLM: chat-bison-001 
+- [x] Ernie: ernie-bot-turbo/ernie-bot/ernie-bot-8k/ernie-bot-4
+- [x] Qianwen: qwen-turbo/qwen-plus/qwen-max
 
 ## Features
 
-- Support chat and command modes
+- With two modes: [chat REPL](#chat-repl) and [command](#command).
 - Use [Roles](#roles)
-- Powerful [Chat REPL](#chat-repl)
 - Support vision
 - Context-aware conversation/session
 - Syntax highlighting markdown and 200 other languages
 - Stream output with hand-typing effect
 - Support proxy 
 - Dark/light theme
-- Save chat messages/sessions
+- Save messages/sessions
 
 ## Config
 
@@ -83,9 +103,9 @@ clients:
         max_tokens: 8192
 ```
 
-Check out [config.example.yaml](config.example.yaml) for all configuration items.
+Take a look at the [config.example.yaml](config.example.yaml) for the complete configuration details.
 
-There are some configurations that can be set through environment variables. Please see the [Environment Variables](https://github.com/sigoden/aichat/wiki/Environment-Variables) for details.
+There are some configurations that can be set through environment variables. For more information, please refer to the [Environment Variables](https://github.com/sigoden/aichat/wiki/Environment-Variables) page.
 
 ### Roles
 
@@ -267,6 +287,8 @@ Usage: .file <file>... [-- text...]
 .file https://ibb.co/a.png https://ibb.co/b.png -- what is the difference?
 ```
 
+> Only the current model that supports vision can process images submitted through `.file` command.
+
 ### `.set` - modify the configuration temporarily
 
 ```
@@ -277,7 +299,7 @@ Usage: .file <file>... [-- text...]
 〉.set auto_copy true
 ```
 
-## Command Line
+## Command
 
 ```
 Usage: aichat [OPTIONS] [TEXT]...
