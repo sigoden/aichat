@@ -264,17 +264,16 @@ Type ".help" for more information.
         let highlighter = ReplHighlighter::new(config);
         let menu = Self::create_menu();
         let edit_mode = Self::create_edit_mode(config);
-        let mut editor = Reedline::create()
+        let editor = Reedline::create()
             .with_completer(Box::new(completer))
             .with_highlighter(Box::new(highlighter))
             .with_menu(menu)
             .with_edit_mode(edit_mode)
             .with_quick_completions(true)
             .with_partial_completions(true)
+            .use_bracketed_paste(true)
             .with_validator(Box::new(ReplValidator))
             .with_ansi_colors(true);
-
-        editor.enable_bracketed_paste()?;
 
         Ok(editor)
     }

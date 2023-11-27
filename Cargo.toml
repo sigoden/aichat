@@ -13,27 +13,27 @@ keywords = ["chatgpt", "localai", "gpt", "repl"]
 [dependencies]
 anyhow = "1.0.69"
 bytes = "1.4.0"
-clap = { version = "4.1.8", features = ["derive"] }
+clap = { version = "4.4.8", features = ["derive"] }
 dirs = "5.0.0"
-futures-util = "0.3.26"
+futures-util = "0.3.29"
 inquire = "0.6.2"
 is-terminal = "0.4.9"
-reedline = "0.21.0"
+reedline = "0.26.0"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = { version = "1.0.93", features = ["preserve_order"] }
 serde_yaml = "0.9.17"
-tokio = { version = "1.26.0", features = ["rt", "time", "macros", "signal"] }
+tokio = { version = "1.34.0", features = ["rt", "time", "macros", "signal"] }
 crossbeam = "0.8.2"
-crossterm = "0.26.1"
+crossterm = "0.27.0"
 chrono = "0.4.23"
 bincode = "1.3.3"
 parking_lot = "0.12.1"
 lazy_static = "1.4.0"
-fancy-regex = "0.11.0"
+fancy-regex = "0.12.0"
 base64 = "0.21.0"
 rustc-hash = "1.1.0"
-bstr = "1.3.0"
-nu-ansi-term = "0.47.0"
+bstr = "1.8.0"
+nu-ansi-term = "0.49.0"
 async-trait = "0.1.74"
 textwrap = "0.16.0"
 ansi_colours = "1.2.2"
@@ -55,7 +55,7 @@ default-features = false
 features = ["parsing", "regex-onig", "plist-load"]
 
 [target.'cfg(not(any(target_os = "android", target_os = "emscripten")))'.dependencies]
-arboard = { version = "3.2.0", default-features = false }
+arboard = { version = "3.3.0", default-features = false }
 
 [profile.release]
 lto = true
