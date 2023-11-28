@@ -15,7 +15,7 @@ AIChat in command mode:
 
 ## Install
 
-### With package management tools
+### Use a package management tool
 
 For Rust programmer
 ```sh
@@ -34,7 +34,7 @@ scoop install aichat
 
 For Arch Linux use
 ```sh
-sudo pacman -S ripgrep
+sudo pacman -S aichat
 ```
 
 For Android termux user
@@ -59,8 +59,8 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 
 - With two modes: [chat REPL](#chat-repl) and [command](#command).
 - Use [Roles](#roles)
-- Support vision
 - Context-aware conversation/session
+- Support vision
 - Syntax highlighting markdown and 200 other languages
 - Stream output with hand-typing effect
 - Support proxy 
