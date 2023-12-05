@@ -68,8 +68,10 @@ pub struct Config {
     pub prelude: String,
     /// Setup clients
     pub clients: Vec<ClientConfig>,
-    /// String to show as the prompt indicator.
+    /// Prompt indicator in the REPL.
     pub repl_prompt_indicator: String,
+    /// Separator between session/role and indicator in REPL.
+    pub repl_separator: String,
     /// Predefined roles
     #[serde(skip)]
     pub roles: Vec<Role>,
@@ -103,6 +105,7 @@ impl Default for Config {
             prelude: String::new(),
             clients: vec![ClientConfig::default()],
             repl_prompt_indicator: String::from("〉"),
+            repl_separator: String::from(""),
             roles: vec![],
             role: None,
             session: None,

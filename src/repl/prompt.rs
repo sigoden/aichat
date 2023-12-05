@@ -24,10 +24,14 @@ impl ReplPrompt {
 
 impl Prompt for ReplPrompt {
     fn render_prompt_left(&self) -> Cow<str> {
-        if let Some(session) = &self.config.read().session {
-            Cow::Owned(session.name().to_string())
-        } else if let Some(role) = &self.config.read().role {
-            Cow::Owned(role.name.clone())
+        let config = &self.config.read();
+
+        if let Some(session) = &config.session {
+            let left = session.name().to_string();
+            Cow::Owned(format!("{}{}", left, config.repl_separator))
+        } else if let Some(role) = &config.role {
+            let left = role.name.clone();
+            Cow::Owned(format!("{}{}", left, config.repl_separator))
         } else {
             Cow::Borrowed("")
         }
@@ -39,11 +43,7 @@ impl Prompt for ReplPrompt {
 
     fn render_prompt_indicator(&self, _prompt_mode: reedline::PromptEditMode) -> Cow<str> {
         let indicator = self.config.read().repl_prompt_indicator.clone();
-        if self.config.read().session.is_some() {
-            Cow::Owned(format!(":{}", indicator))
-        } else {
-            Cow::Owned(indicator)
-        }
+        Cow::Owned(indicator)
     }
 
     fn render_prompt_multiline_indicator(&self) -> Cow<str> {
