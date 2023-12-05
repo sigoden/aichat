@@ -38,10 +38,11 @@ impl Prompt for ReplPrompt {
     }
 
     fn render_prompt_indicator(&self, _prompt_mode: reedline::PromptEditMode) -> Cow<str> {
+        let indicator = self.config.read().repl_prompt_indicator.clone();
         if self.config.read().session.is_some() {
-            Cow::Borrowed("）")
+            Cow::Owned(format!(":{}", indicator))
         } else {
-            Cow::Borrowed("〉")
+            Cow::Owned(indicator)
         }
     }
 
