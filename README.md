@@ -88,7 +88,9 @@ light_theme: false               # Whether to use a light theme
 wrap: no                         # Specify the text-wrapping mode (no, auto, <max-width>)
 wrap_code: false                 # Whether wrap code block
 auto_copy: false                 # Automatically copy the last output to the clipboard
-keybindings: emacs               # REPL keybindings. values: emacs, vi
+keybindings: emacs               # REPL keybindings. (emacs, vi)
+repl_prompt_indicator: 〉        # REPL indicator
+repl_separator: ''               # REPL separator between session/role and indicator.
 prelude: ''                      # Set a default role or session (role:<name>, session:<name>)
 
 clients:
