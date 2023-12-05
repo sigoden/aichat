@@ -391,6 +391,7 @@ impl Config {
             ("save", self.save.to_string()),
             ("highlight", self.highlight.to_string()),
             ("light_theme", self.light_theme.to_string()),
+            ("repl_prompt_indicator", self.repl_prompt_indicator.clone()),
             ("wrap", wrap),
             ("wrap_code", self.wrap_code.to_string()),
             ("auto_copy", self.auto_copy.to_string()),
@@ -403,7 +404,7 @@ impl Config {
         ];
         let output = items
             .iter()
-            .map(|(name, value)| format!("{name:<20}{value}"))
+            .map(|(name, value)| format!("{name:<23}{value}"))
             .collect::<Vec<String>>()
             .join("\n");
         Ok(output)
