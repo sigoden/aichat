@@ -64,7 +64,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - Syntax highlighting markdown and 200 other languages
 - Stream output with hand-typing effect
 - Support proxy 
-- Dark/light theme
+- Dark/light theme and custom `.tmTheme` file support
 - Save messages/sessions
 
 ## Config
@@ -106,6 +106,8 @@ clients:
 Take a look at the [config.example.yaml](config.example.yaml) for the complete configuration details.
 
 There are some configurations that can be set through environment variables. For more information, please refer to the [Environment Variables](https://github.com/sigoden/aichat/wiki/Environment-Variables) page.
+
+To use your own custom TextMate theme, copy the `.tmTheme` to `$AICHAT_CONFIG_DIR/` and rename it to either `dark.tmTheme` or `light.tmTheme`.
 
 ### Roles
 
