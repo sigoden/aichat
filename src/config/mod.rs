@@ -520,7 +520,9 @@ impl Config {
 
     pub fn start_session(&mut self, session: Option<&str>) -> Result<()> {
         if self.session.is_some() {
-            bail!("Already in a session, please use '.clear session' to exit the session first?");
+            bail!(
+                "Already in a session, please run '.exit session' first to exit the current session."
+            );
         }
         match session {
             None => {
