@@ -144,7 +144,11 @@ fn resolve_path(file: &str) -> Option<PathBuf> {
 
 fn is_image_ext(path: &Path) -> bool {
     path.extension()
-        .map(|v| IMAGE_EXTS.iter().any(|ext| *ext == v.to_string_lossy()))
+        .map(|v| {
+            IMAGE_EXTS
+                .iter()
+                .any(|ext| *ext == v.to_string_lossy().to_lowercase())
+        })
         .unwrap_or_default()
 }
 
