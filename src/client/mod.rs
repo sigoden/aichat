@@ -17,7 +17,6 @@ register_client!(
         AzureOpenAIClient
     ),
     (gemini, "gemini", GeminiConfig, GeminiClient),
-    (palm, "palm", PaLMConfig, PaLMClient),
     (ernie, "ernie", ErnieConfig, ErnieClient),
     (qianwen, "qianwen", QianwenConfig, QianwenClient),
 );
