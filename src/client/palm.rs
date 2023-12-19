@@ -1,4 +1,4 @@
-use super::{PaLMClient, Client, ExtraConfig, Model, PromptType, SendData, TokensCountFactors, send_message_as_streaming, MessageContent};
+use super::{PaLMClient, Client, ExtraConfig, Model, PromptType, SendData, TokensCountFactors, send_message_as_streaming, patch_system_message};
 
 use crate::{config::GlobalConfig, render::ReplyHandler, utils::PromptKind};
 
@@ -113,14 +113,7 @@ fn build_body(data: SendData, _model: String) -> Value {
         ..
     } = data;
 
-    if messages[0].role.is_system() {
-        let system_message = messages.remove(0);
-        if let (Some(message), MessageContent::Text(system_text)) = (messages.get_mut(0), system_message.content) {
-            if let MessageContent::Text(text)  = message.content.clone() {
-                message.content = MessageContent::Text(format!("{}\n\n{}", system_text, text))
-            }
-        }
-    }
+    patch_system_message(&mut messages);
     
     let messages: Vec<Value> = messages.into_iter().map(|v| json!({ "content": v.content })).collect();
 

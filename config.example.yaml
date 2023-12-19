@@ -19,7 +19,7 @@ clients:
 
   # See https://platform.openai.com/docs/quickstart
   - type: openai
-    api_key: sk-xxx
+    api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     organization_id:
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
@@ -39,15 +39,19 @@ clients:
       - name: gpt4all-j
         max_tokens: 8192
 
+  # See https://ai.google.dev/docs
+  - type: gemini
+    api_key: AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
   # See https://developers.generativeai.google/guide
   - type: palm
-    api_key: sk-xxx
+    api_key: AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
   # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
   - type: ernie
-    api_key: xxx
-    secret_key: xxx
+    api_key: xxxxxxxxxxxxxxxxxxxxxxxx
+    secret_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
   # See https://help.aliyun.com/zh/dashscope/
   - type: qianwen
-    api_key: xxx
+    api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

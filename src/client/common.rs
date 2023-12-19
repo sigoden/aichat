@@ -1,4 +1,4 @@
-use super::{openai::OpenAIConfig, ClientConfig, Message};
+use super::{openai::OpenAIConfig, ClientConfig, Message, MessageContent};
 
 use crate::{
     config::{GlobalConfig, Input},
@@ -306,6 +306,19 @@ where
     handler.done()?;
 
     Ok(())
+}
+
+pub fn patch_system_message(messages: &mut Vec<Message>) {
+    if messages[0].role.is_system() {
+        let system_message = messages.remove(0);
+        if let (Some(message), MessageContent::Text(system_text)) =
+            (messages.get_mut(0), system_message.content)
+        {
+            if let MessageContent::Text(text) = message.content.clone() {
+                message.content = MessageContent::Text(format!("{}\n\n{}", system_text, text))
+            }
+        }
+    }
 }
 
 fn set_config_value(json: &mut Value, path: &str, kind: &PromptKind, value: &str) {
