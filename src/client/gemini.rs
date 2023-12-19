@@ -1,9 +1,9 @@
 use super::{
-    patch_system_message, Client, ExtraConfig, GeminiClient, Model, PromptType, SendData,
-    TokensCountFactors,
+    message::*, patch_system_message, Client, ExtraConfig, GeminiClient, Model, PromptType,
+    SendData, TokensCountFactors,
 };
 
-use crate::{client::*, config::GlobalConfig, render::ReplyHandler, utils::PromptKind};
+use crate::{config::GlobalConfig, render::ReplyHandler, utils::PromptKind};
 
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
@@ -123,7 +123,7 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
             for i in cursor..buffer.len() {
                 let ch = buffer[i];
                 if quoting {
-                    if ch == '"' && buffer[i-1] != '\\' {
+                    if ch == '"' && buffer[i - 1] != '\\' {
                         quoting = false;
                     }
                     continue;
@@ -189,7 +189,7 @@ fn build_body(data: SendData, _model: String) -> Result<Value> {
 
     patch_system_message(&mut messages);
 
-    let mut invalid_urls = vec![];
+    let mut network_image_urls = vec![];
     let contents: Vec<Value> = messages
         .into_iter()
         .map(|message| {
@@ -211,7 +211,7 @@ fn build_body(data: SendData, _model: String) -> Result<Value> {
                                 if let Some((mime_type, data)) = url.strip_prefix("data:").and_then(|v| v.split_once(";base64,")) {
                                     json!({ "inline_data": { "mime_type": mime_type, "data": data } })
                                 } else {
-                                    invalid_urls.push(url.clone());
+                                    network_image_urls.push(url.clone());
                                     json!({ "url": url })
                                 }
                             },
@@ -223,8 +223,11 @@ fn build_body(data: SendData, _model: String) -> Result<Value> {
         })
         .collect();
 
-    if !invalid_urls.is_empty() {
-        bail!("The model does not support non-data URLs: {:?}", invalid_urls);
+    if !network_image_urls.is_empty() {
+        bail!(
+            "The model does not support network images: {:?}",
+            network_image_urls
+        );
     }
 
     let mut body = json!({
