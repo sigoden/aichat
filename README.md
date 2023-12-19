@@ -3,7 +3,7 @@
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 
-Use GPT-4(V), Gemini, LocalAI and other LLMs in the terminal.
+Use GPT-4(V), Gemini, LocalAI, Ollama and other LLMs in the terminal.
 
 AIChat in chat REPL mode:
 
@@ -49,11 +49,12 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 ## Support Models
 
 - [x] OpenAI: gpt-3.5/gpt-4/gpt-4-vision
-- [x] LocalAI: user deployed opensource LLMs 
-- [x] Azure-OpenAI: user created gpt3.5/gpt4
 - [x] Gemini: gemini-pro/gemini-pro-vision/gemini-ultra 
+- [x] LocalAI: user deployed opensource LLMs 
+- [x] Ollama: user deployed opensource LLMs 
+- [x] Azure-OpenAI: user created gpt3.5/gpt4
 - [x] Ernie: ernie-bot-turbo/ernie-bot/ernie-bot-8k/ernie-bot-4
-- [x] Qianwen: qwen-turbo/qwen-plus/qwen-max
+- [x] Qianwen: qwen-turbo/qwen-plus/qwen-max/qwen-max-longcontext/qwen-vl-plus
 
 ## Features
 
