@@ -19,10 +19,10 @@ const API_BASE: &str = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1";
 const ACCESS_TOKEN_URL: &str = "https://aip.baidubce.com/oauth/2.0/token";
 
 const MODELS: [(&str, &str); 4] = [
-    ("ernie-bot-turbo", "/wenxinworkshop/chat/eb-instant"),
     ("ernie-bot", "/wenxinworkshop/chat/completions"),
-    ("ernie-bot-8k", "/wenxinworkshop/chat/ernie_bot_8k"),
     ("ernie-bot-4", "/wenxinworkshop/chat/completions_pro"),
+    ("ernie-bot-8k", "/wenxinworkshop/chat/ernie_bot_8k"),
+    ("ernie-bot-turbo", "/wenxinworkshop/chat/eb-instant"),
 ];
 
 static mut ACCESS_TOKEN: String = String::new(); // safe under linear operation
