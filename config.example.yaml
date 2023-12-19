@@ -43,10 +43,6 @@ clients:
   - type: gemini
     api_key: AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-  # See https://developers.generativeai.google/guide
-  - type: palm
-    api_key: AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
   # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
   - type: ernie
     api_key: xxxxxxxxxxxxxxxxxxxxxxxx

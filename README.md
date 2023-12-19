@@ -52,7 +52,6 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - [x] LocalAI: user deployed opensource LLMs 
 - [x] Azure-OpenAI: user created gpt3.5/gpt4
 - [x] Gemini: gemini-pro/gemini-pro-vision/gemini-ultra 
-- [x] PaLM: chat-bison-001 
 - [x] Ernie: ernie-bot-turbo/ernie-bot/ernie-bot-8k/ernie-bot-4
 - [x] Qianwen: qwen-turbo/qwen-plus/qwen-max
 

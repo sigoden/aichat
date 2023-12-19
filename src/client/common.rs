@@ -292,6 +292,7 @@ pub fn create_config(list: &[PromptType], client: &str) -> Result<Value> {
     Ok(clients)
 }
 
+#[allow(unused)]
 pub async fn send_message_as_streaming<F, Fut>(
     builder: RequestBuilder,
     handler: &mut ReplyHandler,
