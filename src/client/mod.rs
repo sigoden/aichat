@@ -9,14 +9,15 @@ pub use model::*;
 
 register_client!(
     (openai, "openai", OpenAIConfig, OpenAIClient),
+    (gemini, "gemini", GeminiConfig, GeminiClient),
     (localai, "localai", LocalAIConfig, LocalAIClient),
+    (ollama, "ollama", OllamaConfig, OllamaClient),
     (
         azure_openai,
         "azure-openai",
         AzureOpenAIConfig,
         AzureOpenAIClient
     ),
-    (gemini, "gemini", GeminiConfig, GeminiClient),
     (ernie, "ernie", ErnieConfig, ErnieClient),
     (qianwen, "qianwen", QianwenConfig, QianwenClient),
 );

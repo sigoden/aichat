@@ -22,6 +22,28 @@ clients:
     api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     organization_id:
 
+  # See https://ai.google.dev/docs
+  - type: gemini
+    api_key: AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+  # See https://github.com/go-skynet/LocalAI
+  - type: localai
+    api_base: http://localhost:8080/v1
+    api_key: xxx
+    chat_endpoint: /chat/completions                  # Optional field
+    models:
+      - name: gpt4all-j
+        max_tokens: 8192
+
+  # See https://github.com/jmorganca/ollama
+  - type: ollama
+    api_base: http://localhost:11434/api
+    api_key: Baisc xxx
+    chat_endpoint: /chat                              # Optional field
+    models:
+      - name: gpt4all-j
+        max_tokens: 8192
+
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
   - type: azure-openai
     api_base: https://RESOURCE.openai.azure.com
@@ -29,19 +51,6 @@ clients:
     models:
       - name: MyGPT4                                  # Model deployment name
         max_tokens: 8192
-
-  # See https://github.com/go-skynet/LocalAI
-  - type: localai
-    api_base: http://localhost:8080/v1
-    api_key: xxx
-    chat_endpoint: /chat/completions
-    models:
-      - name: gpt4all-j
-        max_tokens: 8192
-
-  # See https://ai.google.dev/docs
-  - type: gemini
-    api_key: AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
   # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
   - type: ernie
