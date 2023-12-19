@@ -94,4 +94,9 @@ mod tests {
         assert_eq!(tokenize("😊 hello world"), ["😊", " hello", " world"]);
         assert_eq!(tokenize("世界"), ["世", "界"]);
     }
+
+    #[test]
+    fn test_count_tokens() {
+        assert_eq!(count_tokens("😊 hello world"), 4);
+    }
 }

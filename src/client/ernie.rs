@@ -1,4 +1,4 @@
-use super::{ErnieClient, Client, ExtraConfig, PromptType, SendData, Model, MessageContent};
+use super::{ErnieClient, Client, ExtraConfig, PromptType, SendData, Model, patch_system_message};
 
 use crate::{
     config::GlobalConfig,
@@ -197,14 +197,7 @@ fn build_body(data: SendData, _model: String) -> Value {
         stream,
     } = data;
 
-    if messages[0].role.is_system() {
-        let system_message = messages.remove(0);
-        if let (Some(message), MessageContent::Text(system_text)) = (messages.get_mut(0), system_message.content) {
-            if let MessageContent::Text(text)  = message.content.clone() {
-                message.content = MessageContent::Text(format!("{}\n\n{}", system_text, text))
-            }
-        }
-    }
+    patch_system_message(&mut messages);
 
     let mut body = json!({
         "messages": messages,
