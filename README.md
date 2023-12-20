@@ -7,11 +7,11 @@ Use GPT-4(V), Gemini, LocalAI, Ollama and other LLMs in the terminal.
 
 AIChat in chat REPL mode:
 
-![chat mode](https://user-images.githubusercontent.com/4012553/226499667-4c6b261a-d897-41c7-956b-979b69da5982.gif)
+![chat-repl mode](https://github.com/sigoden/aichat/assets/4012553/13427d54-efd5-4f4c-b17b-409edd30dfa3)
 
 AIChat in command mode:
 
-![command mode](https://user-images.githubusercontent.com/4012553/226499595-0b536c82-b039-4571-a077-0c40ad57f7db.png)
+![command mode](https://github.com/sigoden/aichat/assets/4012553/ec762b29-555e-4072-9380-3e65948b5dd9)
 
 ## Install
 
@@ -50,20 +50,20 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 
 - [x] OpenAI: gpt-3.5/gpt-4/gpt-4-vision
 - [x] Gemini: gemini-pro/gemini-pro-vision/gemini-ultra 
-- [x] LocalAI: user deployed opensource LLMs 
-- [x] Ollama: user deployed opensource LLMs 
-- [x] Azure-OpenAI: user created gpt3.5/gpt4
+- [x] LocalAI: opensource LLMs 
+- [x] Ollama: opensource LLMs 
+- [x] Azure-OpenAI: user deployed gpt-3.5/gpt-4
 - [x] Ernie: ernie-bot-turbo/ernie-bot/ernie-bot-8k/ernie-bot-4
 - [x] Qianwen: qwen-turbo/qwen-plus/qwen-max/qwen-max-longcontext/qwen-vl-plus
 
 ## Features
 
-- With two modes: [chat REPL](#chat-repl) and [command](#command).
+- Have two modes: [REPL](#chat-repl) and [Command](#command).
 - Use [Roles](#roles)
 - Context-aware conversation/session
-- Support vision
+- Multimodal models (vision)
 - Syntax highlighting markdown and 200 other languages
-- Stream output with hand-typing effect
+- Stream output
 - Support proxy 
 - Dark/light theme
 - Save messages/sessions
@@ -97,6 +97,9 @@ clients:
     api_key: sk-xxx
     organization_id:
 
+  - type: gemini
+    api_key: AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
   - type: localai
     api_base: http://localhost:8080/v1
     models:
@@ -127,9 +130,9 @@ For example, we can define a role:
 Let ChatGPT answer questions in the role of a Linux shell expert.
 
 ```
-〉.role shell
+> .role shell
 
-shell〉 extract encrypted zipfile app.zip to /tmp/app
+shell>  extract encrypted zipfile app.zip to /tmp/app
 mkdir /tmp/app
 unzip -P PASSWORD app.zip -d /tmp/app
 ```
@@ -159,7 +162,7 @@ The Chat REPL supports:
 ### `.help` - print help message
 
 ```
-〉.help
+> .help
 .help                    Print this help message
 .info                    Print system info
 .model                   Switch LLM model
@@ -182,7 +185,7 @@ Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
 ### `.info` - view information
 
 ```
-〉.info
+> .info
 model               openai:gpt-3.5-turbo
 temperature         -
 dry_run             false
@@ -214,29 +217,29 @@ sessions_dir        /home/alice/.config/aichat/sessions
 Select a role:
 
 ```
-〉.role emoji
+> .role emoji
 ```
 
 Send message with the role:
 
 ```
-emoji〉hello
+emoji> hello
 👋
 ```
 
 Leave current role:
 
 ```
-emoji〉.exit role
+emoji> .exit role
 
-〉hello
+> hello
 Hello there! How can I assist you today?
 ```
 
 Show role info:
 
 ```
-emoji〉.info role
+emoji> .info role
 name: emoji
 prompt: I want you to translate the sentences I write into emojis. I will write the sentence, and you will express it with emojis. I just want you to express it with emojis. I don't want you to reply with anything but emoji. When I need to tell you something in English, I will do it by wrapping it in curly brackets like {like this}.
 temperature: null
@@ -244,12 +247,12 @@ temperature: null
 
 Temporarily use a role to send a message.
 ```
-〉::: .role emoji
+> ::: .role emoji
 hello world
 :::
 👋🌍
 
-〉
+> 
 ```
 
 ### `.session` - context-aware conversation
@@ -260,15 +263,15 @@ You should run aichat with `-s/--session` or use the `.session` command to start
 
 
 ```
-〉.session
+> .session
 
-temp）1 to 5, odd only                                                                    0
+temp) 1 to 5, odd only                                                                    0
 1, 3, 5
 
-temp）to 7                                                                        19(0.46%)
+temp) to 7                                                                        19(0.46%)
 1, 3, 5, 7
 
-temp）.exit session                                                               42(1.03%)
+temp) .exit session                                                               42(1.03%)
 ? Save session? (y/N)  
 
 ```
@@ -293,11 +296,11 @@ Usage: .file <file>... [-- text...]
 ### `.set` - modify the configuration temporarily
 
 ```
-〉.set temperature 1.2
-〉.set dry_run true
-〉.set highlight false
-〉.set save false
-〉.set auto_copy true
+> .set temperature 1.2
+> .set dry_run true
+> .set highlight false
+> .set save false
+> .set auto_copy true
 ```
 
 ## Command
