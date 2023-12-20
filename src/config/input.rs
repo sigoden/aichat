@@ -3,6 +3,8 @@ use crate::utils::sha256sum;
 
 use anyhow::{bail, Context, Result};
 use base64::{self, engine::general_purpose::STANDARD, Engine};
+use fancy_regex::Regex;
+use lazy_static::lazy_static;
 use mime_guess::from_path;
 use std::{
     collections::HashMap,
@@ -12,6 +14,10 @@ use std::{
 };
 
 const IMAGE_EXTS: [&str; 5] = ["png", "jpeg", "jpg", "webp", "gif"];
+
+lazy_static! {
+    static ref URL_RE: Regex = Regex::new(r"^[A-Za-z0-9_-]{2,}:/").unwrap();
+}
 
 #[derive(Debug, Clone)]
 pub struct Input {
@@ -128,10 +134,7 @@ pub fn resolve_data_url(data_urls: &HashMap<String, String>, data_url: String) -
 }
 
 fn resolve_path(file: &str) -> Option<PathBuf> {
-    if ["https://", "http://", "data:"]
-        .iter()
-        .any(|v| file.starts_with(v))
-    {
+    if let Ok(true) = URL_RE.is_match(file) {
         return None;
     }
     let path = if let (Some(file), Some(home)) = (file.strip_prefix('~'), dirs::home_dir()) {
