@@ -1,4 +1,7 @@
-use super::{ClaudeClient, Client, ExtraConfig, Model, PromptType, SendData, TokensCountFactors};
+use super::{
+    patch_system_message, ClaudeClient, Client, ExtraConfig, Model, PromptType, SendData,
+    TokensCountFactors,
+};
 
 use crate::{config::GlobalConfig, render::ReplyHandler, utils::PromptKind};
 
@@ -125,10 +128,12 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
 
 fn build_body(data: SendData, model: String) -> Value {
     let SendData {
-        messages,
+        mut messages,
         temperature,
         stream,
     } = data;
+
+    patch_system_message(&mut messages);
 
     let mut body = json!({
         "model": model,
