@@ -60,3 +60,7 @@ clients:
   # See https://help.aliyun.com/zh/dashscope/
   - type: qianwen
     api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+  # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
+  - type: claude
+    api_key: xxx

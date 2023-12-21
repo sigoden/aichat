@@ -55,6 +55,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - [x] Azure-OpenAI: user deployed gpt-3.5/gpt-4
 - [x] Ernie: ernie-bot-turbo/ernie-bot/ernie-bot-8k/ernie-bot-4
 - [x] Qianwen: qwen-turbo/qwen-plus/qwen-max/qwen-max-longcontext/qwen-vl-plus
+- [x] Claude: claude-2.1
 
 ## Features
 
