@@ -11,7 +11,7 @@ AIChat in chat REPL mode:
 
 AIChat in command mode:
 
-![command mode](https://github.com/sigoden/aichat/assets/4012553/ec762b29-555e-4072-9380-3e65948b5dd9)
+![command mode](https://github.com/sigoden/aichat/assets/4012553/4d49fdfc-9f97-4ffa-836c-0e2a4e020eeb)
 
 ## Install
 
