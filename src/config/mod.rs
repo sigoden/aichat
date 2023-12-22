@@ -365,10 +365,7 @@ impl Config {
     }
 
     pub fn sys_info(&self) -> Result<String> {
-        let display_path = |path: &Path| {
-            let state = if path.exists() { "" } else { " ⚠️" };
-            format!("{}{state}", path.display())
-        };
+        let display_path = |path: &Path| path.display().to_string();
         let temperature = self
             .temperature
             .map_or_else(|| String::from("-"), |v| v.to_string());
