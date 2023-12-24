@@ -155,8 +155,9 @@ aichat has a powerful Chat REPL.
 The Chat REPL supports:
 
 - Emacs/Vi keybinding
-- Command autocompletion
-- Edit/paste multiline input
+- [Custom REPL Prompt](https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt)
+- Tab Completion
+- Edit/paste multiline text
 - Undo support
 
 ### `.help` - print help message
