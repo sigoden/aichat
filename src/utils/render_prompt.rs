@@ -8,9 +8,9 @@ use std::collections::HashMap;
 /// - `{var}` - When `var` has a value, replace `var` with the value and eval `template`
 /// - `{?var <template>}` - Eval `template` when `var` is evaluated as true
 /// - `{!var <template>}` - Eval `template` when `var` is evaluated as false
-pub fn render_prompt(template: &str, context: &HashMap<&str, String>) -> String {
+pub fn render_prompt(template: &str, variables: &HashMap<&str, String>) -> String {
     let exprs = parse_template(template);
-    eval_exprs(&exprs, context)
+    eval_exprs(&exprs, variables)
 }
 
 fn parse_template(template: &str) -> Vec<Expr> {
@@ -65,27 +65,33 @@ fn parse_block(current: &mut Vec<char>) -> Expr {
     }
 }
 
-fn eval_exprs(exprs: &[Expr], context: &HashMap<&str, String>) -> String {
+fn eval_exprs(exprs: &[Expr], variables: &HashMap<&str, String>) -> String {
     let mut output = String::new();
     for part in exprs {
         match part {
             Expr::Text(text) => output.push_str(text),
             Expr::Variable(variable) => {
-                let value = context.get(variable.as_str()).cloned().unwrap_or_default();
+                let value = variables
+                    .get(variable.as_str())
+                    .cloned()
+                    .unwrap_or_default();
                 output.push_str(&value);
             }
             Expr::Block(typ, variable, block_exprs) => {
-                let value = context.get(variable.as_str()).cloned().unwrap_or_default();
+                let value = variables
+                    .get(variable.as_str())
+                    .cloned()
+                    .unwrap_or_default();
                 match typ {
                     BlockType::Yes => {
-                        if truely(&value) {
-                            let block_output = eval_exprs(block_exprs, context);
+                        if truly(&value) {
+                            let block_output = eval_exprs(block_exprs, variables);
                             output.push_str(&block_output)
                         }
                     }
                     BlockType::No => {
-                        if !truely(&value) {
-                            let block_output = eval_exprs(block_exprs, context);
+                        if !truly(&value) {
+                            let block_output = eval_exprs(block_exprs, variables);
                             output.push_str(&block_output)
                         }
                     }
@@ -104,7 +110,7 @@ fn add_text(exprs: &mut Vec<Expr>, current: &mut Vec<char>) {
     exprs.push(Expr::Text(value));
 }
 
-fn truely(value: &str) -> bool {
+fn truly(value: &str) -> bool {
     !(value.is_empty() || value == "0" || value == "false")
 }
 

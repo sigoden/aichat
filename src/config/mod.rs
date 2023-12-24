@@ -657,13 +657,13 @@ impl Config {
     }
 
     pub fn render_prompt_left(&self) -> String {
-        let context = self.generate_prompt_context();
-        render_prompt(&self.left_prompt, &context)
+        let variables = self.generate_prompt_context();
+        render_prompt(&self.left_prompt, &variables)
     }
 
     pub fn render_prompt_right(&self) -> String {
-        let context = self.generate_prompt_context();
-        render_prompt(&self.right_prompt, &context)
+        let variables = self.generate_prompt_context();
+        render_prompt(&self.right_prompt, &variables)
     }
 
     pub fn prepare_send_data(&self, input: &Input, stream: bool) -> Result<SendData> {
