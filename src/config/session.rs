@@ -78,6 +78,10 @@ impl Session {
         self.model.total_tokens(&self.messages)
     }
 
+    pub fn user_messages_len(&self) -> usize {
+        self.messages.iter().filter(|v| v.role.is_user()).count()
+    }
+
     pub fn export(&self) -> Result<String> {
         self.guard_save()?;
         let (tokens, percent) = self.tokens_and_percent();
