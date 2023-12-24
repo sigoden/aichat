@@ -104,7 +104,7 @@ impl Default for Config {
             auto_copy: false,
             keybindings: Default::default(),
             prelude: String::new(),
-            left_prompt: "{color.green}{?session {session}{?role /}}{role}{?session )}{color.cyan}{!session >}{color.reset} ".to_string(),
+            left_prompt: "{color.green}{?session {session}{?role /}}{role}{color.cyan}{?session )}{!session >}{color.reset} ".to_string(),
             right_prompt: "{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}"
                 .to_string(),
             clients: vec![ClientConfig::default()],
