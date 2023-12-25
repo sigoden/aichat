@@ -97,9 +97,6 @@ clients:
     api_key: sk-xxx
     organization_id:
 
-  - type: gemini
-    api_key: AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
   - type: localai
     api_base: http://localhost:8080/v1
     models:
