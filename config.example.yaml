@@ -41,7 +41,7 @@ clients:
 
   # See https://github.com/jmorganca/ollama
   - type: ollama
-    api_base: http://localhost:11434/api
+    api_base: http://localhost:11434
     api_key: Basic xxx                                # Set authorization header
     chat_endpoint: /chat                              # Optional field
     models:
