@@ -1,6 +1,6 @@
 [package]
 name = "aichat"
-version = "0.11.0"
+version = "0.12.0"
 edition = "2021"
 authors = ["sigoden <sigoden@gmail.com>"]
 description = "Use GPT-4(V), Gemini, LocalAI, Ollama and other LLMs in the terminal."
@@ -29,7 +29,7 @@ chrono = "0.4.23"
 bincode = "1.3.3"
 parking_lot = "0.12.1"
 lazy_static = "1.4.0"
-fancy-regex = "0.12.0"
+fancy-regex = "0.13.0"
 base64 = "0.21.0"
 rustc-hash = "1.1.0"
 bstr = "1.8.0"
