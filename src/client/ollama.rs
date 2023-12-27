@@ -86,7 +86,7 @@ impl OllamaClient {
 
         let body = build_body(data, self.model.name.clone())?;
 
-        let chat_endpoint = self.config.chat_endpoint.as_deref().unwrap_or("/chat");
+        let chat_endpoint = self.config.chat_endpoint.as_deref().unwrap_or("/api/chat");
 
         let url = format!("{}{chat_endpoint}", self.config.api_base);
 

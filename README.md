@@ -11,7 +11,7 @@ AIChat in chat REPL mode:
 
 AIChat in command mode:
 
-![command mode](https://github.com/sigoden/aichat/assets/4012553/4d49fdfc-9f97-4ffa-836c-0e2a4e020eeb)
+![command mode](https://github.com/sigoden/aichat/assets/4012553/26f7badc-1b1f-418b-99c1-fbc58bee0097)
 
 ## Install
 
@@ -46,27 +46,27 @@ pkg install aichat
 
 Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), unzip and add aichat to your $PATH.
 
-## Support Models
+## Support LLMs
 
-- [x] OpenAI: gpt-3.5/gpt-4/gpt-4-vision
-- [x] Gemini: gemini-pro/gemini-pro-vision/gemini-ultra 
-- [x] LocalAI: opensource LLMs 
-- [x] Ollama: opensource LLMs 
-- [x] Azure-OpenAI: user deployed gpt-3.5/gpt-4
-- [x] Ernie: ernie-bot-turbo/ernie-bot/ernie-bot-8k/ernie-bot-4
-- [x] Qianwen: qwen-turbo/qwen-plus/qwen-max/qwen-max-longcontext/qwen-vl-plus
-- [x] Claude: claude-2.1
+- OpenAI: gpt-3.5/gpt-4/gpt-4-vision
+- Gemini: gemini-pro/gemini-pro-vision/gemini-ultra 
+- LocalAI: opensource LLMs and other openai-compatible LLMs
+- Ollama: opensource LLMs 
+- Azure-OpenAI: user deployed gpt-3.5/gpt-4
+- Ernie: ernie-bot-turbo/ernie-bot/ernie-bot-8k/ernie-bot-4
+- Qianwen: qwen-turbo/qwen-plus/qwen-max/qwen-max-longcontext/qwen-vl-plus
+- Claude: claude-2.1
 
 ## Features
 
 - Have two modes: [REPL](#chat-repl) and [Command](#command).
-- Use [Roles](#roles)
-- Context-aware conversation/session
-- Multimodal models (vision)
-- Syntax highlighting markdown and 200 other languages
+- Support [Roles](#roles)
+- Support context-aware conversation (session)
+- Support multimodal models (vision)
+- Syntax highlighting for markdown and 200+ languages in code blocks
 - Stream output
 - Support proxy 
-- Dark/light theme
+- With Dark/light theme
 - Save messages/sessions
 
 ## Config
@@ -97,9 +97,6 @@ clients:
   - type: openai
     api_key: sk-xxx
     organization_id:
-
-  - type: gemini
-    api_key: AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
   - type: localai
     api_base: http://localhost:8080/v1
@@ -156,8 +153,9 @@ aichat has a powerful Chat REPL.
 The Chat REPL supports:
 
 - Emacs/Vi keybinding
-- Command autocompletion
-- Edit/paste multiline input
+- [Custom REPL Prompt](https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt)
+- Tab Completion
+- Edit/paste multiline text
 - Undo support
 
 ### `.help` - print help message

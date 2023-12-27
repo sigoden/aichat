@@ -246,7 +246,7 @@ fn build_body(data: SendData, model: String, is_vl: bool) -> Result<(Value, bool
     Ok((body, has_upload))
 }
 
-/// Patch messsages, upload emebeded images to oss
+/// Patch messsages, upload embedded images to oss
 async fn patch_messages(model: &str, api_key: &str, messages: &mut Vec<Message>) -> Result<()> {
     for message in messages {
         if let MessageContent::Array(list) = message.content.borrow_mut() {
@@ -258,7 +258,7 @@ async fn patch_messages(model: &str, api_key: &str, messages: &mut Vec<Message>)
                     if url.starts_with("data:") {
                         *url = upload(model, api_key, url)
                             .await
-                            .with_context(|| "Failed to upload embeded image to oss")?;
+                            .with_context(|| "Failed to upload embedded image to oss")?;
                     }
                 }
             }
