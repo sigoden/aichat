@@ -32,11 +32,6 @@ For Windows Scoop user
 scoop install aichat
 ```
 
-For Arch Linux use
-```sh
-sudo pacman -S aichat
-```
-
 For Android termux user
 ```sh
 pkg install aichat
