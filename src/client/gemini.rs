@@ -25,6 +25,7 @@ const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct GeminiConfig {
     pub name: Option<String>,
+    pub api_base: Option<String>,
     pub api_key: Option<String>,
     pub extra: Option<ExtraConfig>,
 }
@@ -53,6 +54,7 @@ impl Client for GeminiClient {
 
 impl GeminiClient {
     config_get_fn!(api_key, get_api_key);
+    config_get_fn!(api_base, get_api_base);
 
     pub const PROMPTS: [PromptType<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
@@ -71,6 +73,7 @@ impl GeminiClient {
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
+        let api_base = self.get_api_base().unwrap_or(API_BASE.to_string());
 
         let func = match data.stream {
             true => "streamGenerateContent",
@@ -81,7 +84,7 @@ impl GeminiClient {
 
         let model = self.model.name.clone();
 
-        let url = format!("{API_BASE}{}:{}?key={}", model, func, api_key);
+        let url = format!("{api_base}{}:{}?key={}", model, func, api_key);
 
         debug!("Gemini Request: {url} {body}");
 
