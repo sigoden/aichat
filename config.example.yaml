@@ -36,8 +36,11 @@ clients:
     api_key: xxx
     chat_endpoint: /chat/completions                  # Optional field
     models:
-      - name: gpt4all-j
+      - name: mistral
         max_tokens: 8192
+      - name: llava
+        max_tokens: 8192
+        capabilities: text,vision                     # Optional field, possible values: text, vision
 
   # See https://github.com/jmorganca/ollama
   - type: ollama
@@ -45,7 +48,7 @@ clients:
     api_key: Basic xxx                                # Set authorization header
     chat_endpoint: /chat                              # Optional field
     models:
-      - name: gpt4all-j
+      - name: mistral
         max_tokens: 8192
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart

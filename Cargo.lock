@@ -36,6 +36,7 @@ dependencies = [
  "async-trait",
  "base64",
  "bincode",
+ "bitflags 2.4.1",
  "bstr",
  "bytes",
  "chrono",

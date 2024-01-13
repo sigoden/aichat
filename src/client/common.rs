@@ -1,4 +1,4 @@
-use super::{openai::OpenAIConfig, ClientConfig, Message, MessageContent};
+use super::{openai::OpenAIConfig, ClientConfig, Message, MessageContent, Model};
 
 use crate::{
     config::{GlobalConfig, Input},
@@ -78,12 +78,26 @@ macro_rules! register_client {
         )+
 
         pub fn init_client(config: &$crate::config::GlobalConfig) -> anyhow::Result<Box<dyn Client>> {
-                None
-                $(.or_else(|| $client::init(config)))+
-                .ok_or_else(|| {
-                    let model = config.read().model.clone();
-                    anyhow::anyhow!("Unknown client '{}'", &model.client_name)
-                })
+            None
+            $(.or_else(|| $client::init(config)))+
+            .ok_or_else(|| {
+                let model = config.read().model.clone();
+                anyhow::anyhow!("Unknown client '{}'", &model.client_name)
+            })
+        }
+
+        pub fn ensure_model_capabilities(client: &mut dyn Client, capabilities: $crate::client::ModelCapabilities) -> anyhow::Result<()> {
+            if !client.model().capabilities.contains(capabilities) {
+                let models = client.models();
+                if let Some(model) = models.into_iter().find(|v| v.capabilities.contains(capabilities)) {
+                    client.set_model(model);
+                } else {
+                    anyhow::bail!(
+                        "The current model lacks the corresponding capability."
+                    );
+                }
+            }
+            Ok(())
         }
 
         pub fn list_client_types() -> Vec<&'static str> {
@@ -114,18 +128,37 @@ macro_rules! register_client {
 }
 
 #[macro_export]
+macro_rules! client_common_fns {
+    () => {
+        fn config(
+            &self,
+        ) -> (
+            &$crate::config::GlobalConfig,
+            &Option<$crate::client::ExtraConfig>,
+        ) {
+            (&self.global_config, &self.config.extra)
+        }
+
+        fn models(&self) -> Vec<Model> {
+            Self::list_models(&self.config)
+        }
+
+        fn model(&self) -> &Model {
+            &self.model
+        }
+
+        fn set_model(&mut self, model: Model) {
+            self.model = model;
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! openai_compatible_client {
     ($client:ident) => {
         #[async_trait]
         impl $crate::client::Client for $crate::client::$client {
-            fn config(
-                &self,
-            ) -> (
-                &$crate::config::GlobalConfig,
-                &Option<$crate::client::ExtraConfig>,
-            ) {
-                (&self.global_config, &self.config.extra)
-            }
+            client_common_fns!();
 
             async fn send_message_inner(
                 &self,
@@ -169,6 +202,12 @@ macro_rules! config_get_fn {
 #[async_trait]
 pub trait Client {
     fn config(&self) -> (&GlobalConfig, &Option<ExtraConfig>);
+
+    fn models(&self) -> Vec<Model>;
+
+    fn model(&self) -> &Model;
+
+    fn set_model(&mut self, model: Model);
 
     fn build_client(&self) -> Result<ReqwestClient> {
         let mut builder = ReqwestClient::builder();

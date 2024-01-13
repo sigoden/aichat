@@ -1,7 +1,6 @@
 use super::{message::*, Client, ExtraConfig, Model, PromptType, QianwenClient, SendData};
 
 use crate::{
-    config::GlobalConfig,
     render::ReplyHandler,
     utils::{sha256sum, PromptKind},
 };
@@ -25,12 +24,12 @@ const API_URL: &str =
 const API_URL_VL: &str =
     "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
 
-const MODELS: [(&str, usize); 5] = [
-    ("qwen-turbo", 8192),
-    ("qwen-plus", 32768),
-    ("qwen-max", 8192),
-    ("qwen-max-longcontext", 30720),
-    ("qwen-vl-plus", 0),
+const MODELS: [(&str, usize, &str); 5] = [
+    ("qwen-turbo", 8192, "text"),
+    ("qwen-plus", 32768, "text"),
+    ("qwen-max", 8192, "text"),
+    ("qwen-max-longcontext", 30720, "text"),
+    ("qwen-vl-plus", 0, "text,vision"),
 ];
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -42,9 +41,7 @@ pub struct QianwenConfig {
 
 #[async_trait]
 impl Client for QianwenClient {
-    fn config(&self) -> (&GlobalConfig, &Option<ExtraConfig>) {
-        (&self.global_config, &self.config.extra)
-    }
+    client_common_fns!();
 
     async fn send_message_inner(
         &self,
@@ -80,8 +77,10 @@ impl QianwenClient {
         let client_name = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, max_tokens)| {
-                Model::new(client_name, name).set_max_tokens(Some(max_tokens))
+            .map(|(name, max_tokens, capabilities)| {
+                Model::new(client_name, name)
+                    .set_capabilities(capabilities.into())
+                    .set_max_tokens(Some(max_tokens))
             })
             .collect()
     }

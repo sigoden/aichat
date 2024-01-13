@@ -6,7 +6,7 @@ use self::completer::ReplCompleter;
 use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
-use crate::client::init_client;
+use crate::client::{ensure_model_capabilities, init_client};
 use crate::config::{GlobalConfig, Input, State};
 use crate::render::{render_error, render_stream};
 use crate::utils::{create_abort_signal, set_text, AbortSignal};
@@ -268,7 +268,8 @@ impl Repl {
             Input::new(text, files)?
         };
         self.config.read().maybe_print_send_tokens(&input);
-        let client = init_client(&self.config)?;
+        let mut client = init_client(&self.config)?;
+        ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
         let output = render_stream(&input, client.as_ref(), &self.config, self.abort.clone())?;
         self.config.write().save_message(input, &output)?;
         if self.config.read().auto_copy {
