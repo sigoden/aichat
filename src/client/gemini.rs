@@ -3,7 +3,7 @@ use super::{
     SendData, TokensCountFactors,
 };
 
-use crate::{config::GlobalConfig, render::ReplyHandler, utils::PromptKind};
+use crate::{render::ReplyHandler, utils::PromptKind};
 
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
@@ -14,10 +14,10 @@ use serde_json::{json, Value};
 
 const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta/models/";
 
-const MODELS: [(&str, usize); 3] = [
-    ("gemini-pro", 32768),
-    ("gemini-pro-vision", 16384),
-    ("gemini-ultra", 32768),
+const MODELS: [(&str, usize, &str); 3] = [
+    ("gemini-pro", 32768, "text"),
+    ("gemini-pro-vision", 16384, "vision"),
+    ("gemini-ultra", 32768, "text"),
 ];
 
 const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
@@ -31,9 +31,7 @@ pub struct GeminiConfig {
 
 #[async_trait]
 impl Client for GeminiClient {
-    fn config(&self) -> (&GlobalConfig, &Option<ExtraConfig>) {
-        (&self.global_config, &self.config.extra)
-    }
+    client_common_fns!();
 
     async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
         let builder = self.request_builder(client, data)?;
@@ -61,8 +59,9 @@ impl GeminiClient {
         let client_name = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, max_tokens)| {
+            .map(|(name, max_tokens, capabilities)| {
                 Model::new(client_name, name)
+                    .set_capabilities(capabilities.into())
                     .set_max_tokens(Some(max_tokens))
                     .set_tokens_count_factors(TOKENS_COUNT_FACTORS)
             })

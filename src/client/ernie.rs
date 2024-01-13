@@ -1,10 +1,6 @@
-use super::{ErnieClient, Client, ExtraConfig, PromptType, SendData, Model, patch_system_message};
+use super::{patch_system_message, Client, ErnieClient, ExtraConfig, Model, PromptType, SendData};
 
-use crate::{
-    config::GlobalConfig,
-    render::ReplyHandler,
-    utils::PromptKind,
-};
+use crate::{render::ReplyHandler, utils::PromptKind};
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
@@ -37,9 +33,7 @@ pub struct ErnieConfig {
 
 #[async_trait]
 impl Client for ErnieClient {
-    fn config(&self) -> (&GlobalConfig, &Option<ExtraConfig>) {
-        (&self.global_config, &self.config.extra)
-    }
+    client_common_fns!();
 
     async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
         self.prepare_access_token().await?;
@@ -127,10 +121,7 @@ async fn send_message(builder: RequestBuilder) -> Result<String> {
     Ok(output.to_string())
 }
 
-async fn send_message_streaming(
-    builder: RequestBuilder,
-    handler: &mut ReplyHandler,
-) -> Result<()> {
+async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHandler) -> Result<()> {
     let mut es = builder.eventsource()?;
     while let Some(event) = es.next().await {
         match event {
@@ -216,13 +207,12 @@ fn build_body(data: SendData, _model: String) -> Value {
 async fn fetch_access_token(api_key: &str, secret_key: &str) -> Result<String> {
     let url = format!("{ACCESS_TOKEN_URL}?grant_type=client_credentials&client_id={api_key}&client_secret={secret_key}");
     let value: Value = reqwest::get(&url).await?.json().await?;
-    let result = value["access_token"].as_str()
-        .ok_or_else(|| {
-            if let Some(err_msg) = value["error_description"].as_str() {
-                anyhow!("{err_msg}")
-            } else {
-                anyhow!("Invalid response data")
-            }
-        })?;
+    let result = value["access_token"].as_str().ok_or_else(|| {
+        if let Some(err_msg) = value["error_description"].as_str() {
+            anyhow!("{err_msg}")
+        } else {
+            anyhow!("Invalid response data")
+        }
+    })?;
     Ok(result.to_string())
 }

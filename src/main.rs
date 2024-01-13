@@ -14,7 +14,7 @@ use crate::config::{Config, GlobalConfig};
 
 use anyhow::Result;
 use clap::Parser;
-use client::{init_client, list_models};
+use client::{ensure_model_capabilities, init_client, list_models};
 use config::Input;
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
@@ -114,7 +114,8 @@ fn start_directive(
         session.guard_save()?;
     }
     let input = Input::new(text, include.unwrap_or_default())?;
-    let client = init_client(config)?;
+    let mut client = init_client(config)?;
+    ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
     config.read().maybe_print_send_tokens(&input);
     let output = if no_stream {
         let output = client.send_message(input.clone())?;

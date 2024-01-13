@@ -1,4 +1,4 @@
-use crate::client::{ImageUrl, MessageContent, MessageContentPart};
+use crate::client::{ImageUrl, MessageContent, MessageContentPart, ModelCapabilities};
 use crate::utils::sha256sum;
 
 use anyhow::{bail, Context, Result};
@@ -117,6 +117,14 @@ impl Input {
                 );
             }
             MessageContent::Array(list)
+        }
+    }
+
+    pub fn required_capabilities(&self) -> ModelCapabilities {
+        if !self.medias.is_empty() {
+            ModelCapabilities::Vision
+        } else {
+            ModelCapabilities::Text
         }
     }
 }
