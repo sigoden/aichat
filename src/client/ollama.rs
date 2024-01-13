@@ -1,9 +1,9 @@
 use super::{
-    message::*, patch_system_message, Client, ExtraConfig, Model, OllamaClient, PromptType,
-    SendData, TokensCountFactors,
+    message::*, patch_system_message, Client, ExtraConfig, Model, ModelConfig, OllamaClient,
+    PromptType, SendData, TokensCountFactors,
 };
 
-use crate::{config::GlobalConfig, render::ReplyHandler, utils::PromptKind};
+use crate::{render::ReplyHandler, utils::PromptKind};
 
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
@@ -20,21 +20,13 @@ pub struct OllamaConfig {
     pub api_base: String,
     pub api_key: Option<String>,
     pub chat_endpoint: Option<String>,
-    pub models: Vec<LocalAIModel>,
+    pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct LocalAIModel {
-    name: String,
-    max_tokens: Option<usize>,
 }
 
 #[async_trait]
 impl Client for OllamaClient {
-    fn config(&self) -> (&GlobalConfig, &Option<ExtraConfig>) {
-        (&self.global_config, &self.config.extra)
-    }
+    client_common_fns!();
 
     async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
         let builder = self.request_builder(client, data)?;
@@ -75,6 +67,7 @@ impl OllamaClient {
             .iter()
             .map(|v| {
                 Model::new(client_name, &v.name)
+                    .set_capabilities(v.capabilities)
                     .set_max_tokens(v.max_tokens)
                     .set_tokens_count_factors(TOKENS_COUNT_FACTORS)
             })

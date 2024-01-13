@@ -1,5 +1,5 @@
 use super::openai::{openai_build_body, OPENAI_TOKENS_COUNT_FACTORS};
-use super::{AzureOpenAIClient, ExtraConfig, PromptType, SendData, Model};
+use super::{AzureOpenAIClient, ExtraConfig, Model, ModelConfig, PromptType, SendData};
 
 use crate::utils::PromptKind;
 
@@ -13,14 +13,8 @@ pub struct AzureOpenAIConfig {
     pub name: Option<String>,
     pub api_base: Option<String>,
     pub api_key: Option<String>,
-    pub models: Vec<AzureOpenAIModel>,
+    pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct AzureOpenAIModel {
-    name: String,
-    max_tokens: Option<usize>,
 }
 
 openai_compatible_client!(AzureOpenAIClient);
@@ -50,6 +44,7 @@ impl AzureOpenAIClient {
             .map(|v| {
                 Model::new(client_name, &v.name)
                     .set_max_tokens(v.max_tokens)
+                    .set_capabilities(v.capabilities)
                     .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })
             .collect()

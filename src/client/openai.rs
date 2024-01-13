@@ -1,12 +1,6 @@
-use super::{
-    ExtraConfig, OpenAIClient, PromptType, SendData,
-    Model, TokensCountFactors,
-};
+use super::{ExtraConfig, Model, OpenAIClient, PromptType, SendData, TokensCountFactors};
 
-use crate::{
-    render::ReplyHandler,
-    utils::PromptKind,
-};
+use crate::{render::ReplyHandler, utils::PromptKind};
 
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
@@ -19,14 +13,14 @@ use std::env;
 
 const API_BASE: &str = "https://api.openai.com/v1";
 
-const MODELS: [(&str, usize); 7] = [
-    ("gpt-3.5-turbo", 4096),
-    ("gpt-3.5-turbo-16k", 16385),
-    ("gpt-3.5-turbo-1106", 16385),
-    ("gpt-4", 8192),
-    ("gpt-4-32k", 32768),
-    ("gpt-4-1106-preview", 128000),
-    ("gpt-4-vision-preview", 128000),
+const MODELS: [(&str, usize, &str); 7] = [
+    ("gpt-3.5-turbo", 4096, "text"),
+    ("gpt-3.5-turbo-16k", 16385, "text"),
+    ("gpt-3.5-turbo-1106", 16385, "text"),
+    ("gpt-4", 8192, "text"),
+    ("gpt-4-32k", 32768, "text"),
+    ("gpt-4-1106-preview", 128000, "text"),
+    ("gpt-4-vision-preview", 128000, "text,vision"),
 ];
 
 pub const OPENAI_TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
@@ -51,8 +45,9 @@ impl OpenAIClient {
         let client_name = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, max_tokens)| {
+            .map(|(name, max_tokens, capabilities)| {
                 Model::new(client_name, name)
+                    .set_capabilities(capabilities.into())
                     .set_max_tokens(Some(max_tokens))
                     .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })
