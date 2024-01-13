@@ -211,7 +211,7 @@ impl Repl {
                         .with_context(|| "Failed to copy the last output")?;
                 }
                 ".read" => {
-                    println!(r#"Deprecated. Use '.read' instead."#);
+                    println!(r#"Deprecated. Use '.file' instead."#);
                 }
                 ".file" => match args {
                     Some(args) => {
