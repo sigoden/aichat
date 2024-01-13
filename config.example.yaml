@@ -48,7 +48,7 @@ clients:
     api_key: Basic xxx                                # Set authorization header
     chat_endpoint: /chat                              # Optional field
     models:
-      - name: llama2
+      - name: mistral
         max_tokens: 8192
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
