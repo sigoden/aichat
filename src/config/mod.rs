@@ -1,159 +1,195 @@
-mod conversation;
-mod message;
+mod input;
 mod role;
+mod session;
 
-use self::conversation::Conversation;
-use self::message::Message;
+pub use self::input::Input;
 use self::role::Role;
+use self::session::{Session, TEMP_SESSION_NAME};
 
-use crate::config::message::num_tokens_from_messages;
-use crate::utils::{mask_text, now};
+use crate::client::{
+    create_client_config, list_client_types, list_models, ClientConfig, ExtraConfig, Message,
+    Model, OpenAIClient, SendData,
+};
+use crate::render::{MarkdownRender, RenderOptions};
+use crate::utils::{get_env_name, light_theme_from_colorfgbg, now, prompt_op_err, render_prompt};
 
 use anyhow::{anyhow, bail, Context, Result};
-use inquire::{Confirm, Text};
+use inquire::{Confirm, Select, Text};
+use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use serde::Deserialize;
-use std::time::Duration;
+use std::collections::HashMap;
 use std::{
     env,
-    fs::{create_dir_all, read_to_string, File, OpenOptions},
-    io::Write,
+    fs::{create_dir_all, read_dir, read_to_string, remove_file, File, OpenOptions},
+    io::{stdout, Write},
     path::{Path, PathBuf},
     process::exit,
     sync::Arc,
 };
+use syntect::highlighting::ThemeSet;
 
-pub const MODELS: [(&str, usize); 4] = [
-    ("gpt-4", 8192),
-    ("gpt-4-32k", 32768),
-    ("gpt-3.5-turbo", 4096),
-    ("gpt-3.5-turbo-16k", 16384),
-];
+/// Monokai Extended
+const DARK_THEME: &[u8] = include_bytes!("../../assets/monokai-extended.theme.bin");
+const LIGHT_THEME: &[u8] = include_bytes!("../../assets/monokai-extended-light.theme.bin");
 
 const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
-const HISTORY_FILE_NAME: &str = "history.txt";
-const MESSAGE_FILE_NAME: &str = "messages.md";
-const SET_COMPLETIONS: [&str; 8] = [
-    ".set temperature",
-    ".set save true",
-    ".set save false",
-    ".set highlight true",
-    ".set highlight false",
-    ".set proxy",
-    ".set dry_run true",
-    ".set dry_run false",
-];
+const MESSAGES_FILE_NAME: &str = "messages.md";
+const SESSIONS_DIR_NAME: &str = "sessions";
 
-#[allow(clippy::struct_excessive_bools)]
+const CLIENTS_FIELD: &str = "clients";
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    /// OpenAI api key
-    pub api_key: Option<String>,
-    /// OpenAI organization id
-    pub organization_id: Option<String>,
-    /// OpenAI model
+    /// LLM model
     #[serde(rename(serialize = "model", deserialize = "model"))]
-    pub model_name: Option<String>,
-    /// What sampling temperature to use, between 0 and 2
-    pub temperature: Option<f64>,
-    /// Whether to persistently save chat messages
+    pub model_id: Option<String>,
+    /// GPT temperature, between 0 and 2
+    #[serde(rename(serialize = "temperature", deserialize = "temperature"))]
+    pub default_temperature: Option<f64>,
+    /// Dry-run flag
+    pub dry_run: bool,
+    /// Whether to save the message
     pub save: bool,
     /// Whether to disable highlight
     pub highlight: bool,
-    /// Set proxy
-    pub proxy: Option<String>,
-    /// Used only for debugging
-    pub dry_run: bool,
-    /// If set ture, start a conversation immediately upon repl
-    pub conversation_first: bool,
-    /// Is ligth theme
+    /// Whether to use a light theme
     pub light_theme: bool,
-    /// Set a timeout in seconds for connect to gpt
-    pub connect_timeout: usize,
+    /// Specify the text-wrapping mode (no, auto, <max-width>)
+    pub wrap: Option<String>,
+    /// Whether wrap code block
+    pub wrap_code: bool,
     /// Automatically copy the last output to the clipboard
     pub auto_copy: bool,
+    /// REPL keybindings. (emacs, vi)
+    pub keybindings: Keybindings,
+    /// Set a default role or session (role:<name>, session:<name>)
+    pub prelude: String,
+    /// REPL left prompt
+    pub left_prompt: String,
+    /// REPL right prompt
+    pub right_prompt: String,
+    /// Setup clients
+    pub clients: Vec<ClientConfig>,
     /// Predefined roles
     #[serde(skip)]
     pub roles: Vec<Role>,
     /// Current selected role
     #[serde(skip)]
     pub role: Option<Role>,
-    /// Current conversation
+    /// Current session
     #[serde(skip)]
-    pub conversation: Option<Conversation>,
+    pub session: Option<Session>,
     #[serde(skip)]
-    pub model: (String, usize),
+    pub model: Model,
+    #[serde(skip)]
+    pub last_message: Option<(Input, String)>,
+    #[serde(skip)]
+    pub temperature: Option<f64>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            api_key: None,
-            organization_id: None,
-            model_name: None,
-            temperature: None,
-            save: false,
+            model_id: None,
+            default_temperature: None,
+            save: true,
             highlight: true,
-            proxy: None,
             dry_run: false,
-            conversation_first: false,
             light_theme: false,
-            connect_timeout: 10,
+            wrap: None,
+            wrap_code: false,
             auto_copy: false,
+            keybindings: Default::default(),
+            prelude: String::new(),
+            left_prompt: "{color.green}{?session {session}{?role /}}{role}{color.cyan}{?session )}{!session >}{color.reset} ".to_string(),
+            right_prompt: "{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}"
+                .to_string(),
+            clients: vec![ClientConfig::default()],
             roles: vec![],
             role: None,
-            conversation: None,
-            model: ("gpt-3.5-turbo".into(), 4096),
+            session: None,
+            model: Default::default(),
+            last_message: None,
+            temperature: None,
         }
     }
 }
 
-#[allow(clippy::module_name_repetitions)]
-pub type SharedConfig = Arc<RwLock<Config>>;
+pub type GlobalConfig = Arc<RwLock<Config>>;
 
 impl Config {
     pub fn init(is_interactive: bool) -> Result<Self> {
-        let api_key = env::var(get_env_name("api_key")).ok();
         let config_path = Self::config_file()?;
-        if is_interactive && api_key.is_none() && !config_path.exists() {
+
+        let api_key = env::var("OPENAI_API_KEY").ok();
+
+        let exist_config_path = config_path.exists();
+        if is_interactive && api_key.is_none() && !exist_config_path {
             create_config_file(&config_path)?;
         }
-        let mut config = if api_key.is_some() && !config_path.exists() {
+        let mut config = if api_key.is_some() && !exist_config_path {
             Self::default()
         } else {
             Self::load_config(&config_path)?
         };
-        if api_key.is_some() {
-            config.api_key = api_key;
+
+        // Compatible with old configuration files
+        if exist_config_path {
+            config.compat_old_config(&config_path)?;
         }
-        if config.api_key.is_none() {
-            bail!("api_key not set");
+
+        if let Some(wrap) = config.wrap.clone() {
+            config.set_wrap(&wrap)?;
         }
-        if let Some(name) = config.model_name.clone() {
-            config.set_model(&name)?;
-        }
-        config.merge_env_vars();
-        config.maybe_proxy();
+
+        config.temperature = config.default_temperature;
+
         config.load_roles()?;
+
+        config.setup_model()?;
+        config.setup_highlight();
+        config.setup_light_theme()?;
+
+        setup_logger()?;
 
         Ok(config)
     }
 
-    pub fn on_repl(&mut self) -> Result<()> {
-        if self.conversation_first {
-            self.start_conversation()?;
+    pub fn onstart(&mut self) -> Result<()> {
+        let prelude = self.prelude.clone();
+        let err_msg = || format!("Invalid prelude '{}", prelude);
+        match prelude.split_once(':') {
+            Some(("role", name)) => {
+                if self.role.is_none() && self.session.is_none() {
+                    self.set_role(name).with_context(err_msg)?;
+                }
+            }
+            Some(("session", name)) => {
+                if self.session.is_none() {
+                    self.start_session(Some(name)).with_context(err_msg)?;
+                }
+            }
+            Some(_) => {
+                bail!("{}", err_msg())
+            }
+            None => {}
         }
         Ok(())
     }
 
-    pub fn get_role(&self, name: &str) -> Option<Role> {
-        self.roles.iter().find(|v| v.match_name(name)).map(|v| {
-            let mut role = v.clone();
-            role.complete_prompt_args(name);
-            role
-        })
+    pub fn retrieve_role(&self, name: &str) -> Result<Role> {
+        self.roles
+            .iter()
+            .find(|v| v.match_name(name))
+            .map(|v| {
+                let mut role = v.clone();
+                role.complete_prompt_args(name);
+                role
+            })
+            .ok_or_else(|| anyhow!("Unknown role `{name}`"))
     }
 
     pub fn config_dir() -> Result<PathBuf> {
@@ -168,13 +204,24 @@ impl Config {
         Ok(path)
     }
 
-    pub fn local_file(name: &str) -> Result<PathBuf> {
+    pub fn local_path(name: &str) -> Result<PathBuf> {
         let mut path = Self::config_dir()?;
         path.push(name);
         Ok(path)
     }
 
-    pub fn save_message(&self, input: &str, output: &str) -> Result<()> {
+    pub fn save_message(&mut self, input: Input, output: &str) -> Result<()> {
+        self.last_message = Some((input.clone(), output.to_string()));
+
+        if self.dry_run {
+            return Ok(());
+        }
+
+        if let Some(session) = self.session.as_mut() {
+            session.add_message(&input, output)?;
+            return Ok(());
+        }
+
         if !self.save {
             return Ok(());
         }
@@ -183,19 +230,14 @@ impl Config {
             return Ok(());
         }
         let timestamp = now();
+        let input_markdown = input.render();
         let output = match self.role.as_ref() {
             None => {
-                format!("# CHAT:[{timestamp}]\n{input}\n--------\n{output}\n--------\n\n",)
-            }
-            Some(v) if v.is_temp() => {
-                format!(
-                    "# CHAT:[{timestamp}]\n{}\n{input}\n--------\n{output}\n--------\n\n",
-                    v.prompt
-                )
+                format!("# CHAT:[{timestamp}]\n{input_markdown}\n--------\n{output}\n--------\n\n",)
             }
             Some(v) => {
                 format!(
-                    "# CHAT:[{timestamp}] ({})\n{input}\n--------\n{output}\n--------\n\n",
+                    "# CHAT:[{timestamp}] ({})\n{input_markdown}\n--------\n{output}\n--------\n\n",
                     v.name,
                 )
             }
@@ -205,172 +247,241 @@ impl Config {
     }
 
     pub fn config_file() -> Result<PathBuf> {
-        Self::local_file(CONFIG_FILE_NAME)
-    }
-
-    pub fn get_api_key(&self) -> (String, Option<String>) {
-        let api_key = self.api_key.as_ref().expect("api_key not set");
-        let organization_id = self.organization_id.as_ref();
-        (api_key.into(), organization_id.cloned())
+        Self::local_path(CONFIG_FILE_NAME)
     }
 
     pub fn roles_file() -> Result<PathBuf> {
         let env_name = get_env_name("roles_file");
         env::var(env_name).map_or_else(
-            |_| Self::local_file(ROLES_FILE_NAME),
+            |_| Self::local_path(ROLES_FILE_NAME),
             |value| Ok(PathBuf::from(value)),
         )
     }
 
-    pub fn history_file() -> Result<PathBuf> {
-        Self::local_file(HISTORY_FILE_NAME)
-    }
-
     pub fn messages_file() -> Result<PathBuf> {
-        Self::local_file(MESSAGE_FILE_NAME)
+        Self::local_path(MESSAGES_FILE_NAME)
     }
 
-    pub fn change_role(&mut self, name: &str) -> Result<String> {
-        match self.get_role(name) {
-            Some(role) => {
-                if let Some(conversation) = self.conversation.as_mut() {
-                    conversation.update_role(&role)?;
-                }
-                let output = serde_yaml::to_string(&role)
-                    .unwrap_or_else(|_| "Unable to echo role details".into());
-                self.role = Some(role);
-                Ok(output)
-            }
-            None => bail!("Error: Unknown role"),
-        }
+    pub fn sessions_dir() -> Result<PathBuf> {
+        Self::local_path(SESSIONS_DIR_NAME)
     }
 
-    pub fn clear_role(&mut self) -> Result<()> {
-        if let Some(conversation) = self.conversation.as_ref() {
-            conversation.can_clear_role()?;
-        }
-        self.role = None;
-        Ok(())
+    pub fn session_file(name: &str) -> Result<PathBuf> {
+        let mut path = Self::sessions_dir()?;
+        path.push(&format!("{name}.yaml"));
+        Ok(path)
     }
 
-    pub fn add_prompt(&mut self, prompt: &str) -> Result<()> {
-        let role = Role::new(prompt, self.temperature);
-        if let Some(conversation) = self.conversation.as_mut() {
-            conversation.update_role(&role)?;
+    pub fn set_role(&mut self, name: &str) -> Result<()> {
+        let role = self.retrieve_role(name)?;
+        if let Some(session) = self.session.as_mut() {
+            session.update_role(Some(role.clone()))?;
         }
+        self.temperature = role.temperature;
         self.role = Some(role);
         Ok(())
     }
 
+    pub fn clear_role(&mut self) -> Result<()> {
+        if let Some(session) = self.session.as_mut() {
+            session.update_role(None)?;
+        }
+        self.temperature = self.default_temperature;
+        self.role = None;
+        Ok(())
+    }
+
+    pub fn get_state(&self) -> State {
+        if let Some(session) = &self.session {
+            if session.is_empty() {
+                if session.role.is_some() {
+                    State::EmptySessionWithRole
+                } else {
+                    State::EmptySession
+                }
+            } else {
+                State::Session
+            }
+        } else if self.role.is_some() {
+            State::Role
+        } else {
+            State::Normal
+        }
+    }
+
     pub fn get_temperature(&self) -> Option<f64> {
-        self.role
-            .as_ref()
-            .and_then(|v| v.temperature)
-            .or(self.temperature)
+        self.temperature
     }
 
-    pub fn echo_messages(&self, content: &str) -> String {
-        #[allow(clippy::option_if_let_else)]
-        if let Some(conversation) = self.conversation.as_ref() {
-            conversation.echo_messages(content)
-        } else if let Some(role) = self.role.as_ref() {
-            role.echo_messages(content)
-        } else {
-            content.to_string()
-        }
-    }
-
-    pub const fn get_connect_timeout(&self) -> Duration {
-        Duration::from_secs(self.connect_timeout as u64)
-    }
-
-    pub fn get_model(&self) -> (String, usize) {
-        self.model.clone()
-    }
-
-    pub fn build_messages(&self, content: &str) -> Result<Vec<Message>> {
-        #[allow(clippy::option_if_let_else)]
-        let messages = if let Some(conversation) = self.conversation.as_ref() {
-            conversation.build_emssages(content)
-        } else if let Some(role) = self.role.as_ref() {
-            role.build_messages(content)
-        } else {
-            let message = Message::new(content);
-            vec![message]
-        };
-        let tokens = num_tokens_from_messages(&messages);
-        if tokens >= self.model.1 {
-            bail!("Exceed max tokens limit")
-        }
-
-        Ok(messages)
-    }
-
-    pub fn set_model(&mut self, name: &str) -> Result<()> {
-        if let Some(token) = MODELS.iter().find(|(v, _)| *v == name).map(|(_, v)| *v) {
-            self.model = (name.to_string(), token);
-        } else {
-            bail!("Invalid model")
+    pub fn set_temperature(&mut self, value: Option<f64>) -> Result<()> {
+        self.temperature = value;
+        if let Some(session) = self.session.as_mut() {
+            session.set_temperature(value);
         }
         Ok(())
     }
 
-    pub const fn get_reamind_tokens(&self) -> usize {
-        let mut tokens = self.model.1;
-        if let Some(conversation) = self.conversation.as_ref() {
-            tokens = tokens.saturating_sub(conversation.tokens);
+    pub fn echo_messages(&self, input: &Input) -> String {
+        if let Some(session) = self.session.as_ref() {
+            session.echo_messages(input)
+        } else if let Some(role) = self.role.as_ref() {
+            role.echo_messages(input)
+        } else {
+            input.render()
         }
-        tokens
     }
 
-    pub fn info(&self) -> Result<String> {
-        let file_info = |path: &Path| {
-            let state = if path.exists() { "" } else { " ⚠️" };
-            format!("{}{state}", path.display())
+    pub fn build_messages(&self, input: &Input) -> Result<Vec<Message>> {
+        let messages = if let Some(session) = self.session.as_ref() {
+            session.build_emssages(input)
+        } else if let Some(role) = self.role.as_ref() {
+            role.build_messages(input)
+        } else {
+            let message = Message::new(input);
+            vec![message]
         };
-        let proxy = self
-            .proxy
-            .as_ref()
-            .map_or_else(|| String::from("-"), std::string::ToString::to_string);
+        Ok(messages)
+    }
+
+    pub fn set_wrap(&mut self, value: &str) -> Result<()> {
+        if value == "no" {
+            self.wrap = None;
+        } else if value == "auto" {
+            self.wrap = Some(value.into());
+        } else {
+            value
+                .parse::<u16>()
+                .map_err(|_| anyhow!("Invalid wrap value"))?;
+            self.wrap = Some(value.into())
+        }
+        Ok(())
+    }
+
+    pub fn set_model(&mut self, value: &str) -> Result<()> {
+        let models = list_models(self);
+        let model = Model::find(&models, value);
+        match model {
+            None => bail!("Invalid model '{}'", value),
+            Some(model) => {
+                if let Some(session) = self.session.as_mut() {
+                    session.set_model(model.clone())?;
+                }
+                self.model = model;
+                Ok(())
+            }
+        }
+    }
+
+    pub fn sys_info(&self) -> Result<String> {
+        let display_path = |path: &Path| path.display().to_string();
         let temperature = self
             .temperature
             .map_or_else(|| String::from("-"), |v| v.to_string());
-        let (api_key, organization_id) = self.get_api_key();
-        let api_key = mask_text(&api_key, 3, 4);
-        let organization_id = organization_id.map_or_else(|| "-".into(), |v| mask_text(&v, 3, 4));
+        let wrap = self
+            .wrap
+            .clone()
+            .map_or_else(|| String::from("no"), |v| v.to_string());
+        let prelude = if self.prelude.is_empty() {
+            String::from("-")
+        } else {
+            self.prelude.clone()
+        };
         let items = vec![
-            ("config_file", file_info(&Self::config_file()?)),
-            ("roles_file", file_info(&Self::roles_file()?)),
-            ("messages_file", file_info(&Self::messages_file()?)),
-            ("api_key", api_key),
-            ("organization_id", organization_id),
-            ("model", self.model.0.to_string()),
+            ("model", self.model.id()),
             ("temperature", temperature),
+            ("dry_run", self.dry_run.to_string()),
             ("save", self.save.to_string()),
             ("highlight", self.highlight.to_string()),
-            ("proxy", proxy),
-            ("conversation_first", self.conversation_first.to_string()),
             ("light_theme", self.light_theme.to_string()),
-            ("connect_timeout", self.connect_timeout.to_string()),
-            ("dry_run", self.dry_run.to_string()),
+            ("wrap", wrap),
+            ("wrap_code", self.wrap_code.to_string()),
+            ("auto_copy", self.auto_copy.to_string()),
+            ("keybindings", self.keybindings.stringify().into()),
+            ("prelude", prelude),
+            ("config_file", display_path(&Self::config_file()?)),
+            ("roles_file", display_path(&Self::roles_file()?)),
+            ("messages_file", display_path(&Self::messages_file()?)),
+            ("sessions_dir", display_path(&Self::sessions_dir()?)),
         ];
-        let mut output = String::new();
-        for (name, value) in items {
-            output.push_str(&format!("{name:<20}{value}\n"));
-        }
+        let output = items
+            .iter()
+            .map(|(name, value)| format!("{name:<20}{value}"))
+            .collect::<Vec<String>>()
+            .join("\n");
         Ok(output)
     }
 
-    pub fn repl_completions(&self) -> Vec<String> {
-        let mut completion: Vec<String> = self
-            .roles
-            .iter()
-            .map(|v| format!(".role {}", v.name))
-            .collect();
+    pub fn role_info(&self) -> Result<String> {
+        if let Some(role) = &self.role {
+            role.info()
+        } else {
+            bail!("No role")
+        }
+    }
 
-        completion.extend(SET_COMPLETIONS.map(std::string::ToString::to_string));
-        completion.extend(MODELS.map(|(v, _)| format!(".model {v}")));
-        completion
+    pub fn session_info(&self) -> Result<String> {
+        if let Some(session) = &self.session {
+            let render_options = self.get_render_options()?;
+            let mut markdown_render = MarkdownRender::init(render_options)?;
+            session.render(&mut markdown_render)
+        } else {
+            bail!("No session")
+        }
+    }
+
+    pub fn info(&self) -> Result<String> {
+        if let Some(session) = &self.session {
+            session.export()
+        } else if let Some(role) = &self.role {
+            role.info()
+        } else {
+            self.sys_info()
+        }
+    }
+
+    pub fn last_reply(&self) -> &str {
+        self.last_message
+            .as_ref()
+            .map(|(_, reply)| reply.as_str())
+            .unwrap_or_default()
+    }
+
+    pub fn repl_complete(&self, cmd: &str, args: &[&str]) -> Vec<String> {
+        let (values, filter) = if args.len() == 1 {
+            let values = match cmd {
+                ".role" => self.roles.iter().map(|v| v.name.clone()).collect(),
+                ".model" => list_models(self).into_iter().map(|v| v.id()).collect(),
+                ".session" => self.list_sessions(),
+                ".set" => vec![
+                    "temperature ",
+                    "save ",
+                    "highlight ",
+                    "dry_run ",
+                    "auto_copy ",
+                ]
+                .into_iter()
+                .map(|v| v.to_string())
+                .collect(),
+                _ => vec![],
+            };
+            (values, args[0])
+        } else if args.len() == 2 {
+            let to_vec = |v: bool| vec![v.to_string()];
+            let values = match args[0] {
+                "save" => to_vec(!self.save),
+                "highlight" => to_vec(!self.highlight),
+                "dry_run" => to_vec(!self.dry_run),
+                "auto_copy" => to_vec(!self.auto_copy),
+                _ => vec![],
+            };
+            (values, args[1])
+        } else {
+            return vec![];
+        };
+        values
+            .into_iter()
+            .filter(|v| v.starts_with(filter))
+            .collect()
     }
 
     pub fn update(&mut self, data: &str) -> Result<()> {
@@ -383,12 +494,13 @@ impl Config {
         let unset = value == "null";
         match key {
             "temperature" => {
-                if unset {
-                    self.temperature = None;
+                let value = if unset {
+                    None
                 } else {
                     let value = value.parse().with_context(|| "Invalid value")?;
-                    self.temperature = Some(value);
-                }
+                    Some(value)
+                };
+                self.set_temperature(value)?;
             }
             "save" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
@@ -398,60 +510,245 @@ impl Config {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.highlight = value;
             }
-            "proxy" => {
-                if unset {
-                    self.proxy = None;
-                } else {
-                    self.proxy = Some(value.to_string());
-                }
-            }
             "dry_run" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.dry_run = value;
             }
-            _ => bail!("Error: Unknown key `{key}`"),
+            "auto_copy" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                self.auto_copy = value;
+            }
+            _ => bail!("Unknown key `{key}`"),
         }
         Ok(())
     }
 
-    pub fn start_conversation(&mut self) -> Result<()> {
-        if self.conversation.is_some() && self.get_reamind_tokens() > 0 {
-            let ans = Confirm::new("Already in a conversation, start a new one?")
-                .with_default(true)
-                .prompt()?;
-            if !ans {
-                return Ok(());
+    pub fn start_session(&mut self, session: Option<&str>) -> Result<()> {
+        if self.session.is_some() {
+            bail!(
+                "Already in a session, please run '.exit session' first to exit the current session."
+            );
+        }
+        match session {
+            None => {
+                let session_file = Self::session_file(TEMP_SESSION_NAME)?;
+                if session_file.exists() {
+                    remove_file(session_file)
+                        .with_context(|| "Failed to clean previous session")?;
+                }
+                self.session = Some(Session::new(
+                    TEMP_SESSION_NAME,
+                    self.model.clone(),
+                    self.role.clone(),
+                ));
+            }
+            Some(name) => {
+                let session_path = Self::session_file(name)?;
+                if !session_path.exists() {
+                    self.session = Some(Session::new(name, self.model.clone(), self.role.clone()));
+                } else {
+                    let session = Session::load(name, &session_path)?;
+                    let model = session.model().to_string();
+                    self.temperature = session.temperature();
+                    self.session = Some(session);
+                    self.set_model(&model)?;
+                }
             }
         }
-        self.conversation = Some(Conversation::new(self.role.clone()));
-        Ok(())
-    }
-
-    pub fn end_conversation(&mut self) {
-        self.conversation = None;
-    }
-
-    pub fn save_conversation(&mut self, input: &str, output: &str) -> Result<()> {
-        if let Some(conversation) = self.conversation.as_mut() {
-            conversation.add_message(input, output)?;
+        if let Some(session) = self.session.as_mut() {
+            if session.is_empty() {
+                if let Some((input, output)) = &self.last_message {
+                    let ans = Confirm::new(
+                        "Start a session that incorporates the last question and answer?",
+                    )
+                    .with_default(false)
+                    .prompt()
+                    .map_err(prompt_op_err)?;
+                    if ans {
+                        session.add_message(input, output)?;
+                    }
+                }
+            }
         }
         Ok(())
     }
 
-    pub const fn get_render_options(&self) -> (bool, bool) {
-        (self.highlight, self.light_theme)
+    pub fn end_session(&mut self) -> Result<()> {
+        if let Some(mut session) = self.session.take() {
+            self.last_message = None;
+            self.temperature = self.default_temperature;
+            if session.should_save() {
+                let ans = Confirm::new("Save session?")
+                    .with_default(false)
+                    .prompt()
+                    .map_err(prompt_op_err)?;
+                if !ans {
+                    return Ok(());
+                }
+                let mut name = session.name().to_string();
+                if session.is_temp() {
+                    name = Text::new("Session name:")
+                        .with_default(&name)
+                        .prompt()
+                        .map_err(prompt_op_err)?;
+                }
+                let session_path = Self::session_file(&name)?;
+                let sessions_dir = session_path.parent().ok_or_else(|| {
+                    anyhow!("Unable to save session file to {}", session_path.display())
+                })?;
+                if !sessions_dir.exists() {
+                    create_dir_all(sessions_dir).with_context(|| {
+                        format!("Failed to create session_dir '{}'", sessions_dir.display())
+                    })?;
+                }
+                session.save(&session_path)?;
+            }
+        }
+        Ok(())
     }
 
-    pub fn maybe_print_send_tokens(&self, input: &str) {
+    pub fn list_sessions(&self) -> Vec<String> {
+        let sessions_dir = match Self::sessions_dir() {
+            Ok(dir) => dir,
+            Err(_) => return vec![],
+        };
+        match read_dir(sessions_dir) {
+            Ok(rd) => {
+                let mut names = vec![];
+                for entry in rd.flatten() {
+                    let name = entry.file_name();
+                    if let Some(name) = name.to_string_lossy().strip_suffix(".yaml") {
+                        names.push(name.to_string());
+                    }
+                }
+                names.sort_unstable();
+                names
+            }
+            Err(_) => vec![],
+        }
+    }
+
+    pub fn get_render_options(&self) -> Result<RenderOptions> {
+        let theme = if self.highlight {
+            let theme_mode = if self.light_theme { "light" } else { "dark" };
+            let theme_filename = format!("{theme_mode}.tmTheme");
+            let theme_path = Self::local_path(&theme_filename)?;
+            if theme_path.exists() {
+                let theme = ThemeSet::get_theme(&theme_path)
+                    .with_context(|| format!("Invalid theme at {}", theme_path.display()))?;
+                Some(theme)
+            } else {
+                let theme = if self.light_theme {
+                    bincode::deserialize_from(LIGHT_THEME).expect("Invalid builtin light theme")
+                } else {
+                    bincode::deserialize_from(DARK_THEME).expect("Invalid builtin dark theme")
+                };
+                Some(theme)
+            }
+        } else {
+            None
+        };
+        let wrap = if stdout().is_terminal() {
+            self.wrap.clone()
+        } else {
+            None
+        };
+        Ok(RenderOptions::new(theme, wrap, self.wrap_code))
+    }
+
+    pub fn render_prompt_left(&self) -> String {
+        let variables = self.generate_prompt_context();
+        render_prompt(&self.left_prompt, &variables)
+    }
+
+    pub fn render_prompt_right(&self) -> String {
+        let variables = self.generate_prompt_context();
+        render_prompt(&self.right_prompt, &variables)
+    }
+
+    pub fn prepare_send_data(&self, input: &Input, stream: bool) -> Result<SendData> {
+        let messages = self.build_messages(input)?;
+        self.model.max_tokens_limit(&messages)?;
+        Ok(SendData {
+            messages,
+            temperature: self.get_temperature(),
+            stream,
+        })
+    }
+
+    pub fn maybe_print_send_tokens(&self, input: &Input) {
         if self.dry_run {
             if let Ok(messages) = self.build_messages(input) {
-                let tokens = num_tokens_from_messages(&messages);
-                println!(">>> The following message consumes {tokens} tokens.");
+                let tokens = self.model.total_tokens(&messages);
+                println!(">>> This message consumes {tokens} tokens. <<<");
             }
         }
     }
 
-    #[allow(clippy::unused_self)] // TODO: do we need to take self here? it's not used in the fn
+    fn generate_prompt_context(&self) -> HashMap<&str, String> {
+        let mut output = HashMap::new();
+        output.insert("model", self.model.id());
+        output.insert("client_name", self.model.client_name.clone());
+        output.insert("model_name", self.model.name.clone());
+        output.insert(
+            "max_tokens",
+            self.model.max_tokens.unwrap_or_default().to_string(),
+        );
+        if let Some(temperature) = self.temperature {
+            if temperature != 0.0 {
+                output.insert("temperature", temperature.to_string());
+            }
+        }
+        if self.dry_run {
+            output.insert("dry_run", "true".to_string());
+        }
+        if self.save {
+            output.insert("save", "true".to_string());
+        }
+        if let Some(wrap) = &self.wrap {
+            if wrap != "no" {
+                output.insert("wrap", wrap.clone());
+            }
+        }
+        if self.auto_copy {
+            output.insert("auto_copy", "true".to_string());
+        }
+        if let Some(role) = &self.role {
+            output.insert("role", role.name.clone());
+        }
+        if let Some(session) = &self.session {
+            output.insert("session", session.name().to_string());
+            let (tokens, percent) = session.tokens_and_percent();
+            output.insert("consume_tokens", tokens.to_string());
+            output.insert("consume_percent", percent.to_string());
+            output.insert("user_messages_len", session.user_messages_len().to_string());
+        }
+
+        if self.highlight {
+            output.insert("color.reset", "\u{1b}[0m".to_string());
+            output.insert("color.black", "\u{1b}[30m".to_string());
+            output.insert("color.dark_gray", "\u{1b}[90m".to_string());
+            output.insert("color.red", "\u{1b}[31m".to_string());
+            output.insert("color.light_red", "\u{1b}[91m".to_string());
+            output.insert("color.green", "\u{1b}[32m".to_string());
+            output.insert("color.light_green", "\u{1b}[92m".to_string());
+            output.insert("color.yellow", "\u{1b}[33m".to_string());
+            output.insert("color.light_yellow", "\u{1b}[93m".to_string());
+            output.insert("color.blue", "\u{1b}[34m".to_string());
+            output.insert("color.light_blue", "\u{1b}[94m".to_string());
+            output.insert("color.purple", "\u{1b}[35m".to_string());
+            output.insert("color.light_purple", "\u{1b}[95m".to_string());
+            output.insert("color.magenta", "\u{1b}[35m".to_string());
+            output.insert("color.light_magenta", "\u{1b}[95m".to_string());
+            output.insert("color.cyan", "\u{1b}[36m".to_string());
+            output.insert("color.light_cyan", "\u{1b}[96m".to_string());
+            output.insert("color.white", "\u{1b}[37m".to_string());
+            output.insert("color.light_gray", "\u{1b}[97m".to_string());
+        }
+
+        output
+    }
+
     fn open_message_file(&self) -> Result<File> {
         let path = Self::messages_file()?;
         ensure_parent_exists(&path)?;
@@ -463,11 +760,20 @@ impl Config {
     }
 
     fn load_config(config_path: &Path) -> Result<Self> {
-        let content = read_to_string(config_path)
-            .with_context(|| format!("Failed to load config at {}", config_path.display()))?;
+        let ctx = || format!("Failed to load config at {}", config_path.display());
+        let content = read_to_string(config_path).with_context(ctx)?;
 
         let config: Self = serde_yaml::from_str(&content)
-            .with_context(|| format!("Invalid config at {}", config_path.display()))?;
+            .map_err(|err| {
+                let err_msg = err.to_string();
+                if err_msg.starts_with(&format!("{}: ", CLIENTS_FIELD)) {
+                    anyhow!("clients: invalid value")
+                } else {
+                    anyhow!("{err_msg}")
+                }
+            })
+            .with_context(ctx)?;
+
         Ok(config)
     }
 
@@ -484,10 +790,23 @@ impl Config {
         Ok(())
     }
 
-    fn merge_env_vars(&mut self) {
-        if let Ok(value) = env::var(get_env_name("light_theme")) {
-            set_bool(&mut self.light_theme, &value);
-        }
+    fn setup_model(&mut self) -> Result<()> {
+        let model = match &self.model_id {
+            Some(v) => v.clone(),
+            None => {
+                let models = list_models(self);
+                if models.is_empty() {
+                    bail!("No available model");
+                }
+
+                models[0].id()
+            }
+        };
+        self.set_model(&model)?;
+        Ok(())
+    }
+
+    fn setup_highlight(&mut self) {
         if let Ok(value) = env::var("NO_COLOR") {
             let mut no_color = false;
             set_bool(&mut no_color, &value);
@@ -497,55 +816,119 @@ impl Config {
         }
     }
 
-    fn maybe_proxy(&mut self) {
-        if self.proxy.is_some() {
-            return;
+    fn setup_light_theme(&mut self) -> Result<()> {
+        if self.light_theme {
+            return Ok(());
         }
-        if let Ok(value) = env::var("HTTPS_PROXY").or_else(|_| env::var("ALL_PROXY")) {
-            self.proxy = Some(value);
+        if let Ok(value) = env::var(get_env_name("light_theme")) {
+            set_bool(&mut self.light_theme, &value);
+            return Ok(());
+        } else if let Ok(value) = env::var("COLORFGBG") {
+            if let Some(light) = light_theme_from_colorfgbg(&value) {
+                self.light_theme = light
+            }
+        };
+        Ok(())
+    }
+
+    fn compat_old_config(&mut self, config_path: &PathBuf) -> Result<()> {
+        let content = read_to_string(config_path)?;
+        let value: serde_json::Value = serde_yaml::from_str(&content)?;
+        if value.get(CLIENTS_FIELD).is_some() {
+            return Ok(());
+        }
+
+        if let Some(model_name) = value.get("model").and_then(|v| v.as_str()) {
+            if model_name.starts_with("gpt") {
+                self.model_id = Some(format!("{}:{}", OpenAIClient::NAME, model_name));
+            }
+        }
+
+        if let Some(ClientConfig::OpenAIConfig(client_config)) = self.clients.get_mut(0) {
+            if let Some(api_key) = value.get("api_key").and_then(|v| v.as_str()) {
+                client_config.api_key = Some(api_key.to_string())
+            }
+
+            if let Some(organization_id) = value.get("organization_id").and_then(|v| v.as_str()) {
+                client_config.organization_id = Some(organization_id.to_string())
+            }
+
+            let mut extra_config = ExtraConfig::default();
+
+            if let Some(proxy) = value.get("proxy").and_then(|v| v.as_str()) {
+                extra_config.proxy = Some(proxy.to_string())
+            }
+
+            if let Some(connect_timeout) = value.get("connect_timeout").and_then(|v| v.as_i64()) {
+                extra_config.connect_timeout = Some(connect_timeout as _)
+            }
+
+            client_config.extra = Some(extra_config);
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub enum Keybindings {
+    #[serde(rename = "emacs")]
+    #[default]
+    Emacs,
+    #[serde(rename = "vi")]
+    Vi,
+}
+
+impl Keybindings {
+    pub fn is_vi(&self) -> bool {
+        matches!(self, Keybindings::Vi)
+    }
+    pub fn stringify(&self) -> &str {
+        match self {
+            Keybindings::Emacs => "emacs",
+            Keybindings::Vi => "vi",
         }
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub enum State {
+    Normal,
+    Role,
+    EmptySession,
+    EmptySessionWithRole,
+    Session,
+}
+
 fn create_config_file(config_path: &Path) -> Result<()> {
-    let confirm_map_err = |_| anyhow!("Not finish questionnaire, try again later.");
-    let text_map_err = |_| anyhow!("An error happened when asking for your key, try again later.");
     let ans = Confirm::new("No config file, create a new one?")
         .with_default(true)
         .prompt()
-        .map_err(confirm_map_err)?;
+        .map_err(prompt_op_err)?;
     if !ans {
         exit(0);
     }
-    let api_key = Text::new("OpenAI API Key:")
-        .prompt()
-        .map_err(text_map_err)?;
-    let mut raw_config = format!("api_key: {api_key}\n");
 
-    let ans = Confirm::new("Use proxy?")
-        .with_default(false)
+    let client = Select::new("Platform:", list_client_types())
         .prompt()
-        .map_err(confirm_map_err)?;
-    if ans {
-        let proxy = Text::new("Set proxy:").prompt().map_err(text_map_err)?;
-        raw_config.push_str(&format!("proxy: {proxy}\n"));
-    }
+        .map_err(prompt_op_err)?;
 
-    let ans = Confirm::new("Save chat messages")
-        .with_default(true)
-        .prompt()
-        .map_err(confirm_map_err)?;
-    if ans {
-        raw_config.push_str("save: true\n");
-    }
+    let mut config = serde_json::json!({});
+    config["model"] = client.into();
+    config[CLIENTS_FIELD] = create_client_config(client)?;
+
+    let config_data = serde_yaml::to_string(&config).with_context(|| "Failed to create config")?;
+
     ensure_parent_exists(config_path)?;
-    std::fs::write(config_path, raw_config).with_context(|| "Failed to write to config file")?;
+    std::fs::write(config_path, config_data).with_context(|| "Failed to write to config file")?;
     #[cfg(unix)]
     {
         use std::os::unix::prelude::PermissionsExt;
         let perms = std::fs::Permissions::from_mode(0o600);
         std::fs::set_permissions(config_path, perms)?;
     }
+
+    println!("✨ Saved config file to {}\n", config_path.display());
+
     Ok(())
 }
 
@@ -567,18 +950,32 @@ fn ensure_parent_exists(path: &Path) -> Result<()> {
     Ok(())
 }
 
-fn get_env_name(key: &str) -> String {
-    format!(
-        "{}_{}",
-        env!("CARGO_CRATE_NAME").to_ascii_uppercase(),
-        key.to_ascii_uppercase(),
-    )
-}
-
 fn set_bool(target: &mut bool, value: &str) {
     match value {
         "1" | "true" => *target = true,
         "0" | "false" => *target = false,
         _ => {}
     }
+}
+
+#[cfg(debug_assertions)]
+fn setup_logger() -> Result<()> {
+    use simplelog::{LevelFilter, WriteLogger};
+    let file = std::fs::File::create(Config::local_path("debug.log")?)?;
+    let log_filter = match std::env::var("AICHAT_LOG_FILTER") {
+        Ok(v) => v,
+        Err(_) => "aichat".into(),
+    };
+    let config = simplelog::ConfigBuilder::new()
+        .add_filter_allow(log_filter)
+        .set_thread_level(LevelFilter::Off)
+        .set_time_level(LevelFilter::Off)
+        .build();
+    WriteLogger::init(log::LevelFilter::Debug, config, file)?;
+    Ok(())
+}
+
+#[cfg(not(debug_assertions))]
+fn setup_logger() -> Result<()> {
+    Ok(())
 }

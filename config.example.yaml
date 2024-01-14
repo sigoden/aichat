@@ -1,0 +1,69 @@
+model: openai:gpt-3.5-turbo      # LLM model
+temperature: 1.0                 # GPT temperature, between 0 and 2
+save: true                       # Whether to save the message
+highlight: true                  # Set false to turn highlight
+light_theme: false               # Whether to use a light theme
+wrap: no                         # Specify the text-wrapping mode (no, auto, <max-width>)
+wrap_code: false                 # Whether wrap code block
+auto_copy: false                 # Automatically copy the last output to the clipboard
+keybindings: emacs               # REPL keybindings. (emacs, vi)
+prelude: ''                      # Set a default role or session (role:<name>, session:<name>)
+
+# Custom REPL prompt, see https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt
+left_prompt: '{color.green}{?session {session}{?role /}}{role}{color.cyan}{?session )}{!session >}{color.reset} '
+right_prompt: '{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}'
+
+clients:
+  # All clients have the following configuration:
+  # - type: xxxx
+  #   name: nova                                      # Only use it to distinguish clients with the same client type. Optional
+  #   extra:
+  #     proxy: socks5://127.0.0.1:1080                # Specify https/socks5 proxy server. Note HTTPS_PROXY/ALL_PROXY also works.
+  #     connect_timeout: 10                           # Set a timeout in seconds for connect to server
+
+  # See https://platform.openai.com/docs/quickstart
+  - type: openai
+    api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    organization_id:
+
+  # See https://ai.google.dev/docs
+  - type: gemini
+    api_key: AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+  # See https://github.com/go-skynet/LocalAI
+  - type: localai
+    api_base: http://localhost:8080/v1
+    api_key: xxx
+    chat_endpoint: /chat/completions                  # Optional field
+    models:
+      - name: mistral
+        max_tokens: 8192
+      - name: llava
+        max_tokens: 8192
+        capabilities: text,vision                     # Optional field, possible values: text, vision
+
+  # See https://github.com/jmorganca/ollama
+  - type: ollama
+    api_base: http://localhost:11434
+    api_key: Basic xxx                                # Set authorization header
+    chat_endpoint: /chat                              # Optional field
+    models:
+      - name: mistral
+        max_tokens: 8192
+
+  # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
+  - type: azure-openai
+    api_base: https://RESOURCE.openai.azure.com
+    api_key: xxx
+    models:
+      - name: MyGPT4                                  # Model deployment name
+        max_tokens: 8192
+
+  # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
+  - type: ernie
+    api_key: xxxxxxxxxxxxxxxxxxxxxxxx
+    secret_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+  # See https://help.aliyun.com/zh/dashscope/
+  - type: qianwen
+    api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

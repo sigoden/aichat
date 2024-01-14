@@ -1,51 +1,38 @@
-use crate::config::SharedConfig;
+use super::REPL_COMMANDS;
+
+use crate::config::GlobalConfig;
 
 use nu_ansi_term::{Color, Style};
 use reedline::{Highlighter, StyledText};
 
-const MATCH_COLOR: Color = Color::Green;
-
-#[allow(clippy::module_name_repetitions)]
 pub struct ReplHighlighter {
-    external_commands: Vec<String>,
-    config: SharedConfig,
+    config: GlobalConfig,
 }
 
 impl ReplHighlighter {
-    /// Construct the default highlighter with a given set of extern commands/keywords to detect and highlight
-    pub fn new(config: SharedConfig, external_commands: Vec<String>) -> Self {
+    pub fn new(config: &GlobalConfig) -> Self {
         Self {
-            external_commands,
-            config,
+            config: config.clone(),
         }
     }
 }
 
 impl Highlighter for ReplHighlighter {
     fn highlight(&self, line: &str, _cursor: usize) -> StyledText {
-        let mut styled_text = StyledText::new();
-        let color = if self.config.read().light_theme {
-            Color::Black
-        } else {
-            Color::White
-        };
+        let color = Color::Default;
         let match_color = if self.config.read().highlight {
-            MATCH_COLOR
+            Color::Green
         } else {
             color
         };
 
-        if self
-            .external_commands
-            .clone()
-            .iter()
-            .any(|x| line.contains(x))
-        {
-            let matches: Vec<&str> = self
-                .external_commands
+        let mut styled_text = StyledText::new();
+
+        if REPL_COMMANDS.iter().any(|cmd| line.contains(cmd.name)) {
+            let matches: Vec<&str> = REPL_COMMANDS
                 .iter()
-                .filter(|c| line.contains(*c))
-                .map(std::ops::Deref::deref)
+                .filter(|cmd| line.contains(cmd.name))
+                .map(|cmd| cmd.name)
                 .collect();
             let longest_match = matches.iter().fold(String::new(), |acc, &item| {
                 if item.len() > acc.len() {

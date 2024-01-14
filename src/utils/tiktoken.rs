@@ -1,6 +1,6 @@
 //! Use tiktoken for count tokens
 //!
-//! Copy from [https://github.com/dust-tt/dust/tree/main/core/src/providers/tiktoken](https://github.com/dust-tt/dust/tree/main/core/src/providers/tiktoken)
+//! Fork from https://github.com/dust-tt/dust/tree/main/core/src/providers/tiktoken
 
 #![allow(unused)]
 
@@ -12,23 +12,7 @@ use parking_lot::Mutex;
 use rustc_hash::FxHashMap as HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
-
-/// Count how many tokens a piece of text needs to consume
-pub fn count_tokens(text: &str) -> usize {
-    text_to_tokens(text).len()
-}
-
-/// Convert a plain text to tokens
-pub fn text_to_tokens(text: &str) -> Vec<usize> {
-    cl100k_base_singleton()
-        .lock()
-        .encode_with_special_tokens(text)
-}
-
-/// Convert tokens to plan text
-pub fn tokens_to_text(tokens: &[usize]) -> Result<String> {
-    cl100k_base_singleton().lock().decode(tokens)
-}
+use tokio::task;
 
 pub fn cl100k_base() -> Result<CoreBPE> {
     let cl100k_base = include_str!("../../assets/cl100k_base.tiktoken");
@@ -43,11 +27,11 @@ pub fn cl100k_base() -> Result<CoreBPE> {
     }
 
     let mut special_tokens = HashMap::default();
-    special_tokens.insert(String::from("<|endoftext|>"), 100_257);
-    special_tokens.insert(String::from("<|fim_prefix|>"), 100_258);
-    special_tokens.insert(String::from("<|fim_middle|>"), 100_259);
-    special_tokens.insert(String::from("<|fim_suffix|>"), 100_260);
-    special_tokens.insert(String::from("<|endofprompt|>"), 100_276);
+    special_tokens.insert(String::from("<|endoftext|>"), 100257);
+    special_tokens.insert(String::from("<|fim_prefix|>"), 100258);
+    special_tokens.insert(String::from("<|fim_middle|>"), 100259);
+    special_tokens.insert(String::from("<|fim_suffix|>"), 100260);
+    special_tokens.insert(String::from("<|endofprompt|>"), 100276);
 
     CoreBPE::new(
         encoder,
@@ -63,8 +47,17 @@ pub fn cl100k_base_singleton() -> Arc<Mutex<CoreBPE>> {
     CL100K_BASE.clone()
 }
 
+pub async fn decode_async(bpe: Arc<Mutex<CoreBPE>>, tokens: Vec<usize>) -> Result<String> {
+    task::spawn_blocking(move || bpe.lock().decode(tokens)).await?
+}
+
+pub async fn encode_async(bpe: Arc<Mutex<CoreBPE>>, text: &str) -> Result<Vec<usize>> {
+    let text = text.to_string();
+    let r = task::spawn_blocking(move || bpe.lock().encode_with_special_tokens(&text)).await?;
+    Ok(r)
+}
+
 fn _byte_pair_merge(piece: &[u8], ranks: &HashMap<Vec<u8>, usize>) -> Vec<std::ops::Range<usize>> {
-    #[allow(clippy::range_plus_one)]
     let mut parts: Vec<_> = (0..piece.len()).map(|i| i..i + 1).collect();
 
     // If you have n parts and m merges, this does O(mn) work
@@ -157,11 +150,11 @@ pub struct CoreBPE {
 }
 
 impl CoreBPE {
-    const fn _get_regex(&self) -> &Regex {
+    fn _get_regex(&self) -> &Regex {
         &self.regex
     }
 
-    const fn _get_special_regex(&self) -> &Regex {
+    fn _get_special_regex(&self) -> &Regex {
         &self.special_regex
     }
 
@@ -263,12 +256,15 @@ impl CoreBPE {
         // Here is a quick and dirty fix:
         {
             let token_is_all_space = |token| {
-                self.decoder.get(token).map_or(false, |token_bytes| {
-                    token_bytes
-                        .iter()
-                        .rev()
-                        .all(|&b| [b' ', b'\n', b'\t'].contains(&b))
-                })
+                self.decoder
+                    .get(token)
+                    .map(|token_bytes| {
+                        token_bytes
+                            .iter()
+                            .rev()
+                            .all(|&b| [b' ', b'\n', b'\t'].contains(&b))
+                    })
+                    .unwrap_or(false)
             };
             if last_piece_token_len > 0
                 && token_is_all_space(&tokens[tokens.len() - last_piece_token_len])
@@ -340,7 +336,6 @@ impl CoreBPE {
                 && self.sorted_token_bytes[point].starts_with(suffix)
             {
                 let possibility = [prefix, self.sorted_token_bytes[point].as_slice()].concat();
-                #[allow(clippy::option_if_let_else)]
                 let encoded = match std::str::from_utf8(&possibility) {
                     // Morally, this is byte_pair_encode(&possibility, &self.encoder)
                     // But we might have introduced a regex split which would prevent merges.
@@ -385,7 +380,7 @@ impl CoreBPE {
         if unstable_bytes.len() > 1 {
             let last_decoded = bstr::decode_last_utf8(unstable_bytes.as_slice());
             if unstable_bytes.len() - last_decoded.1 > 0
-                && last_decoded.0.map_or(false, char::is_whitespace)
+                && last_decoded.0.map_or(false, |c| c.is_whitespace())
             {
                 let mut reencoded = byte_pair_encode(
                     &unstable_bytes[..unstable_bytes.len() - last_decoded.1],
@@ -412,11 +407,11 @@ impl CoreBPE {
         let regex = Regex::new(pattern)?;
 
         let special_regex = {
-            let parts = special_tokens_encoder
+            let _parts = special_tokens_encoder
                 .keys()
                 .map(|s| fancy_regex::escape(s))
                 .collect::<Vec<_>>();
-            Regex::new(&parts.join("|"))?
+            Regex::new(&_parts.join("|"))?
         };
 
         let decoder: HashMap<usize, Vec<u8>> =
@@ -433,7 +428,7 @@ impl CoreBPE {
         let mut sorted_token_bytes: Vec<Vec<u8>> = encoder.keys().cloned().collect();
         sorted_token_bytes.sort();
 
-        Ok(Self {
+        Ok(CoreBPE {
             encoder,
             special_tokens_encoder,
             decoder,
@@ -452,15 +447,15 @@ impl CoreBPE {
         self._encode_ordinary_native(text)
     }
 
-    pub fn encode(&self, text: &str, allowed_special: &HashSet<&str>) -> Vec<usize> {
-        self._encode_native(text, allowed_special).0
+    pub fn encode(&self, text: &str, allowed_special: HashSet<&str>) -> Vec<usize> {
+        self._encode_native(text, &allowed_special).0
     }
 
     pub fn encode_with_special_tokens(&self, text: &str) -> Vec<usize> {
         let allowed_special = self
             .special_tokens_encoder
             .keys()
-            .map(std::string::String::as_str)
+            .map(|s| s.as_str())
             .collect();
         self._encode_native(text, &allowed_special).0
     }
@@ -494,9 +489,9 @@ impl CoreBPE {
     fn encode_with_unstable(
         &self,
         text: &str,
-        allowed_special: &HashSet<&str>,
+        allowed_special: HashSet<&str>,
     ) -> (Vec<usize>, HashSet<Vec<usize>>) {
-        self._encode_unstable_native(text, allowed_special)
+        self._encode_unstable_native(text, &allowed_special)
     }
 
     #[allow(dead_code)]
@@ -524,12 +519,12 @@ impl CoreBPE {
     // Decoding
     // ====================
 
-    pub fn decode_bytes(&self, tokens: &[usize]) -> Vec<u8> {
-        self._decode_native(tokens)
+    pub fn decode_bytes(&self, tokens: Vec<usize>) -> Vec<u8> {
+        self._decode_native(&tokens)
     }
 
-    pub fn decode(&self, tokens: &[usize]) -> Result<String> {
-        match String::from_utf8(self._decode_native(tokens)) {
+    pub fn decode(&self, tokens: Vec<usize>) -> Result<String> {
+        match String::from_utf8(self._decode_native(&tokens)) {
             Ok(text) => Ok(text),
             Err(e) => Err(anyhow!("Unable to decode into a valid UTF-8 string: {}", e)),
         }
@@ -575,7 +570,7 @@ mod tests {
     fn cl100k_base_test() {
         let bpe = cl100k_base().unwrap();
         let tokens = bpe.encode_with_special_tokens("This is a test         with a lot of spaces");
-        let decoded = bpe.decode(&tokens).unwrap();
+        let decoded = bpe.decode(tokens.clone()).unwrap();
         assert_eq!(decoded, "This is a test         with a lot of spaces");
         assert_eq!(
             tokens,
