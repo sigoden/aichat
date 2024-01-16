@@ -11,6 +11,7 @@ pub type TokensCountFactors = (usize, usize); // (per-messages, bias)
 pub struct Model {
     pub client_name: String,
     pub name: String,
+    pub extra_fields: Option<serde_json::Map<String, serde_json::Value>>,
     pub max_tokens: Option<usize>,
     pub tokens_count_factors: TokensCountFactors,
     pub capabilities: ModelCapabilities,
@@ -27,6 +28,7 @@ impl Model {
         Self {
             client_name: client_name.into(),
             name: name.into(),
+            extra_fields: None,
             max_tokens: None,
             tokens_count_factors: Default::default(),
             capabilities: ModelCapabilities::Text,
@@ -70,6 +72,11 @@ impl Model {
 
     pub fn set_capabilities(mut self, capabilities: ModelCapabilities) -> Self {
         self.capabilities = capabilities;
+        self
+    }
+
+    pub fn set_extra_fields(mut self, extra_fields: Option<serde_json::Map<String, serde_json::Value>>) -> Self {
+        self.extra_fields = extra_fields;
         self
     }
 
@@ -127,6 +134,7 @@ impl Model {
 #[derive(Debug, Clone, Deserialize)]
 pub struct ModelConfig {
     pub name: String,
+    pub extra_fields: Option<serde_json::Map<String, serde_json::Value>>,
     pub max_tokens: Option<usize>,
     #[serde(deserialize_with = "deserialize_capabilities")]
     #[serde(default = "default_capabilities")]

@@ -45,6 +45,7 @@ impl LocalAIClient {
                 Model::new(client_name, &v.name)
                     .set_capabilities(v.capabilities)
                     .set_max_tokens(v.max_tokens)
+                    .set_extra_fields(v.extra_fields.clone())
                     .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })
             .collect()
@@ -53,7 +54,19 @@ impl LocalAIClient {
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
 
-        let body = openai_build_body(data, self.model.name.clone());
+        let mut body = openai_build_body(data, self.model.name.clone());
+
+        // merge fields from extra_fields into body
+        if let Some(extra_fields) = &self.model.extra_fields {
+            let extra_fields = extra_fields
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect::<serde_json::Map<String, serde_json::Value>>();
+
+            body.as_object_mut()
+                .unwrap()
+                .extend(extra_fields.into_iter());
+        }
 
         let chat_endpoint = self
             .config
