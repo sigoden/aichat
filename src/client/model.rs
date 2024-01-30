@@ -12,6 +12,7 @@ pub struct Model {
     pub client_name: String,
     pub name: String,
     pub max_tokens: Option<usize>,
+    pub extra_fields: Option<serde_json::Map<String, serde_json::Value>>,
     pub tokens_count_factors: TokensCountFactors,
     pub capabilities: ModelCapabilities,
 }
@@ -27,6 +28,7 @@ impl Model {
         Self {
             client_name: client_name.into(),
             name: name.into(),
+            extra_fields: None,
             max_tokens: None,
             tokens_count_factors: Default::default(),
             capabilities: ModelCapabilities::Text,
@@ -70,6 +72,14 @@ impl Model {
 
     pub fn set_capabilities(mut self, capabilities: ModelCapabilities) -> Self {
         self.capabilities = capabilities;
+        self
+    }
+
+    pub fn set_extra_fields(
+        mut self,
+        extra_fields: Option<serde_json::Map<String, serde_json::Value>>,
+    ) -> Self {
+        self.extra_fields = extra_fields;
         self
     }
 
@@ -122,12 +132,23 @@ impl Model {
         }
         Ok(())
     }
+
+    pub fn merge_extra_fields(&self, body: &mut serde_json::Value) {
+        if let (Some(body), Some(extra_fields)) = (body.as_object_mut(), &self.extra_fields) {
+            for (k, v) in extra_fields {
+                if !body.contains_key(k) {
+                    body.insert(k.clone(), v.clone());
+                }
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ModelConfig {
     pub name: String,
     pub max_tokens: Option<usize>,
+    pub extra_fields: Option<serde_json::Map<String, serde_json::Value>>,
     #[serde(deserialize_with = "deserialize_capabilities")]
     #[serde(default = "default_capabilities")]
     pub capabilities: ModelCapabilities,

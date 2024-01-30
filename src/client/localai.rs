@@ -45,6 +45,7 @@ impl LocalAIClient {
                 Model::new(client_name, &v.name)
                     .set_capabilities(v.capabilities)
                     .set_max_tokens(v.max_tokens)
+                    .set_extra_fields(v.extra_fields.clone())
                     .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })
             .collect()
@@ -53,7 +54,8 @@ impl LocalAIClient {
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
 
-        let body = openai_build_body(data, self.model.name.clone());
+        let mut body = openai_build_body(data, self.model.name.clone());
+        self.model.merge_extra_fields(&mut body);
 
         let chat_endpoint = self
             .config

@@ -39,6 +39,8 @@ clients:
     models:
       - name: mistral
         max_tokens: 8192
+        extra_fields:                                 # Optional field, set custom parameters
+          key: value
       - name: llava
         max_tokens: 8192
         capabilities: text,vision                     # Optional field, possible values: text, vision
