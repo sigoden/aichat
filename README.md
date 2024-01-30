@@ -90,7 +90,6 @@ prelude: ''                      # Set a default role or session (role:<name>, s
 clients:
   - type: openai
     api_key: sk-xxx
-    organization_id:
 
   - type: localai
     api_base: http://localhost:8080/v1

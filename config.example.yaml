@@ -24,13 +24,14 @@ clients:
   # See https://platform.openai.com/docs/quickstart
   - type: openai
     api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    organization_id:
+    api_base: https://api.openai.com/v1               # Optional field
+    organization_id: org-xxxxxxxxxxxxxxxxxxxxxxxx     # Optional field
 
   # See https://ai.google.dev/docs
   - type: gemini
     api_key: AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-  # See https://github.com/go-skynet/LocalAI
+  # For https://github.com/go-skynet/LocalAI or any OpenAI compatible API providers
   - type: localai
     api_base: http://localhost:8080/v1
     api_key: xxx

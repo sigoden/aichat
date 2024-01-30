@@ -9,7 +9,6 @@ use reqwest::{Client as ReqwestClient, RequestBuilder};
 use reqwest_eventsource::{Error as EventSourceError, Event, RequestBuilderExt};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::env;
 
 const API_BASE: &str = "https://api.openai.com/v1";
 
@@ -29,6 +28,7 @@ pub const OPENAI_TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
 pub struct OpenAIConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
+    pub api_base: Option<String>,
     pub organization_id: Option<String>,
     pub extra: Option<ExtraConfig>,
 }
@@ -37,6 +37,7 @@ openai_compatible_client!(OpenAIClient);
 
 impl OpenAIClient {
     config_get_fn!(api_key, get_api_key);
+    config_get_fn!(api_base, get_api_base);
 
     pub const PROMPTS: [PromptType<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
@@ -56,13 +57,9 @@ impl OpenAIClient {
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
+        let api_base = self.get_api_base().unwrap_or_else(|_| API_BASE.to_string());
 
         let body = openai_build_body(data, self.model.name.clone());
-
-        let env_prefix = Self::name(&self.config).to_uppercase();
-        let api_base = env::var(format!("{env_prefix}_API_BASE"))
-            .ok()
-            .unwrap_or_else(|| API_BASE.to_string());
 
         let url = format!("{api_base}/chat/completions");
 
