@@ -55,18 +55,7 @@ impl LocalAIClient {
         let api_key = self.get_api_key().ok();
 
         let mut body = openai_build_body(data, self.model.name.clone());
-
-        // merge fields from extra_fields into body
-        if let Some(extra_fields) = &self.model.extra_fields {
-            let extra_fields = extra_fields
-                .iter()
-                .map(|(k, v)| (k.clone(), v.clone()))
-                .collect::<serde_json::Map<String, serde_json::Value>>();
-
-            body.as_object_mut()
-                .unwrap()
-                .extend(extra_fields.into_iter());
-        }
+        self.model.merge_extra_fields(&mut body);
 
         let chat_endpoint = self
             .config
