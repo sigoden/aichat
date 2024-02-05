@@ -121,6 +121,9 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
         let mut stream = res.bytes_stream();
         while let Some(chunk) = stream.next().await {
             let chunk = chunk?;
+            if chunk.is_empty() {
+              continue;
+            }
             let data: Value = serde_json::from_slice(&chunk)?;
             if data["done"].is_boolean() {
                 if let Some(text) = data["message"]["content"].as_str() {
