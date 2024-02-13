@@ -24,12 +24,13 @@ const API_URL: &str =
 const API_URL_VL: &str =
     "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
 
-const MODELS: [(&str, usize, &str); 5] = [
+const MODELS: [(&str, usize, &str); 6] = [
     ("qwen-turbo", 8192, "text"),
     ("qwen-plus", 32768, "text"),
     ("qwen-max", 8192, "text"),
     ("qwen-max-longcontext", 30720, "text"),
     ("qwen-vl-plus", 0, "text,vision"),
+    ("qwen-vl-max", 0, "text,vision"),
 ];
 
 #[derive(Debug, Clone, Deserialize, Default)]
