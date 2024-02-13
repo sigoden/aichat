@@ -13,7 +13,7 @@ use serde_json::{json, Value};
 const API_BASE: &str = "https://api.openai.com/v1";
 
 const MODELS: [(&str, usize, &str); 7] = [
-    ("gpt-3.5-turbo", 4096, "text"),
+    ("gpt-3.5-turbo", 16385, "text"),
     ("gpt-3.5-turbo-1106", 16385, "text"),
     ("gpt-4", 8192, "text"),
     ("gpt-4-32k", 32768, "text"),
