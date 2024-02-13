@@ -14,10 +14,9 @@ use serde_json::{json, Value};
 
 const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta/models/";
 
-const MODELS: [(&str, usize, &str); 3] = [
+const MODELS: [(&str, usize, &str); 2] = [
     ("gemini-pro", 32768, "text"),
     ("gemini-pro-vision", 16384, "vision"),
-    ("gemini-ultra", 32768, "text"),
 ];
 
 const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
