@@ -89,7 +89,7 @@ impl GeminiClient {
     }
 }
 
-async fn send_message(builder: RequestBuilder) -> Result<String> {
+pub(crate) async fn send_message(builder: RequestBuilder) -> Result<String> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -102,7 +102,7 @@ async fn send_message(builder: RequestBuilder) -> Result<String> {
     Ok(output.to_string())
 }
 
-async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHandler) -> Result<()> {
+pub(crate) async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHandler) -> Result<()> {
     let res = builder.send().await?;
     if res.status() != 200 {
         let data: Value = res.json().await?;
@@ -178,7 +178,7 @@ fn check_error(data: &Value) -> Result<()> {
     }
 }
 
-fn build_body(data: SendData, _model: String) -> Result<Value> {
+pub(crate) fn build_body(data: SendData, _model: String) -> Result<Value> {
     let SendData {
         mut messages,
         temperature,
