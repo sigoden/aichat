@@ -56,7 +56,7 @@ clients:
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
   - type: azure-openai
-    api_base: https://RESOURCE.openai.azure.com
+    api_base: https://{RESOURCE}.openai.azure.com
     api_key: xxx
     models:
       - name: MyGPT4                                  # Model deployment name
@@ -70,3 +70,8 @@ clients:
   # See https://help.aliyun.com/zh/dashscope/
   - type: qianwen
     api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+  # See https://cloud.google.com/vertex-ai
+  - type: vertexai
+    api_base: https://{REGION}-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/{REGION}/publishers/google/models
+    api_key: xxx
