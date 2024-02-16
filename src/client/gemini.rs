@@ -1,16 +1,12 @@
-use super::{
-    message::*, patch_system_message, Client, ExtraConfig, GeminiClient, Model, PromptType,
-    SendData, TokensCountFactors,
-};
+use super::vertexai::{build_body, send_message, send_message_streaming};
+use super::{Client, ExtraConfig, GeminiClient, Model, PromptType, SendData, TokensCountFactors};
 
 use crate::{render::ReplyHandler, utils::PromptKind};
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::Result;
 use async_trait::async_trait;
-use futures_util::StreamExt;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
-use serde_json::{json, Value};
 
 const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta/models/";
 
@@ -87,156 +83,4 @@ impl GeminiClient {
 
         Ok(builder)
     }
-}
-
-pub(crate) async fn send_message(builder: RequestBuilder) -> Result<String> {
-    let res = builder.send().await?;
-    let status = res.status();
-    let data: Value = res.json().await?;
-    if status != 200 {
-        check_error(&data)?;
-    }
-    let output = data["candidates"][0]["content"]["parts"][0]["text"]
-        .as_str()
-        .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
-    Ok(output.to_string())
-}
-
-pub(crate) async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHandler) -> Result<()> {
-    let res = builder.send().await?;
-    if res.status() != 200 {
-        let data: Value = res.json().await?;
-        check_error(&data)?;
-    } else {
-        let mut buffer = vec![];
-        let mut cursor = 0;
-        let mut start = 0;
-        let mut balances = vec![];
-        let mut quoting = false;
-        let mut stream = res.bytes_stream();
-        while let Some(chunk) = stream.next().await {
-            let chunk = chunk?;
-            let chunk = std::str::from_utf8(&chunk)?;
-            buffer.extend(chunk.chars());
-            for i in cursor..buffer.len() {
-                let ch = buffer[i];
-                if quoting {
-                    if ch == '"' && buffer[i - 1] != '\\' {
-                        quoting = false;
-                    }
-                    continue;
-                }
-                match ch {
-                    '"' => quoting = true,
-                    '{' => {
-                        if balances.is_empty() {
-                            start = i;
-                        }
-                        balances.push(ch);
-                    }
-                    '[' => {
-                        if start != 0 {
-                            balances.push(ch);
-                        }
-                    }
-                    '}' => {
-                        balances.pop();
-                        if balances.is_empty() {
-                            let value: String = buffer[start..=i].iter().collect();
-                            let value: Value = serde_json::from_str(&value)?;
-                            if let Some(text) =
-                                value["candidates"][0]["content"]["parts"][0]["text"].as_str()
-                            {
-                                handler.text(text)?;
-                            } else {
-                                bail!("Invalid response data: {value}")
-                            }
-                        }
-                    }
-                    ']' => {
-                        balances.pop();
-                    }
-                    _ => {}
-                }
-            }
-            cursor = buffer.len();
-        }
-    }
-    Ok(())
-}
-
-fn check_error(data: &Value) -> Result<()> {
-    if let Some((Some(status), Some(message))) = data[0]["error"].as_object().map(|v| {
-        (
-            v.get("status").and_then(|v| v.as_str()),
-            v.get("message").and_then(|v| v.as_str()),
-        )
-    }) {
-        bail!("{status}: {message}")
-    } else {
-        bail!("Error {}", data);
-    }
-}
-
-pub(crate) fn build_body(data: SendData, _model: String) -> Result<Value> {
-    let SendData {
-        mut messages,
-        temperature,
-        ..
-    } = data;
-
-    patch_system_message(&mut messages);
-
-    let mut network_image_urls = vec![];
-    let contents: Vec<Value> = messages
-        .into_iter()
-        .map(|message| {
-            let role = match message.role {
-                MessageRole::User => "user",
-                _ => "model",
-            };
-            match message.content {
-                MessageContent::Text(text) => json!({
-                    "role": role,
-                    "parts": [{ "text": text }]
-                }),
-                MessageContent::Array(list) => {
-                    let list: Vec<Value> = list
-                        .into_iter()
-                        .map(|item| match item {
-                            MessageContentPart::Text { text } => json!({"text": text}),
-                            MessageContentPart::ImageUrl { image_url: ImageUrl { url } } => {
-                                if let Some((mime_type, data)) = url.strip_prefix("data:").and_then(|v| v.split_once(";base64,")) {
-                                    json!({ "inline_data": { "mime_type": mime_type, "data": data } })
-                                } else {
-                                    network_image_urls.push(url.clone());
-                                    json!({ "url": url })
-                                }
-                            },
-                        })
-                        .collect();
-                    json!({ "role": role, "parts": list })
-                }
-            }
-        })
-        .collect();
-
-    if !network_image_urls.is_empty() {
-        bail!(
-            "The model does not support network images: {:?}",
-            network_image_urls
-        );
-    }
-
-    let mut body = json!({
-        "contents": contents,
-    });
-
-    if let Some(temperature) = temperature {
-        body["generationConfig"] = json!({
-            "temperature": temperature,
-        });
-    }
-
-    Ok(body)
 }

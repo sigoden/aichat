@@ -31,7 +31,7 @@ clients:
   - type: gemini
     api_key: AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-  # For https://github.com/go-skynet/LocalAI or any OpenAI compatible API providers
+  # Any openai-compatible API providers or https://github.com/go-skynet/LocalAI
   - type: localai
     api_base: http://localhost:8080/v1
     api_key: xxx
@@ -74,4 +74,7 @@ clients:
   # See https://cloud.google.com/vertex-ai
   - type: vertexai
     api_base: https://{REGION}-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/{REGION}/publishers/google/models
-    api_key: xxx
+    # Setup Application Default Credentials (ADC) file, Optional field
+    # Run `gcloud auth application-default login` to setup adc
+    # see https://cloud.google.com/docs/authentication/external/set-up-adc
+    adc_file: <path-to/gcloud/application_default_credentials.json> 
