@@ -101,7 +101,8 @@ impl ErnieClient {
                 .or_else(|| env::var(format!("{env_prefix}_SECRET_KEY")).ok())
                 .ok_or_else(|| anyhow!("Miss secret_key"))?;
 
-            let token = fetch_access_token(&api_key, &secret_key)
+            let client = self.build_client()?;
+            let token = fetch_access_token(&client, &api_key, &secret_key)
                 .await
                 .with_context(|| "Failed to fetch access token")?;
             unsafe { ACCESS_TOKEN = token };
@@ -204,9 +205,13 @@ fn build_body(data: SendData, _model: String) -> Value {
     body
 }
 
-async fn fetch_access_token(api_key: &str, secret_key: &str) -> Result<String> {
+async fn fetch_access_token(
+    client: &reqwest::Client,
+    api_key: &str,
+    secret_key: &str,
+) -> Result<String> {
     let url = format!("{ACCESS_TOKEN_URL}?grant_type=client_credentials&client_id={api_key}&client_secret={secret_key}");
-    let value: Value = reqwest::get(&url).await?.json().await?;
+    let value: Value = client.get(&url).send().await?.json().await?;
     let result = value["access_token"].as_str().ok_or_else(|| {
         if let Some(err_msg) = value["error_description"].as_str() {
             anyhow!("{err_msg}")
