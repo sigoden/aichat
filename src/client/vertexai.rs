@@ -7,6 +7,7 @@ use crate::{render::ReplyHandler, utils::PromptKind};
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
+use chrono::{Duration, Utc};
 use futures_util::StreamExt;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
@@ -23,7 +24,7 @@ const MODELS: [(&str, usize, &str); 5] = [
 
 const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
 
-static mut ACCESS_TOKEN: String = String::new(); // safe under linear operation
+static mut ACCESS_TOKEN: (String, i64) = (String::new(), 0); // safe under linear operation
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct VertexAIConfig {
@@ -92,19 +93,20 @@ impl VertexAIClient {
 
         let builder = client
             .post(url)
-            .bearer_auth(unsafe { &ACCESS_TOKEN })
+            .bearer_auth(unsafe { &ACCESS_TOKEN.0 })
             .json(&body);
 
         Ok(builder)
     }
 
     async fn prepare_access_token(&self) -> Result<()> {
-        if unsafe { ACCESS_TOKEN.is_empty() } {
+        if unsafe { ACCESS_TOKEN.0.is_empty() || Utc::now().timestamp() > ACCESS_TOKEN.1 } {
             let client = self.build_client()?;
-            let token = fetch_access_token(&client, &self.config.adc_file)
+            let (token, expires_in) = fetch_access_token(&client, &self.config.adc_file)
                 .await
                 .with_context(|| "Failed to fetch access token")?;
-            unsafe { ACCESS_TOKEN = token };
+            let expires_at = Utc::now() + Duration::seconds(expires_in);
+            unsafe { ACCESS_TOKEN = (token, expires_at.timestamp()) };
         }
         Ok(())
     }
@@ -197,7 +199,7 @@ fn check_error(data: &Value) -> Result<()> {
         )
     }) {
         if status == "UNAUTHENTICATED" {
-            unsafe { ACCESS_TOKEN = String::new() }
+            unsafe { ACCESS_TOKEN = (String::new(), 0) }
         }
         bail!("{status}: {message}")
     } else {
@@ -268,7 +270,10 @@ pub(crate) fn build_body(data: SendData, _model: String) -> Result<Value> {
     Ok(body)
 }
 
-async fn fetch_access_token(client: &reqwest::Client, file: &Option<String>) -> Result<String> {
+async fn fetch_access_token(
+    client: &reqwest::Client,
+    file: &Option<String>,
+) -> Result<(String, i64)> {
     let credentials = load_adc(file).await?;
     let value: Value = client
         .post("https://oauth2.googleapis.com/token")
@@ -278,14 +283,15 @@ async fn fetch_access_token(client: &reqwest::Client, file: &Option<String>) -> 
         .json()
         .await?;
 
-    let result = value["access_token"].as_str().ok_or_else(|| {
-        if let Some(err_msg) = value["error_description"].as_str() {
-            anyhow!("{err_msg}")
-        } else {
-            anyhow!("Invalid response data")
-        }
-    })?;
-    Ok(result.to_string())
+    if let (Some(access_token), Some(expires_in)) =
+        (value["access_token"].as_str(), value["expires_in"].as_i64())
+    {
+        Ok((access_token.to_string(), expires_in))
+    } else if let Some(err_msg) = value["error_description"].as_str() {
+        bail!("{err_msg}")
+    } else {
+        bail!("Invalid response data")
+    }
 }
 
 async fn load_adc(file: &Option<String>) -> Result<Value> {
