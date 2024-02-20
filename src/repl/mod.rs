@@ -408,7 +408,7 @@ fn dump_repl_help() {
         r###"{head}
 
 Type ::: to begin multi-line editing, type ::: to end it.
-Press Ctrl+O to open an editor to modify the current message.
+Press Ctrl+O to open an editor to modify the current prompt.
 Press Ctrl+C to abort aichat, Ctrl+D to exit the REPL"###,
     );
 }
