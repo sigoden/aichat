@@ -2,8 +2,6 @@ mod completer;
 mod highlighter;
 mod prompt;
 
-use std::{env, process};
-
 use self::completer::ReplCompleter;
 use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
@@ -22,6 +20,7 @@ use reedline::{
     ColumnarMenu, EditMode, Emacs, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent,
     ReedlineMenu, ValidationResult, Validator, Vi,
 };
+use std::{env, process};
 
 const MENU_NAME: &str = "completion_menu";
 
