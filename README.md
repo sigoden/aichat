@@ -170,6 +170,7 @@ The Chat REPL supports:
 .exit                    Exit the REPL
 
 Type ::: to begin multi-line editing, type ::: to end it.
+Press Ctrl+O to open an editor to modify the current prompt.
 Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
 
 ```
