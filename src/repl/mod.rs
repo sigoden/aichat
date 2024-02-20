@@ -2,6 +2,8 @@ mod completer;
 mod highlighter;
 mod prompt;
 
+use std::{env, process};
+
 use self::completer::ReplCompleter;
 use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
@@ -292,7 +294,7 @@ Type ".help" for more information.
         let highlighter = ReplHighlighter::new(config);
         let menu = Self::create_menu();
         let edit_mode = Self::create_edit_mode(config);
-        let editor = Reedline::create()
+        let mut editor = Reedline::create()
             .with_completer(Box::new(completer))
             .with_highlighter(Box::new(highlighter))
             .with_menu(menu)
@@ -302,6 +304,13 @@ Type ".help" for more information.
             .use_bracketed_paste(true)
             .with_validator(Box::new(ReplValidator))
             .with_ansi_colors(true);
+
+        if let Ok(cmd) = env::var("VISUAL").or_else(|_| env::var("EDITOR")) {
+            let temp_file =
+                env::temp_dir().join(format!("aichat-{}.txt", chrono::Utc::now().timestamp()));
+            let command = process::Command::new(cmd);
+            editor = editor.with_buffer_editor(command, temp_file);
+        }
 
         Ok(editor)
     }
@@ -400,6 +409,7 @@ fn dump_repl_help() {
         r###"{head}
 
 Type ::: to begin multi-line editing, type ::: to end it.
+Press Ctrl+O to open an editor to modify the current message.
 Press Ctrl+C to abort aichat, Ctrl+D to exit the REPL"###,
     );
 }
