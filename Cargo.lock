@@ -66,6 +66,7 @@ dependencies = [
  "syntect",
  "textwrap",
  "tokio",
+ "unicode-width",
 ]
 
 [[package]]

@@ -230,14 +230,15 @@ impl Config {
             return Ok(());
         }
         let timestamp = now();
+        let summary = input.summary();
         let input_markdown = input.render();
         let output = match self.role.as_ref() {
             None => {
-                format!("# CHAT:[{timestamp}]\n{input_markdown}\n--------\n{output}\n--------\n\n",)
+                format!("# CHAT: {summary} [{timestamp}]\n{input_markdown}\n--------\n{output}\n--------\n\n",)
             }
             Some(v) => {
                 format!(
-                    "# CHAT:[{timestamp}] ({})\n{input_markdown}\n--------\n{output}\n--------\n\n",
+                    "# CHAT: {summary} [{timestamp}] ({})\n{input_markdown}\n--------\n{output}\n--------\n\n",
                     v.name,
                 )
             }
