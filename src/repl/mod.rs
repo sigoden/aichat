@@ -14,12 +14,12 @@ use crate::utils::{create_abort_signal, set_text, AbortSignal};
 use anyhow::{bail, Context, Result};
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
-use reedline::Signal;
 use reedline::{
     default_emacs_keybindings, default_vi_insert_keybindings, default_vi_normal_keybindings,
     ColumnarMenu, EditMode, Emacs, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent,
     ReedlineMenu, ValidationResult, Validator, Vi,
 };
+use reedline::{MenuBuilder, Signal};
 use std::{env, process};
 
 const MENU_NAME: &str = "completion_menu";

@@ -44,10 +44,10 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 ## Support LLMs
 
 - OpenAI: gpt-3.5/gpt-4/gpt-4-vision
-- Gemini: gemini-pro/gemini-pro-vision/gemini-ultra 
+- Gemini: gemini-pro/gemini-pro-vision
 - LocalAI: opensource LLMs and other openai-compatible LLMs
 - Ollama: opensource LLMs 
-- VertexAI: gemini-1.0-pro/gemini.1.0-pro-vision/gemini-1.0-ultra/gemini-1.0-ultra-vision
+- VertexAI: gemini-pro/gemini-pro-vision/gemini-ultra/gemini-ultra-vision
 - Azure-OpenAI: user deployed gpt-3.5/gpt-4
 - Ernie: ernie-bot-turbo/ernie-bot/ernie-bot-8k/ernie-bot-4
 - Qianwen: qwen-turbo/qwen-plus/qwen-max/qwen-max-longcontext/qwen-vl-plus
