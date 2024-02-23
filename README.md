@@ -47,6 +47,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - Gemini: gemini-pro/gemini-pro-vision/gemini-ultra 
 - LocalAI: opensource LLMs and other openai-compatible LLMs
 - Ollama: opensource LLMs 
+- VertexAI: gemini-1.0-pro/gemini.1.0-pro-vision/gemini-1.0-ultra/gemini-1.0-ultra-vision
 - Azure-OpenAI: user deployed gpt-3.5/gpt-4
 - Ernie: ernie-bot-turbo/ernie-bot/ernie-bot-8k/ernie-bot-4
 - Qianwen: qwen-turbo/qwen-plus/qwen-max/qwen-max-longcontext/qwen-vl-plus
@@ -57,6 +58,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - Support [Roles](#roles)
 - Support context-aware conversation (session)
 - Support multimodal models (vision)
+- Support executing commands using natural language
 - Syntax highlighting for markdown and 200+ languages in code blocks
 - Stream output
 - Support proxy 
@@ -308,6 +310,7 @@ Options:
   -m, --model <MODEL>        Choose a LLM model
   -r, --role <ROLE>          Choose a role
   -s, --session [<SESSION>]  Create or reuse a session
+  -e, --execute              Execute commands using natural language
   -f, --file <FILE>...       Attach files to the message to be sent
   -H, --no-highlight         Disable syntax highlighting
   -S, --no-stream            No stream output
@@ -352,10 +355,48 @@ aichat -r shell --info                       # Show role info
 $(echo "$data" | aichat -S -H to json)       # Use aichat in a script
 ```
 
+### Execute commands using natural language
+
+Simply input what you want to do in natural language, and aichat will prompt and run the command that achieves your intent.
+
+```
+aichat -s <text>...
+```
+
+![aichat-execute](https://github.com/sigoden/aichat/assets/4012553/9bc89a3f-c366-4f46-b4b8-94ac2e4213cb)
+
+Aichat is aware of OS and `$SHELL` you are using, it will provide shell command for specific system you have. For instance, if you ask `aichat` to update your system, it will return a command based on your OS. Here's an example using macOS:
+
+```sh
+aichat -e update my system
+# sudo softwareupdate -i -a
+# ? [e]xecute, [d]escribe, [a]bort:  (e)  
+```
+
+The same prompt, when used on Ubuntu, will generate a different suggestion:
+```sh
+ aichat -e update my system
+# sudo apt update && sudo apt upgrade -y
+# ? [e]xecute, [d]escribe, [a]bort:  (e)  
+```
+
+We can still use pipes to pass input to aichat and generate shell commands:
+
+```sh
+aichat -e POST localhost with < data.json
+# curl -X POST -H "Content-Type: application/json" -d '{"a": 1, "b": 2}' localhost
+# ? [e]xecute, [d]escribe, [a]bort:  (e)  
+```
+
+We can also pipe the output of aichat which will disable interactive mode.
+```sh
+aichat -e find all json files in current folder | pbcopy
+```
+
 ## License
 
 Copyright (c) 2023 aichat-developers.
 
-aichat is made available under the terms of either the MIT License or the Apache License 2.0, at your option.
+Aichat is made available under the terms of either the MIT License or the Apache License 2.0, at your option.
 
 See the LICENSE-APACHE and LICENSE-MIT files for license details.

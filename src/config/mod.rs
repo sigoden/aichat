@@ -158,7 +158,7 @@ impl Config {
         Ok(config)
     }
 
-    pub fn onstart(&mut self) -> Result<()> {
+    pub fn prelude(&mut self) -> Result<()> {
         let prelude = self.prelude.clone();
         let err_msg = || format!("Invalid prelude '{}", prelude);
         match prelude.split_once(':') {
@@ -275,6 +275,20 @@ impl Config {
 
     pub fn set_role(&mut self, name: &str) -> Result<()> {
         let role = self.retrieve_role(name)?;
+        self.set_role_obj(role)
+    }
+
+    pub fn set_execute_role(&mut self) -> Result<()> {
+        let role = Role::for_execute();
+        self.set_role_obj(role)
+    }
+
+    pub fn set_describe_role(&mut self) -> Result<()> {
+        let role = Role::for_describe();
+        self.set_role_obj(role)
+    }
+
+    pub fn set_role_obj(&mut self, role: Role) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
             session.update_role(Some(role.clone()))?;
         }

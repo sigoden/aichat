@@ -12,6 +12,9 @@ pub struct Cli {
     /// Create or reuse a session
     #[clap(short = 's', long)]
     pub session: Option<Option<String>>,
+    /// Execute commands using natural language
+    #[clap(short = 'e', long)]
+    pub execute: bool,
     /// Attach files to the message to be sent.
     #[clap(short = 'f', long, num_args = 1.., value_name = "FILE")]
     pub file: Option<Vec<String>>,
@@ -43,6 +46,7 @@ pub struct Cli {
     #[clap(long)]
     pub list_sessions: bool,
     /// Input text
+    #[clap(trailing_var_arg = true)]
     text: Vec<String>,
 }
 

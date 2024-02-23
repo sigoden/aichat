@@ -1,4 +1,7 @@
-use crate::client::{Message, MessageContent, MessageRole};
+use crate::{
+    client::{Message, MessageContent, MessageRole},
+    utils::{detect_os, detect_shell},
+};
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -18,6 +21,39 @@ pub struct Role {
 }
 
 impl Role {
+    pub fn for_execute() -> Self {
+        let os = detect_os();
+        let shell = detect_shell();
+        let shell = match shell.rsplit_once('/') {
+            Some((_, v)) => v,
+            None => &shell,
+        };
+        Self {
+            name: "__builtin__".into(),
+            prompt: format!(
+                r#"Provide only {shell} commands for {os} without any description.
+If there is a lack of details, provide most logical solution.
+Ensure the output is a valid shell command.
+If multiple steps required try to combine them together using &&.
+Provide only plain text without Markdown formatting.
+Do not provide markdown formatting such as ```"#
+            ),
+            temperature: None,
+        }
+    }
+
+    pub fn for_describe() -> Self {
+        Self {
+            name: "__builtin__".into(),
+            prompt: r#"Provide a terse, single sentence description of the given shell command.
+Describe each argument and option of the command.
+Provide short responses in about 80 words.
+APPLY MARKDOWN formatting when possible."#
+                .into(),
+            temperature: None,
+        }
+    }
+
     pub fn info(&self) -> Result<String> {
         let output = serde_yaml::to_string(&self)
             .with_context(|| format!("Unable to show info about role {}", &self.name))?;
