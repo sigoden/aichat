@@ -47,6 +47,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - Gemini: gemini-pro/gemini-pro-vision/gemini-ultra 
 - LocalAI: opensource LLMs and other openai-compatible LLMs
 - Ollama: opensource LLMs 
+- VertexAI: gemini-1.0-pro/gemini.1.0-pro-vision/gemini-1.0-ultra/gemini-1.0-ultra-vision
 - Azure-OpenAI: user deployed gpt-3.5/gpt-4
 - Ernie: ernie-bot-turbo/ernie-bot/ernie-bot-8k/ernie-bot-4
 - Qianwen: qwen-turbo/qwen-plus/qwen-max/qwen-max-longcontext/qwen-vl-plus
@@ -57,6 +58,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - Support [Roles](#roles)
 - Support context-aware conversation (session)
 - Support multimodal models (vision)
+- Support executing commands using natural language
 - Syntax highlighting for markdown and 200+ languages in code blocks
 - Stream output
 - Support proxy 
@@ -308,6 +310,7 @@ Options:
   -m, --model <MODEL>        Choose a LLM model
   -r, --role <ROLE>          Choose a role
   -s, --session [<SESSION>]  Create or reuse a session
+  -e, --execute              Execute commands using natural language
   -f, --file <FILE>...       Attach files to the message to be sent
   -H, --no-highlight         Disable syntax highlighting
   -S, --no-stream            No stream output
@@ -350,6 +353,26 @@ aichat -s temp --info                        # Show session details
 aichat -r shell --info                       # Show role info
 
 $(echo "$data" | aichat -S -H to json)       # Use aichat in a script
+```
+
+### Executing commands using natural language
+
+Simply input what you want to do in natural language, and aichat will suggest commands that achieve your intent.
+
+```
+$ aichat -e create index.html and write hello world h1
+echo "<h1>Hello World</h1>" > index.html
+> [e]xecute, [d]escribe, [a]bort:  e
+
+$ aichat -e create nginx container, mount ./index.html, forward port 80
+docker run -d --name nginx_container -p 80:80 -v "$(pwd)/index.html:/usr/share/nginx/html/index.html" nginx
+> [e]xecute, [d]escribe, [a]bort:  e
+019342ba15540caf766d5385beb0c3731daa357df45e017776608143fc833523
+
+$ aichat -e request localhost 80
+curl http://localhost:80
+> [e]xecute, [d]escribe, [a]bort:  e
+<h1>Hello World</h1>
 ```
 
 ## License

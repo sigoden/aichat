@@ -11,6 +11,8 @@ pub use self::render_prompt::render_prompt;
 pub use self::tiktoken::cl100k_base_singleton;
 
 use sha2::{Digest, Sha256};
+use std::env;
+use std::process::Command;
 
 pub fn now() -> String {
     let now = chrono::Local::now();
@@ -85,6 +87,50 @@ pub fn sha256sum(input: &str) -> String {
     hasher.update(input);
     let result = hasher.finalize();
     format!("{:x}", result)
+}
+
+pub fn detect_os() -> String {
+    let os = env::consts::OS;
+    if os == "linux" {
+        if let Ok(contents) = std::fs::read_to_string("/etc/os-release") {
+            for line in contents.lines() {
+                if let Some(id) = line.strip_prefix("ID=") {
+                    return format!("{os}/{id}");
+                }
+            }
+        }
+    }
+    os.to_string()
+}
+
+pub fn detect_shell() -> String {
+    let os = env::consts::OS;
+    if os == "windows" {
+        if let Some(true) = env::var("PSModulePath")
+            .ok()
+            .map(|v| v.split(';').count() >= 3)
+        {
+            "powershell.exe".into()
+        } else {
+            "cmd.exe".into()
+        }
+    } else {
+        env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string())
+    }
+}
+
+pub fn run_command(eval_str: &str) -> anyhow::Result<i32> {
+    let shell = detect_shell();
+    let mut command = Command::new(&shell);
+    if shell == "powershell.exe" {
+        command.arg("-Command").arg(eval_str);
+    } else if shell == "cmd.exe" {
+        command.arg("/c").arg(eval_str);
+    } else {
+        command.arg("-c").arg(eval_str);
+    };
+    let status = command.status()?;
+    Ok(status.code().unwrap_or_default())
 }
 
 #[cfg(test)]

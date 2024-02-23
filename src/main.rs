@@ -11,16 +11,20 @@ mod utils;
 
 use crate::cli::Cli;
 use crate::config::{Config, GlobalConfig};
+use crate::utils::{prompt_op_err, run_command};
 
 use anyhow::Result;
 use clap::Parser;
 use client::{ensure_model_capabilities, init_client, list_models};
 use config::Input;
+use inquire::validator::Validation;
+use inquire::Text;
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use render::{render_error, render_stream, MarkdownRender};
 use repl::Repl;
 use std::io::{stderr, stdin, stdout, Read};
+use std::process;
 use std::sync::Arc;
 use utils::{cl100k_base_singleton, create_abort_signal};
 
@@ -56,13 +60,18 @@ fn main() -> Result<()> {
     if cli.dry_run {
         config.write().dry_run = true;
     }
-    if let Some(name) = &cli.role {
-        config.write().set_role(name)?;
-    }
-    if let Some(session) = &cli.session {
-        config
-            .write()
-            .start_session(session.as_ref().map(|v| v.as_str()))?;
+    let excute_mode = cli.execute && text.is_some();
+    if excute_mode {
+        config.write().set_execute_role()?;
+    } else {
+        if let Some(name) = &cli.role {
+            config.write().set_role(name)?;
+        }
+        if let Some(session) = &cli.session {
+            config
+                .write()
+                .start_session(session.as_ref().map(|v| v.as_str()))?;
+        }
     }
     if let Some(model) = &cli.model {
         config.write().set_model(model)?;
@@ -75,7 +84,13 @@ fn main() -> Result<()> {
         println!("{}", info);
         return Ok(());
     }
-    config.write().onstart()?;
+    if excute_mode {
+        if let Some(text) = &text {
+            execute(&config, text)?;
+            return Ok(());
+        }
+    }
+    config.write().prelude()?;
     if let Err(err) = start(&config, text, cli.file, cli.no_stream) {
         let highlight = stderr().is_terminal() && config.read().highlight;
         render_error(err, highlight)
@@ -138,4 +153,59 @@ fn start_interactive(config: &GlobalConfig) -> Result<()> {
     cl100k_base_singleton();
     let mut repl: Repl = Repl::init(config)?;
     repl.run()
+}
+
+fn execute(config: &GlobalConfig, text: &str) -> Result<()> {
+    let input = Input::from_str(text);
+    let client = init_client(config)?;
+    config.read().maybe_print_send_tokens(&input);
+    let eval_str = client.send_message(input.clone())?;
+    let render_options = config.read().get_render_options()?;
+    let mut markdown_render = MarkdownRender::init(render_options)?;
+    if config.read().dry_run {
+        println!("{}", markdown_render.render(&eval_str).trim());
+        return Ok(());
+    }
+    if stdout().is_terminal() {
+        println!("{}", markdown_render.render(&eval_str).trim());
+        let mut describe = false;
+        loop {
+            let anwser = Text::new("[e]xecute, [d]escribe, [a]bort: ")
+                .with_default("e")
+                .with_validator(|input: &str| {
+                    match matches!(input, "E" | "e" | "D" | "d" | "A" | "a") {
+                        true => Ok(Validation::Valid),
+                        false => Ok(Validation::Invalid(
+                            "Invalid input, choice one of e, d or a".into(),
+                        )),
+                    }
+                })
+                .prompt()
+                .map_err(prompt_op_err)?;
+
+            match anwser.as_str() {
+                "E" | "e" => {
+                    let code = run_command(&eval_str)?;
+                    if code != 0 {
+                        process::exit(code);
+                    }
+                }
+                "D" | "d" => {
+                    if !describe {
+                        config.write().set_describe_role()?;
+                    }
+                    let input = Input::from_str(&eval_str);
+                    let abort = create_abort_signal();
+                    render_stream(&input, client.as_ref(), config, abort)?;
+                    describe = true;
+                    continue;
+                }
+                _ => {}
+            }
+            break;
+        }
+    } else {
+        println!("{}", eval_str);
+    }
+    Ok(())
 }
