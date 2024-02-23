@@ -355,30 +355,48 @@ aichat -r shell --info                       # Show role info
 $(echo "$data" | aichat -S -H to json)       # Use aichat in a script
 ```
 
-### Executing commands using natural language
+### Execute commands using natural language
 
-Simply input what you want to do in natural language, and aichat will suggest commands that achieve your intent.
+Simply input what you want to do in natural language, and aichat will prompt and run the command that achieves your intent.
 
 ```
-$ aichat -e create index.html and write hello world h1
-echo "<h1>Hello World</h1>" > index.html
-> [e]xecute, [d]escribe, [a]bort:  e
+aichat -s <text>...
+```
 
-$ aichat -e create nginx container, mount ./index.html, forward port 80
-docker run -d --name nginx_container -p 80:80 -v "$(pwd)/index.html:/usr/share/nginx/html/index.html" nginx
-> [e]xecute, [d]escribe, [a]bort:  e
-019342ba15540caf766d5385beb0c3731daa357df45e017776608143fc833523
+![aichat-execute](https://github.com/sigoden/aichat/assets/4012553/9bc89a3f-c366-4f46-b4b8-94ac2e4213cb)
 
-$ aichat -e request localhost 80
-curl http://localhost:80
-> [e]xecute, [d]escribe, [a]bort:  e
-<h1>Hello World</h1>
+Aichat is aware of OS and `$SHELL` you are using, it will provide shell command for specific system you have. For instance, if you ask `aichat` to update your system, it will return a command based on your OS. Here's an example using macOS:
+
+```sh
+aichat -e update my system
+# sudo softwareupdate -i -a
+# ? [e]xecute, [d]escribe, [a]bort:  (e)  
+```
+
+The same prompt, when used on Ubuntu, will generate a different suggestion:
+```sh
+ aichat -e update my system
+# sudo apt update && sudo apt upgrade -y
+# ? [e]xecute, [d]escribe, [a]bort:  (e)  
+```
+
+We can still use pipes to pass input to aichat and generate shell commands:
+
+```sh
+aichat -e POST localhost with < data.json
+# curl -X POST -H "Content-Type: application/json" -d '{"a": 1, "b": 2}' localhost
+# ? [e]xecute, [d]escribe, [a]bort:  (e)  
+```
+
+We can also pipe the output of aichat which will disable interactive mode.
+```sh
+aichat -e find all json files in current folder | pbcopy
 ```
 
 ## License
 
 Copyright (c) 2023 aichat-developers.
 
-aichat is made available under the terms of either the MIT License or the Apache License 2.0, at your option.
+Aichat is made available under the terms of either the MIT License or the Apache License 2.0, at your option.
 
 See the LICENSE-APACHE and LICENSE-MIT files for license details.

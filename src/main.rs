@@ -13,7 +13,7 @@ use crate::cli::Cli;
 use crate::config::{Config, GlobalConfig};
 use crate::utils::{prompt_op_err, run_command};
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use clap::Parser;
 use client::{ensure_model_capabilities, init_client, list_models};
 use config::Input;
@@ -60,8 +60,7 @@ fn main() -> Result<()> {
     if cli.dry_run {
         config.write().dry_run = true;
     }
-    let excute_mode = cli.execute && text.is_some();
-    if excute_mode {
+    if cli.execute {
         config.write().set_execute_role()?;
     } else {
         if let Some(name) = &cli.role {
@@ -84,39 +83,25 @@ fn main() -> Result<()> {
         println!("{}", info);
         return Ok(());
     }
-    if excute_mode {
-        if let Some(text) = &text {
-            execute(&config, text)?;
-            return Ok(());
+    let text = aggregate_text(text)?;
+    if cli.execute {
+        match text {
+            Some(text) => {
+                execute(&config, &text)?;
+                return Ok(());
+            }
+            None => bail!("No input text"),
         }
     }
     config.write().prelude()?;
-    if let Err(err) = start(&config, text, cli.file, cli.no_stream) {
+    if let Err(err) = match text {
+        Some(text) => start_directive(&config, &text, cli.file, cli.no_stream),
+        None => start_interactive(&config),
+    } {
         let highlight = stderr().is_terminal() && config.read().highlight;
         render_error(err, highlight)
     }
     Ok(())
-}
-
-fn start(
-    config: &GlobalConfig,
-    text: Option<String>,
-    include: Option<Vec<String>>,
-    no_stream: bool,
-) -> Result<()> {
-    if stdin().is_terminal() {
-        match text {
-            Some(text) => start_directive(config, &text, include, no_stream),
-            None => start_interactive(config),
-        }
-    } else {
-        let mut input = String::new();
-        stdin().read_to_string(&mut input)?;
-        if let Some(text) = text {
-            input = format!("{text}\n{input}");
-        }
-        start_directive(config, &input, include, no_stream)
-    }
 }
 
 fn start_directive(
@@ -208,4 +193,19 @@ fn execute(config: &GlobalConfig, text: &str) -> Result<()> {
         println!("{}", eval_str);
     }
     Ok(())
+}
+
+fn aggregate_text(text: Option<String>) -> Result<Option<String>> {
+    let text = if stdin().is_terminal() {
+        text
+    } else {
+        let mut stdin_text = String::new();
+        stdin().read_to_string(&mut stdin_text)?;
+        if let Some(text) = text {
+            Some(format!("{text}\n{stdin_text}"))
+        } else {
+            Some(stdin_text)
+        }
+    };
+    Ok(text)
 }
