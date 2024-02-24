@@ -11,7 +11,7 @@ use crate::client::{
     Model, OpenAIClient, SendData,
 };
 use crate::render::{MarkdownRender, RenderOptions};
-use crate::utils::{get_env_name, light_theme_from_colorfgbg, now, prompt_op_err, render_prompt};
+use crate::utils::{get_env_name, light_theme_from_colorfgbg, now, render_prompt};
 
 use anyhow::{anyhow, bail, Context, Result};
 use inquire::{Confirm, Select, Text};
@@ -577,8 +577,7 @@ impl Config {
                         "Start a session that incorporates the last question and answer?",
                     )
                     .with_default(false)
-                    .prompt()
-                    .map_err(prompt_op_err)?;
+                    .prompt()?;
                     if ans {
                         session.add_message(input, output)?;
                     }
@@ -593,19 +592,13 @@ impl Config {
             self.last_message = None;
             self.temperature = self.default_temperature;
             if session.should_save() {
-                let ans = Confirm::new("Save session?")
-                    .with_default(false)
-                    .prompt()
-                    .map_err(prompt_op_err)?;
+                let ans = Confirm::new("Save session?").with_default(false).prompt()?;
                 if !ans {
                     return Ok(());
                 }
                 let mut name = session.name().to_string();
                 if session.is_temp() {
-                    name = Text::new("Session name:")
-                        .with_default(&name)
-                        .prompt()
-                        .map_err(prompt_op_err)?;
+                    name = Text::new("Session name:").with_default(&name).prompt()?;
                 }
                 let session_path = Self::session_file(&name)?;
                 let sessions_dir = session_path.parent().ok_or_else(|| {
@@ -917,15 +910,12 @@ pub enum State {
 fn create_config_file(config_path: &Path) -> Result<()> {
     let ans = Confirm::new("No config file, create a new one?")
         .with_default(true)
-        .prompt()
-        .map_err(prompt_op_err)?;
+        .prompt()?;
     if !ans {
         exit(0);
     }
 
-    let client = Select::new("Platform:", list_client_types())
-        .prompt()
-        .map_err(prompt_op_err)?;
+    let client = Select::new("Platform:", list_client_types()).prompt()?;
 
     let mut config = serde_json::json!({});
     config["model"] = client.into();
