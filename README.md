@@ -11,7 +11,7 @@ AIChat in chat REPL mode:
 
 AIChat in command mode:
 
-![command mode](https://github.com/sigoden/aichat/assets/4012553/26f7badc-1b1f-418b-99c1-fbc58bee0097)
+![command mode](https://github.com/sigoden/aichat/assets/4012553/db96a38a-2f14-4127-91e7-4d111aba6ca9)
 
 ## Install
 
@@ -58,10 +58,10 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - Support [Roles](#roles)
 - Support context-aware conversation (session)
 - Support multimodal models (vision)
-- Support executing commands using natural language
+- Execute commands using natural language
 - Syntax highlighting for markdown and 200+ languages in code blocks
 - Stream output
-- Support proxy 
+- Use proxy
 - With Dark/light theme
 - Save messages/sessions
 
@@ -149,8 +149,9 @@ The Chat REPL supports:
 
 - Emacs/Vi keybinding
 - [Custom REPL Prompt](https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt)
-- Tab Completion
+- Tab Completions
 - Edit/paste multiline text
+- Open an editor to modify the current prompt
 - Undo support
 
 ### `.help` - print help message
@@ -395,7 +396,7 @@ aichat -e find all json files in current folder | pbcopy
 
 ## License
 
-Copyright (c) 2023 aichat-developers.
+Copyright (c) 2023-2024 aichat-developers.
 
 Aichat is made available under the terms of either the MIT License or the Apache License 2.0, at your option.
 

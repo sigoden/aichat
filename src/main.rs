@@ -11,7 +11,7 @@ mod utils;
 
 use crate::cli::Cli;
 use crate::config::{Config, GlobalConfig};
-use crate::utils::{prompt_op_err, run_command};
+use crate::utils::run_command;
 
 use anyhow::{bail, Result};
 use clap::Parser;
@@ -165,8 +165,7 @@ fn execute(config: &GlobalConfig, text: &str) -> Result<()> {
                         )),
                     }
                 })
-                .prompt()
-                .map_err(prompt_op_err)?;
+                .prompt()?;
 
             match anwser.as_str() {
                 "E" | "e" => {
