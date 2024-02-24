@@ -14,7 +14,18 @@ pub fn set_text(text: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-#[cfg(any(target_os = "android", target_os = "emscripten"))]
+#[cfg(target_os = "android")]
+pub fn set_text(text: &str) -> anyhow::Result<()> {
+    let code = std::process::Command::new("termux-clipboard-set")
+        .arg(text)
+        .status()?;
+    if !code.success() {
+        anyhow::bail!("Failed to run termux-clipboard-set");
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "emscripten")]
 pub fn set_text(_text: &str) -> anyhow::Result<()> {
-    anyhow::bail!("No available clipboard")
+    anyhow::bail!("No clipboard available")
 }
