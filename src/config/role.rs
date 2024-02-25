@@ -29,7 +29,7 @@ impl Role {
             None => &shell,
         };
         Self {
-            name: "__builtin__".into(),
+            name: "__for_execute__".into(),
             prompt: format!(
                 r#"Provide only {shell} commands for {os} without any description.
 If there is a lack of details, provide most logical solution.
@@ -44,7 +44,7 @@ Do not provide markdown formatting such as ```"#
 
     pub fn for_describe() -> Self {
         Self {
-            name: "__builtin__".into(),
+            name: "__for_describe__".into(),
             prompt: r#"Provide a terse, single sentence description of the given shell command.
 Describe each argument and option of the command.
 Provide short responses in about 80 words.

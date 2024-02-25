@@ -80,7 +80,12 @@ impl Input {
     }
 
     pub fn summary(&self) -> String {
-        let text = &self.text;
+        let text: String = self
+            .text
+            .trim()
+            .chars()
+            .map(|c| if c.is_control() { ' ' } else { c })
+            .collect();
         if text.width_cjk() > 70 {
             let mut sum_width = 0;
             let mut chars = vec![];
@@ -94,7 +99,7 @@ impl Input {
             }
             chars.into_iter().collect()
         } else {
-            text.clone()
+            text
         }
     }
 

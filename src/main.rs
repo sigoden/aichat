@@ -145,6 +145,7 @@ fn execute(config: &GlobalConfig, text: &str) -> Result<()> {
     let client = init_client(config)?;
     config.read().maybe_print_send_tokens(&input);
     let eval_str = client.send_message(input.clone())?;
+    config.write().save_message(input, &eval_str)?;
     let render_options = config.read().get_render_options()?;
     let mut markdown_render = MarkdownRender::init(render_options)?;
     if config.read().dry_run {
