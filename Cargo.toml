@@ -1,6 +1,6 @@
 [package]
 name = "aichat"
-version = "0.12.0"
+version = "0.13.0"
 edition = "2021"
 authors = ["sigoden <sigoden@gmail.com>"]
 description = "Use GPT-4(V), Gemini, LocalAI, Ollama and other LLMs in the terminal."
