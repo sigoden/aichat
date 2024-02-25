@@ -167,6 +167,8 @@ fn execute(config: &GlobalConfig, text: &str) -> Result<()> {
                 })
                 .prompt()?;
 
+            println!();
+
             match anwser.as_str() {
                 "E" | "e" => {
                     let code = run_command(&eval_str)?;
