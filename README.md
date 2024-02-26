@@ -396,7 +396,7 @@ aichat -e find all json files in current folder | pbcopy
 
 ### Shell integration
 
-This is a **very handy feature**, which allows you to use `aichat` shell completions directly in your terminal, without the need to type `aichat` with prompt and arguments. Shell integration enables the use of ShellGPT with hotkeys in your terminal, supported by both Bash and ZSH shells. This feature puts `aichat` completions directly into terminal buffer (input line), allowing for immediate editing of suggested commands.
+This is a **very handy feature**, which allows you to use `aichat` shell completions directly in your terminal, without the need to type `aichat` with prompt and arguments. This feature puts `aichat` completions directly into terminal buffer (input line), allowing for immediate editing of suggested commands.
 
 ![aichat-integration](https://github.com/sigoden/aichat/assets/4012553/9a9b17ea-977a-4bd8-8182-a0a96627573c)
 
