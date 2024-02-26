@@ -364,7 +364,7 @@ Simply input what you want to do in natural language, and aichat will prompt and
 aichat -s <text>...
 ```
 
-![aichat-execute](https://github.com/sigoden/aichat/assets/4012553/9bc89a3f-c366-4f46-b4b8-94ac2e4213cb)
+![aichat-execute](https://github.com/sigoden/aichat/assets/4012553/37714a89-2841-41c4-a989-759642f46676)
 
 Aichat is aware of OS and `$SHELL` you are using, it will provide shell command for specific system you have. For instance, if you ask `aichat` to update your system, it will return a command based on your OS. Here's an example using macOS:
 
@@ -398,7 +398,7 @@ aichat -e find all json files in current folder | pbcopy
 
 This is a **very handy feature**, which allows you to use `aichat` shell completions directly in your terminal, without the need to type `aichat` with prompt and arguments. This feature puts `aichat` completions directly into terminal buffer (input line), allowing for immediate editing of suggested commands.
 
-![aichat-integration](https://github.com/sigoden/aichat/assets/4012553/9a9b17ea-977a-4bd8-8182-a0a96627573c)
+![aichat-integration](https://github.com/sigoden/aichat/assets/4012553/873ebf23-226c-412e-a34f-c5aaa7017524)
 
 To install shell integration, run the following code:
 
