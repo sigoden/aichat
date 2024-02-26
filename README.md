@@ -394,6 +394,22 @@ We can also pipe the output of aichat which will disable interactive mode.
 aichat -e find all json files in current folder | pbcopy
 ```
 
+### Shell integration
+
+This is a **very handy feature**, which allows you to use `aichat` shell completions directly in your terminal, without the need to type `aichat` with prompt and arguments. This feature puts `aichat` completions directly into terminal buffer (input line), allowing for immediate editing of suggested commands.
+
+![aichat-integration](https://github.com/sigoden/aichat/assets/4012553/9a9b17ea-977a-4bd8-8182-a0a96627573c)
+
+To install shell integration, run the following code:
+
+```sh
+sh_ext=bash # possible values: bash, fish, zsh, ps1
+curl -o aichat-integration.$sh_ext https://raw.githubusercontent.com/sigoden/aichat/main/scripts/integration.$sh_ext
+. aichat-integration.$sh_ext
+```
+
+After that restart your shell. You can invoke the completion with `alt+e` hotkey.
+
 ## License
 
 Copyright (c) 2023-2024 aichat-developers.
