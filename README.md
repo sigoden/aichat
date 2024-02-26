@@ -404,8 +404,9 @@ To install shell integration, run the following code:
 
 ```sh
 sh_ext=bash # possible values: bash, fish, zsh, ps1
-curl -o aichat-integration.$sh_ext https://raw.githubusercontent.com/sigoden/aichat/main/scripts/integration.$sh_ext
-. aichat-integration.$sh_ext
+sh_url=https://raw.githubusercontent.com/sigoden/aichat/main/scripts/integration.$sh_ext
+curl -o aichat-integration.$sh_ext $sh_url
+source aichat-integration.$sh_ext
 ```
 
 After that restart your shell. You can invoke the completion with `alt+e` hotkey.
