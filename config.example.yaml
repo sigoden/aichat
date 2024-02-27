@@ -71,6 +71,10 @@ clients:
   - type: qianwen
     api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+  # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
+  - type: claude
+    api_key: xxx
+
   # See https://cloud.google.com/vertex-ai
   - type: vertexai
     api_base: https://{REGION}-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/{REGION}/publishers/google/models

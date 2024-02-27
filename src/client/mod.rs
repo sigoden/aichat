@@ -10,6 +10,7 @@ pub use model::*;
 register_client!(
     (openai, "openai", OpenAIConfig, OpenAIClient),
     (gemini, "gemini", GeminiConfig, GeminiClient),
+    (claude, "claude", ClaudeConfig, ClaudeClient),
     (localai, "localai", LocalAIConfig, LocalAIClient),
     (ollama, "ollama", OllamaConfig, OllamaClient),
     (
