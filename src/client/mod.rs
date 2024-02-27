@@ -21,4 +21,5 @@ register_client!(
     ),
     (ernie, "ernie", ErnieConfig, ErnieClient),
     (qianwen, "qianwen", QianwenConfig, QianwenClient),
+    (vertexai, "vertexai", VertexAIConfig, VertexAIClient),
 );

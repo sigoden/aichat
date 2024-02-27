@@ -10,7 +10,8 @@ pub fn prompt_input_string(desc: &str, required: bool) -> anyhow::Result<String>
     } else {
         text = text.with_help_message(MSG_OPTIONAL)
     }
-    text.prompt().map_err(prompt_op_err)
+    let text = text.prompt()?;
+    Ok(text)
 }
 
 pub fn prompt_input_integer(desc: &str, required: bool) -> anyhow::Result<String> {
@@ -36,11 +37,8 @@ pub fn prompt_input_integer(desc: &str, required: bool) -> anyhow::Result<String
             })
             .with_help_message(MSG_OPTIONAL)
     }
-    text.prompt().map_err(prompt_op_err)
-}
-
-pub fn prompt_op_err<T>(_: T) -> anyhow::Error {
-    anyhow::anyhow!("Not finish questionnaire, try again later!")
+    let text = text.prompt()?;
+    Ok(text)
 }
 
 #[derive(Debug, Clone, Copy)]

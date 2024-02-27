@@ -12,6 +12,7 @@ use std::{
     io::Read,
     path::{Path, PathBuf},
 };
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 const IMAGE_EXTS: [&str; 5] = ["png", "jpeg", "jpg", "webp", "gif"];
 
@@ -76,6 +77,30 @@ impl Input {
 
     pub fn data_urls(&self) -> HashMap<String, String> {
         self.data_urls.clone()
+    }
+
+    pub fn summary(&self) -> String {
+        let text: String = self
+            .text
+            .trim()
+            .chars()
+            .map(|c| if c.is_control() { ' ' } else { c })
+            .collect();
+        if text.width_cjk() > 70 {
+            let mut sum_width = 0;
+            let mut chars = vec![];
+            for c in text.chars() {
+                sum_width += c.width_cjk().unwrap_or(1);
+                if sum_width > 67 {
+                    chars.extend(['.', '.', '.']);
+                    break;
+                }
+                chars.push(c);
+            }
+            chars.into_iter().collect()
+        } else {
+            text
+        }
     }
 
     pub fn render(&self) -> String {

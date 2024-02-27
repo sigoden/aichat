@@ -109,6 +109,7 @@ fn create_suggestion(value: String, description: Option<String>, span: Span) -> 
     Suggestion {
         value,
         description,
+        style: None,
         extra: None,
         span,
         append_whitespace: false,

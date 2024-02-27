@@ -69,6 +69,7 @@ impl OllamaClient {
                 Model::new(client_name, &v.name)
                     .set_capabilities(v.capabilities)
                     .set_max_tokens(v.max_tokens)
+                    .set_extra_fields(v.extra_fields.clone())
                     .set_tokens_count_factors(TOKENS_COUNT_FACTORS)
             })
             .collect()
@@ -77,7 +78,9 @@ impl OllamaClient {
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
 
-        let body = build_body(data, self.model.name.clone())?;
+        let mut body = build_body(data, self.model.name.clone())?;
+
+        self.model.merge_extra_fields(&mut body);
 
         let chat_endpoint = self.config.chat_endpoint.as_deref().unwrap_or("/api/chat");
 
@@ -118,6 +121,9 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
         let mut stream = res.bytes_stream();
         while let Some(chunk) = stream.next().await {
             let chunk = chunk?;
+            if chunk.is_empty() {
+              continue;
+            }
             let data: Value = serde_json::from_slice(&chunk)?;
             if data["done"].is_boolean() {
                 if let Some(text) = data["message"]["content"].as_str() {

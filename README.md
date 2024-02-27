@@ -11,7 +11,7 @@ AIChat in chat REPL mode:
 
 AIChat in command mode:
 
-![command mode](https://github.com/sigoden/aichat/assets/4012553/26f7badc-1b1f-418b-99c1-fbc58bee0097)
+![command mode](https://github.com/sigoden/aichat/assets/4012553/db96a38a-2f14-4127-91e7-4d111aba6ca9)
 
 ## Install
 
@@ -44,9 +44,10 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 ## Support LLMs
 
 - OpenAI: gpt-3.5/gpt-4/gpt-4-vision
-- Gemini: gemini-pro/gemini-pro-vision/gemini-ultra 
+- Gemini: gemini-pro/gemini-pro-vision
 - LocalAI: opensource LLMs and other openai-compatible LLMs
 - Ollama: opensource LLMs 
+- VertexAI: gemini-pro/gemini-pro-vision/gemini-ultra/gemini-ultra-vision
 - Azure-OpenAI: user deployed gpt-3.5/gpt-4
 - Ernie: ernie-bot-turbo/ernie-bot/ernie-bot-8k/ernie-bot-4
 - Qianwen: qwen-turbo/qwen-plus/qwen-max/qwen-max-longcontext/qwen-vl-plus
@@ -58,9 +59,10 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - Support [Roles](#roles)
 - Support context-aware conversation (session)
 - Support multimodal models (vision)
+- Execute commands using natural language
 - Syntax highlighting for markdown and 200+ languages in code blocks
 - Stream output
-- Support proxy 
+- Use proxy
 - With Dark/light theme
 - Save messages/sessions
 
@@ -91,7 +93,6 @@ prelude: ''                      # Set a default role or session (role:<name>, s
 clients:
   - type: openai
     api_key: sk-xxx
-    organization_id:
 
   - type: localai
     api_base: http://localhost:8080/v1
@@ -149,8 +150,9 @@ The Chat REPL supports:
 
 - Emacs/Vi keybinding
 - [Custom REPL Prompt](https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt)
-- Tab Completion
+- Tab Completions
 - Edit/paste multiline text
+- Open an editor to modify the current prompt
 - Undo support
 
 ### `.help` - print help message
@@ -172,6 +174,7 @@ The Chat REPL supports:
 .exit                    Exit the REPL
 
 Type ::: to begin multi-line editing, type ::: to end it.
+Press Ctrl+O to open an editor to modify the current prompt.
 Press Ctrl+C to abort readline, Ctrl+D to exit the REPL
 
 ```
@@ -309,6 +312,7 @@ Options:
   -m, --model <MODEL>        Choose a LLM model
   -r, --role <ROLE>          Choose a role
   -s, --session [<SESSION>]  Create or reuse a session
+  -e, --execute              Execute commands using natural language
   -f, --file <FILE>...       Attach files to the message to be sent
   -H, --no-highlight         Disable syntax highlighting
   -S, --no-stream            No stream output
@@ -353,10 +357,65 @@ aichat -r shell --info                       # Show role info
 $(echo "$data" | aichat -S -H to json)       # Use aichat in a script
 ```
 
+### Execute commands using natural language
+
+Simply input what you want to do in natural language, and aichat will prompt and run the command that achieves your intent.
+
+```
+aichat -s <text>...
+```
+
+![aichat-execute](https://github.com/sigoden/aichat/assets/4012553/37714a89-2841-41c4-a989-759642f46676)
+
+Aichat is aware of OS and `$SHELL` you are using, it will provide shell command for specific system you have. For instance, if you ask `aichat` to update your system, it will return a command based on your OS. Here's an example using macOS:
+
+```sh
+aichat -e update my system
+# sudo softwareupdate -i -a
+# ? [e]xecute, [d]escribe, [a]bort:  (e)  
+```
+
+The same prompt, when used on Ubuntu, will generate a different suggestion:
+```sh
+ aichat -e update my system
+# sudo apt update && sudo apt upgrade -y
+# ? [e]xecute, [d]escribe, [a]bort:  (e)  
+```
+
+We can still use pipes to pass input to aichat and generate shell commands:
+
+```sh
+aichat -e POST localhost with < data.json
+# curl -X POST -H "Content-Type: application/json" -d '{"a": 1, "b": 2}' localhost
+# ? [e]xecute, [d]escribe, [a]bort:  (e)  
+```
+
+We can also pipe the output of aichat which will disable interactive mode.
+```sh
+aichat -e find all json files in current folder | pbcopy
+```
+
+### Shell integration
+
+This is a **very handy feature**, which allows you to use `aichat` shell completions directly in your terminal, without the need to type `aichat` with prompt and arguments. This feature puts `aichat` completions directly into terminal buffer (input line), allowing for immediate editing of suggested commands.
+
+![aichat-integration](https://github.com/sigoden/aichat/assets/4012553/873ebf23-226c-412e-a34f-c5aaa7017524)
+
+To install shell integration, run the following code:
+
+```sh
+sh_ext=bash # possible values: bash, fish, zsh, ps1
+sh_url=https://raw.githubusercontent.com/sigoden/aichat/main/scripts/integration.$sh_ext
+curl -o aichat-integration.$sh_ext $sh_url
+source aichat-integration.$sh_ext
+```
+
+After that restart your shell. You can invoke the completion with `alt+e` hotkey.
+
 ## License
 
-Copyright (c) 2023 aichat-developers.
+Copyright (c) 2023-2024 aichat-developers.
 
-aichat is made available under the terms of either the MIT License or the Apache License 2.0, at your option.
+Aichat is made available under the terms of either the MIT License or the Apache License 2.0, at your option.
 
 See the LICENSE-APACHE and LICENSE-MIT files for license details.
