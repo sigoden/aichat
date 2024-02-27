@@ -15,7 +15,11 @@ use serde_json::{json, Value};
 
 const API_BASE: &str = "https://api.anthropic.com/v1/messages";
 
-const MODELS: [(&str, usize, &str); 1] = [("claude-2.1", 204096, "text,vision")];
+const MODELS: [(&str, usize, &str); 3] = [
+    ("claude-2.1", 204096, "text"),
+    ("claude-2.0", 104096, "text"),
+    ("claude-instant-1.2", 104096, "text"),
+];
 
 const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
 
@@ -75,6 +79,7 @@ impl ClaudeClient {
         debug!("Claude Request: {url} {body}");
 
         let mut builder = client.post(url).json(&body);
+        builder = builder.header("anthropic-version", "2023-06-01");
         if let Some(api_key) = api_key {
             builder = builder.header("x-api-key", api_key)
         }
@@ -113,6 +118,11 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
             Err(err) => {
                 match err {
                     EventSourceError::StreamEnded => {}
+                    EventSourceError::InvalidStatusCode(code, res) => {
+                        let data: Value = res.json().await?;
+                        check_error(&data)?;
+                        bail!("Invalid status code: {code}");
+                    }
                     _ => {
                         bail!("{}", err);
                     }
@@ -136,6 +146,7 @@ fn build_body(data: SendData, model: String) -> Value {
 
     let mut body = json!({
         "model": model,
+        "max_tokens": 4096,
         "messages": messages,
     });
 
