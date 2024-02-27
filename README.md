@@ -45,11 +45,12 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 
 - OpenAI: gpt-3.5/gpt-4/gpt-4-vision
 - Gemini: gemini-pro/gemini-pro-vision
+- Claude: claude-instant-1.2/claude-2.0/claude-2.1
+- Mistral: mistral-small/mistral-medium/mistral-large
 - LocalAI: opensource LLMs and other openai-compatible LLMs
 - Ollama: opensource LLMs 
-- VertexAI: gemini-pro/gemini-pro-vision/gemini-ultra/gemini-ultra-vision
-- Claude: claude-instant-1.2/claude-2.0/claude-2.1
 - Azure-OpenAI: user deployed gpt-3.5/gpt-4
+- VertexAI: gemini-pro/gemini-pro-vision/gemini-ultra/gemini-ultra-vision
 - Ernie: ernie-bot-turbo/ernie-bot/ernie-bot-8k/ernie-bot-4
 - Qianwen: qwen-turbo/qwen-plus/qwen-max/qwen-max-longcontext/qwen-vl-plus
 
