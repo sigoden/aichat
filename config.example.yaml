@@ -31,13 +31,20 @@ clients:
   - type: gemini
     api_key: AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+  # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
+  - type: claude
+    api_key: sk-xxx
+
+  - type: mistral
+    api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
   # Any openai-compatible API providers or https://github.com/go-skynet/LocalAI
   - type: localai
     api_base: http://localhost:8080/v1
     api_key: xxx
     chat_endpoint: /chat/completions                  # Optional field
     models:
-      - name: mistral
+      - name: llama2
         max_tokens: 8192
         extra_fields:                                 # Optional field, set custom parameters
           key: value
@@ -62,6 +69,14 @@ clients:
       - name: MyGPT4                                  # Model deployment name
         max_tokens: 8192
 
+  # See https://cloud.google.com/vertex-ai
+  - type: vertexai
+    api_base: https://{REGION}-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/{REGION}/publishers/google/models
+    # Setup Application Default Credentials (ADC) file, Optional field
+    # Run `gcloud auth application-default login` to setup adc
+    # see https://cloud.google.com/docs/authentication/external/set-up-adc
+    adc_file: <path-to/gcloud/application_default_credentials.json> 
+
   # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
   - type: ernie
     api_key: xxxxxxxxxxxxxxxxxxxxxxxx
@@ -70,15 +85,3 @@ clients:
   # See https://help.aliyun.com/zh/dashscope/
   - type: qianwen
     api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-  # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
-  - type: claude
-    api_key: xxx
-
-  # See https://cloud.google.com/vertex-ai
-  - type: vertexai
-    api_base: https://{REGION}-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/{REGION}/publishers/google/models
-    # Setup Application Default Credentials (ADC) file, Optional field
-    # Run `gcloud auth application-default login` to setup adc
-    # see https://cloud.google.com/docs/authentication/external/set-up-adc
-    adc_file: <path-to/gcloud/application_default_credentials.json> 

@@ -11,6 +11,7 @@ register_client!(
     (openai, "openai", OpenAIConfig, OpenAIClient),
     (gemini, "gemini", GeminiConfig, GeminiClient),
     (claude, "claude", ClaudeConfig, ClaudeClient),
+    (mistral, "mistral", MistralConfig, MistralClient),
     (localai, "localai", LocalAIConfig, LocalAIClient),
     (ollama, "ollama", OllamaConfig, OllamaClient),
     (
