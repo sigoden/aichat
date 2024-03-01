@@ -111,8 +111,11 @@ pub async fn openai_send_message_streaming(
                         let data: Value = res.json().await?;
                         if let Some(err_msg) = data["error"]["message"].as_str() {
                             bail!("{err_msg}");
-                        }
-                        bail!("Request failed");
+                        } else if let Some(err_msg) = data["message"].as_str() {
+                            bail!("{err_msg}");
+                        } else {
+                            bail!("Request failed, {data}");
+                        } 
                     }
                     EventSourceError::StreamEnded => {}
                     _ => {
