@@ -63,10 +63,10 @@ fn main() -> Result<()> {
     if cli.execute {
         config.write().set_execute_role()?;
     } else {
-        if cli.code {
-            config.write().set_code_role()?;
-        } else if let Some(name) = &cli.role {
+        if let Some(name) = &cli.role {
             config.write().set_role(name)?;
+        } else if cli.code {
+            config.write().set_code_role()?;
         }
         if let Some(session) = &cli.session {
             config
