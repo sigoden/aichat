@@ -108,11 +108,19 @@ pub fn detect_shell() -> (String, String, &'static str) {
     if os == "windows" {
         if env::var("NU_VERSION").is_ok() {
             ("nushell".into(), "nu.exe".into(), "-c")
-        } else if let Some(true) = env::var("PSModulePath")
-            .ok()
-            .map(|v| v.split(';').count() >= 3)
-        {
-            ("powershell".into(), "powershell.exe".into(), "-Command")
+        } else if let Some(ret) = env::var("PSModulePath").ok().and_then(|v| {
+            let v = v.to_lowercase();
+            if v.split(';').count() >= 3 {
+                if v.contains("powershell\\7\\") {
+                    Some(("pwsh".into(), "pwsh.exe".into(), "-c"))
+                } else {
+                    Some(("powershell".into(), "powershell.exe".into(), "-Command"))
+                }
+            } else {
+                None
+            }
+        }) {
+            ret
         } else {
             ("cmd".into(), "cmd.exe".into(), "/C")
         }
@@ -124,10 +132,10 @@ pub fn detect_shell() -> (String, String, &'static str) {
             Some((_, name)) => name.to_string(),
             None => shell_cmd.clone(),
         };
-        let shell_name = match shell_name.as_str() {
-            "nu" => "nushell".into(),
-            "pwsh" => "powershell".into(),
-            _ => shell_name,
+        let shell_name = if shell_name == "nu" {
+            "nushell".into()
+        } else {
+            shell_name
         };
         (shell_name, shell_cmd, "-c")
     }

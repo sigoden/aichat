@@ -24,7 +24,10 @@ impl Role {
     pub fn for_execute() -> Self {
         let os = detect_os();
         let (shell, _, _) = detect_shell();
-        let combine = if shell == "nushell" { ";" } else { "&&" };
+        let combine = match shell.as_str() {
+            "nushell" | "powershell" => ";",
+            _ => "&&",
+        };
         Self {
             name: "__for_execute__".into(),
             prompt: format!(
