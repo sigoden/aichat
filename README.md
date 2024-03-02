@@ -53,7 +53,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
   - VertexAI (paid, vision)
   - Ernie (paid)
   - Qianwen (paid, vision)
-- Support [REPL Mode](#chat-repl) and [Command Mode][#command]
+- Support [REPL Mode](#chat-repl) and [Command Mode](#command)
 - Support [Roles](#roles)
 - Support context-aware conversation (session)
 - Support multimodal models (vision)
@@ -62,7 +62,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - Save messages/sessions
 - Stream/Non-stream output
 - With proxy
-- With Dark/light theme
+- With dark/light theme
 
 ## Config
 
@@ -399,16 +399,7 @@ This is a **very handy feature**, which allows you to use `aichat` shell complet
 
 ![aichat-integration](https://github.com/sigoden/aichat/assets/4012553/873ebf23-226c-412e-a34f-c5aaa7017524)
 
-To install shell integration, run the following code:
-
-```sh
-sh_ext=bash # possible values: bash, fish, zsh, ps1
-sh_url=https://raw.githubusercontent.com/sigoden/aichat/main/scripts/integration.$sh_ext
-curl -o aichat-integration.$sh_ext $sh_url
-source aichat-integration.$sh_ext
-```
-
-After that restart your shell. You can invoke the completion with `alt+e` hotkey.
+To install shell integration, go to [./scripts/shell-integration](./scripts/shell-integration/) to download the script and source the script in rc file. After that restart your shell. You can invoke the completion with `alt+e` hotkey.
 
 ## License
 
