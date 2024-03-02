@@ -41,31 +41,28 @@ pkg install aichat
 
 Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), unzip and add aichat to your $PATH.
 
-## Support LLMs
-
-- OpenAI: gpt-3.5/gpt-4/gpt-4-vision
-- Gemini: gemini-pro/gemini-pro-vision
-- Claude: claude-instant-1.2/claude-2.0/claude-2.1
-- Mistral: mistral-small/mistral-medium/mistral-large
-- LocalAI: opensource LLMs and other openai-compatible LLMs
-- Ollama: opensource LLMs 
-- Azure-OpenAI: user deployed gpt-3.5/gpt-4
-- VertexAI: gemini-pro/gemini-pro-vision/gemini-ultra/gemini-ultra-vision
-- Ernie: ernie-bot-turbo/ernie-bot/ernie-bot-8k/ernie-bot-4
-- Qianwen: qwen-turbo/qwen-plus/qwen-max/qwen-max-longcontext/qwen-vl-plus
-
 ## Features
-
-- Have two modes: [REPL](#chat-repl) and [Command](#command).
+- Support most of the LLM platforms
+  - OpenAI (paid, vision)
+  - Gemini (free, vision)
+  - Claude (paid)
+  - Mistral (paid)
+  - LocalAI (free, local, vision)
+  - Ollama (free, local)
+  - Azure-OpenAI (paid)
+  - VertexAI (paid, vision)
+  - Ernie (paid)
+  - Qianwen (paid, vision)
+- Support [REPL Mode](#chat-repl) and [Command Mode][#command]
 - Support [Roles](#roles)
 - Support context-aware conversation (session)
 - Support multimodal models (vision)
 - Execute commands using natural language
 - Syntax highlighting for markdown and 200+ languages in code blocks
-- Stream output
-- Use proxy
-- With Dark/light theme
 - Save messages/sessions
+- Stream/Non-stream output
+- With proxy
+- With Dark/light theme
 
 ## Config
 
