@@ -140,7 +140,6 @@ fn start_directive(
         render_stream(&input, client.as_ref(), config, abort)?
     };
     config.write().save_message(input, &output)?;
-    config.read().maybe_copy(&output);
     Ok(())
 }
 
