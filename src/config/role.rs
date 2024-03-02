@@ -29,7 +29,7 @@ impl Role {
             _ => "&&",
         };
         Self {
-            name: "__for_execute__".into(),
+            name: "__execute__".into(),
             prompt: format!(
                 r#"Provide only {shell} commands for {os} without any description.
 If there is a lack of details, provide most logical solution.
@@ -44,11 +44,25 @@ Do not provide markdown formatting such as ```"#
 
     pub fn for_describe() -> Self {
         Self {
-            name: "__for_describe__".into(),
+            name: "__describe__".into(),
             prompt: r#"Provide a terse, single sentence description of the given shell command.
 Describe each argument and option of the command.
 Provide short responses in about 80 words.
 APPLY MARKDOWN formatting when possible."#
+                .into(),
+            temperature: None,
+        }
+    }
+
+    pub fn for_code() -> Self {
+        Self {
+            name: "__code__".into(),
+            prompt: r#"Provide only code as output without any description.
+Provide only code in plain text format without Markdown formatting.
+Do not include symbols such as ``` or ```python.
+If there is a lack of details, provide most logical solution.
+You are not allowed to ask for more details.
+For example if the prompt is "Hello world Python", you should return "print('Hello world')"."#
                 .into(),
             temperature: None,
         }

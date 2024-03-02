@@ -15,6 +15,9 @@ pub struct Cli {
     /// Execute commands using natural language
     #[clap(short = 'e', long)]
     pub execute: bool,
+    /// Generate only code
+    #[clap(short = 'c', long)]
+    pub code: bool,
     /// Attach files to the message to be sent.
     #[clap(short = 'f', long, num_args = 1.., value_name = "FILE")]
     pub file: Option<Vec<String>>,

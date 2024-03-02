@@ -288,6 +288,11 @@ impl Config {
         self.set_role_obj(role)
     }
 
+    pub fn set_code_role(&mut self) -> Result<()> {
+        let role = Role::for_code();
+        self.set_role_obj(role)
+    }
+
     pub fn set_role_obj(&mut self, role: Role) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
             session.update_role(Some(role.clone()))?;

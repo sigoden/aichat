@@ -11,7 +11,7 @@ mod utils;
 
 use crate::cli::Cli;
 use crate::config::{Config, GlobalConfig};
-use crate::utils::run_command;
+use crate::utils::{extract_block, run_command};
 
 use anyhow::{bail, Result};
 use clap::Parser;
@@ -65,6 +65,8 @@ fn main() -> Result<()> {
     } else {
         if let Some(name) = &cli.role {
             config.write().set_role(name)?;
+        } else if cli.code {
+            config.write().set_code_role()?;
         }
         if let Some(session) = &cli.session {
             config
@@ -95,7 +97,7 @@ fn main() -> Result<()> {
     }
     config.write().prelude()?;
     if let Err(err) = match text {
-        Some(text) => start_directive(&config, &text, cli.file, cli.no_stream),
+        Some(text) => start_directive(&config, &text, cli.file, cli.no_stream, cli.code),
         None => start_interactive(&config),
     } {
         let highlight = stderr().is_terminal() && config.read().highlight;
@@ -109,6 +111,7 @@ fn start_directive(
     text: &str,
     include: Option<Vec<String>>,
     no_stream: bool,
+    code_mode: bool,
 ) -> Result<()> {
     if let Some(session) = &config.read().session {
         session.guard_save()?;
@@ -117,14 +120,19 @@ fn start_directive(
     let mut client = init_client(config)?;
     ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
     config.read().maybe_print_send_tokens(&input);
-    let output = if no_stream {
+    let output = if !stdout().is_terminal() || no_stream {
         let output = client.send_message(input.clone())?;
-        if stdout().is_terminal() {
+        let to_print = if code_mode && output.trim_start().starts_with("```") {
+            extract_block(&output)
+        } else {
+            output.clone()
+        };
+        if no_stream {
             let render_options = config.read().get_render_options()?;
             let mut markdown_render = MarkdownRender::init(render_options)?;
-            println!("{}", markdown_render.render(&output).trim());
+            println!("{}", markdown_render.render(&to_print).trim());
         } else {
-            println!("{}", output);
+            println!("{}", to_print);
         }
         output
     } else {
@@ -144,7 +152,10 @@ fn execute(config: &GlobalConfig, text: &str) -> Result<()> {
     let input = Input::from_str(text);
     let client = init_client(config)?;
     config.read().maybe_print_send_tokens(&input);
-    let eval_str = client.send_message(input.clone())?;
+    let mut eval_str = client.send_message(input.clone())?;
+    if eval_str.contains("```") {
+        eval_str = extract_block(&eval_str);
+    }
     config.write().save_message(input, &eval_str)?;
     let render_options = config.read().get_render_options()?;
     let mut markdown_render = MarkdownRender::init(render_options)?;
