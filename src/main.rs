@@ -122,7 +122,7 @@ fn start_directive(
     config.read().maybe_print_send_tokens(&input);
     let output = if !stdout().is_terminal() || no_stream {
         let output = client.send_message(input.clone())?;
-        let to_print = if code_mode && output.trim_start().starts_with("```") {
+        let output = if code_mode && output.trim_start().starts_with("```") {
             extract_block(&output)
         } else {
             output.clone()
@@ -130,16 +130,17 @@ fn start_directive(
         if no_stream {
             let render_options = config.read().get_render_options()?;
             let mut markdown_render = MarkdownRender::init(render_options)?;
-            println!("{}", markdown_render.render(&to_print).trim());
+            println!("{}", markdown_render.render(&output).trim());
         } else {
-            println!("{}", to_print);
+            println!("{}", output);
         }
         output
     } else {
         let abort = create_abort_signal();
         render_stream(&input, client.as_ref(), config, abort)?
     };
-    config.write().save_message(input, &output)
+    config.write().save_message(input, &output)?;
+    Ok(())
 }
 
 fn start_interactive(config: &GlobalConfig) -> Result<()> {
@@ -157,6 +158,7 @@ fn execute(config: &GlobalConfig, text: &str) -> Result<()> {
         eval_str = extract_block(&eval_str);
     }
     config.write().save_message(input, &eval_str)?;
+    config.read().maybe_copy(&eval_str);
     let render_options = config.read().get_render_options()?;
     let mut markdown_render = MarkdownRender::init(render_options)?;
     if config.read().dry_run {
