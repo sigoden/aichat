@@ -11,7 +11,7 @@ use crate::client::{
     Model, OpenAIClient, SendData,
 };
 use crate::render::{MarkdownRender, RenderOptions};
-use crate::utils::{get_env_name, light_theme_from_colorfgbg, now, render_prompt};
+use crate::utils::{get_env_name, light_theme_from_colorfgbg, now, render_prompt, set_text};
 
 use anyhow::{anyhow, bail, Context, Result};
 use inquire::{Confirm, Select, Text};
@@ -245,6 +245,12 @@ impl Config {
         };
         file.write_all(output.as_bytes())
             .with_context(|| "Failed to save message")
+    }
+
+    pub fn maybe_copy(&self, text: &str) {
+        if self.auto_copy {
+            let _ = set_text(text);
+        }
     }
 
     pub fn config_file() -> Result<PathBuf> {

@@ -273,9 +273,7 @@ impl Repl {
         ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
         let output = render_stream(&input, client.as_ref(), &self.config, self.abort.clone())?;
         self.config.write().save_message(input, &output)?;
-        if self.config.read().auto_copy {
-            let _ = self.copy(&output);
-        }
+        self.config.read().maybe_copy(&output);
         Ok(())
     }
 
@@ -352,7 +350,7 @@ Type ".help" for more information.
 
     fn copy(&self, text: &str) -> Result<()> {
         if text.is_empty() {
-            bail!("No text")
+            bail!("Empty text")
         }
         set_text(text)?;
         Ok(())
