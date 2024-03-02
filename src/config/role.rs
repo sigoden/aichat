@@ -23,18 +23,18 @@ pub struct Role {
 impl Role {
     pub fn for_execute() -> Self {
         let os = detect_os();
-        let shell = detect_shell();
-        let shell = match shell.rsplit_once('/') {
-            Some((_, v)) => v,
-            None => &shell,
+        let (shell, _, _) = detect_shell();
+        let combine = match shell.as_str() {
+            "nushell" | "powershell" => ";",
+            _ => "&&",
         };
         Self {
             name: "__for_execute__".into(),
             prompt: format!(
                 r#"Provide only {shell} commands for {os} without any description.
 If there is a lack of details, provide most logical solution.
-Ensure the output is a valid shell command.
-If multiple steps required try to combine them together using &&.
+Ensure the output is a valid {shell} command.
+If multiple steps required try to combine them together using {combine}.
 Provide only plain text without Markdown formatting.
 Do not provide markdown formatting such as ```"#
             ),

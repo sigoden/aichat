@@ -103,33 +103,50 @@ pub fn detect_os() -> String {
     os.to_string()
 }
 
-pub fn detect_shell() -> String {
+pub fn detect_shell() -> (String, String, &'static str) {
     let os = env::consts::OS;
     if os == "windows" {
-        if let Some(true) = env::var("PSModulePath")
-            .ok()
-            .map(|v| v.split(';').count() >= 3)
-        {
-            "powershell.exe".into()
+        if env::var("NU_VERSION").is_ok() {
+            ("nushell".into(), "nu.exe".into(), "-c")
+        } else if let Some(ret) = env::var("PSModulePath").ok().and_then(|v| {
+            let v = v.to_lowercase();
+            if v.split(';').count() >= 3 {
+                if v.contains("powershell\\7\\") {
+                    Some(("pwsh".into(), "pwsh.exe".into(), "-c"))
+                } else {
+                    Some(("powershell".into(), "powershell.exe".into(), "-Command"))
+                }
+            } else {
+                None
+            }
+        }) {
+            ret
         } else {
-            "cmd.exe".into()
+            ("cmd".into(), "cmd.exe".into(), "/C")
         }
+    } else if env::var("NU_VERSION").is_ok() {
+        ("nushell".into(), "nu".into(), "-c")
     } else {
-        env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string())
+        let shell_cmd = env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
+        let shell_name = match shell_cmd.rsplit_once('/') {
+            Some((_, name)) => name.to_string(),
+            None => shell_cmd.clone(),
+        };
+        let shell_name = if shell_name == "nu" {
+            "nushell".into()
+        } else {
+            shell_name
+        };
+        (shell_name, shell_cmd, "-c")
     }
 }
 
 pub fn run_command(eval_str: &str) -> anyhow::Result<i32> {
-    let shell = detect_shell();
-    let mut command = Command::new(&shell);
-    if shell == "powershell.exe" {
-        command.arg("-Command").arg(eval_str);
-    } else if shell == "cmd.exe" {
-        command.arg("/c").arg(eval_str);
-    } else {
-        command.arg("-c").arg(eval_str);
-    };
-    let status = command.status()?;
+    let (_shell_name, shell_cmd, shell_arg) = detect_shell();
+    let status = Command::new(shell_cmd)
+        .arg(shell_arg)
+        .arg(eval_str)
+        .status()?;
     Ok(status.code().unwrap_or_default())
 }
 
