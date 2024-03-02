@@ -10,9 +10,15 @@ pub use self::prompt_input::*;
 pub use self::render_prompt::render_prompt;
 pub use self::tiktoken::cl100k_base_singleton;
 
+use fancy_regex::Regex;
+use lazy_static::lazy_static;
 use sha2::{Digest, Sha256};
 use std::env;
 use std::process::Command;
+
+lazy_static! {
+    static ref CODE_BLOCK_RE: Regex = Regex::new(r"(?ms)```\w*(.*?)```").unwrap();
+}
 
 pub fn now() -> String {
     let now = chrono::Local::now();
@@ -148,6 +154,18 @@ pub fn run_command(eval_str: &str) -> anyhow::Result<i32> {
         .arg(eval_str)
         .status()?;
     Ok(status.code().unwrap_or_default())
+}
+
+pub fn extract_block(input: &str) -> String {
+    let output: String = CODE_BLOCK_RE
+        .captures_iter(input)
+        .filter_map(|m| {
+            m.ok()
+                .and_then(|cap| cap.get(1))
+                .map(|m| String::from(m.as_str()))
+        })
+        .collect();
+    output.trim().to_string()
 }
 
 #[cfg(test)]
