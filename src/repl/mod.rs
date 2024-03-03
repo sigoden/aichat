@@ -268,6 +268,11 @@ impl Repl {
         ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
         let output = render_stream(&input, client.as_ref(), &self.config, self.abort.clone())?;
         self.config.write().save_message(input, &output)?;
+        if self.config.read().should_compress_session() {
+            let input = Input::from_str(&self.config.read().compress_prompt);
+            let summary = client.send_message(input)?;
+            self.config.write().compress_session(&summary)?;
+        }
         self.config.read().maybe_copy(&output);
         Ok(())
     }

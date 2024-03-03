@@ -67,6 +67,10 @@ pub struct Config {
     pub keybindings: Keybindings,
     /// Set a default role or session (role:<name>, session:<name>)
     pub prelude: String,
+    /// Compress session messages if tokens exceed this value (>=1000)
+    pub compress_threshold: usize,
+    /// The prompt for compress session messages
+    pub compress_prompt: String,
     /// REPL left prompt
     pub left_prompt: String,
     /// REPL right prompt
@@ -104,6 +108,8 @@ impl Default for Config {
             auto_copy: false,
             keybindings: Default::default(),
             prelude: String::new(),
+            compress_threshold: 0,
+            compress_prompt: "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.".to_string(),
             left_prompt: "{color.green}{?session {session}{?role /}}{role}{color.cyan}{?session )}{!session >}{color.reset} ".to_string(),
             right_prompt: "{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}"
                 .to_string(),
@@ -430,6 +436,7 @@ impl Config {
             ("auto_copy", self.auto_copy.to_string()),
             ("keybindings", self.keybindings.stringify().into()),
             ("prelude", prelude),
+            ("compress_threshold", self.compress_threshold.to_string()),
             ("config_file", display_path(&Self::config_file()?)),
             ("roles_file", display_path(&Self::roles_file()?)),
             ("messages_file", display_path(&Self::messages_file()?)),
@@ -608,6 +615,7 @@ impl Config {
         if let Some(mut session) = self.session.take() {
             self.last_message = None;
             self.temperature = self.default_temperature;
+            self.role = None;
             if session.should_save() {
                 let ans = Confirm::new("Save session?").with_default(false).prompt()?;
                 if !ans {
@@ -634,7 +642,7 @@ impl Config {
 
     pub fn clear_session_messages(&mut self) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
-            session.clear_messgaes();
+            session.clear_messages();
         }
         Ok(())
     }
@@ -658,6 +666,29 @@ impl Config {
             }
             Err(_) => vec![],
         }
+    }
+
+    pub fn should_compress_session(&self) -> bool {
+        if self.session.is_none() || self.compress_threshold < 500 {
+            return false;
+        }
+        self.session
+            .as_ref()
+            .map(|v| v.tokens() > self.compress_threshold)
+            .unwrap_or_default()
+    }
+
+    pub fn compress_session(&mut self, summary: &str) -> Result<()> {
+        let mut role = self
+            .retrieve_role(Role::HISTORY)
+            .unwrap_or_else(|_| Role::for_history());
+
+        if let Some(session) = self.session.as_mut() {
+            session.compress();
+            role.prompt = format!("{}{}", role.prompt, summary);
+            self.set_role_obj(role)?;
+        }
+        Ok(())
     }
 
     pub fn get_render_options(&self) -> Result<RenderOptions> {

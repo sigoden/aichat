@@ -22,6 +22,8 @@ pub struct Session {
     messages: Vec<Message>,
     #[serde(default)]
     data_urls: HashMap<String, String>,
+    #[serde(default)]
+    compressed_messages: Vec<Message>,
     #[serde(skip)]
     pub name: String,
     #[serde(skip)]
@@ -41,6 +43,7 @@ impl Session {
             model_id: model.id(),
             temperature,
             messages: vec![],
+            compressed_messages: vec![],
             data_urls: Default::default(),
             name: name.to_string(),
             path: None,
@@ -187,6 +190,10 @@ impl Session {
         Ok(())
     }
 
+    pub fn compress(&mut self) {
+        self.compressed_messages.append(&mut self.messages);
+    }
+
     pub fn save(&mut self, session_path: &Path) -> Result<()> {
         if !self.should_save() {
             return Ok(());
@@ -258,7 +265,7 @@ impl Session {
         Ok(())
     }
 
-    pub fn clear_messgaes(&mut self) {
+    pub fn clear_messages(&mut self) {
         if self.messages.is_empty() {
             return;
         }
@@ -278,6 +285,14 @@ impl Session {
         if messages.is_empty() {
             if let Some(role) = self.role.as_ref() {
                 messages = role.build_messages(input);
+                if messages.len() == 2 && !self.compressed_messages.is_empty() {
+                    if let Some(last) = messages.pop() {
+                        messages.extend(
+                            self.compressed_messages[self.compressed_messages.len() - 2..].to_vec(),
+                        );
+                        messages.push(last);
+                    }
+                }
                 need_add_msg = false;
             }
         };
