@@ -632,6 +632,13 @@ impl Config {
         Ok(())
     }
 
+    pub fn clear_session_messages(&mut self) -> Result<()> {
+        if let Some(session) = self.session.as_mut() {
+            session.clear_messgaes();
+        }
+        Ok(())
+    }
+
     pub fn list_sessions(&self) -> Vec<String> {
         let sessions_dir = match Self::sessions_dir() {
             Ok(dir) => dir,
@@ -951,10 +958,15 @@ impl State {
             .collect()
     }
 
-    pub fn can_change_role() -> Vec<Self> {
+    pub fn unable_change_role() -> Vec<Self> {
+        vec![Self::Session]
+    }
+
+    pub fn able_change_role() -> Vec<Self> {
+        let excludes: HashSet<_> = Self::unable_change_role().into_iter().collect();
         Self::all()
             .into_iter()
-            .filter(|v| *v != Self::Session)
+            .filter(|v| !excludes.contains(v))
             .collect()
     }
 
