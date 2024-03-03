@@ -26,47 +26,35 @@ const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
     static ref REPL_COMMANDS: [ReplCommand; 13] = [
-        ReplCommand::new(".help", "Print this help message", vec![]),
-        ReplCommand::new(".info", "Print system info", vec![]),
-        ReplCommand::new(".model", "Switch LLM model", vec![]),
-        ReplCommand::new(".role", "Use a role", vec![State::Session]),
-        ReplCommand::new(
-            ".info role",
-            "Show role info",
-            vec![State::Normal, State::EmptySession, State::Session]
-        ),
-        ReplCommand::new(
-            ".exit role",
-            "Leave current role",
-            vec![State::Normal, State::EmptySession, State::Session]
-        ),
+        ReplCommand::new(".help", "Print this help message", State::all()),
+        ReplCommand::new(".info", "Print system info", State::all()),
+        ReplCommand::new(".model", "Switch LLM model", State::all()),
+        ReplCommand::new(".role", "Use a role", State::can_change_role()),
+        ReplCommand::new(".info role", "Show role info", State::in_role(),),
+        ReplCommand::new(".exit role", "Leave current role", State::in_role(),),
         ReplCommand::new(
             ".session",
             "Start a context-aware chat session",
-            vec![
-                State::EmptySession,
-                State::EmptySessionWithRole,
-                State::Session
-            ]
+            State::notin_session(),
         ),
-        ReplCommand::new(
-            ".info session",
-            "Show session info",
-            vec![State::Normal, State::Role]
-        ),
+        ReplCommand::new(".info session", "Show session info", State::in_session(),),
         ReplCommand::new(
             ".exit session",
             "End the current session",
-            vec![State::Normal, State::Role]
+            State::in_session(),
         ),
         ReplCommand::new(
             ".file",
             "Attach files to the message and then submit it",
-            vec![]
+            State::all()
         ),
-        ReplCommand::new(".set", "Modify the configuration parameters", vec![]),
-        ReplCommand::new(".copy", "Copy the last reply to the clipboard", vec![]),
-        ReplCommand::new(".exit", "Exit the REPL", vec![]),
+        ReplCommand::new(".set", "Modify the configuration parameters", State::all()),
+        ReplCommand::new(
+            ".copy",
+            "Copy the last reply to the clipboard",
+            State::all()
+        ),
+        ReplCommand::new(".exit", "Exit the REPL", State::all()),
     ];
     static ref COMMAND_RE: Regex = Regex::new(r"^\s*(\.\S*)\s*").unwrap();
     static ref MULTILINE_RE: Regex = Regex::new(r"(?s)^\s*:::\s*(.*)\s*:::\s*$").unwrap();
@@ -361,20 +349,20 @@ Type ".help" for more information.
 pub struct ReplCommand {
     name: &'static str,
     description: &'static str,
-    unavailable_states: Vec<State>,
+    valid_states: Vec<State>,
 }
 
 impl ReplCommand {
-    fn new(name: &'static str, desc: &'static str, unavailable_states: Vec<State>) -> Self {
+    fn new(name: &'static str, desc: &'static str, valid_states: Vec<State>) -> Self {
         Self {
             name,
             description: desc,
-            unavailable_states,
+            valid_states,
         }
     }
 
-    fn unavailable(&self, state: &State) -> bool {
-        self.unavailable_states.contains(state)
+    fn is_valid(&self, state: &State) -> bool {
+        self.valid_states.contains(state)
     }
 }
 

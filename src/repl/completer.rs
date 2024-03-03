@@ -33,7 +33,7 @@ impl Completer for ReplCompleter {
             .commands
             .iter()
             .filter(|cmd| {
-                if cmd.unavailable(&state) {
+                if !cmd.is_valid(&state) {
                     return false;
                 }
                 let line = parts

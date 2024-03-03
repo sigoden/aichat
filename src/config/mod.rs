@@ -18,7 +18,7 @@ use inquire::{Confirm, Select, Text};
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::{
     env,
     fs::{create_dir_all, read_dir, read_to_string, remove_file, File, OpenOptions},
@@ -915,13 +915,52 @@ impl Keybindings {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum State {
     Normal,
     Role,
     EmptySession,
     EmptySessionWithRole,
     Session,
+}
+
+impl State {
+    pub fn all() -> Vec<Self> {
+        vec![
+            Self::Normal,
+            Self::Role,
+            Self::EmptySession,
+            Self::EmptySessionWithRole,
+            Self::Session,
+        ]
+    }
+
+    pub fn in_session() -> Vec<Self> {
+        vec![
+            Self::EmptySession,
+            Self::EmptySessionWithRole,
+            Self::Session,
+        ]
+    }
+
+    pub fn notin_session() -> Vec<Self> {
+        let excludes: HashSet<_> = Self::in_session().into_iter().collect();
+        Self::all()
+            .into_iter()
+            .filter(|v| !excludes.contains(v))
+            .collect()
+    }
+
+    pub fn can_change_role() -> Vec<Self> {
+        Self::all()
+            .into_iter()
+            .filter(|v| *v != Self::Session)
+            .collect()
+    }
+
+    pub fn in_role() -> Vec<Self> {
+        vec![Self::Role, Self::EmptySessionWithRole]
+    }
 }
 
 fn create_config_file(config_path: &Path) -> Result<()> {
