@@ -271,10 +271,8 @@ impl Session {
     }
 
     pub fn clear_messages(&mut self) {
-        if self.messages.is_empty() {
-            return;
-        }
         self.messages.clear();
+        self.compressed_messages.clear();
         self.data_urls.clear();
         self.dirty = true;
     }
