@@ -285,17 +285,23 @@ impl Config {
     }
 
     pub fn set_execute_role(&mut self) -> Result<()> {
-        let role = Role::for_execute();
+        let role = self
+            .retrieve_role(Role::EXECUTE)
+            .unwrap_or_else(|_| Role::for_execute());
         self.set_role_obj(role)
     }
 
-    pub fn set_describe_role(&mut self) -> Result<()> {
-        let role = Role::for_describe();
+    pub fn set_describe_command_role(&mut self) -> Result<()> {
+        let role = self
+            .retrieve_role(Role::DESCRIBE_COMMAND)
+            .unwrap_or_else(|_| Role::for_describe_command());
         self.set_role_obj(role)
     }
 
     pub fn set_code_role(&mut self) -> Result<()> {
-        let role = Role::for_code();
+        let role = self
+            .retrieve_role(Role::CODE)
+            .unwrap_or_else(|_| Role::for_code());
         self.set_role_obj(role)
     }
 

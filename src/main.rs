@@ -11,7 +11,7 @@ mod utils;
 
 use crate::cli::Cli;
 use crate::config::{Config, GlobalConfig};
-use crate::utils::{extract_block, run_command};
+use crate::utils::{extract_block, run_command, CODE_BLOCK_RE};
 
 use anyhow::{bail, Result};
 use clap::Parser;
@@ -60,19 +60,17 @@ fn main() -> Result<()> {
     if cli.dry_run {
         config.write().dry_run = true;
     }
-    if cli.execute {
+    if let Some(name) = &cli.role {
+        config.write().set_role(name)?;
+    } else if cli.execute {
         config.write().set_execute_role()?;
-    } else {
-        if let Some(name) = &cli.role {
-            config.write().set_role(name)?;
-        } else if cli.code {
-            config.write().set_code_role()?;
-        }
-        if let Some(session) = &cli.session {
-            config
-                .write()
-                .start_session(session.as_ref().map(|v| v.as_str()))?;
-        }
+    } else if cli.code {
+        config.write().set_code_role()?;
+    }
+    if let Some(session) = &cli.session {
+        config
+            .write()
+            .start_session(session.as_ref().map(|v| v.as_str()))?;
     }
     if let Some(model) = &cli.model {
         config.write().set_model(model)?;
@@ -154,7 +152,7 @@ fn execute(config: &GlobalConfig, text: &str) -> Result<()> {
     let client = init_client(config)?;
     config.read().maybe_print_send_tokens(&input);
     let mut eval_str = client.send_message(input.clone())?;
-    if eval_str.contains("```") {
+    if let Ok(true) = CODE_BLOCK_RE.is_match(&eval_str) {
         eval_str = extract_block(&eval_str);
     }
     config.write().save_message(input, &eval_str)?;
@@ -192,7 +190,7 @@ fn execute(config: &GlobalConfig, text: &str) -> Result<()> {
                 }
                 "D" | "d" => {
                     if !describe {
-                        config.write().set_describe_role()?;
+                        config.write().set_describe_command_role()?;
                     }
                     let input = Input::from_str(&eval_str);
                     let abort = create_abort_signal();

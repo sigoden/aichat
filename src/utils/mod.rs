@@ -17,7 +17,7 @@ use std::env;
 use std::process::Command;
 
 lazy_static! {
-    static ref CODE_BLOCK_RE: Regex = Regex::new(r"(?ms)```\w*(.*?)```").unwrap();
+    pub static ref CODE_BLOCK_RE: Regex = Regex::new(r"(?ms)```\w*(.*)```").unwrap();
 }
 
 pub fn now() -> String {
@@ -165,7 +165,11 @@ pub fn extract_block(input: &str) -> String {
                 .map(|m| String::from(m.as_str()))
         })
         .collect();
-    output.trim().to_string()
+    if output.is_empty() {
+        input.trim().to_string()
+    } else {
+        output.trim().to_string()
+    }
 }
 
 #[cfg(test)]

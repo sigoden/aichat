@@ -21,6 +21,10 @@ pub struct Role {
 }
 
 impl Role {
+    pub const EXECUTE: &'static str = "__execute__";
+    pub const DESCRIBE_COMMAND: &'static str = "__describe_command__";
+    pub const CODE: &'static str = "__code__";
+
     pub fn for_execute() -> Self {
         let os = detect_os();
         let (shell, _, _) = detect_shell();
@@ -29,7 +33,7 @@ impl Role {
             _ => "&&",
         };
         Self {
-            name: "__execute__".into(),
+            name: Self::EXECUTE.into(),
             prompt: format!(
                 r#"Provide only {shell} commands for {os} without any description.
 If there is a lack of details, provide most logical solution.
@@ -42,9 +46,9 @@ Do not provide markdown formatting such as ```"#
         }
     }
 
-    pub fn for_describe() -> Self {
+    pub fn for_describe_command() -> Self {
         Self {
-            name: "__describe__".into(),
+            name: Self::DESCRIBE_COMMAND.into(),
             prompt: r#"Provide a terse, single sentence description of the given shell command.
 Describe each argument and option of the command.
 Provide short responses in about 80 words.
@@ -56,7 +60,7 @@ APPLY MARKDOWN formatting when possible."#
 
     pub fn for_code() -> Self {
         Self {
-            name: "__code__".into(),
+            name: Self::CODE.into(),
             prompt: r#"Provide only code as output without any description.
 Provide only code in plain text format without Markdown formatting.
 Do not include symbols such as ``` or ```python.
