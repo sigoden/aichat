@@ -148,7 +148,7 @@ The Chat REPL supports:
 
 - Emacs/Vi keybinding
 - [Custom REPL Prompt](https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt)
-- Tab Completions
+- Tab autocomplete
 - Edit/paste multiline text
 - Open an editor to modify the current prompt
 - Undo support

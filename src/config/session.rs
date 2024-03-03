@@ -258,6 +258,15 @@ impl Session {
         Ok(())
     }
 
+    pub fn clear_messgaes(&mut self) {
+        if self.messages.is_empty() {
+            return;
+        }
+        self.messages.clear();
+        self.data_urls.clear();
+        self.dirty = true;
+    }
+
     pub fn echo_messages(&self, input: &Input) -> String {
         let messages = self.build_emssages(input);
         serde_yaml::to_string(&messages).unwrap_or_else(|_| "Unable to echo message".into())

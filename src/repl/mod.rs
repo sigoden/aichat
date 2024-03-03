@@ -25,11 +25,11 @@ use std::{env, process};
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 13] = [
+    static ref REPL_COMMANDS: [ReplCommand; 14] = [
         ReplCommand::new(".help", "Print this help message", State::all()),
         ReplCommand::new(".info", "Print system info", State::all()),
         ReplCommand::new(".model", "Switch LLM model", State::all()),
-        ReplCommand::new(".role", "Use a role", State::can_change_role()),
+        ReplCommand::new(".role", "Use a role", State::able_change_role()),
         ReplCommand::new(".info role", "Show role info", State::in_role(),),
         ReplCommand::new(".exit role", "Leave current role", State::in_role(),),
         ReplCommand::new(
@@ -38,6 +38,11 @@ lazy_static! {
             State::notin_session(),
         ),
         ReplCommand::new(".info session", "Show session info", State::in_session(),),
+        ReplCommand::new(
+            ".clear messages",
+            "Clear messages in the session",
+            State::unable_change_role()
+        ),
         ReplCommand::new(
             ".exit session",
             "End the current session",
@@ -225,8 +230,10 @@ impl Repl {
                         return Ok(true);
                     }
                 },
-                // deprecated this command
                 ".clear" => match args {
+                    Some("messages") => {
+                        self.config.write().clear_session_messages()?;
+                    }
                     Some("role") => {
                         println!(r#"Deprecated. Use ".exit role" instead."#);
                     }
