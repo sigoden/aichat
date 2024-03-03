@@ -31,6 +31,8 @@ pub struct Session {
     #[serde(skip)]
     pub dirty: bool,
     #[serde(skip)]
+    pub compressing: bool,
+    #[serde(skip)]
     pub role: Option<Role>,
     #[serde(skip)]
     pub model: Model,
@@ -48,6 +50,7 @@ impl Session {
             name: name.to_string(),
             path: None,
             dirty: false,
+            compressing: false,
             role,
             model,
         }
@@ -190,12 +193,18 @@ impl Session {
         Ok(())
     }
 
-    pub fn compress(&mut self) {
+    pub fn compress(&mut self, prompt: String) {
         self.compressed_messages.append(&mut self.messages);
+        self.messages.push(Message {
+            role: MessageRole::System,
+            content: MessageContent::Text(prompt),
+        });
+        self.role = None;
+        self.dirty = true;
     }
 
     pub fn save(&mut self, session_path: &Path) -> Result<()> {
-        if !self.should_save() {
+        if !self.dirty {
             return Ok(());
         }
         self.path = Some(session_path.display().to_string());
@@ -213,10 +222,6 @@ impl Session {
         self.dirty = false;
 
         Ok(())
-    }
-
-    pub fn should_save(&self) -> bool {
-        !self.is_empty() && self.dirty
     }
 
     pub fn guard_save(&self) -> Result<()> {
@@ -282,20 +287,16 @@ impl Session {
     pub fn build_emssages(&self, input: &Input) -> Vec<Message> {
         let mut messages = self.messages.clone();
         let mut need_add_msg = true;
-        if messages.is_empty() {
+        let len = messages.len();
+        if len == 0 {
             if let Some(role) = self.role.as_ref() {
                 messages = role.build_messages(input);
-                if messages.len() == 2 && !self.compressed_messages.is_empty() {
-                    if let Some(last) = messages.pop() {
-                        messages.extend(
-                            self.compressed_messages[self.compressed_messages.len() - 2..].to_vec(),
-                        );
-                        messages.push(last);
-                    }
-                }
                 need_add_msg = false;
             }
-        };
+        } else if len == 1 && self.compressed_messages.len() >= 2 {
+            messages
+                .extend(self.compressed_messages[self.compressed_messages.len() - 2..].to_vec());
+        }
         if need_add_msg {
             messages.push(Message {
                 role: MessageRole::User,

@@ -24,7 +24,6 @@ impl Role {
     pub const EXECUTE: &'static str = "__execute__";
     pub const DESCRIBE_COMMAND: &'static str = "__describe_command__";
     pub const CODE: &'static str = "__code__";
-    pub const HISTORY: &'static str = "__history__";
 
     pub fn for_execute() -> Self {
         let os = detect_os();
@@ -69,14 +68,6 @@ If there is a lack of details, provide most logical solution.
 You are not allowed to ask for more details.
 For example if the prompt is "Hello world Python", you should return "print('Hello world')"."#
                 .into(),
-            temperature: None,
-        }
-    }
-
-    pub fn for_history() -> Self {
-        Self {
-            name: Self::HISTORY.into(),
-            prompt: r#"This is a summary of the chat history as a recap: "#.into(),
             temperature: None,
         }
     }

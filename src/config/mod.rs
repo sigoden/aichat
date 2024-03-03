@@ -67,10 +67,12 @@ pub struct Config {
     pub keybindings: Keybindings,
     /// Set a default role or session (role:<name>, session:<name>)
     pub prelude: String,
-    /// Compress session messages if tokens exceed this value (>=1000)
+    /// Compress session if tokens exceed this value (>=1000)
     pub compress_threshold: usize,
-    /// The prompt for compress session messages
-    pub compress_prompt: String,
+    /// The prompt for summarizing session messages
+    pub summarize_prompt: String,
+    // The prompt for the summary of the session
+    pub summary_prompt: String,
     /// REPL left prompt
     pub left_prompt: String,
     /// REPL right prompt
@@ -109,7 +111,8 @@ impl Default for Config {
             keybindings: Default::default(),
             prelude: String::new(),
             compress_threshold: 0,
-            compress_prompt: "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.".to_string(),
+            summarize_prompt: "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.".to_string(),
+            summary_prompt: "This is a summary of the chat history as a recap: ".into(),
             left_prompt: "{color.green}{?session {session}{?role /}}{role}{color.cyan}{?session )}{!session >}{color.reset} ".to_string(),
             right_prompt: "{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}"
                 .to_string(),
@@ -615,8 +618,7 @@ impl Config {
         if let Some(mut session) = self.session.take() {
             self.last_message = None;
             self.temperature = self.default_temperature;
-            self.role = None;
-            if session.should_save() {
+            if session.dirty {
                 let ans = Confirm::new("Save session?").with_default(false).prompt()?;
                 if !ans {
                     return Ok(());
@@ -668,27 +670,33 @@ impl Config {
         }
     }
 
-    pub fn should_compress_session(&self) -> bool {
-        if self.session.is_none() || self.compress_threshold < 500 {
-            return false;
+    pub fn should_compress_session(&mut self) -> bool {
+        if let Some(sesion) = self.session.as_mut() {
+            if self.compress_threshold >= 1000 && sesion.tokens() > self.compress_threshold {
+                sesion.compressing = true;
+                return true;
+            }
         }
+        false
+    }
+
+    pub fn compress_session(&mut self, summary: &str) {
+        if let Some(session) = self.session.as_mut() {
+            session.compress(format!("{}{}", self.summary_prompt, summary));
+        }
+    }
+
+    pub fn is_compressing_session(&self) -> bool {
         self.session
             .as_ref()
-            .map(|v| v.tokens() > self.compress_threshold)
+            .map(|v| v.compressing)
             .unwrap_or_default()
     }
 
-    pub fn compress_session(&mut self, summary: &str) -> Result<()> {
-        let mut role = self
-            .retrieve_role(Role::HISTORY)
-            .unwrap_or_else(|_| Role::for_history());
-
+    pub fn end_compressing_session(&mut self) {
         if let Some(session) = self.session.as_mut() {
-            session.compress();
-            role.prompt = format!("{}{}", role.prompt, summary);
-            self.set_role_obj(role)?;
+            session.compressing = false;
         }
-        Ok(())
     }
 
     pub fn get_render_options(&self) -> Result<RenderOptions> {

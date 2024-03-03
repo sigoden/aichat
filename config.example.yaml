@@ -11,8 +11,10 @@ prelude: ''                      # Set a default role or session (role:<name>, s
 
 # Compress session messages if tokens exceed this value (>=1000)
 compress_threshold: 0
-# The prompt for compress session messages
-compress_prompt: 'Summarize the discussion briefly in 200 words or less to use as a prompt for future context.'
+# The prompt for summarizing session messages
+summarize_prompt: 'Summarize the discussion briefly in 200 words or less to use as a prompt for future context.'
+# The prompt for the summary of the session
+summary_prompt: 'This is a summary of the chat history as a recap: '
 
 # Custom REPL prompt, see https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt
 left_prompt: '{color.green}{?session {session}{?role /}}{role}{color.cyan}{?session )}{!session >}{color.reset} '
