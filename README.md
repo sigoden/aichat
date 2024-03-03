@@ -297,6 +297,7 @@ Usage: .file <file>... [-- text...]
 > .set highlight false
 > .set save false
 > .set auto_copy true
+> .set compress_threshold 1000
 ```
 
 ## Command

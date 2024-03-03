@@ -500,6 +500,7 @@ impl Config {
                     "highlight ",
                     "dry_run ",
                     "auto_copy ",
+                    "compress_threshold",
                 ]
                 .into_iter()
                 .map(|v| v.to_string())
@@ -559,6 +560,10 @@ impl Config {
             "auto_copy" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.auto_copy = value;
+            }
+            "compress_threshold" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                self.compress_threshold = value;
             }
             _ => bail!("Unknown key `{key}`"),
         }
