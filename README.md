@@ -87,6 +87,7 @@ wrap_code: false                 # Whether wrap code block
 auto_copy: false                 # Automatically copy the last output to the clipboard
 keybindings: emacs               # REPL keybindings. values: emacs, vi
 prelude: ''                      # Set a default role or session (role:<name>, session:<name>)
+compress_threshold: 1000         # Compress session if tokens exceed this value (valid when >=1000)
 
 clients:
   - type: openai
@@ -296,6 +297,7 @@ Usage: .file <file>... [-- text...]
 > .set highlight false
 > .set save false
 > .set auto_copy true
+> .set compress_threshold 1000
 ```
 
 ## Command

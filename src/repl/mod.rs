@@ -258,6 +258,9 @@ impl Repl {
         if text.is_empty() && files.is_empty() {
             return Ok(());
         }
+        while self.config.read().is_compressing_session() {
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
         let input = if files.is_empty() {
             Input::from_str(text)
         } else {
@@ -269,6 +272,14 @@ impl Repl {
         let output = render_stream(&input, client.as_ref(), &self.config, self.abort.clone())?;
         self.config.write().save_message(input, &output)?;
         self.config.read().maybe_copy(&output);
+        if self.config.write().should_compress_session() {
+            let config = self.config.clone();
+            std::thread::spawn(move || -> anyhow::Result<()> {
+                let _ = compress_session(&config);
+                config.write().end_compressing_session();
+                Ok(())
+            });
+        }
         Ok(())
     }
 
@@ -416,6 +427,15 @@ fn parse_command(line: &str) -> Option<(&str, Option<&str>)> {
         }
         _ => None,
     }
+}
+
+fn compress_session(config: &GlobalConfig) -> Result<()> {
+    let input = Input::from_str(&config.read().summarize_prompt);
+    let mut client = init_client(config)?;
+    ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
+    let summary = client.send_message(input)?;
+    config.write().compress_session(&summary);
+    Ok(())
 }
 
 #[cfg(test)]

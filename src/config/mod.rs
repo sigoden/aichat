@@ -67,6 +67,12 @@ pub struct Config {
     pub keybindings: Keybindings,
     /// Set a default role or session (role:<name>, session:<name>)
     pub prelude: String,
+    /// Compress session if tokens exceed this value (>=1000)
+    pub compress_threshold: usize,
+    /// The prompt for summarizing session messages
+    pub summarize_prompt: String,
+    // The prompt for the summary of the session
+    pub summary_prompt: String,
     /// REPL left prompt
     pub left_prompt: String,
     /// REPL right prompt
@@ -104,6 +110,9 @@ impl Default for Config {
             auto_copy: false,
             keybindings: Default::default(),
             prelude: String::new(),
+            compress_threshold: 2000,
+            summarize_prompt: "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.".to_string(),
+            summary_prompt: "This is a summary of the chat history as a recap: ".into(),
             left_prompt: "{color.green}{?session {session}{?role /}}{role}{color.cyan}{?session )}{!session >}{color.reset} ".to_string(),
             right_prompt: "{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}"
                 .to_string(),
@@ -345,12 +354,18 @@ impl Config {
         self.temperature
     }
 
-    pub fn set_temperature(&mut self, value: Option<f64>) -> Result<()> {
+    pub fn set_temperature(&mut self, value: Option<f64>) {
         self.temperature = value;
         if let Some(session) = self.session.as_mut() {
             session.set_temperature(value);
         }
-        Ok(())
+    }
+
+    pub fn set_compress_threshold(&mut self, value: usize) {
+        self.compress_threshold = value;
+        if let Some(session) = self.session.as_mut() {
+            session.set_compress_threshold(value);
+        }
     }
 
     pub fn echo_messages(&self, input: &Input) -> String {
@@ -430,6 +445,7 @@ impl Config {
             ("auto_copy", self.auto_copy.to_string()),
             ("keybindings", self.keybindings.stringify().into()),
             ("prelude", prelude),
+            ("compress_threshold", self.compress_threshold.to_string()),
             ("config_file", display_path(&Self::config_file()?)),
             ("roles_file", display_path(&Self::roles_file()?)),
             ("messages_file", display_path(&Self::messages_file()?)),
@@ -445,7 +461,7 @@ impl Config {
 
     pub fn role_info(&self) -> Result<String> {
         if let Some(role) = &self.role {
-            role.info()
+            role.export()
         } else {
             bail!("No role")
         }
@@ -455,7 +471,7 @@ impl Config {
         if let Some(session) = &self.session {
             let render_options = self.get_render_options()?;
             let mut markdown_render = MarkdownRender::init(render_options)?;
-            session.render(&mut markdown_render)
+            session.info(&mut markdown_render)
         } else {
             bail!("No session")
         }
@@ -465,7 +481,7 @@ impl Config {
         if let Some(session) = &self.session {
             session.export()
         } else if let Some(role) = &self.role {
-            role.info()
+            role.export()
         } else {
             self.sys_info()
         }
@@ -486,6 +502,7 @@ impl Config {
                 ".session" => self.list_sessions(),
                 ".set" => vec![
                     "temperature ",
+                    "compress_threshold",
                     "save ",
                     "highlight ",
                     "dry_run ",
@@ -532,7 +549,11 @@ impl Config {
                     let value = value.parse().with_context(|| "Invalid value")?;
                     Some(value)
                 };
-                self.set_temperature(value)?;
+                self.set_temperature(value);
+            }
+            "compress_threshold" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                self.set_compress_threshold(value);
             }
             "save" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
@@ -608,7 +629,7 @@ impl Config {
         if let Some(mut session) = self.session.take() {
             self.last_message = None;
             self.temperature = self.default_temperature;
-            if session.should_save() {
+            if session.dirty {
                 let ans = Confirm::new("Save session?").with_default(false).prompt()?;
                 if !ans {
                     return Ok(());
@@ -634,7 +655,7 @@ impl Config {
 
     pub fn clear_session_messages(&mut self) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
-            session.clear_messgaes();
+            session.clear_messages();
         }
         Ok(())
     }
@@ -657,6 +678,35 @@ impl Config {
                 names
             }
             Err(_) => vec![],
+        }
+    }
+
+    pub fn should_compress_session(&mut self) -> bool {
+        if let Some(sesion) = self.session.as_mut() {
+            if sesion.need_compress(self.compress_threshold) {
+                sesion.compressing = true;
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn compress_session(&mut self, summary: &str) {
+        if let Some(session) = self.session.as_mut() {
+            session.compress(format!("{}{}", self.summary_prompt, summary));
+        }
+    }
+
+    pub fn is_compressing_session(&self) -> bool {
+        self.session
+            .as_ref()
+            .map(|v| v.compressing)
+            .unwrap_or_default()
+    }
+
+    pub fn end_compressing_session(&mut self) {
+        if let Some(session) = self.session.as_mut() {
+            session.compressing = false;
         }
     }
 
