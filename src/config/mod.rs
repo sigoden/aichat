@@ -110,7 +110,7 @@ impl Default for Config {
             auto_copy: false,
             keybindings: Default::default(),
             prelude: String::new(),
-            compress_threshold: 0,
+            compress_threshold: 1000,
             summarize_prompt: "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.".to_string(),
             summary_prompt: "This is a summary of the chat history as a recap: ".into(),
             left_prompt: "{color.green}{?session {session}{?role /}}{role}{color.cyan}{?session )}{!session >}{color.reset} ".to_string(),
