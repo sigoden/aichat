@@ -15,7 +15,9 @@ use serde_json::{json, Value};
 
 const API_BASE: &str = "https://api.anthropic.com/v1/messages";
 
-const MODELS: [(&str, usize, &str); 3] = [
+const MODELS: [(&str, usize, &str); 5] = [
+    ("claude-3-opus-20240229", 204096, "text"),
+    ("claude-3-sonnet-20240229", 204096, "text"),
     ("claude-2.1", 204096, "text"),
     ("claude-2.0", 104096, "text"),
     ("claude-instant-1.2", 104096, "text"),
