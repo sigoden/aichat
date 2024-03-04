@@ -24,6 +24,8 @@ pub struct Session {
     data_urls: HashMap<String, String>,
     #[serde(default)]
     compressed_messages: Vec<Message>,
+    #[serde(default)]
+    compress_threshold: usize,
     #[serde(skip)]
     pub name: String,
     #[serde(skip)]
@@ -39,13 +41,14 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(name: &str, model: Model, role: Option<Role>) -> Self {
+    pub fn new(name: &str, model: Model, role: Option<Role>, compress_threshold: usize) -> Self {
         let temperature = role.as_ref().and_then(|v| v.temperature);
         Self {
             model_id: model.id(),
             temperature,
             messages: vec![],
             compressed_messages: vec![],
+            compress_threshold,
             data_urls: Default::default(),
             name: name.to_string(),
             path: None,
@@ -74,6 +77,10 @@ impl Session {
 
     pub fn model(&self) -> &str {
         &self.model_id
+    }
+
+    pub fn need_compress(&self) -> bool {
+        self.compress_threshold >= 1000 && self.tokens() > self.compress_threshold
     }
 
     pub fn temperature(&self) -> Option<f64> {
@@ -112,7 +119,7 @@ impl Session {
         Ok(output)
     }
 
-    pub fn render(&self, render: &mut MarkdownRender) -> Result<String> {
+    pub fn info(&self, render: &mut MarkdownRender) -> Result<String> {
         let mut items = vec![];
 
         if let Some(path) = &self.path {
@@ -124,6 +131,8 @@ impl Session {
         if let Some(temperature) = self.temperature() {
             items.push(("temperature", temperature.to_string()));
         }
+
+        items.push(("compress_threshold", self.compress_threshold.to_string()));
 
         if let Some(max_tokens) = self.model.max_tokens {
             items.push(("max_tokens", max_tokens.to_string()));
@@ -141,7 +150,7 @@ impl Session {
             for message in &self.messages {
                 match message.role {
                     MessageRole::System => {
-                        continue;
+                        lines.push(render.render(&message.content.render_input(resolve_url_fn)));
                     }
                     MessageRole::Assistant => {
                         if let MessageContent::Text(text) = &message.content {
@@ -185,6 +194,10 @@ impl Session {
 
     pub fn set_temperature(&mut self, value: Option<f64>) {
         self.temperature = value;
+    }
+
+    pub fn set_compress_threshold(&mut self, value: usize) {
+        self.compress_threshold = value;
     }
 
     pub fn set_model(&mut self, model: Model) -> Result<()> {

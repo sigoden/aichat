@@ -354,12 +354,18 @@ impl Config {
         self.temperature
     }
 
-    pub fn set_temperature(&mut self, value: Option<f64>) -> Result<()> {
+    pub fn set_temperature(&mut self, value: Option<f64>) {
         self.temperature = value;
         if let Some(session) = self.session.as_mut() {
             session.set_temperature(value);
         }
-        Ok(())
+    }
+
+    pub fn set_compress_threshold(&mut self, value: usize) {
+        self.compress_threshold = value;
+        if let Some(session) = self.session.as_mut() {
+            session.set_compress_threshold(value);
+        }
     }
 
     pub fn echo_messages(&self, input: &Input) -> String {
@@ -455,7 +461,7 @@ impl Config {
 
     pub fn role_info(&self) -> Result<String> {
         if let Some(role) = &self.role {
-            role.info()
+            role.export()
         } else {
             bail!("No role")
         }
@@ -465,7 +471,7 @@ impl Config {
         if let Some(session) = &self.session {
             let render_options = self.get_render_options()?;
             let mut markdown_render = MarkdownRender::init(render_options)?;
-            session.render(&mut markdown_render)
+            session.info(&mut markdown_render)
         } else {
             bail!("No session")
         }
@@ -475,7 +481,7 @@ impl Config {
         if let Some(session) = &self.session {
             session.export()
         } else if let Some(role) = &self.role {
-            role.info()
+            role.export()
         } else {
             self.sys_info()
         }
@@ -496,11 +502,11 @@ impl Config {
                 ".session" => self.list_sessions(),
                 ".set" => vec![
                     "temperature ",
+                    "compress_threshold",
                     "save ",
                     "highlight ",
                     "dry_run ",
                     "auto_copy ",
-                    "compress_threshold",
                 ]
                 .into_iter()
                 .map(|v| v.to_string())
@@ -543,7 +549,11 @@ impl Config {
                     let value = value.parse().with_context(|| "Invalid value")?;
                     Some(value)
                 };
-                self.set_temperature(value)?;
+                self.set_temperature(value);
+            }
+            "compress_threshold" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                self.set_compress_threshold(value);
             }
             "save" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
@@ -560,10 +570,6 @@ impl Config {
             "auto_copy" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.auto_copy = value;
-            }
-            "compress_threshold" => {
-                let value = value.parse().with_context(|| "Invalid value")?;
-                self.compress_threshold = value;
             }
             _ => bail!("Unknown key `{key}`"),
         }
@@ -587,12 +593,18 @@ impl Config {
                     TEMP_SESSION_NAME,
                     self.model.clone(),
                     self.role.clone(),
+                    self.compress_threshold,
                 ));
             }
             Some(name) => {
                 let session_path = Self::session_file(name)?;
                 if !session_path.exists() {
-                    self.session = Some(Session::new(name, self.model.clone(), self.role.clone()));
+                    self.session = Some(Session::new(
+                        name,
+                        self.model.clone(),
+                        self.role.clone(),
+                        self.compress_threshold,
+                    ));
                 } else {
                     let session = Session::load(name, &session_path)?;
                     let model = session.model().to_string();
@@ -677,7 +689,7 @@ impl Config {
 
     pub fn should_compress_session(&mut self) -> bool {
         if let Some(sesion) = self.session.as_mut() {
-            if self.compress_threshold >= 1000 && sesion.tokens() > self.compress_threshold {
+            if sesion.need_compress() {
                 sesion.compressing = true;
                 return true;
             }
