@@ -110,7 +110,7 @@ impl Default for Config {
             auto_copy: false,
             keybindings: Default::default(),
             prelude: String::new(),
-            compress_threshold: 1000,
+            compress_threshold: 2000,
             summarize_prompt: "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.".to_string(),
             summary_prompt: "This is a summary of the chat history as a recap: ".into(),
             left_prompt: "{color.green}{?session {session}{?role /}}{role}{color.cyan}{?session )}{!session >}{color.reset} ".to_string(),
@@ -593,18 +593,12 @@ impl Config {
                     TEMP_SESSION_NAME,
                     self.model.clone(),
                     self.role.clone(),
-                    self.compress_threshold,
                 ));
             }
             Some(name) => {
                 let session_path = Self::session_file(name)?;
                 if !session_path.exists() {
-                    self.session = Some(Session::new(
-                        name,
-                        self.model.clone(),
-                        self.role.clone(),
-                        self.compress_threshold,
-                    ));
+                    self.session = Some(Session::new(name, self.model.clone(), self.role.clone()));
                 } else {
                     let session = Session::load(name, &session_path)?;
                     let model = session.model().to_string();
@@ -689,7 +683,7 @@ impl Config {
 
     pub fn should_compress_session(&mut self) -> bool {
         if let Some(sesion) = self.session.as_mut() {
-            if sesion.need_compress() {
+            if sesion.need_compress(self.compress_threshold) {
                 sesion.compressing = true;
                 return true;
             }

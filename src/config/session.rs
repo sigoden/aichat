@@ -24,8 +24,7 @@ pub struct Session {
     data_urls: HashMap<String, String>,
     #[serde(default)]
     compressed_messages: Vec<Message>,
-    #[serde(default)]
-    compress_threshold: usize,
+    compress_threshold: Option<usize>,
     #[serde(skip)]
     pub name: String,
     #[serde(skip)]
@@ -41,14 +40,14 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(name: &str, model: Model, role: Option<Role>, compress_threshold: usize) -> Self {
+    pub fn new(name: &str, model: Model, role: Option<Role>) -> Self {
         let temperature = role.as_ref().and_then(|v| v.temperature);
         Self {
             model_id: model.id(),
             temperature,
             messages: vec![],
             compressed_messages: vec![],
-            compress_threshold,
+            compress_threshold: None,
             data_urls: Default::default(),
             name: name.to_string(),
             path: None,
@@ -79,12 +78,15 @@ impl Session {
         &self.model_id
     }
 
-    pub fn need_compress(&self) -> bool {
-        self.compress_threshold >= 1000 && self.tokens() > self.compress_threshold
-    }
-
     pub fn temperature(&self) -> Option<f64> {
         self.temperature
+    }
+
+    pub fn need_compress(&self, current_compress_threshold: usize) -> bool {
+        let threshold = self
+            .compress_threshold
+            .unwrap_or(current_compress_threshold);
+        threshold >= 1000 && self.tokens() > threshold
     }
 
     pub fn tokens(&self) -> usize {
@@ -132,7 +134,9 @@ impl Session {
             items.push(("temperature", temperature.to_string()));
         }
 
-        items.push(("compress_threshold", self.compress_threshold.to_string()));
+        if let Some(compress_threshold) = self.compress_threshold {
+            items.push(("compress_threshold", compress_threshold.to_string()));
+        }
 
         if let Some(max_tokens) = self.model.max_tokens {
             items.push(("max_tokens", max_tokens.to_string()));
@@ -197,7 +201,7 @@ impl Session {
     }
 
     pub fn set_compress_threshold(&mut self, value: usize) {
-        self.compress_threshold = value;
+        self.compress_threshold = Some(value);
     }
 
     pub fn set_model(&mut self, model: Model) -> Result<()> {
