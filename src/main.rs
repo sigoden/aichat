@@ -167,7 +167,7 @@ fn execute(config: &GlobalConfig, text: &str) -> Result<()> {
         println!("{}", markdown_render.render(&eval_str).trim());
         let mut describe = false;
         loop {
-            let anwser = Text::new("[e]xecute, [d]escribe, [a]bort: ")
+            let answer = Text::new("[e]xecute, [d]escribe, [a]bort: ")
                 .with_default("e")
                 .with_validator(|input: &str| {
                     match matches!(input, "E" | "e" | "D" | "d" | "A" | "a") {
@@ -181,7 +181,7 @@ fn execute(config: &GlobalConfig, text: &str) -> Result<()> {
 
             println!();
 
-            match anwser.as_str() {
+            match answer.as_str() {
                 "E" | "e" => {
                     let code = run_command(&eval_str)?;
                     if code != 0 {

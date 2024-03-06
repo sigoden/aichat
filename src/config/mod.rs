@@ -682,9 +682,9 @@ impl Config {
     }
 
     pub fn should_compress_session(&mut self) -> bool {
-        if let Some(sesion) = self.session.as_mut() {
-            if sesion.need_compress(self.compress_threshold) {
-                sesion.compressing = true;
+        if let Some(session) = self.session.as_mut() {
+            if session.need_compress(self.compress_threshold) {
+                session.compressing = true;
                 return true;
             }
         }
