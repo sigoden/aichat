@@ -142,11 +142,11 @@ aichat -e install nvim                          # Execute
 aichat -c fibonacci in js                       # Code
 
 aichat -s                                       # REPL + New session
-aichat -s sess1                                 # REPL + New/Reuse test session
+aichat -s sesson1                               # REPL + New/Reuse 'session1'
 
 aichat --info                                   # System info
-aichat -s sess1 --info                          # Session info
 aichat -r role1 --info                          # Role info
+aichat -s sesson1 --info                        # Session info
 
 cat data.toml | aichat -c to json > data.json   # Pipe IO
 
