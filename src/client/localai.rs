@@ -28,8 +28,8 @@ impl LocalAIClient {
         ("api_key", "API Key:", false, PromptKind::String),
         ("models[].name", "Model Name:", true, PromptKind::String),
         (
-            "models[].max_tokens",
-            "Max Tokens:",
+            "models[].max_input_tokens",
+            "Max Input Tokens:",
             false,
             PromptKind::Integer,
         ),
@@ -44,7 +44,7 @@ impl LocalAIClient {
             .map(|v| {
                 Model::new(client_name, &v.name)
                     .set_capabilities(v.capabilities)
-                    .set_max_tokens(v.max_tokens)
+                    .set_max_input_tokens(v.max_input_tokens)
                     .set_extra_fields(v.extra_fields.clone())
                     .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })

@@ -28,8 +28,8 @@ impl AzureOpenAIClient {
         ("api_key", "API Key:", true, PromptKind::String),
         ("models[].name", "Model Name:", true, PromptKind::String),
         (
-            "models[].max_tokens",
-            "Max Tokens:",
+            "models[].max_input_tokens",
+            "Max Input Tokens:",
             true,
             PromptKind::Integer,
         ),
@@ -43,7 +43,7 @@ impl AzureOpenAIClient {
             .iter()
             .map(|v| {
                 Model::new(client_name, &v.name)
-                    .set_max_tokens(v.max_tokens)
+                    .set_max_input_tokens(v.max_input_tokens)
                     .set_capabilities(v.capabilities)
                     .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })

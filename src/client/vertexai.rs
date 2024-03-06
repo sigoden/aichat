@@ -14,9 +14,10 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
+// https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
 const MODELS: [(&str, usize, &str); 5] = [
-    ("gemini-1.0-pro", 32760, "text"),
-    ("gemini.1.0-pro-vision", 16384, "text,vision"),
+    ("gemini-1.0-pro", 24568, "text"),
+    ("gemini.1.0-pro-vision", 14336, "text,vision"),
     ("gemini-1.0-ultra", 8192, "text"),
     ("gemini.1.0-ultra-vision", 8192, "text,vision"),
     ("gemini-1.5-pro", 1000000, "text"),
@@ -66,10 +67,10 @@ impl VertexAIClient {
         let client_name = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, max_tokens, capabilities)| {
+            .map(|(name, max_input_tokens, capabilities)| {
                 Model::new(client_name, name)
                     .set_capabilities(capabilities.into())
-                    .set_max_tokens(Some(max_tokens))
+                    .set_max_input_tokens(Some(max_input_tokens))
                     .set_tokens_count_factors(TOKENS_COUNT_FACTORS)
             })
             .collect()

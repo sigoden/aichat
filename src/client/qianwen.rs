@@ -25,10 +25,12 @@ const API_URL_VL: &str =
     "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
 
 const MODELS: [(&str, usize, &str); 6] = [
-    ("qwen-turbo", 8192, "text"),
-    ("qwen-plus", 32768, "text"),
-    ("qwen-max", 8192, "text"),
-    ("qwen-max-longcontext", 30720, "text"),
+    // https://help.aliyun.com/zh/dashscope/developer-reference/api-details
+    ("qwen-turbo", 6000, "text"),
+    ("qwen-plus", 30000, "text"),
+    ("qwen-max", 6000, "text"),
+    ("qwen-max-longcontext", 28000, "text"),
+    // https://help.aliyun.com/zh/dashscope/developer-reference/tongyi-qianwen-vl-plus-api
     ("qwen-vl-plus", 0, "text,vision"),
     ("qwen-vl-max", 0, "text,vision"),
 ];
@@ -78,10 +80,10 @@ impl QianwenClient {
         let client_name = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, max_tokens, capabilities)| {
+            .map(|(name, max_input_tokens, capabilities)| {
                 Model::new(client_name, name)
                     .set_capabilities(capabilities.into())
-                    .set_max_tokens(Some(max_tokens))
+                    .set_max_input_tokens(Some(max_input_tokens))
             })
             .collect()
     }
