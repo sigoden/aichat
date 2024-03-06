@@ -28,17 +28,24 @@ impl Role {
     pub fn for_execute() -> Self {
         let os = detect_os();
         let (shell, _, _) = detect_shell();
-        let combine = match shell.as_str() {
-            "nushell" | "powershell" => ";",
-            _ => "&&",
+        let (shell, use_semicolon) = match (shell.as_str(), os.as_str()) {
+            ("nushell", "windows") => ("cmd", true),
+            ("nushell", _) => ("bash", true),
+            ("powershell", _) => ("powershell", true),
+            ("pwsh", _) => ("powershell", false),
+            _ => (shell.as_str(), false),
+        };
+        let combine = if use_semicolon {
+            "\nIf multiple steps required try to combine them together using ';'.\nIf it already combined with '&&' try to replace it with ';'.".to_string()
+        } else {
+            "\nIf multiple steps required try to combine them together using &&.".to_string()
         };
         Self {
             name: Self::EXECUTE.into(),
             prompt: format!(
                 r#"Provide only {shell} commands for {os} without any description.
+Ensure the output is a valid {shell} command. {combine}
 If there is a lack of details, provide most logical solution.
-Ensure the output is a valid {shell} command.
-If multiple steps required try to combine them together using {combine}.
 Provide only plain text without Markdown formatting.
 Do not provide markdown formatting such as ```"#
             ),
