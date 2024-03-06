@@ -142,7 +142,7 @@ aichat -e install nvim                          # Execute
 aichat -c fibonacci in js                       # Code
 
 aichat -s                                       # REPL + New session
-aichat -s sess1                                 # REPL + New/Reuse test session
+aichat -s sess1                                 # REPL + Restore session `sess1` or create `sess1` session if not exists.
 
 aichat --info                                   # System info
 aichat -s sess1 --info                          # Session info
@@ -158,7 +158,7 @@ aichat --file a.png b.png -- diff images        # Attach files
 Simply input what you want to do in natural language, and aichat will prompt and run the command that achieves your intent.
 
 ```
-aichat -s <text>...
+aichat -e <text>...
 ```
 
 Aichat is aware of OS and `$SHELL` you are using, it will provide shell command for specific system you have. For instance, if you ask `aichat` to update your system, it will return a command based on your OS. Here's an example using macOS:
