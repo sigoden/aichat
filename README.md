@@ -97,7 +97,7 @@ clients:
     api_base: http://localhost:8080/v1
     models:
       - name: gpt4all-j
-        max_tokens: 8192
+        max_input_tokens: 8192
 ```
 
 Take a look at the [config.example.yaml](config.example.yaml) for the complete configuration details.

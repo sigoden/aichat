@@ -750,7 +750,7 @@ impl Config {
 
     pub fn prepare_send_data(&self, input: &Input, stream: bool) -> Result<SendData> {
         let messages = self.build_messages(input)?;
-        self.model.max_tokens_limit(&messages)?;
+        self.model.max_input_tokens_limit(&messages)?;
         Ok(SendData {
             messages,
             temperature: self.get_temperature(),
@@ -773,8 +773,8 @@ impl Config {
         output.insert("client_name", self.model.client_name.clone());
         output.insert("model_name", self.model.name.clone());
         output.insert(
-            "max_tokens",
-            self.model.max_tokens.unwrap_or_default().to_string(),
+            "max_input_tokens",
+            self.model.max_input_tokens.unwrap_or_default().to_string(),
         );
         if let Some(temperature) = self.temperature {
             if temperature != 0.0 {

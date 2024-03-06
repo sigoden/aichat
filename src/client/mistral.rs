@@ -11,6 +11,7 @@ use serde::Deserialize;
 const API_URL: &str = "https://api.mistral.ai/v1/chat/completions";
 
 const MODELS: [(&str, usize, &str); 5] = [
+    // https://docs.mistral.ai/platform/endpoints/
     ("mistral-small-latest", 32000, "text"),
     ("mistral-medium-latest", 32000, "text"),
     ("mistral-larget-latest", 32000, "text"),
@@ -39,10 +40,10 @@ impl MistralClient {
         let client_name = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, max_tokens, capabilities)| {
+            .map(|(name, max_input_tokens, capabilities)| {
                 Model::new(client_name, name)
                     .set_capabilities(capabilities.into())
-                    .set_max_tokens(Some(max_tokens))
+                    .set_max_input_tokens(Some(max_input_tokens))
                     .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })
             .collect()

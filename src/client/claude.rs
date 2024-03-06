@@ -20,11 +20,12 @@ use serde_json::{json, Value};
 const API_BASE: &str = "https://api.anthropic.com/v1/messages";
 
 const MODELS: [(&str, usize, &str); 5] = [
-    ("claude-3-opus-20240229", 204096, "text,vision"),
-    ("claude-3-sonnet-20240229", 204096, "text,vision"),
-    ("claude-2.1", 204096, "text"),
-    ("claude-2.0", 104096, "text"),
-    ("claude-instant-1.2", 104096, "text"),
+    // https://docs.anthropic.com/claude/docs/models-overview
+    ("claude-3-opus-20240229", 200000, "text,vision"),
+    ("claude-3-sonnet-20240229", 200000, "text,vision"),
+    ("claude-2.1", 200000, "text"),
+    ("claude-2.0", 100000, "text"),
+    ("claude-instant-1.2", 100000, "text"),
 ];
 
 const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
@@ -66,10 +67,10 @@ impl ClaudeClient {
         let client_name = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, max_tokens, capabilities)| {
+            .map(|(name, max_input_tokens, capabilities)| {
                 Model::new(client_name, name)
                     .set_capabilities(capabilities.into())
-                    .set_max_tokens(Some(max_tokens))
+                    .set_max_input_tokens(Some(max_input_tokens))
                     .set_tokens_count_factors(TOKENS_COUNT_FACTORS)
             })
             .collect()

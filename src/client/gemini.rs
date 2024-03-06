@@ -11,8 +11,9 @@ use serde::Deserialize;
 const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta/models/";
 
 const MODELS: [(&str, usize, &str); 2] = [
-    ("gemini-pro", 32768, "text"),
-    ("gemini-pro-vision", 16384, "vision"),
+    // https://ai.google.dev/models/gemini
+    ("gemini-pro", 30720, "text"),
+    ("gemini-pro-vision", 12288, "vision"),
 ];
 
 const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
@@ -54,10 +55,10 @@ impl GeminiClient {
         let client_name = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, max_tokens, capabilities)| {
+            .map(|(name, max_input_tokens, capabilities)| {
                 Model::new(client_name, name)
                     .set_capabilities(capabilities.into())
-                    .set_max_tokens(Some(max_tokens))
+                    .set_max_input_tokens(Some(max_input_tokens))
                     .set_tokens_count_factors(TOKENS_COUNT_FACTORS)
             })
             .collect()

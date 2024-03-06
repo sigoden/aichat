@@ -108,8 +108,8 @@ impl Session {
             data["temperature"] = temperature.into();
         }
         data["total_tokens"] = tokens.into();
-        if let Some(max_tokens) = self.model.max_tokens {
-            data["max_tokens"] = max_tokens.into();
+        if let Some(conext_window) = self.model.max_input_tokens {
+            data["max_input_tokens"] = conext_window.into();
         }
         if percent != 0.0 {
             data["total/max"] = format!("{}%", percent).into();
@@ -138,8 +138,8 @@ impl Session {
             items.push(("compress_threshold", compress_threshold.to_string()));
         }
 
-        if let Some(max_tokens) = self.model.max_tokens {
-            items.push(("max_tokens", max_tokens.to_string()));
+        if let Some(max_input_tokens) = self.model.max_input_tokens {
+            items.push(("max_input_tokens", max_input_tokens.to_string()));
         }
 
         let mut lines: Vec<String> = items
@@ -179,11 +179,11 @@ impl Session {
 
     pub fn tokens_and_percent(&self) -> (usize, f32) {
         let tokens = self.tokens();
-        let max_tokens = self.model.max_tokens.unwrap_or_default();
-        let percent = if max_tokens == 0 {
+        let max_input_tokens = self.model.max_input_tokens.unwrap_or_default();
+        let percent = if max_input_tokens == 0 {
             0.0
         } else {
-            let percent = tokens as f32 / max_tokens as f32 * 100.0;
+            let percent = tokens as f32 / max_input_tokens as f32 * 100.0;
             (percent * 100.0).round() / 100.0
         };
         (tokens, percent)

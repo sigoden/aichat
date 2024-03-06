@@ -52,11 +52,11 @@ clients:
     chat_endpoint: /chat/completions                  # Optional field
     models:
       - name: llama2
-        max_tokens: 8192
+        max_input_tokens: 8192
         extra_fields:                                 # Optional field, set custom parameters
           key: value
       - name: llava
-        max_tokens: 8192
+        max_input_tokens: 8192
         capabilities: text,vision                     # Optional field, possible values: text, vision
 
   # See https://github.com/jmorganca/ollama
@@ -66,7 +66,7 @@ clients:
     chat_endpoint: /chat                              # Optional field
     models:
       - name: mistral
-        max_tokens: 8192
+        max_input_tokens: 8192
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
   - type: azure-openai
@@ -74,7 +74,7 @@ clients:
     api_key: xxx
     models:
       - name: MyGPT4                                  # Model deployment name
-        max_tokens: 8192
+        max_input_tokens: 8192
 
   # See https://cloud.google.com/vertex-ai
   - type: vertexai
