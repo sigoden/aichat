@@ -3,7 +3,7 @@
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 
-All in one CLI tool for 10+ AI, including OpenAI, Gemini, Claude, Mistral, LocalAI, Ollama, VertexAI, Ernie, Qianwen...
+All in one CLI tool for 10+ AI platforms, including OpenAI, Gemini, Claude, Mistral, LocalAI, Ollama, VertexAI, Ernie, Qianwen...
 
 Command Mode:
 
@@ -142,11 +142,11 @@ aichat -e install nvim                          # Execute
 aichat -c fibonacci in js                       # Code
 
 aichat -s                                       # REPL + New session
-aichat -s sess1                                 # REPL + New/Reuse test session
+aichat -s session1                              # REPL + New/Reuse 'session1'
 
 aichat --info                                   # System info
-aichat -s sess1 --info                          # Session info
 aichat -r role1 --info                          # Role info
+aichat -s session1 --info                       # Session info
 
 cat data.toml | aichat -c to json > data.json   # Pipe IO
 

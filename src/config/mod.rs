@@ -1000,7 +1000,7 @@ impl State {
         ]
     }
 
-    pub fn notin_session() -> Vec<Self> {
+    pub fn not_in_session() -> Vec<Self> {
         let excludes: HashSet<_> = Self::in_session().into_iter().collect();
         Self::all()
             .into_iter()

@@ -106,7 +106,7 @@ impl VertexAIClient {
             let (token, expires_in) = fetch_access_token(&client, &self.config.adc_file)
                 .await
                 .with_context(|| "Failed to fetch access token")?;
-            let expires_at = Utc::now() + Duration::seconds(expires_in);
+            let expires_at = Utc::now() + Duration::try_seconds(expires_in).ok_or_else(|| anyhow!("Failed to parse expires_in of access_token"))?;
             unsafe { ACCESS_TOKEN = (token, expires_at.timestamp()) };
         }
         Ok(())
