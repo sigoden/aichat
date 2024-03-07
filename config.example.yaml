@@ -36,7 +36,7 @@ clients:
 
   # See https://ai.google.dev/docs
   - type: gemini
-    api_key: AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
   # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
   - type: claude

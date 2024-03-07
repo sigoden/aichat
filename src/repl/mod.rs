@@ -35,7 +35,7 @@ lazy_static! {
         ReplCommand::new(
             ".session",
             "Start a context-aware chat session",
-            State::notin_session(),
+            State::not_in_session(),
         ),
         ReplCommand::new(".info session", "Show session info", State::in_session(),),
         ReplCommand::new(
