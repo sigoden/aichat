@@ -653,6 +653,10 @@ impl Config {
         Ok(())
     }
 
+    pub fn has_session(&self) -> bool {
+        self.session.is_some()
+    }
+
     pub fn clear_session_messages(&mut self) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
             session.clear_messages();
