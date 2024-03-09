@@ -174,15 +174,20 @@ impl Repl {
                 ".role" => match args {
                     Some(args) => match args.split_once(|c| c == '\n' || c == ' ') {
                         Some((name, text)) => {
-                            let name = name.trim();
-                            let text = text.trim();
-                            let old_role =
-                                self.config.read().role.as_ref().map(|v| v.name.to_string());
-                            self.config.write().set_role(name)?;
-                            self.ask(text, vec![])?;
-                            match old_role {
-                                Some(old_role) => self.config.write().set_role(&old_role)?,
-                                None => self.config.write().clear_role()?,
+                            if self.config.read().has_session() {
+                                bail!(r#"Cannot perform this action in a session"#);
+                            } else {
+                                let name = name.trim();
+                                let text = text.trim();
+                                let old_role =
+                                    self.config.read().role.as_ref().map(|v| v.name.to_string());
+                                self.config.write().set_role(name)?;
+                                let ask_ret = self.ask(text, vec![]);
+                                match old_role {
+                                    Some(old_role) => self.config.write().set_role(&old_role)?,
+                                    None => self.config.write().clear_role()?,
+                                }
+                                ask_ret?;
                             }
                         }
                         None => {
