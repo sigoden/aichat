@@ -114,7 +114,11 @@ fn start_directive(
     if let Some(session) = &config.read().session {
         session.guard_save()?;
     }
-    let input = Input::new(text, include.unwrap_or_default())?;
+    let input = Input::new(
+        text,
+        include.unwrap_or_default(),
+        config.read().input_context(),
+    )?;
     let mut client = init_client(config)?;
     ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
     config.read().maybe_print_send_tokens(&input);
@@ -148,7 +152,7 @@ fn start_interactive(config: &GlobalConfig) -> Result<()> {
 }
 
 fn execute(config: &GlobalConfig, text: &str) -> Result<()> {
-    let input = Input::from_str(text);
+    let input = Input::from_str(text, config.read().input_context());
     let client = init_client(config)?;
     config.read().maybe_print_send_tokens(&input);
     let mut eval_str = client.send_message(input.clone())?;
@@ -192,7 +196,7 @@ fn execute(config: &GlobalConfig, text: &str) -> Result<()> {
                     if !describe {
                         config.write().set_describe_command_role()?;
                     }
-                    let input = Input::from_str(&eval_str);
+                    let input = Input::from_str(&eval_str, config.read().input_context());
                     let abort = create_abort_signal();
                     render_stream(&input, client.as_ref(), config, abort)?;
                     describe = true;

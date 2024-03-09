@@ -7,7 +7,7 @@ use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
 use crate::client::{ensure_model_capabilities, init_client};
-use crate::config::{GlobalConfig, Input, State};
+use crate::config::{GlobalConfig, Input, InputContext, State};
 use crate::render::{render_error, render_stream};
 use crate::utils::{create_abort_signal, set_text, AbortSignal};
 
@@ -174,21 +174,10 @@ impl Repl {
                 ".role" => match args {
                     Some(args) => match args.split_once(|c| c == '\n' || c == ' ') {
                         Some((name, text)) => {
-                            if self.config.read().has_session() {
-                                bail!(r#"Cannot perform this action in a session"#);
-                            } else {
-                                let name = name.trim();
-                                let text = text.trim();
-                                let old_role =
-                                    self.config.read().role.as_ref().map(|v| v.name.to_string());
-                                self.config.write().set_role(name)?;
-                                let ask_ret = self.ask(text, vec![]);
-                                match old_role {
-                                    Some(old_role) => self.config.write().set_role(&old_role)?,
-                                    None => self.config.write().clear_role()?,
-                                }
-                                ask_ret?;
-                            }
+                            let role = self.config.read().retrieve_role(name.trim())?;
+                            let input =
+                                Input::from_str(text.trim(), InputContext::new(Some(role), false));
+                            self.ask(input)?;
                         }
                         None => {
                             self.config.write().set_role(args)?;
@@ -219,7 +208,8 @@ impl Repl {
                             None => (args, ""),
                         };
                         let files = shell_words::split(files).with_context(|| "Invalid args")?;
-                        self.ask(text, files)?;
+                        let input = Input::new(text, files, self.config.read().input_context())?;
+                        self.ask(input)?;
                     }
                     None => println!("Usage: .file <files>...[ -- <text>...]"),
                 },
@@ -250,7 +240,8 @@ impl Repl {
                 _ => unknown_command()?,
             },
             None => {
-                self.ask(line, vec![])?;
+                let input = Input::from_str(line, self.config.read().input_context());
+                self.ask(input)?;
             }
         }
 
@@ -259,18 +250,13 @@ impl Repl {
         Ok(false)
     }
 
-    fn ask(&self, text: &str, files: Vec<String>) -> Result<()> {
-        if text.is_empty() && files.is_empty() {
+    fn ask(&self, input: Input) -> Result<()> {
+        if input.is_empty() {
             return Ok(());
         }
         while self.config.read().is_compressing_session() {
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
-        let input = if files.is_empty() {
-            Input::from_str(text)
-        } else {
-            Input::new(text, files)?
-        };
         self.config.read().maybe_print_send_tokens(&input);
         let mut client = init_client(&self.config)?;
         ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
@@ -435,7 +421,10 @@ fn parse_command(line: &str) -> Option<(&str, Option<&str>)> {
 }
 
 fn compress_session(config: &GlobalConfig) -> Result<()> {
-    let input = Input::from_str(&config.read().summarize_prompt);
+    let input = Input::from_str(
+        &config.read().summarize_prompt,
+        config.read().input_context(),
+    );
     let mut client = init_client(config)?;
     ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
     let summary = client.send_message(input)?;
