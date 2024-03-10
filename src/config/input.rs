@@ -1,3 +1,6 @@
+use super::role::Role;
+use super::session::Session;
+
 use crate::client::{ImageUrl, MessageContent, MessageContentPart, ModelCapabilities};
 use crate::utils::sha256sum;
 
@@ -25,18 +28,20 @@ pub struct Input {
     text: String,
     medias: Vec<String>,
     data_urls: HashMap<String, String>,
+    context: InputContext,
 }
 
 impl Input {
-    pub fn from_str(text: &str) -> Self {
+    pub fn from_str(text: &str, context: InputContext) -> Self {
         Self {
             text: text.to_string(),
             medias: Default::default(),
             data_urls: Default::default(),
+            context,
         }
     }
 
-    pub fn new(text: &str, files: Vec<String>) -> Result<Self> {
+    pub fn new(text: &str, files: Vec<String>, context: InputContext) -> Result<Self> {
         let mut texts = vec![text.to_string()];
         let mut medias = vec![];
         let mut data_urls = HashMap::new();
@@ -72,11 +77,36 @@ impl Input {
             text: texts.join("\n"),
             medias,
             data_urls,
+            context,
         })
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.text.is_empty() && self.medias.is_empty()
     }
 
     pub fn data_urls(&self) -> HashMap<String, String> {
         self.data_urls.clone()
+    }
+
+    pub fn role(&self) -> Option<&Role> {
+        self.context.role.as_ref()
+    }
+
+    pub fn session<'a>(&self, session: &'a Option<Session>) -> Option<&'a Session> {
+        if self.context.in_session {
+            session.as_ref()
+        } else {
+            None
+        }
+    }
+
+    pub fn session_mut<'a>(&self, session: &'a mut Option<Session>) -> Option<&'a mut Session> {
+        if self.context.in_session {
+            session.as_mut()
+        } else {
+            None
+        }
     }
 
     pub fn summary(&self) -> String {
@@ -151,6 +181,18 @@ impl Input {
         } else {
             ModelCapabilities::Text
         }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct InputContext {
+    role: Option<Role>,
+    in_session: bool,
+}
+
+impl InputContext {
+    pub fn new(role: Option<Role>, in_session: bool) -> Self {
+        Self { role, in_session }
     }
 }
 

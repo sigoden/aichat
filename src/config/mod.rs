@@ -2,7 +2,7 @@ mod input;
 mod role;
 mod session;
 
-pub use self::input::Input;
+pub use self::input::{Input, InputContext};
 use self::role::Role;
 use self::session::{Session, TEMP_SESSION_NAME};
 
@@ -226,7 +226,7 @@ impl Config {
             return Ok(());
         }
 
-        if let Some(session) = self.session.as_mut() {
+        if let Some(session) = input.session_mut(&mut self.session) {
             session.add_message(&input, output)?;
             return Ok(());
         }
@@ -241,7 +241,7 @@ impl Config {
         let timestamp = now();
         let summary = input.summary();
         let input_markdown = input.render();
-        let output = match self.role.as_ref() {
+        let output = match input.role() {
             None => {
                 format!("# CHAT: {summary} [{timestamp}]\n{input_markdown}\n--------\n{output}\n--------\n\n",)
             }
@@ -369,9 +369,9 @@ impl Config {
     }
 
     pub fn echo_messages(&self, input: &Input) -> String {
-        if let Some(session) = self.session.as_ref() {
+        if let Some(session) = input.session(&self.session) {
             session.echo_messages(input)
-        } else if let Some(role) = self.role.as_ref() {
+        } else if let Some(role) = input.role() {
             role.echo_messages(input)
         } else {
             input.render()
@@ -379,9 +379,9 @@ impl Config {
     }
 
     pub fn build_messages(&self, input: &Input) -> Result<Vec<Message>> {
-        let messages = if let Some(session) = self.session.as_ref() {
+        let messages = if let Some(session) = input.session(&self.session) {
             session.build_emssages(input)
-        } else if let Some(role) = self.role.as_ref() {
+        } else if let Some(role) = input.role() {
             role.build_messages(input)
         } else {
             let message = Message::new(input);
@@ -760,6 +760,10 @@ impl Config {
             temperature: self.get_temperature(),
             stream,
         })
+    }
+
+    pub fn input_context(&self) -> InputContext {
+        InputContext::new(self.role.clone(), self.has_session())
     }
 
     pub fn maybe_print_send_tokens(&self, input: &Input) {
