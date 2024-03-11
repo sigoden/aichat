@@ -296,7 +296,7 @@ sessions_dir        /home/alice/.config/aichat/sessions
 > .model ollama:llama2
 ```
 
-> You can easily enter enter model name using autocomplete.
+> You can easily enter model name using autocomplete.
 
 ### `.role` - let the AI play a role
 
