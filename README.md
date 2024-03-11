@@ -3,7 +3,7 @@
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 
-All in one CLI tool for 10+ AI platforms, including OpenAI, Gemini, Claude, Mistral, LocalAI, Ollama, VertexAI, Ernie, Qianwen...
+All-in-one CLI tool for 10+ AI platforms, including OpenAI, Gemini, Claude, Mistral, LocalAI, Ollama, VertexAI, Ernie, Qianwen...
 
 Command Mode:
 
@@ -32,14 +32,14 @@ For Windows Scoop user
 scoop install aichat
 ```
 
-For Android termux user
+For Android Termux user
 ```sh
 pkg install aichat
 ```
 
-### Binaries for macOS, Linux, Windows
+### Binaries for macOS, Linux, and Windows
 
-Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), unzip and add aichat to your $PATH.
+Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), unzip, and add aichat to your `$PATH`.
 
 ## Features
 - Support most of the LLM platforms
@@ -50,7 +50,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
   - LocalAI (free, local, vision)
   - Ollama (free, local)
   - Azure-OpenAI (paid)
-  - VertexAI: Gemini (paid, vision)
+  - VertexAI: Gemini-1/Gemini-1.5 (paid, vision)
   - Ernie (paid)
   - Qianwen (paid, vision)
 - Support [Command Mode](#command) and [Chat-REPL Mode](#chat-repl)
@@ -72,7 +72,7 @@ On first launch, aichat will guide you through the configuration.
 ```
 > No config file, create a new one? Yes
 > AI Platform: openai
-> API Key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+> API Key: <your_api_key_here>
 ```
 
 Feel free to adjust the configuration according to your needs.
@@ -382,12 +382,12 @@ Usage: .file <file>... [-- text...]
 ### `.set` - modify the configuration temporarily
 
 ```
-> .set temperature 1.2
-> .set compress_threshold 1000
-> .set dry_run true
-> .set highlight false
-> .set save false
-> .set auto_copy true
+.set temperature 1.2
+.set compress_threshold 1000
+.set dry_run true
+.set highlight false
+.set save false
+.set auto_copy true
 ```
 
 ### Roles
