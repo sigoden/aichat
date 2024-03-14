@@ -62,8 +62,8 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
 - Syntax highlighting for markdown and 200+ languages in code blocks
 - Save messages/sessions
 - Stream/Non-stream output
+- [Custom theme](https://github.com/sigoden/aichat/wiki/Custom-Theme)
 - With proxy
-- With dark/light theme
 
 ## Config
 
