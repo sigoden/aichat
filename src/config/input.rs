@@ -49,7 +49,7 @@ impl Input {
             match resolve_path(&file_item) {
                 Some(file_path) => {
                     let file_path = fs::canonicalize(file_path)
-                        .with_context(|| format!("Unable to use file '{file_item}"))?;
+                        .with_context(|| format!("Unable to use file '{file_item}'"))?;
                     if is_image_ext(&file_path) {
                         let data_url = read_media_to_data_url(&file_path)?;
                         data_urls.insert(sha256sum(&data_url), file_path.display().to_string());

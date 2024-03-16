@@ -162,9 +162,6 @@ impl Repl {
                         println!("{}", output);
                     }
                 },
-                ".edit" => {
-                    println!(r#"Deprecated. Use ::: instead."#);
-                }
                 ".model" => match args {
                     Some(name) => {
                         self.config.write().set_model(name)?;
@@ -198,9 +195,6 @@ impl Repl {
                     self.copy(config.last_reply())
                         .with_context(|| "Failed to copy the last output")?;
                 }
-                ".read" => {
-                    println!(r#"Deprecated. Use '.file' instead."#);
-                }
                 ".file" => match args {
                     Some(args) => {
                         let (files, text) = match args.split_once(" -- ") {
@@ -228,12 +222,6 @@ impl Repl {
                 ".clear" => match args {
                     Some("messages") => {
                         self.config.write().clear_session_messages()?;
-                    }
-                    Some("role") => {
-                        println!(r#"Deprecated. Use ".exit role" instead."#);
-                    }
-                    Some("conversation") => {
-                        println!(r#"Deprecated. Use ".exit session" instead."#);
                     }
                     _ => unknown_command()?,
                 },
