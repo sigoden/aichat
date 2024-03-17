@@ -28,7 +28,11 @@ const MODELS: [(&str, usize, &str); 6] = [
         "/wenxinworkshop/chat/ernie-3.5-4k-0205",
     ),
     ("ernie-speed-8k", 7168, "/wenxinworkshop/chat/ernie_speed"),
-    ("ernie-speed-128k", 124000, "/wenxinworkshop/chat/ernie-speed-128k"),
+    (
+        "ernie-speed-128k",
+        124000,
+        "/wenxinworkshop/chat/ernie-speed-128k",
+    ),
     ("ernie-lite-8k", 7168, "/wenxinworkshop/chat/ernie-lite-8k"),
 ];
 
