@@ -14,23 +14,26 @@ use std::env;
 const API_BASE: &str = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1";
 const ACCESS_TOKEN_URL: &str = "https://aip.baidubce.com/oauth/2.0/token";
 
-const MODELS: [(&str, usize, &str); 7] = [
+const MODELS: [(&str, usize, &str); 6] = [
     // https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t
-    ("ernie-bot-4", 5120, "/wenxinworkshop/chat/completions_pro"),
-    ("ernie-bot-8k", 5120, "/wenxinworkshop/chat/ernie_bot_8k"),
-    ("ernie-bot", 2048, "/wenxinworkshop/chat/completions"),
+    ("ernie-4.0-8k", 5120, "/wenxinworkshop/chat/completions_pro"),
     (
-        "ernie-3.5-4k-0205",
-        2048,
-        "/wenxinworkshop/chat/ernie-3.5-4k-0205",
-    ),
-    (
-        "ernie-3.5-8k-0205",
+        "ernie-3.5-8k",
         5120,
         "/wenxinworkshop/chat/ernie-3.5-8k-0205",
     ),
-    ("ernie-speed", 7168, "/wenxinworkshop/chat/ernie_speed"),
-    ("ernie-bot-turbo", 7168, "/wenxinworkshop/chat/eb-instant"),
+    (
+        "ernie-3.5-4k",
+        2048,
+        "/wenxinworkshop/chat/ernie-3.5-4k-0205",
+    ),
+    ("ernie-speed-8k", 7168, "/wenxinworkshop/chat/ernie_speed"),
+    (
+        "ernie-speed-128k",
+        124000,
+        "/wenxinworkshop/chat/ernie-speed-128k",
+    ),
+    ("ernie-lite-8k", 7168, "/wenxinworkshop/chat/ernie-lite-8k"),
 ];
 
 static mut ACCESS_TOKEN: String = String::new(); // safe under linear operation
