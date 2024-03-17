@@ -316,7 +316,8 @@ impl Config {
 
     pub fn set_role_obj(&mut self, role: Role) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
-            session.update_role(Some(role.clone()))?;
+            session.guard_empty()?;
+            session.set_temperature(role.temperature);
         }
         self.temperature = role.temperature;
         self.role = Some(role);
@@ -324,9 +325,6 @@ impl Config {
     }
 
     pub fn clear_role(&mut self) -> Result<()> {
-        if let Some(session) = self.session.as_mut() {
-            session.update_role(None)?;
-        }
         self.temperature = self.default_temperature;
         self.role = None;
         Ok(())
@@ -335,7 +333,7 @@ impl Config {
     pub fn get_state(&self) -> State {
         if let Some(session) = &self.session {
             if session.is_empty() {
-                if session.role.is_some() {
+                if self.role.is_some() {
                     State::EmptySessionWithRole
                 } else {
                     State::EmptySession
@@ -592,13 +590,13 @@ impl Config {
                 self.session = Some(Session::new(
                     TEMP_SESSION_NAME,
                     self.model.clone(),
-                    self.role.clone(),
+                    self.temperature,
                 ));
             }
             Some(name) => {
                 let session_path = Self::session_file(name)?;
                 if !session_path.exists() {
-                    self.session = Some(Session::new(name, self.model.clone(), self.role.clone()));
+                    self.session = Some(Session::new(name, self.model.clone(), self.temperature));
                 } else {
                     let session = Session::load(name, &session_path)?;
                     let model = session.model().to_string();

@@ -1,5 +1,4 @@
 use super::input::resolve_data_url;
-use super::role::Role;
 use super::{Input, Model};
 
 use crate::client::{Message, MessageContent, MessageRole};
@@ -34,14 +33,11 @@ pub struct Session {
     #[serde(skip)]
     pub compressing: bool,
     #[serde(skip)]
-    pub role: Option<Role>,
-    #[serde(skip)]
     pub model: Model,
 }
 
 impl Session {
-    pub fn new(name: &str, model: Model, role: Option<Role>) -> Self {
-        let temperature = role.as_ref().and_then(|v| v.temperature);
+    pub fn new(name: &str, model: Model, temperature: Option<f64>) -> Self {
         Self {
             model_id: model.id(),
             temperature,
@@ -53,7 +49,6 @@ impl Session {
             path: None,
             dirty: false,
             compressing: false,
-            role,
             model,
         }
     }
@@ -189,13 +184,6 @@ impl Session {
         (tokens, percent)
     }
 
-    pub fn update_role(&mut self, role: Option<Role>) -> Result<()> {
-        self.guard_empty()?;
-        self.temperature = role.as_ref().and_then(|v| v.temperature);
-        self.role = role;
-        Ok(())
-    }
-
     pub fn set_temperature(&mut self, value: Option<f64>) {
         self.temperature = value;
     }
@@ -216,7 +204,6 @@ impl Session {
             role: MessageRole::System,
             content: MessageContent::Text(prompt),
         });
-        self.role = None;
         self.dirty = true;
     }
 
@@ -260,13 +247,13 @@ impl Session {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.messages.is_empty()
+        self.messages.is_empty() && self.compressed_messages.is_empty()
     }
 
     pub fn add_message(&mut self, input: &Input, output: &str) -> Result<()> {
         let mut need_add_msg = true;
         if self.messages.is_empty() {
-            if let Some(role) = self.role.as_ref() {
+            if let Some(role) = input.role() {
                 self.messages.extend(role.build_messages(input));
                 need_add_msg = false;
             }
@@ -282,7 +269,6 @@ impl Session {
             role: MessageRole::Assistant,
             content: MessageContent::Text(output.to_string()),
         });
-        self.role = None;
         self.dirty = true;
         Ok(())
     }
@@ -304,7 +290,7 @@ impl Session {
         let mut need_add_msg = true;
         let len = messages.len();
         if len == 0 {
-            if let Some(role) = self.role.as_ref() {
+            if let Some(role) = input.role() {
                 messages = role.build_messages(input);
                 need_add_msg = false;
             }
