@@ -2,6 +2,7 @@ use anyhow::{anyhow, Context, Result};
 use crossterm::style::{Color, Stylize};
 use crossterm::terminal;
 use lazy_static::lazy_static;
+use rgb2ansi256::rgb_to_ansi256;
 use std::collections::HashMap;
 use syntect::highlighting::{Color as SyntectColor, FontStyle, Style, Theme};
 use syntect::parsing::SyntaxSet;
@@ -141,7 +142,7 @@ impl MarkdownRender {
         if let Some(theme) = &self.options.theme {
             let mut highlighter = HighlightLines::new(syntax, theme);
             if let Ok(ranges) = highlighter.highlight_line(trimed_line, &self.syntax_set) {
-                line_highlighted = Some(format!("{ws}{}", as_terminal_escaped(&ranges)))
+                line_highlighted = Some(format!("{ws}{}", as_terminal_escaped(&ranges, theme)))
             }
         }
         let line = line_highlighted.unwrap_or_else(|| line.into());
@@ -215,18 +216,42 @@ pub enum LineType {
     CodeEnd,
 }
 
-fn as_terminal_escaped(ranges: &[(Style, &str)]) -> String {
+// fn as_terminal_escaped_original(ranges: &[(Style, &str)]) -> String {
+//     let mut output = String::new();
+//     for (style, text) in ranges {
+//         let fg = blend_fg_color(style.foreground, style.background);
+//         let mut text = text.with(convert_color(fg));
+//         if style.font_style.contains(FontStyle::BOLD) {
+//             text = text.bold();
+//         }
+//         if style.font_style.contains(FontStyle::UNDERLINE) {
+//             text = text.underlined();
+//         }
+//         output.push_str(&text.to_string());
+//     }
+//     output
+// }
+
+fn as_terminal_escaped(ranges: &[(Style, &str)], theme: &Theme) -> String {
     let mut output = String::new();
+    let default_bg = SyntectColor {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 255,
+    }; // Default background color (black)
+    let bg = theme.settings.background.unwrap_or(default_bg);
     for (style, text) in ranges {
-        let fg = blend_fg_color(style.foreground, style.background);
-        let mut text = text.with(convert_color(fg));
+        let fg = blend_fg_color(style.foreground, bg);
+        let fg_ansi = Color::AnsiValue(rgb_to_ansi256(fg.r, fg.g, fg.b));
+        let mut text_fragment = text.with(fg_ansi);
         if style.font_style.contains(FontStyle::BOLD) {
-            text = text.bold();
+            text_fragment = text_fragment.bold();
         }
         if style.font_style.contains(FontStyle::UNDERLINE) {
-            text = text.underlined();
+            text_fragment = text_fragment.underlined();
         }
-        output.push_str(&text.to_string());
+        output.push_str(&text_fragment.to_string());
     }
     output
 }
