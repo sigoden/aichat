@@ -1,3 +1,4 @@
+use ansi_colours::AsRGB;
 use anyhow::{anyhow, Context, Result};
 use crossterm::style::{Color, Stylize};
 use crossterm::terminal;
@@ -34,7 +35,10 @@ impl MarkdownRender {
         let syntax_set: SyntaxSet = bincode::deserialize_from(SYNTAXES)
             .with_context(|| "MarkdownRender: invalid syntaxes binary")?;
 
-        let code_color = options.theme.as_ref().map(get_code_color);
+        let code_color = options
+            .theme
+            .as_ref()
+            .map(|theme| get_code_color(theme, options.truecolor));
         let md_syntax = syntax_set.find_syntax_by_extension("md").unwrap().clone();
         let line_type = LineType::Normal;
         let wrap_width = match options.wrap.as_deref() {
@@ -141,7 +145,10 @@ impl MarkdownRender {
         if let Some(theme) = &self.options.theme {
             let mut highlighter = HighlightLines::new(syntax, theme);
             if let Ok(ranges) = highlighter.highlight_line(trimed_line, &self.syntax_set) {
-                line_highlighted = Some(format!("{ws}{}", as_terminal_escaped(&ranges)))
+                line_highlighted = Some(format!(
+                    "{ws}{}",
+                    as_terminal_escaped(&ranges, self.options.truecolor)
+                ))
             }
         }
         let line = line_highlighted.unwrap_or_else(|| line.into());
@@ -195,14 +202,21 @@ pub struct RenderOptions {
     pub theme: Option<Theme>,
     pub wrap: Option<String>,
     pub wrap_code: bool,
+    pub truecolor: bool,
 }
 
 impl RenderOptions {
-    pub(crate) fn new(theme: Option<Theme>, wrap: Option<String>, wrap_code: bool) -> Self {
+    pub(crate) fn new(
+        theme: Option<Theme>,
+        wrap: Option<String>,
+        wrap_code: bool,
+        truecolor: bool,
+    ) -> Self {
         Self {
             theme,
             wrap,
             wrap_code,
+            truecolor,
         }
     }
 }
@@ -215,11 +229,11 @@ pub enum LineType {
     CodeEnd,
 }
 
-fn as_terminal_escaped(ranges: &[(Style, &str)]) -> String {
+fn as_terminal_escaped(ranges: &[(Style, &str)], trucolor: bool) -> String {
     let mut output = String::new();
     for (style, text) in ranges {
         let fg = blend_fg_color(style.foreground, style.background);
-        let mut text = text.with(convert_color(fg));
+        let mut text = text.with(convert_color(fg, trucolor));
         if style.font_style.contains(FontStyle::BOLD) {
             text = text.bold();
         }
@@ -231,11 +245,21 @@ fn as_terminal_escaped(ranges: &[(Style, &str)]) -> String {
     output
 }
 
-const fn convert_color(c: SyntectColor) -> Color {
-    Color::Rgb {
-        r: c.r,
-        g: c.g,
-        b: c.b,
+fn convert_color(c: SyntectColor, trucolor: bool) -> Color {
+    if trucolor {
+        Color::Rgb {
+            r: c.r,
+            g: c.g,
+            b: c.b,
+        }
+    } else {
+        let value = (c.r, c.g, c.b).to_ansi256();
+        // lower contrast
+        let value = match value {
+            7 | 15 | 231 | 252..=255 => 252,
+            _ => value,
+        };
+        Color::AnsiValue(value)
     }
 }
 
@@ -267,7 +291,7 @@ fn detect_code_block(line: &str) -> Option<String> {
     Some(lang)
 }
 
-fn get_code_color(theme: &Theme) -> Color {
+fn get_code_color(theme: &Theme, trucolor: bool) -> Color {
     let scope = theme.scopes.iter().find(|v| {
         v.scope
             .selectors
@@ -276,7 +300,7 @@ fn get_code_color(theme: &Theme) -> Color {
     });
     scope
         .and_then(|v| v.style.foreground)
-        .map_or_else(|| Color::Yellow, convert_color)
+        .map_or_else(|| Color::Yellow, |c| convert_color(c, trucolor))
 }
 
 #[cfg(test)]

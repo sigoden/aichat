@@ -737,7 +737,11 @@ impl Config {
         } else {
             None
         };
-        Ok(RenderOptions::new(theme, wrap, self.wrap_code))
+        let truecolor = matches!(
+            env::var("COLORTERM").as_ref().map(|v| v.as_str()),
+            Ok("truecolor")
+        );
+        Ok(RenderOptions::new(theme, wrap, self.wrap_code, truecolor))
     }
 
     pub fn render_prompt_left(&self) -> String {
