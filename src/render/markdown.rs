@@ -253,7 +253,13 @@ fn convert_color(c: SyntectColor, trucolor: bool) -> Color {
             b: c.b,
         }
     } else {
-        Color::AnsiValue((c.r, c.g, c.b).to_ansi256())
+        let value = (c.r, c.g, c.b).to_ansi256();
+        // lower contrast
+        let value = match value {
+            7 | 15 | 231 | 252..=255 => 252,
+            _ => value,
+        };
+        Color::AnsiValue(value)
     }
 }
 
