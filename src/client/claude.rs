@@ -204,7 +204,7 @@ fn build_body(data: SendData, model: String) -> Result<Value> {
     });
 
     if let Some(v) = temperature {
-        body["temperature"] = (v / 2.0).into();
+        body["temperature"] = v.into();
     }
     if stream {
         body["stream"] = true.into();

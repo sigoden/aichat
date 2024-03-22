@@ -79,7 +79,7 @@ Feel free to adjust the configuration according to your needs.
 
 ```yaml
 model: openai:gpt-3.5-turbo      # LLM model
-temperature: 1.0                 # GPT temperature, between 0 and 2
+temperature: 1.0                 # LLM temperature
 save: true                       # Whether to save the message
 highlight: true                  # Set false to turn highlight
 light_theme: false               # Whether to use a light theme

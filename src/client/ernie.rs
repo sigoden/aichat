@@ -78,9 +78,7 @@ impl ErnieClient {
         let client_name = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, max_input_tokens, _)| {
-                Model::new(client_name, name).set_max_input_tokens(Some(max_input_tokens))
-            })
+            .map(|(name, _, _)| Model::new(client_name, name)) // ERNIE tokenizer is different from cl100k_base
             .collect()
     }
 
@@ -213,7 +211,7 @@ fn build_body(data: SendData, _model: String) -> Value {
     });
 
     if let Some(temperature) = temperature {
-        body["temperature"] = (temperature / 2.0).into();
+        body["temperature"] = temperature.into();
     }
     if stream {
         body["stream"] = true.into();

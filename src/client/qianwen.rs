@@ -1,4 +1,6 @@
-use super::{message::*, Client, ExtraConfig, Model, PromptType, QianwenClient, SendData};
+use super::{
+    message::*, Client, ExtraConfig, Model, PromptType, QianwenClient, SendData, TokensCountFactors,
+};
 
 use crate::{
     render::ReplyHandler,
@@ -34,6 +36,8 @@ const MODELS: [(&str, usize, &str); 6] = [
     ("qwen-vl-plus", 0, "text,vision"),
     ("qwen-vl-max", 0, "text,vision"),
 ];
+
+const TOKENS_COUNT_FACTORS: TokensCountFactors = (4, 14);
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct QianwenConfig {
@@ -84,6 +88,7 @@ impl QianwenClient {
                 Model::new(client_name, name)
                     .set_capabilities(capabilities.into())
                     .set_max_input_tokens(Some(max_input_tokens))
+                    .set_tokens_count_factors(TOKENS_COUNT_FACTORS)
             })
             .collect()
     }
@@ -221,7 +226,7 @@ fn build_body(data: SendData, model: String, is_vl: bool) -> Result<(Value, bool
 
         let mut parameters = json!({});
         if let Some(v) = temperature {
-            parameters["top_k"] = ((v * 50.0).round() as usize).into();
+            parameters["temperature"] = v.into();
         }
         (input, parameters)
     } else {
