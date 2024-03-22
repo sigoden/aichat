@@ -53,6 +53,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
   - VertexAI: Gemini-1/Gemini-1.5 (paid, vision)
   - Ernie (paid)
   - Qianwen (paid, vision)
+  - Moonshot (paid)
 - Support [Command Mode](#command) and [Chat-REPL Mode](#chat-repl)
 - Support [roles](#roles)
 - Support sessions (context-aware conversation)
