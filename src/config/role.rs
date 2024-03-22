@@ -16,7 +16,7 @@ pub struct Role {
     pub name: String,
     /// Prompt text
     pub prompt: String,
-    /// What sampling temperature to use, between 0 and 2
+    /// Temperature value
     pub temperature: Option<f64>,
 }
 

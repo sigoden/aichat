@@ -115,7 +115,7 @@ pub async fn openai_send_message_streaming(
                             bail!("{err_msg}");
                         } else {
                             bail!("Request failed, {data}");
-                        } 
+                        }
                     }
                     EventSourceError::StreamEnded => {}
                     _ => {

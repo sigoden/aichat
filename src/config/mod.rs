@@ -46,7 +46,7 @@ pub struct Config {
     /// LLM model
     #[serde(rename(serialize = "model", deserialize = "model"))]
     pub model_id: Option<String>,
-    /// GPT temperature, between 0 and 2
+    /// LLM temperature
     #[serde(rename(serialize = "temperature", deserialize = "temperature"))]
     pub default_temperature: Option<f64>,
     /// Dry-run flag

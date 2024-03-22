@@ -5,11 +5,12 @@ use crate::{render::ReplyHandler, utils::PromptKind};
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
 use futures_util::StreamExt;
+use lazy_static::lazy_static;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use reqwest_eventsource::{Error as EventSourceError, Event, RequestBuilderExt};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::env;
+use std::{env, sync::Mutex};
 
 const API_BASE: &str = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1";
 const ACCESS_TOKEN_URL: &str = "https://aip.baidubce.com/oauth/2.0/token";
@@ -36,7 +37,9 @@ const MODELS: [(&str, usize, &str); 6] = [
     ("ernie-lite-8k", 7168, "/wenxinworkshop/chat/ernie-lite-8k"),
 ];
 
-static mut ACCESS_TOKEN: String = String::new(); // safe under linear operation
+lazy_static! {
+    static ref ACCESS_TOKEN: Mutex<Option<String>> = Mutex::new(None);
+}
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct ErnieConfig {
@@ -78,9 +81,7 @@ impl ErnieClient {
         let client_name = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, max_input_tokens, _)| {
-                Model::new(client_name, name).set_max_input_tokens(Some(max_input_tokens))
-            })
+            .map(|(name, _, _)| Model::new(client_name, name)) // ERNIE tokenizer is different from cl100k_base
             .collect()
     }
 
@@ -93,9 +94,13 @@ impl ErnieClient {
             .find(|(v, _, _)| v == &model)
             .ok_or_else(|| anyhow!("Miss Model '{}'", self.model.id()))?;
 
-        let url = format!("{API_BASE}{chat_endpoint}?access_token={}", unsafe {
-            &ACCESS_TOKEN
-        });
+        let access_token = ACCESS_TOKEN
+            .lock()
+            .unwrap()
+            .clone()
+            .ok_or_else(|| anyhow!("Failed to load access token"))?;
+
+        let url = format!("{API_BASE}{chat_endpoint}?access_token={access_token}");
 
         debug!("Ernie Request: {url} {body}");
 
@@ -105,8 +110,7 @@ impl ErnieClient {
     }
 
     async fn prepare_access_token(&self) -> Result<()> {
-        if unsafe { ACCESS_TOKEN.is_empty() } {
-            // Note: cannot use config_get_fn!
+        if ACCESS_TOKEN.lock().unwrap().is_none() {
             let env_prefix = Self::name(&self.config).to_uppercase();
             let api_key = self.config.api_key.clone();
             let api_key = api_key
@@ -122,7 +126,7 @@ impl ErnieClient {
             let token = fetch_access_token(&client, &api_key, &secret_key)
                 .await
                 .with_context(|| "Failed to fetch access token")?;
-            unsafe { ACCESS_TOKEN = token };
+            *ACCESS_TOKEN.lock().unwrap() = Some(token);
         }
         Ok(())
     }
@@ -189,7 +193,7 @@ fn check_error(data: &Value) -> Result<()> {
     if let Some(err_msg) = data["error_msg"].as_str() {
         if let Some(code) = data["error_code"].as_number().and_then(|v| v.as_u64()) {
             if code == 110 {
-                unsafe { ACCESS_TOKEN = String::new() }
+                *ACCESS_TOKEN.lock().unwrap() = None;
             }
             bail!("{err_msg}. err_code: {code}");
         } else {
@@ -213,7 +217,7 @@ fn build_body(data: SendData, _model: String) -> Value {
     });
 
     if let Some(temperature) = temperature {
-        body["temperature"] = (temperature / 2.0).into();
+        body["temperature"] = temperature.into();
     }
     if stream {
         body["stream"] = true.into();
