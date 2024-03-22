@@ -623,18 +623,28 @@ impl Config {
         Ok(())
     }
 
-    pub fn end_session(&mut self) -> Result<()> {
+    /// End the current session, saving it if necessary
+    /// The single argument `interactive` ensures that non-interactive sessions will never prompt
+    pub fn end_session(&mut self, interactive: bool) -> Result<()> {
         if let Some(mut session) = self.session.take() {
             self.last_message = None;
             self.temperature = self.default_temperature;
             if session.dirty {
-                let ans = Confirm::new("Save session?").with_default(false).prompt()?;
-                if !ans {
-                    return Ok(());
-                }
                 let mut name = session.name().to_string();
-                if session.is_temp() {
-                    name = Text::new("Session name:").with_default(&name).prompt()?;
+                // If it's a temporary session, we'll always prompt to save on exit
+                // If it's named, we'll save automatically if they've set the save flag and prompt if they haven't
+                if !self.save || session.is_temp() {
+                    if !interactive {
+                        // If we're not interactive, we will not prompt and will not save
+                        return Ok(());
+                    }
+                    let ans = Confirm::new("Save session?").with_default(false).prompt()?;
+                    if !ans {
+                        return Ok(());
+                    }
+                    if session.is_temp() {
+                        name = Text::new("Session name:").with_default(&name).prompt()?;
+                    }
                 }
                 let session_path = Self::session_file(&name)?;
                 let sessions_dir = session_path.parent().ok_or_else(|| {

@@ -212,12 +212,12 @@ impl Repl {
                         self.config.write().clear_role()?;
                     }
                     Some("session") => {
-                        self.config.write().end_session()?;
+                        self.config.write().end_session(true)?;
                     }
                     Some(_) => unknown_command()?,
                     None => {
                         // Sessions may need to save before exit
-                        self.config.write().end_session()?;
+                        self.config.write().end_session(true)?;
                         return Ok(true);
                     }
                 },

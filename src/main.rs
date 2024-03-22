@@ -141,7 +141,9 @@ fn start_directive(
         let abort = create_abort_signal();
         render_stream(&input, client.as_ref(), config, abort)?
     };
+    // Save the message/session
     config.write().save_message(input, &output)?;
+    config.write().end_session(false)?;
     Ok(())
 }
 
