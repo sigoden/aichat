@@ -216,6 +216,8 @@ impl Repl {
                     }
                     Some(_) => unknown_command()?,
                     None => {
+                        // Sessions may need to save before exit
+                        self.config.write().end_session()?;
                         return Ok(true);
                     }
                 },
