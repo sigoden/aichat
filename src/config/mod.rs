@@ -630,7 +630,6 @@ impl Config {
             self.last_message = None;
             self.temperature = self.default_temperature;
             if session.dirty {
-                let mut name = session.name().to_string();
                 // If it's a temporary session, we'll always prompt to save on exit
                 // If it's named, we'll save automatically if they've set the save flag and prompt if they haven't
                 if !self.save || session.is_temp() {
@@ -642,11 +641,11 @@ impl Config {
                     if !ans {
                         return Ok(());
                     }
-                    if session.is_temp() {
-                        name = Text::new("Session name:").with_default(&name).prompt()?;
+                    while session.is_temp() || session.name().is_empty(){
+                        session.name = Text::new("Session name:").prompt()?;
                     }
                 }
-                let session_path = Self::session_file(&name)?;
+                let session_path = Self::session_file(&session.name())?;
                 let sessions_dir = session_path.parent().ok_or_else(|| {
                     anyhow!("Unable to save session file to {}", session_path.display())
                 })?;
