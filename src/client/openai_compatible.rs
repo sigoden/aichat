@@ -1,5 +1,5 @@
 use super::openai::{openai_build_body, OPENAI_TOKENS_COUNT_FACTORS};
-use super::{ExtraConfig, LocalAIClient, Model, ModelConfig, PromptType, SendData};
+use super::{ExtraConfig, Model, ModelConfig, OpenAICompatibleClient, PromptType, SendData};
 
 use crate::utils::PromptKind;
 
@@ -9,7 +9,7 @@ use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct LocalAIConfig {
+pub struct OpenAICompatibleConfig {
     pub name: Option<String>,
     pub api_base: String,
     pub api_key: Option<String>,
@@ -18,9 +18,9 @@ pub struct LocalAIConfig {
     pub extra: Option<ExtraConfig>,
 }
 
-openai_compatible_client!(LocalAIClient);
+openai_compatible_client!(OpenAICompatibleClient);
 
-impl LocalAIClient {
+impl OpenAICompatibleClient {
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 4] = [
@@ -35,7 +35,7 @@ impl LocalAIClient {
         ),
     ];
 
-    pub fn list_models(local_config: &LocalAIConfig) -> Vec<Model> {
+    pub fn list_models(local_config: &OpenAICompatibleConfig) -> Vec<Model> {
         let client_name = Self::name(local_config);
 
         local_config
@@ -65,7 +65,7 @@ impl LocalAIClient {
 
         let url = format!("{}{chat_endpoint}", self.config.api_base);
 
-        debug!("LocalAI Request: {url} {body}");
+        debug!("OpenAICompatible Request: {url} {body}");
 
         let mut builder = client.post(url).json(&body);
         if let Some(api_key) = api_key {

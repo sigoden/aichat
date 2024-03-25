@@ -12,7 +12,12 @@ register_client!(
     (gemini, "gemini", GeminiConfig, GeminiClient),
     (claude, "claude", ClaudeConfig, ClaudeClient),
     (mistral, "mistral", MistralConfig, MistralClient),
-    (localai, "localai", LocalAIConfig, LocalAIClient),
+    (
+        openai_compatible,
+        "openai-compatible",
+        OpenAICompatibleConfig,
+        OpenAICompatibleClient
+    ),
     (ollama, "ollama", OllamaConfig, OllamaClient),
     (
         azure_openai,
