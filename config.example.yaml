@@ -65,7 +65,7 @@ clients:
     api_key: Basic xxx                                # Set authorization header
     chat_endpoint: /chat                              # Optional field
     models:
-      - name: mistral
+      - name: llama2
         max_input_tokens: 8192
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
@@ -92,3 +92,7 @@ clients:
   # See https://help.aliyun.com/zh/dashscope/
   - type: qianwen
     api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+  # See https://platform.moonshot.cn/docs/intro
+  - type: moonshot
+    api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -20,7 +20,8 @@ register_client!(
         AzureOpenAIConfig,
         AzureOpenAIClient
     ),
+    (vertexai, "vertexai", VertexAIConfig, VertexAIClient),
     (ernie, "ernie", ErnieConfig, ErnieClient),
     (qianwen, "qianwen", QianwenConfig, QianwenClient),
-    (vertexai, "vertexai", VertexAIConfig, VertexAIClient),
+    (moonshot, "moonshot", MoonshotConfig, MoonshotClient),
 );
