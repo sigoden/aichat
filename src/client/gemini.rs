@@ -74,13 +74,9 @@ impl GeminiClient {
             false => "generateContent",
         };
 
-        let block_threshold = self
-            .config
-            .block_threshold
-            .clone()
-            .unwrap_or_else(|| "BLOCK_ONLY_HIGH".into());
+        let block_threshold = self.config.block_threshold.clone();
 
-        let body = build_body(data, self.model.name.clone(), block_threshold.clone())?;
+        let body = build_body(data, self.model.name.clone(), block_threshold)?;
 
         let model = self.model.name.clone();
 

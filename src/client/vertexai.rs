@@ -85,13 +85,9 @@ impl VertexAIClient {
             false => "generateContent",
         };
 
-        let block_threshold = self
-            .config
-            .block_threshold
-            .clone()
-            .unwrap_or_else(|| "BLOCK_ONLY_HIGH".into());
+        let block_threshold = self.config.block_threshold.clone();
 
-        let body = build_body(data, self.model.name.clone(), block_threshold.clone())?;
+        let body = build_body(data, self.model.name.clone(), block_threshold)?;
 
         let model = self.model.name.clone();
 
@@ -217,7 +213,11 @@ fn check_error(data: &Value) -> Result<()> {
     }
 }
 
-pub(crate) fn build_body(data: SendData, _model: String, block_threshold: String) -> Result<Value> {
+pub(crate) fn build_body(
+    data: SendData,
+    _model: String,
+    block_threshold: Option<String>,
+) -> Result<Value> {
     let SendData {
         mut messages,
         temperature,
@@ -267,15 +267,16 @@ pub(crate) fn build_body(data: SendData, _model: String, block_threshold: String
         );
     }
 
-    let mut body = json!({
-        "contents": contents,
-        "safetySettings":[
+    let mut body = json!({ "contents": contents });
+
+    if let Some(block_threshold) = block_threshold {
+        body["safetySettings"] = json!([
             {"category":"HARM_CATEGORY_HARASSMENT","threshold":block_threshold},
             {"category":"HARM_CATEGORY_HATE_SPEECH","threshold":block_threshold},
             {"category":"HARM_CATEGORY_SEXUALLY_EXPLICIT","threshold":block_threshold},
             {"category":"HARM_CATEGORY_DANGEROUS_CONTENT","threshold":block_threshold}
-        ]
-    });
+        ]);
+    }
 
     if let Some(temperature) = temperature {
         body["generationConfig"] = json!({
