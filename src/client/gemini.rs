@@ -14,6 +14,7 @@ const MODELS: [(&str, usize, &str); 2] = [
     // https://ai.google.dev/models/gemini
     ("gemini-pro", 30720, "text"),
     ("gemini-pro-vision", 12288, "vision"),
+    // ("gemini-1.5-pro", 1048576, "text,vision"),
 ];
 
 const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
