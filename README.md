@@ -95,10 +95,11 @@ clients:
   - type: openai
     api_key: sk-xxx
 
-  - type: localai
-    api_base: http://localhost:8080/v1
+  - type: openai-compatible
+    name: localai
+    api_base: http://127.0.0.1:8080/v1
     models:
-      - name: gpt4all-j
+      - name: llama2
         max_input_tokens: 8192
 ```
 

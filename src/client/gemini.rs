@@ -23,6 +23,7 @@ const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
 pub struct GeminiConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
+    pub block_threshold: Option<String>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -73,7 +74,9 @@ impl GeminiClient {
             false => "generateContent",
         };
 
-        let body = build_body(data, self.model.name.clone())?;
+        let block_threshold = self.config.block_threshold.clone();
+
+        let body = build_body(data, self.model.name.clone(), block_threshold)?;
 
         let model = self.model.name.clone();
 

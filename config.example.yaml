@@ -37,6 +37,7 @@ clients:
   # See https://ai.google.dev/docs
   - type: gemini
     api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    block_threshold: BLOCK_NONE                       # Optional field, choices: BLOCK_NONE, BLOCK_ONLY_HIGH, BLOCK_MEDIUM_AND_ABOVE, BLOCK_LOW_AND_ABOVE
 
   # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
   - type: claude
@@ -58,7 +59,7 @@ clients:
           key: value
       - name: llava
         max_input_tokens: 8192
-        capabilities: text,vision                     # Optional field, possible values: text, vision
+        capabilities: text,vision                     # Optional field, choices: text, vision
 
   # See https://github.com/jmorganca/ollama
   - type: ollama
@@ -84,6 +85,7 @@ clients:
     # Run `gcloud auth application-default login` to setup adc
     # see https://cloud.google.com/docs/authentication/external/set-up-adc
     adc_file: <path-to/gcloud/application_default_credentials.json> 
+    block_threshold: BLOCK_ONLY_HIGH                  # Optional field, choices: BLOCK_NONE, BLOCK_ONLY_HIGH, BLOCK_MEDIUM_AND_ABOVE, BLOCK_LOW_AND_ABOVE
 
   # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
   - type: ernie
