@@ -14,13 +14,13 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
-// https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
-const MODELS: [(&str, usize, &str); 5] = [
+const MODELS: [(&str, usize, &str); 2] = [
+    // https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
     ("gemini-1.0-pro", 24568, "text"),
     ("gemini-1.0-pro-vision", 14336, "text,vision"),
-    ("gemini-1.0-ultra", 8192, "text"),
-    ("gemini-1.0-ultra-vision", 8192, "text,vision"),
-    ("gemini-1.5-pro", 1000000, "text"),
+    // ("gemini-1.0-ultra", 8192, "text"),
+    // ("gemini-1.0-ultra-vision", 8192, "text,vision"),
+    // ("gemini-1.5-pro", 1000000, "text"),
 ];
 
 const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);

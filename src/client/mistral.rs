@@ -12,11 +12,11 @@ const API_URL: &str = "https://api.mistral.ai/v1/chat/completions";
 
 const MODELS: [(&str, usize, &str); 5] = [
     // https://docs.mistral.ai/platform/endpoints/
-    ("mistral-small-latest", 32000, "text"),
-    ("mistral-medium-latest", 32000, "text"),
     ("mistral-large-latest", 32000, "text"),
-    ("open-mistral-7b", 32000, "text"),
+    ("mistral-medium-latest", 32000, "text"),
+    ("mistral-small-latest", 32000, "text"),
     ("open-mixtral-8x7b", 32000, "text"),
+    ("open-mistral-7b", 32000, "text"),
 ];
 
 
