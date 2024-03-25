@@ -40,15 +40,15 @@ clients:
 
   # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
   - type: claude
-    api_key: sk-xxx
+    api_key: sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
   - type: mistral
     api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-  # Any openai-compatible API providers or https://github.com/go-skynet/LocalAI
-  - type: localai
+  # Any openai-compatible API providers 
+  - type: openai-compatible                           # Renamed from localai
     api_base: http://localhost:8080/v1
-    api_key: xxx
+    api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     chat_endpoint: /chat/completions                  # Optional field
     models:
       - name: llama2
@@ -95,4 +95,4 @@ clients:
 
   # See https://platform.moonshot.cn/docs/intro
   - type: moonshot
-    api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

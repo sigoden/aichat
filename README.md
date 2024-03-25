@@ -3,7 +3,7 @@
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 
-All-in-one CLI tool for 10+ AI platforms, including OpenAI, Gemini, Claude, Mistral, LocalAI, Ollama, VertexAI, Ernie, Qianwen...
+All-in-one CLI tool for 10+ AI platforms, including OpenAI, Gemini, Claude, Mistral, Ollama, VertexAI, Ernie, Qianwen, Moonshot...
 
 Command Mode:
 
@@ -47,7 +47,7 @@ Download it from [GitHub Releases](https://github.com/sigoden/aichat/releases), 
   - Gemini (free, vision)
   - Claude: Claude2/Claude3 (paid)
   - Mistral (paid)
-  - LocalAI (free, local, vision)
+  - OpenAI-Compatible (local)
   - Ollama (free, local)
   - Azure-OpenAI (paid)
   - VertexAI: Gemini-1/Gemini-1.5 (paid, vision)
