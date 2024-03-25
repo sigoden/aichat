@@ -23,7 +23,8 @@ openai_compatible_client!(OpenAICompatibleClient);
 impl OpenAICompatibleClient {
     config_get_fn!(api_key, get_api_key);
 
-    pub const PROMPTS: [PromptType<'static>; 4] = [
+    pub const PROMPTS: [PromptType<'static>; 5] = [
+        ("name", "Platform Name:", true, PromptKind::String),
         ("api_base", "API Base:", true, PromptKind::String),
         ("api_key", "API Key:", false, PromptKind::String),
         ("models[].name", "Model Name:", true, PromptKind::String),

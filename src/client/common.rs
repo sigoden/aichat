@@ -104,7 +104,7 @@ macro_rules! register_client {
             vec![$($client::NAME,)+]
         }
 
-        pub fn create_client_config(client: &str) -> anyhow::Result<serde_json::Value> {
+        pub fn create_client_config(client: &str) -> anyhow::Result<(String, serde_json::Value)> {
             $(
                 if client == $client::NAME {
                     return create_config(&$client::PROMPTS, $client::NAME)
@@ -310,15 +310,19 @@ pub struct SendData {
 
 pub type PromptType<'a> = (&'a str, &'a str, bool, PromptKind);
 
-pub fn create_config(list: &[PromptType], client: &str) -> Result<Value> {
+pub fn create_config(list: &[PromptType], client: &str) -> Result<(String, Value)> {
     let mut config = json!({
         "type": client,
     });
+    let mut model = client.to_string();
     for (path, desc, required, kind) in list {
         match kind {
             PromptKind::String => {
                 let value = prompt_input_string(desc, *required)?;
                 set_config_value(&mut config, path, kind, &value);
+                if *path == "name" {
+                    model = value;
+                }
             }
             PromptKind::Integer => {
                 let value = prompt_input_integer(desc, *required)?;
@@ -328,7 +332,7 @@ pub fn create_config(list: &[PromptType], client: &str) -> Result<Value> {
     }
 
     let clients = json!(vec![config]);
-    Ok(clients)
+    Ok((model, clients))
 }
 
 #[allow(unused)]
