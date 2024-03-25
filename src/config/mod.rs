@@ -1046,8 +1046,9 @@ fn create_config_file(config_path: &Path) -> Result<()> {
     let client = Select::new("Platform:", list_client_types()).prompt()?;
 
     let mut config = serde_json::json!({});
-    config["model"] = client.into();
-    config[CLIENTS_FIELD] = create_client_config(client)?;
+    let (model, clients_config) = create_client_config(client)?;
+    config["model"] = model.into();
+    config[CLIENTS_FIELD] = clients_config;
 
     let config_data = serde_yaml::to_string(&config).with_context(|| "Failed to create config")?;
 

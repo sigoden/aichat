@@ -46,7 +46,8 @@ clients:
     api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
   # Any openai-compatible API providers 
-  - type: openai-compatible                           # Renamed from localai
+  - type: openai-compatible
+    name: localai
     api_base: http://localhost:8080/v1
     api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     chat_endpoint: /chat/completions                  # Optional field
