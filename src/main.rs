@@ -54,6 +54,9 @@ fn main() -> Result<()> {
     if let Some(wrap) = &cli.wrap {
         config.write().set_wrap(wrap)?;
     }
+    if cli.save_session {
+        config.write().save_session = true;
+    }
     if cli.light_theme {
         config.write().light_theme = true;
     }
