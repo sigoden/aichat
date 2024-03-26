@@ -54,6 +54,9 @@ fn main() -> Result<()> {
     if let Some(wrap) = &cli.wrap {
         config.write().set_wrap(wrap)?;
     }
+    if cli.save_session {
+        config.write().save_session = true;
+    }
     if cli.light_theme {
         config.write().light_theme = true;
     }
@@ -111,9 +114,6 @@ fn start_directive(
     no_stream: bool,
     code_mode: bool,
 ) -> Result<()> {
-    if let Some(session) = &config.read().session {
-        session.guard_save()?;
-    }
     let input = Input::new(
         text,
         include.unwrap_or_default(),
@@ -141,7 +141,9 @@ fn start_directive(
         let abort = create_abort_signal();
         render_stream(&input, client.as_ref(), config, abort)?
     };
+    // Save the message/session
     config.write().save_message(input, &output)?;
+    config.write().end_session(false)?;
     Ok(())
 }
 

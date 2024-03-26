@@ -67,6 +67,8 @@ pub struct Config {
     pub keybindings: Keybindings,
     /// Set a default role or session (role:<name>, session:<name>)
     pub prelude: String,
+    /// Whether to save the session automatically
+    pub save_session: bool,
     /// Compress session if tokens exceed this value (>=1000)
     pub compress_threshold: usize,
     /// The prompt for summarizing session messages
@@ -110,6 +112,7 @@ impl Default for Config {
             auto_copy: false,
             keybindings: Default::default(),
             prelude: String::new(),
+            save_session: false,
             compress_threshold: 2000,
             summarize_prompt: "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.".to_string(),
             summary_prompt: "This is a summary of the chat history as a recap: ".into(),
@@ -584,8 +587,9 @@ impl Config {
             None => {
                 let session_file = Self::session_file(TEMP_SESSION_NAME)?;
                 if session_file.exists() {
-                    remove_file(session_file)
-                        .with_context(|| "Failed to clean previous session")?;
+                    remove_file(session_file).with_context(|| {
+                        format!("Failed to cleanup previous '{TEMP_SESSION_NAME}' session")
+                    })?;
                 }
                 self.session = Some(Session::new(
                     TEMP_SESSION_NAME,
@@ -623,20 +627,29 @@ impl Config {
         Ok(())
     }
 
-    pub fn end_session(&mut self) -> Result<()> {
+    /// End the current session, saving it if necessary
+    /// The single argument `interactive` ensures that non-interactive sessions will never prompt
+    pub fn end_session(&mut self, interactive: bool) -> Result<()> {
         if let Some(mut session) = self.session.take() {
             self.last_message = None;
             self.temperature = self.default_temperature;
             if session.dirty {
-                let ans = Confirm::new("Save session?").with_default(false).prompt()?;
-                if !ans {
-                    return Ok(());
+                // If it's a temporary session, we'll always prompt to save on exit
+                // If it's named, we'll save automatically if they've set the save flag and prompt if they haven't
+                if !self.save_session || session.is_temp() {
+                    if !interactive {
+                        // If we're not interactive, we will not prompt and will not save
+                        return Ok(());
+                    }
+                    let ans = Confirm::new("Save session?").with_default(false).prompt()?;
+                    if !ans {
+                        return Ok(());
+                    }
+                    while session.is_temp() || session.name().is_empty() {
+                        session.name = Text::new("Session name:").prompt()?;
+                    }
                 }
-                let mut name = session.name().to_string();
-                if session.is_temp() {
-                    name = Text::new("Session name:").with_default(&name).prompt()?;
-                }
-                let session_path = Self::session_file(&name)?;
+                let session_path = Self::session_file(session.name())?;
                 let sessions_dir = session_path.parent().ok_or_else(|| {
                     anyhow!("Unable to save session file to {}", session_path.display())
                 })?;
