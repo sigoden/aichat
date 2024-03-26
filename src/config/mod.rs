@@ -363,9 +363,10 @@ impl Config {
     }
 
     pub fn set_save_session(&mut self, value: bool) {
-        self.save_session = value;
         if let Some(session) = self.session.as_mut() {
             session.set_save_session(value);
+        } else {
+            self.save_session = value;
         }
     }
 
@@ -528,7 +529,13 @@ impl Config {
             let to_vec = |v: bool| vec![v.to_string()];
             let values = match args[0] {
                 "save" => to_vec(!self.save),
-                "save_session" => to_vec(!self.save_session),
+                "save_session" => {
+                    if let Some(session) = &self.session {
+                        to_vec(!session.save_session())
+                    } else {
+                        to_vec(!self.save_session)
+                    }
+                }
                 "highlight" => to_vec(!self.highlight),
                 "dry_run" => to_vec(!self.dry_run),
                 "auto_copy" => to_vec(!self.auto_copy),
