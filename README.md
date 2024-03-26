@@ -82,6 +82,7 @@ Feel free to adjust the configuration according to your needs.
 model: openai:gpt-3.5-turbo      # LLM model
 temperature: 1.0                 # LLM temperature
 save: true                       # Whether to save the message
+save_session: false              # Whether to save the session automatically
 highlight: true                  # Set false to turn highlight
 light_theme: false               # Whether to use a light theme
 wrap: no                         # Specify the text-wrapping mode (no, auto, <max-width>)
@@ -389,6 +390,7 @@ Usage: .file <file>... [-- text...]
 .set dry_run true
 .set highlight false
 .set save false
+.set save_session true
 .set auto_copy true
 ```
 

@@ -1,5 +1,5 @@
 use super::input::resolve_data_url;
-use super::{Input, Model};
+use super::{Config, Input, Model};
 
 use crate::client::{Message, MessageContent, MessageRole};
 use crate::render::MarkdownRender;
@@ -18,6 +18,8 @@ pub struct Session {
     #[serde(rename(serialize = "model", deserialize = "model"))]
     model_id: String,
     temperature: Option<f64>,
+    #[serde(default)]
+    save_session: bool,
     messages: Vec<Message>,
     #[serde(default)]
     data_urls: HashMap<String, String>,
@@ -37,10 +39,11 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(name: &str, model: Model, temperature: Option<f64>) -> Self {
+    pub fn new(config: &Config, name: &str) -> Self {
         Self {
-            model_id: model.id(),
-            temperature,
+            model_id: config.model.id(),
+            temperature: config.temperature,
+            save_session: config.save_session,
             messages: vec![],
             compressed_messages: vec![],
             compress_threshold: None,
@@ -49,7 +52,7 @@ impl Session {
             path: None,
             dirty: false,
             compressing: false,
-            model,
+            model: config.model.clone(),
         }
     }
 
@@ -77,6 +80,10 @@ impl Session {
         self.temperature
     }
 
+    pub fn save_session(&self) -> bool {
+        self.save_session
+    }
+
     pub fn need_compress(&self, current_compress_threshold: usize) -> bool {
         let threshold = self
             .compress_threshold
@@ -102,6 +109,7 @@ impl Session {
         if let Some(temperature) = self.temperature() {
             data["temperature"] = temperature.into();
         }
+        data["save_session"] = self.save_session.into();
         data["total_tokens"] = tokens.into();
         if let Some(conext_window) = self.model.max_input_tokens {
             data["max_input_tokens"] = conext_window.into();
@@ -128,6 +136,8 @@ impl Session {
         if let Some(temperature) = self.temperature() {
             items.push(("temperature", temperature.to_string()));
         }
+
+        items.push(("save_session", self.save_session.to_string()));
 
         if let Some(compress_threshold) = self.compress_threshold {
             items.push(("compress_threshold", compress_threshold.to_string()));
@@ -186,6 +196,10 @@ impl Session {
 
     pub fn set_temperature(&mut self, value: Option<f64>) {
         self.temperature = value;
+    }
+
+    pub fn set_save_session(&mut self, value: bool) {
+        self.save_session = value;
     }
 
     pub fn set_compress_threshold(&mut self, value: usize) {

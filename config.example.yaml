@@ -1,6 +1,7 @@
 model: openai:gpt-3.5-turbo      # LLM model
 temperature: 1.0                 # LLM temperature
 save: true                       # Whether to save the message
+save_session: false              # Whether to save the session automatically
 highlight: true                  # Set false to turn highlight
 light_theme: false               # Whether to use a light theme
 wrap: no                         # Specify the text-wrapping mode (no, auto, <max-width>)
@@ -8,7 +9,6 @@ wrap_code: false                 # Whether wrap code block
 auto_copy: false                 # Automatically copy the last output to the clipboard
 keybindings: emacs               # REPL keybindings. (emacs, vi)
 prelude: ''                      # Set a default role or session (role:<name>, session:<name>)
-save_session: false              # Whether to save the session automatically
 
 # Compress session if tokens exceed this value (valid when >=1000)
 compress_threshold: 1000

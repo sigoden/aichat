@@ -53,6 +53,8 @@ pub struct Config {
     pub dry_run: bool,
     /// Whether to save the message
     pub save: bool,
+    /// Whether to save the session automatically
+    pub save_session: bool,
     /// Whether to disable highlight
     pub highlight: bool,
     /// Whether to use a light theme
@@ -67,8 +69,6 @@ pub struct Config {
     pub keybindings: Keybindings,
     /// Set a default role or session (role:<name>, session:<name>)
     pub prelude: String,
-    /// Whether to save the session automatically
-    pub save_session: bool,
     /// Compress session if tokens exceed this value (>=1000)
     pub compress_threshold: usize,
     /// The prompt for summarizing session messages
@@ -362,6 +362,14 @@ impl Config {
         }
     }
 
+    pub fn set_save_session(&mut self, value: bool) {
+        if let Some(session) = self.session.as_mut() {
+            session.set_save_session(value);
+        } else {
+            self.save_session = value;
+        }
+    }
+
     pub fn set_compress_threshold(&mut self, value: usize) {
         self.compress_threshold = value;
         if let Some(session) = self.session.as_mut() {
@@ -439,6 +447,7 @@ impl Config {
             ("temperature", temperature),
             ("dry_run", self.dry_run.to_string()),
             ("save", self.save.to_string()),
+            ("save_session", self.save_session.to_string()),
             ("highlight", self.highlight.to_string()),
             ("light_theme", self.light_theme.to_string()),
             ("wrap", wrap),
@@ -505,6 +514,7 @@ impl Config {
                     "temperature ",
                     "compress_threshold",
                     "save ",
+                    "save_session ",
                     "highlight ",
                     "dry_run ",
                     "auto_copy ",
@@ -519,6 +529,13 @@ impl Config {
             let to_vec = |v: bool| vec![v.to_string()];
             let values = match args[0] {
                 "save" => to_vec(!self.save),
+                "save_session" => {
+                    if let Some(session) = &self.session {
+                        to_vec(!session.save_session())
+                    } else {
+                        to_vec(!self.save_session)
+                    }
+                }
                 "highlight" => to_vec(!self.highlight),
                 "dry_run" => to_vec(!self.dry_run),
                 "auto_copy" => to_vec(!self.auto_copy),
@@ -560,6 +577,10 @@ impl Config {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.save = value;
             }
+            "save_session" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                self.set_save_session(value);
+            }
             "highlight" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.highlight = value;
@@ -591,16 +612,12 @@ impl Config {
                         format!("Failed to cleanup previous '{TEMP_SESSION_NAME}' session")
                     })?;
                 }
-                self.session = Some(Session::new(
-                    TEMP_SESSION_NAME,
-                    self.model.clone(),
-                    self.temperature,
-                ));
+                self.session = Some(Session::new(self, TEMP_SESSION_NAME));
             }
             Some(name) => {
                 let session_path = Self::session_file(name)?;
                 if !session_path.exists() {
-                    self.session = Some(Session::new(name, self.model.clone(), self.temperature));
+                    self.session = Some(Session::new(self, name));
                 } else {
                     let session = Session::load(name, &session_path)?;
                     let model = session.model().to_string();
@@ -636,7 +653,7 @@ impl Config {
             if session.dirty {
                 // If it's a temporary session, we'll always prompt to save on exit
                 // If it's named, we'll save automatically if they've set the save flag and prompt if they haven't
-                if !self.save_session || session.is_temp() {
+                if !session.save_session() || session.is_temp() {
                     if !interactive {
                         // If we're not interactive, we will not prompt and will not save
                         return Ok(());
