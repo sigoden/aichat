@@ -361,10 +361,11 @@ impl Config {
         }
     }
 
-    pub fn set_compress_threshold(&mut self, value: usize) {
-        self.compress_threshold = value;
+    pub fn set_compress_threshold(&mut self, value: Option<usize>) {
         if let Some(session) = self.session.as_mut() {
             session.set_compress_threshold(value);
+        } else {
+            self.compress_threshold = value.unwrap_or_default();
         }
     }
 
@@ -561,7 +562,12 @@ impl Config {
                 self.set_temperature(value);
             }
             "compress_threshold" => {
-                let value = value.parse().with_context(|| "Invalid value")?;
+                let value = if unset {
+                    None
+                } else {
+                    let value = value.parse().with_context(|| "Invalid value")?;
+                    Some(value)
+                };
                 self.set_compress_threshold(value);
             }
             "save" => {
