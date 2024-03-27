@@ -423,7 +423,7 @@ impl Config {
         }
     }
 
-    pub fn sys_info(&self) -> Result<String> {
+    pub fn system_info(&self) -> Result<String> {
         let display_path = |path: &Path| path.display().to_string();
         let wrap = self
             .wrap
@@ -485,7 +485,7 @@ impl Config {
         } else if let Some(role) = &self.role {
             role.export()
         } else {
-            self.sys_info()
+            self.system_info()
         }
     }
 
@@ -647,17 +647,18 @@ impl Config {
                         session.name = Text::new("Session name:").prompt()?;
                     }
                 }
-                let session_path = Self::session_file(session.name())?;
-                let sessions_dir = session_path.parent().ok_or_else(|| {
-                    anyhow!("Unable to save session file to {}", session_path.display())
-                })?;
-                if !sessions_dir.exists() {
-                    create_dir_all(sessions_dir).with_context(|| {
-                        format!("Failed to create session_dir '{}'", sessions_dir.display())
-                    })?;
-                }
-                session.save(&session_path)?;
+                Self::save_session_to_file(&mut session)?;
             }
+        }
+        Ok(())
+    }
+
+    pub fn save_session(&mut self, name: &str) -> Result<()> {
+        if let Some(session) = self.session.as_mut() {
+            if !name.is_empty() {
+                session.name = name.to_string();
+            }
+            Self::save_session_to_file(session)?;
         }
         Ok(())
     }
@@ -868,6 +869,20 @@ impl Config {
             .append(true)
             .open(&path)
             .with_context(|| format!("Failed to create/append {}", path.display()))
+    }
+
+    fn save_session_to_file(session: &mut Session) -> Result<()> {
+        let session_path = Self::session_file(session.name())?;
+        let sessions_dir = session_path
+            .parent()
+            .ok_or_else(|| anyhow!("Unable to save session file to {}", session_path.display()))?;
+        if !sessions_dir.exists() {
+            create_dir_all(sessions_dir).with_context(|| {
+                format!("Failed to create session_dir '{}'", sessions_dir.display())
+            })?;
+        }
+        session.save(&session_path)?;
+        Ok(())
     }
 
     fn load_config(config_path: &Path) -> Result<Self> {

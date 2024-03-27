@@ -253,10 +253,11 @@ The REPL supports:
 .info                    Print system info
 .model                   Switch LLM model
 .role                    Use a role
-.info role               Show role info
+.info role               Show the role info
 .exit role               Leave current role
 .session                 Start a context-aware chat session
-.info session            Show session info
+.info session            Show the session info
+.save session            Save the session to the file
 .clear messages          Clear messages in the session
 .exit session            End the current session
 .file                    Attach files to the message and then submit it

@@ -241,9 +241,6 @@ impl Session {
     }
 
     pub fn save(&mut self, session_path: &Path) -> Result<()> {
-        if !self.dirty {
-            return Ok(());
-        }
         self.path = Some(session_path.display().to_string());
 
         let content = serde_yaml::to_string(&self)
