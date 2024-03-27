@@ -12,7 +12,7 @@ pub struct Cli {
     /// Create or reuse a session
     #[clap(short = 's', long)]
     pub session: Option<Option<String>>,
-    /// Whether to save the session automatically
+    /// Whether to save the session
     #[clap(long)]
     pub save_session: bool,
     /// Execute commands using natural language

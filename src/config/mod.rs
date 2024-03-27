@@ -52,8 +52,8 @@ pub struct Config {
     pub dry_run: bool,
     /// Whether to save the message
     pub save: bool,
-    /// Whether to save the session automatically
-    pub save_session: bool,
+    /// Whether to save the session
+    pub save_session: Option<bool>,
     /// Whether to disable highlight
     pub highlight: bool,
     /// Whether to use a light theme
@@ -101,6 +101,7 @@ impl Default for Config {
             model_id: None,
             temperature: None,
             save: true,
+            save_session: None,
             highlight: true,
             dry_run: false,
             light_theme: false,
@@ -109,7 +110,6 @@ impl Default for Config {
             auto_copy: false,
             keybindings: Default::default(),
             prelude: String::new(),
-            save_session: false,
             compress_threshold: 2000,
             summarize_prompt: "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.".to_string(),
             summary_prompt: "This is a summary of the chat history as a recap: ".into(),
@@ -353,7 +353,7 @@ impl Config {
         }
     }
 
-    pub fn set_save_session(&mut self, value: bool) {
+    pub fn set_save_session(&mut self, value: Option<bool>) {
         if let Some(session) = self.session.as_mut() {
             session.set_save_session(value);
         } else {
@@ -422,9 +422,6 @@ impl Config {
 
     pub fn sys_info(&self) -> Result<String> {
         let display_path = |path: &Path| path.display().to_string();
-        let temperature = self
-            .temperature
-            .map_or_else(|| String::from("-"), |v| v.to_string());
         let wrap = self
             .wrap
             .clone()
@@ -436,10 +433,10 @@ impl Config {
         };
         let items = vec![
             ("model", self.model.id()),
-            ("temperature", temperature),
+            ("temperature", format_option(&self.temperature)),
             ("dry_run", self.dry_run.to_string()),
             ("save", self.save.to_string()),
-            ("save_session", self.save_session.to_string()),
+            ("save_session", format_option(&self.save_session)),
             ("highlight", self.highlight.to_string()),
             ("light_theme", self.light_theme.to_string()),
             ("wrap", wrap),
@@ -518,19 +515,19 @@ impl Config {
             };
             (values, args[0])
         } else if args.len() == 2 {
-            let to_vec = |v: bool| vec![v.to_string()];
             let values = match args[0] {
-                "save" => to_vec(!self.save),
+                "save" => complete_bool(self.save),
                 "save_session" => {
-                    if let Some(session) = &self.session {
-                        to_vec(!session.save_session())
+                    let save_session = if let Some(session) = &self.session {
+                        session.save_session()
                     } else {
-                        to_vec(!self.save_session)
-                    }
+                        self.save_session
+                    };
+                    complete_option_bool(save_session)
                 }
-                "highlight" => to_vec(!self.highlight),
-                "dry_run" => to_vec(!self.dry_run),
-                "auto_copy" => to_vec(!self.auto_copy),
+                "highlight" => complete_bool(self.highlight),
+                "dry_run" => complete_bool(self.dry_run),
+                "auto_copy" => complete_bool(self.auto_copy),
                 _ => vec![],
             };
             (values, args[1])
@@ -550,24 +547,13 @@ impl Config {
         }
         let key = parts[0];
         let value = parts[1];
-        let unset = value == "null";
         match key {
             "temperature" => {
-                let value = if unset {
-                    None
-                } else {
-                    let value = value.parse().with_context(|| "Invalid value")?;
-                    Some(value)
-                };
+                let value = parse_value(value)?;
                 self.set_temperature(value);
             }
             "compress_threshold" => {
-                let value = if unset {
-                    None
-                } else {
-                    let value = value.parse().with_context(|| "Invalid value")?;
-                    Some(value)
-                };
+                let value = parse_value(value)?;
                 self.set_compress_threshold(value);
             }
             "save" => {
@@ -575,7 +561,7 @@ impl Config {
                 self.save = value;
             }
             "save_session" => {
-                let value = value.parse().with_context(|| "Invalid value")?;
+                let value = parse_value(value)?;
                 self.set_save_session(value);
             }
             "highlight" => {
@@ -609,7 +595,9 @@ impl Config {
                         format!("Failed to cleanup previous '{TEMP_SESSION_NAME}' session")
                     })?;
                 }
-                self.session = Some(Session::new(self, TEMP_SESSION_NAME));
+                let mut session = Session::new(self, TEMP_SESSION_NAME);
+                session.set_save_session(None);
+                self.session = Some(session);
             }
             Some(name) => {
                 let session_path = Self::session_file(name)?;
@@ -645,10 +633,9 @@ impl Config {
     pub fn end_session(&mut self, interactive: bool) -> Result<()> {
         if let Some(mut session) = self.session.take() {
             self.last_message = None;
-            if session.dirty {
-                // If it's a temporary session, we'll always prompt to save on exit
-                // If it's named, we'll save automatically if they've set the save flag and prompt if they haven't
-                if !session.save_session() || session.is_temp() {
+            let save_session = session.save_session();
+            if session.dirty && save_session != Some(false) {
+                if save_session.is_none() {
                     if !interactive {
                         // If we're not interactive, we will not prompt and will not save
                         return Ok(());
@@ -842,6 +829,7 @@ impl Config {
         }
         if let Some(session) = &self.session {
             output.insert("session", session.name().to_string());
+            output.insert("dirty", session.dirty.to_string());
             let (tokens, percent) = session.tokens_and_percent();
             output.insert("consume_tokens", tokens.to_string());
             output.insert("consume_percent", percent.to_string());
@@ -1121,6 +1109,44 @@ fn set_bool(target: &mut bool, value: &str) {
         "1" | "true" => *target = true,
         "0" | "false" => *target = false,
         _ => {}
+    }
+}
+
+fn parse_value<T>(value: &str) -> Result<Option<T>>
+where
+    T: std::str::FromStr,
+{
+    let value = if value == "null" {
+        None
+    } else {
+        let value = match value.parse() {
+            Ok(value) => value,
+            Err(_) => bail!("Invalid value '{}'", value),
+        };
+        Some(value)
+    };
+    Ok(value)
+}
+
+fn format_option<T>(value: &Option<T>) -> String
+where
+    T: std::fmt::Display,
+{
+    match value {
+        Some(value) => value.to_string(),
+        None => "-".to_string(),
+    }
+}
+
+fn complete_bool(value: bool) -> Vec<String> {
+    vec![(!value).to_string()]
+}
+
+fn complete_option_bool(value: Option<bool>) -> Vec<String> {
+    match value {
+        Some(true) => vec!["false".to_string(), "null".to_string()],
+        Some(false) => vec!["true".to_string(), "null".to_string()],
+        None => vec!["true".to_string(), "false".to_string()],
     }
 }
 
