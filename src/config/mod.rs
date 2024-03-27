@@ -423,7 +423,7 @@ impl Config {
         }
     }
 
-    pub fn sys_info(&self) -> Result<String> {
+    pub fn system_info(&self) -> Result<String> {
         let display_path = |path: &Path| path.display().to_string();
         let wrap = self
             .wrap
@@ -485,7 +485,7 @@ impl Config {
         } else if let Some(role) = &self.role {
             role.export()
         } else {
-            self.sys_info()
+            self.system_info()
         }
     }
 

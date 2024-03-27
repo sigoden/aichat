@@ -30,15 +30,23 @@ lazy_static! {
         ReplCommand::new(".info", "Print system info", State::all()),
         ReplCommand::new(".model", "Switch LLM model", State::all()),
         ReplCommand::new(".role", "Use a role", State::able_change_role()),
-        ReplCommand::new(".info role", "Show role info", State::in_role(),),
+        ReplCommand::new(".info role", "Show the role info", State::in_role(),),
         ReplCommand::new(".exit role", "Leave current role", State::in_role(),),
         ReplCommand::new(
             ".session",
             "Start a context-aware chat session",
             State::not_in_session(),
         ),
-        ReplCommand::new(".info session", "Show session info", State::in_session(),),
-        ReplCommand::new(".save session", "Save session to file", State::in_session(),),
+        ReplCommand::new(
+            ".info session",
+            "Show the session info",
+            State::in_session(),
+        ),
+        ReplCommand::new(
+            ".save session",
+            "Save the session to the file",
+            State::in_session(),
+        ),
         ReplCommand::new(
             ".clear messages",
             "Clear messages in the session",
@@ -161,7 +169,7 @@ impl Repl {
                     }
                     Some(_) => unknown_command()?,
                     None => {
-                        let output = self.config.read().sys_info()?;
+                        let output = self.config.read().system_info()?;
                         println!("{}", output);
                     }
                 },
