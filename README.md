@@ -257,6 +257,7 @@ The REPL supports:
 .exit role               Leave current role
 .session                 Start a context-aware chat session
 .info session            Show session info
+.save session            Save session to file
 .clear messages          Clear messages in the session
 .exit session            End the current session
 .file                    Attach files to the message and then submit it

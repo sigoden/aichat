@@ -25,7 +25,7 @@ use std::{env, process};
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 14] = [
+    static ref REPL_COMMANDS: [ReplCommand; 15] = [
         ReplCommand::new(".help", "Print this help message", State::all()),
         ReplCommand::new(".info", "Print system info", State::all()),
         ReplCommand::new(".model", "Switch LLM model", State::all()),
@@ -38,6 +38,7 @@ lazy_static! {
             State::not_in_session(),
         ),
         ReplCommand::new(".info session", "Show session info", State::in_session(),),
+        ReplCommand::new(".save session", "Save session to file", State::in_session(),),
         ReplCommand::new(
             ".clear messages",
             "Clear messages in the session",
@@ -186,6 +187,19 @@ impl Repl {
                 },
                 ".session" => {
                     self.config.write().start_session(args)?;
+                }
+                ".save" => {
+                    match args.map(|v| match v.split_once(' ') {
+                        Some((subcmd, args)) => (subcmd, args.trim()),
+                        None => (v, ""),
+                    }) {
+                        Some(("session", name)) => {
+                            self.config.write().save_session(name)?;
+                        }
+                        _ => {
+                            println!(r#"Usage: .save session [name]"#)
+                        }
+                    }
                 }
                 ".set" => {
                     if let Some(args) = args {
