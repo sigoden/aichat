@@ -74,6 +74,8 @@ pub struct Repl {
 
 impl Repl {
     pub fn init(config: &GlobalConfig) -> Result<Self> {
+        config.write().in_repl = true;
+
         let editor = Self::create_editor(config)?;
 
         let prompt = ReplPrompt::new(config);
@@ -212,7 +214,7 @@ impl Repl {
                         self.config.write().clear_role()?;
                     }
                     Some("session") => {
-                        self.config.write().end_session(true)?;
+                        self.config.write().end_session()?;
                     }
                     Some(_) => unknown_command()?,
                     None => {

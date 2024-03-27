@@ -143,7 +143,7 @@ fn start_directive(
     };
     // Save the message/session
     config.write().save_message(input, &output)?;
-    config.write().end_session(false)?;
+    config.write().end_session()?;
     Ok(())
 }
 

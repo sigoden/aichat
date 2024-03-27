@@ -225,9 +225,9 @@ impl Session {
         let model_id = model.id();
         if self.model_id != model_id {
             self.model_id = model_id;
-            self.model = model;
             self.dirty = true;
         }
+        self.model = model;
         Ok(())
     }
 

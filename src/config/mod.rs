@@ -93,6 +93,8 @@ pub struct Config {
     pub model: Model,
     #[serde(skip)]
     pub last_message: Option<(Input, String)>,
+    #[serde(skip)]
+    pub in_repl: bool,
 }
 
 impl Default for Config {
@@ -122,6 +124,7 @@ impl Default for Config {
             session: None,
             model: Default::default(),
             last_message: None,
+            in_repl: false,
         }
     }
 }
@@ -595,8 +598,7 @@ impl Config {
                         format!("Failed to cleanup previous '{TEMP_SESSION_NAME}' session")
                     })?;
                 }
-                let mut session = Session::new(self, TEMP_SESSION_NAME);
-                session.set_save_session(None);
+                let session = Session::new(self, TEMP_SESSION_NAME);
                 self.session = Some(session);
             }
             Some(name) => {
@@ -605,9 +607,9 @@ impl Config {
                     self.session = Some(Session::new(self, name));
                 } else {
                     let session = Session::load(name, &session_path)?;
-                    let model = session.model().to_string();
+                    let model_id = session.model().to_string();
                     self.session = Some(session);
-                    self.set_model(&model)?;
+                    self.set_model(&model_id)?;
                 }
             }
         }
@@ -628,16 +630,13 @@ impl Config {
         Ok(())
     }
 
-    /// End the current session, saving it if necessary
-    /// The single argument `interactive` ensures that non-interactive sessions will never prompt
-    pub fn end_session(&mut self, interactive: bool) -> Result<()> {
+    pub fn end_session(&mut self) -> Result<()> {
         if let Some(mut session) = self.session.take() {
             self.last_message = None;
             let save_session = session.save_session();
             if session.dirty && save_session != Some(false) {
-                if save_session.is_none() {
-                    if !interactive {
-                        // If we're not interactive, we will not prompt and will not save
+                if save_session.is_none() || session.is_temp() {
+                    if !self.in_repl {
                         return Ok(());
                     }
                     let ans = Confirm::new("Save session?").with_default(false).prompt()?;
