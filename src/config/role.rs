@@ -89,6 +89,10 @@ For example if the prompt is "Hello world Python", you should return "print('Hel
         self.prompt.contains(INPUT_PLACEHOLDER)
     }
 
+    pub fn set_temperature(&mut self, value: Option<f64>) {
+        self.temperature = value;
+    }
+
     pub fn complete_prompt_args(&mut self, name: &str) {
         self.name = name.to_string();
         self.prompt = complete_prompt_args(&self.prompt, &self.name);
