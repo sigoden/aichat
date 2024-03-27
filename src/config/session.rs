@@ -195,20 +195,33 @@ impl Session {
     }
 
     pub fn set_temperature(&mut self, value: Option<f64>) {
-        self.temperature = value;
+        if self.temperature != value {
+            self.temperature = value;
+            self.dirty = true;
+        }
     }
 
     pub fn set_save_session(&mut self, value: bool) {
-        self.save_session = value;
+        if self.save_session != value {
+            self.save_session = value;
+            self.dirty = true;
+        }
     }
 
-    pub fn set_compress_threshold(&mut self, value: usize) {
-        self.compress_threshold = Some(value);
+    pub fn set_compress_threshold(&mut self, value: Option<usize>) {
+        if self.compress_threshold != value {
+            self.compress_threshold = value;
+            self.dirty = true;
+        }
     }
 
     pub fn set_model(&mut self, model: Model) -> Result<()> {
-        self.model_id = model.id();
-        self.model = model;
+        let model_id = model.id();
+        if self.model_id != model_id {
+            self.model_id = model_id;
+            self.model = model;
+            self.dirty = true;
+        }
         Ok(())
     }
 

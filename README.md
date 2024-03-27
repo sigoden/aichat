@@ -278,6 +278,7 @@ model               openai:gpt-3.5-turbo
 temperature         -
 dry_run             false
 save                true
+save_session        true
 highlight           true
 light_theme         false
 wrap                no
