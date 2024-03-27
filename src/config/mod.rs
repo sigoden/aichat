@@ -94,7 +94,7 @@ pub struct Config {
     #[serde(skip)]
     pub last_message: Option<(Input, String)>,
     #[serde(skip)]
-    pub interactive: bool,
+    pub in_repl: bool,
 }
 
 impl Default for Config {
@@ -124,7 +124,7 @@ impl Default for Config {
             session: None,
             model: Default::default(),
             last_message: None,
-            interactive: false,
+            in_repl: false,
         }
     }
 }
@@ -636,7 +636,7 @@ impl Config {
             let save_session = session.save_session();
             if session.dirty && save_session != Some(false) {
                 if save_session.is_none() || session.is_temp() {
-                    if !self.interactive {
+                    if !self.in_repl {
                         return Ok(());
                     }
                     let ans = Confirm::new("Save session?").with_default(false).prompt()?;
