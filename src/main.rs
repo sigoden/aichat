@@ -76,7 +76,7 @@ fn main() -> Result<()> {
         config.write().set_model(model)?;
     }
     if cli.save_session {
-        config.write().set_save_session(true);
+        config.write().set_save_session(Some(true));
     }
     if cli.no_highlight {
         config.write().highlight = false;

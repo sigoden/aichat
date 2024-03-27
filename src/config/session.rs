@@ -19,7 +19,7 @@ pub struct Session {
     model_id: String,
     temperature: Option<f64>,
     #[serde(default)]
-    save_session: bool,
+    save_session: Option<bool>,
     messages: Vec<Message>,
     #[serde(default)]
     data_urls: HashMap<String, String>,
@@ -80,7 +80,7 @@ impl Session {
         self.temperature
     }
 
-    pub fn save_session(&self) -> bool {
+    pub fn save_session(&self) -> Option<bool> {
         self.save_session
     }
 
@@ -100,7 +100,9 @@ impl Session {
     }
 
     pub fn export(&self) -> Result<String> {
-        self.guard_save()?;
+        if self.path.is_none() {
+            bail!("Not found session '{}'", self.name)
+        }
         let (tokens, percent) = self.tokens_and_percent();
         let mut data = json!({
             "path": self.path,
@@ -109,7 +111,9 @@ impl Session {
         if let Some(temperature) = self.temperature() {
             data["temperature"] = temperature.into();
         }
-        data["save_session"] = self.save_session.into();
+        if let Some(save_session) = self.save_session() {
+            data["save_session"] = save_session.into();
+        }
         data["total_tokens"] = tokens.into();
         if let Some(conext_window) = self.model.max_input_tokens {
             data["max_input_tokens"] = conext_window.into();
@@ -137,7 +141,9 @@ impl Session {
             items.push(("temperature", temperature.to_string()));
         }
 
-        items.push(("save_session", self.save_session.to_string()));
+        if let Some(save_session) = self.save_session() {
+            items.push(("save_session", save_session.to_string()));
+        }
 
         if let Some(compress_threshold) = self.compress_threshold {
             items.push(("compress_threshold", compress_threshold.to_string()));
@@ -201,7 +207,7 @@ impl Session {
         }
     }
 
-    pub fn set_save_session(&mut self, value: bool) {
+    pub fn set_save_session(&mut self, value: Option<bool>) {
         if self.save_session != value {
             self.save_session = value;
             self.dirty = true;
@@ -252,13 +258,6 @@ impl Session {
 
         self.dirty = false;
 
-        Ok(())
-    }
-
-    pub fn guard_save(&self) -> Result<()> {
-        if self.path.is_none() {
-            bail!("Not found session '{}'", self.name)
-        }
         Ok(())
     }
 

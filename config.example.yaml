@@ -1,7 +1,7 @@
 model: openai:gpt-3.5-turbo      # LLM model
 temperature: 1.0                 # LLM temperature
 save: true                       # Whether to save the message
-save_session: false              # Whether to save the session automatically
+save_session: null               # Whether to save the session, if null, asking
 highlight: true                  # Set false to turn highlight
 light_theme: false               # Whether to use a light theme
 wrap: no                         # Specify the text-wrapping mode (no, auto, <max-width>)
