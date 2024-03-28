@@ -77,7 +77,10 @@ fn markdown_stream_inner(
             spinner.stop(writer)?;
 
             match reply_event {
-                ReplyEvent::Text(text) => {
+                ReplyEvent::Text(mut text) => {
+                    // tab width hacking
+                    text = text.replace('\t', "    ");
+
                     let (col, mut row) = cursor::position()?;
 
                     // Fix unexpected duplicate lines on kitty, see https://github.com/sigoden/aichat/issues/105
