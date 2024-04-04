@@ -1,6 +1,6 @@
 [package]
 name = "aichat"
-version = "0.14.0"
+version = "0.15.0"
 edition = "2021"
 authors = ["sigoden <sigoden@gmail.com>"]
 description = "All-in-one CLI tool for 10+ AI platforms"
@@ -18,7 +18,7 @@ dirs = "5.0.0"
 futures-util = "0.3.29"
 inquire = "0.7.0"
 is-terminal = "0.4.9"
-reedline = "0.30.0"
+reedline = "0.31.0"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = { version = "1.0.93", features = ["preserve_order"] }
 serde_yaml = "0.9.17"
