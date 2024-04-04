@@ -197,7 +197,7 @@ fn extract_text(data: &Value) -> Result<&str> {
                 .as_str()
                 .or_else(|| data["candidates"][0]["finishReason"].as_str())
             {
-                bail!("Blocked by safety settings，consider ajusting `block_threshold` in the client configuraion")
+                bail!("Blocked by safety settings，consider adjusting `block_threshold` in the client configuration")
             } else {
                 bail!("Invalid response data: {data}")
             }

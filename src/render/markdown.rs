@@ -229,11 +229,11 @@ pub enum LineType {
     CodeEnd,
 }
 
-fn as_terminal_escaped(ranges: &[(Style, &str)], trucolor: bool) -> String {
+fn as_terminal_escaped(ranges: &[(Style, &str)], truecolor: bool) -> String {
     let mut output = String::new();
     for (style, text) in ranges {
         let fg = blend_fg_color(style.foreground, style.background);
-        let mut text = text.with(convert_color(fg, trucolor));
+        let mut text = text.with(convert_color(fg, truecolor));
         if style.font_style.contains(FontStyle::BOLD) {
             text = text.bold();
         }
@@ -245,8 +245,8 @@ fn as_terminal_escaped(ranges: &[(Style, &str)], trucolor: bool) -> String {
     output
 }
 
-fn convert_color(c: SyntectColor, trucolor: bool) -> Color {
-    if trucolor {
+fn convert_color(c: SyntectColor, truecolor: bool) -> Color {
+    if truecolor {
         Color::Rgb {
             r: c.r,
             g: c.g,
@@ -291,7 +291,7 @@ fn detect_code_block(line: &str) -> Option<String> {
     Some(lang)
 }
 
-fn get_code_color(theme: &Theme, trucolor: bool) -> Color {
+fn get_code_color(theme: &Theme, truecolor: bool) -> Color {
     let scope = theme.scopes.iter().find(|v| {
         v.scope
             .selectors
@@ -300,7 +300,7 @@ fn get_code_color(theme: &Theme, trucolor: bool) -> Color {
     });
     scope
         .and_then(|v| v.style.foreground)
-        .map_or_else(|| Color::Yellow, |c| convert_color(c, trucolor))
+        .map_or_else(|| Color::Yellow, |c| convert_color(c, truecolor))
 }
 
 #[cfg(test)]
