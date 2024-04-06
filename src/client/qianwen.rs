@@ -28,13 +28,13 @@ const API_URL_VL: &str =
 
 const MODELS: [(&str, usize, &str); 6] = [
     // https://help.aliyun.com/zh/dashscope/developer-reference/api-details
+    ("qwen-turbo", 6000, "text"),
+    ("qwen-plus", 30000, "text"),
     ("qwen-max", 6000, "text"),
     ("qwen-max-longcontext", 28000, "text"),
-    ("qwen-plus", 30000, "text"),
-    ("qwen-turbo", 6000, "text"),
     // https://help.aliyun.com/zh/dashscope/developer-reference/tongyi-qianwen-vl-plus-api
-    ("qwen-vl-max", 0, "text,vision"),
     ("qwen-vl-plus", 0, "text,vision"),
+    ("qwen-vl-max", 0, "text,vision"),
 ];
 
 const TOKENS_COUNT_FACTORS: TokensCountFactors = (4, 14);
