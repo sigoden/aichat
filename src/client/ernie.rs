@@ -15,7 +15,7 @@ use std::{env, sync::Mutex};
 const API_BASE: &str = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1";
 const ACCESS_TOKEN_URL: &str = "https://aip.baidubce.com/oauth/2.0/token";
 
-const MODELS: [(&str, usize, &str); 6] = [
+const MODELS: [(&str, usize, &str); 7] = [
     // https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t
     ("ernie-4.0-8k", 5120, "/wenxinworkshop/chat/completions_pro"),
     (
@@ -35,6 +35,7 @@ const MODELS: [(&str, usize, &str); 6] = [
         "/wenxinworkshop/chat/ernie-speed-128k",
     ),
     ("ernie-lite-8k", 7168, "/wenxinworkshop/chat/ernie-lite-8k"),
+    ("ernie-tiny-8k", 7168, "/wenxinworkshop/chat/ernie-tiny-8k"),
 ];
 
 lazy_static! {
