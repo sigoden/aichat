@@ -11,7 +11,7 @@ use lazy_static::lazy_static;
 use mime_guess::from_path;
 use std::{
     collections::HashMap,
-    fs::{self, File},
+    fs::File,
     io::Read,
     path::{Path, PathBuf},
 };
@@ -45,29 +45,34 @@ impl Input {
         let mut texts = vec![text.to_string()];
         let mut medias = vec![];
         let mut data_urls = HashMap::new();
-        for file_item in files.into_iter() {
-            match resolve_path(&file_item) {
+        let files: Vec<_> = files
+            .iter()
+            .map(|f| (f, is_image_ext(Path::new(f))))
+            .collect();
+        let include_filepath = files.iter().filter(|(_, is_image)| !*is_image).count() > 1;
+        for (file_item, is_image) in files {
+            match resolve_local_file(file_item) {
                 Some(file_path) => {
-                    let file_path = fs::canonicalize(file_path)
-                        .with_context(|| format!("Unable to use file '{file_item}'"))?;
-                    if is_image_ext(&file_path) {
-                        let data_url = read_media_to_data_url(&file_path)?;
+                    if is_image {
+                        let data_url = read_media_to_data_url(&file_path)
+                            .with_context(|| format!("Unable to read media file '{file_item}'"))?;
                         data_urls.insert(sha256sum(&data_url), file_path.display().to_string());
                         medias.push(data_url)
                     } else {
-                        let mut text = String::new();
-                        let mut file = File::open(&file_path)
-                            .with_context(|| format!("Unable to open file '{file_item}'"))?;
-                        file.read_to_string(&mut text)
+                        let text = read_file(&file_path)
                             .with_context(|| format!("Unable to read file '{file_item}'"))?;
-                        texts.push(text);
+                        if include_filepath {
+                            texts.push(format!("`{file_item}`:\n~~~~~~\n{text}\n~~~~~~"));
+                        } else {
+                            texts.push(text);
+                        }
                     }
                 }
                 None => {
-                    if is_image_ext(Path::new(&file_item)) {
-                        medias.push(file_item)
+                    if is_image {
+                        medias.push(file_item.to_string())
                     } else {
-                        bail!("Unable to use file '{file_item}");
+                        bail!("Unable to use remote file '{file_item}");
                     }
                 }
             }
@@ -208,11 +213,11 @@ pub fn resolve_data_url(data_urls: &HashMap<String, String>, data_url: String) -
     }
 }
 
-fn resolve_path(file: &str) -> Option<PathBuf> {
+fn resolve_local_file(file: &str) -> Option<PathBuf> {
     if let Ok(true) = URL_RE.is_match(file) {
         return None;
     }
-    let path = if let (Some(file), Some(home)) = (file.strip_prefix('~'), dirs::home_dir()) {
+    let path = if let (Some(file), Some(home)) = (file.strip_prefix("~/"), dirs::home_dir()) {
         home.join(file)
     } else {
         std::env::current_dir().ok()?.join(file)
@@ -231,8 +236,9 @@ fn is_image_ext(path: &Path) -> bool {
 }
 
 fn read_media_to_data_url<P: AsRef<Path>>(image_path: P) -> Result<String> {
-    let mime_type = from_path(&image_path).first_or_octet_stream().to_string();
+    let image_path = image_path.as_ref();
 
+    let mime_type = from_path(image_path).first_or_octet_stream().to_string();
     let mut file = File::open(image_path)?;
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer)?;
@@ -241,4 +247,13 @@ fn read_media_to_data_url<P: AsRef<Path>>(image_path: P) -> Result<String> {
     let data_url = format!("data:{};base64,{}", mime_type, encoded_image);
 
     Ok(data_url)
+}
+
+fn read_file<P: AsRef<Path>>(file_path: P) -> Result<String> {
+    let file_path = file_path.as_ref();
+
+    let mut text = String::new();
+    let mut file = File::open(file_path)?;
+    file.read_to_string(&mut text)?;
+    Ok(text)
 }
