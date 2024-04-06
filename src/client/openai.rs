@@ -18,8 +18,8 @@ const MODELS: [(&str, usize, &str); 5] = [
     ("gpt-3.5-turbo-1106", 16385, "text"),
     // https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo
     ("gpt-4-turbo-preview", 128000, "text"),
-    ("gpt-4-vision-preview", 128000, "text,vision"),
     ("gpt-4-1106-preview", 128000, "text"),
+    ("gpt-4-vision-preview", 128000, "text,vision"),
 ];
 
 pub const OPENAI_TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
