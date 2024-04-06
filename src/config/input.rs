@@ -62,7 +62,7 @@ impl Input {
                         let text = read_file(&file_path)
                             .with_context(|| format!("Unable to read file '{file_item}'"))?;
                         if include_filepath {
-                            texts.push(format!("`{file_item}`:\n``````\n{text}\n``````"));
+                            texts.push(format!("`{file_item}`:\n~~~~~~\n{text}\n~~~~~~"));
                         } else {
                             texts.push(text);
                         }
