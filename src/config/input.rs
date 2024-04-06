@@ -51,7 +51,7 @@ impl Input {
             .collect();
         let include_filepath = files.iter().filter(|(_, is_image)| !*is_image).count() > 1;
         for (file_item, is_image) in files {
-            match resolve_path(file_item) {
+            match resolve_local_file(file_item) {
                 Some(file_path) => {
                     if is_image {
                         let data_url = read_media_to_data_url(&file_path)
@@ -69,10 +69,10 @@ impl Input {
                     }
                 }
                 None => {
-                    if is_image_ext(Path::new(file_item)) {
+                    if is_image {
                         medias.push(file_item.to_string())
                     } else {
-                        bail!("Unable to use file '{file_item}");
+                        bail!("Unable to use remote file '{file_item}");
                     }
                 }
             }
@@ -213,7 +213,7 @@ pub fn resolve_data_url(data_urls: &HashMap<String, String>, data_url: String) -
     }
 }
 
-fn resolve_path(file: &str) -> Option<PathBuf> {
+fn resolve_local_file(file: &str) -> Option<PathBuf> {
     if let Ok(true) = URL_RE.is_match(file) {
         return None;
     }
