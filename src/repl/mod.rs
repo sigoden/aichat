@@ -131,11 +131,15 @@ impl Repl {
                 }
                 Ok(Signal::CtrlC) => {
                     self.abort.set_ctrlc();
-                    if already_ctrlc && ctrlc_exit {
-                        break;
+                    if ctrlc_exit {
+                        if already_ctrlc {
+                            break;
+                        }
+                        already_ctrlc = true;
+                        println!("(To exit, press Ctrl+C again or Ctrl+D or type .exit)\n");
+                    } else {
+                        println!("(To exit, press Ctrl+D or type .exit)\n");
                     }
-                    already_ctrlc = true;
-                    println!("(To exit, press Ctrl+C again or Ctrl+D or type .exit)\n");
                 }
                 Ok(Signal::CtrlD) => {
                     self.abort.set_ctrld();
