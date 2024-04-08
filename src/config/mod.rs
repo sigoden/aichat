@@ -62,6 +62,8 @@ pub struct Config {
     pub wrap: Option<String>,
     /// Whether wrap code block
     pub wrap_code: bool,
+    /// Whether to exit REPL by pressing Ctrl+C twice
+    pub ctrlc_exit: bool,
     /// Automatically copy the last output to the clipboard
     pub auto_copy: bool,
     /// REPL keybindings. (emacs, vi)
@@ -109,6 +111,7 @@ impl Default for Config {
             light_theme: false,
             wrap: None,
             wrap_code: false,
+            ctrlc_exit: true,
             auto_copy: false,
             keybindings: Default::default(),
             prelude: String::new(),

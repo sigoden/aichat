@@ -103,6 +103,7 @@ impl Repl {
         self.banner();
 
         let mut already_ctrlc = false;
+        let ctrlc_exit = self.config.read().ctrlc_exit;
 
         loop {
             if self.abort.aborted_ctrld() {
@@ -117,8 +118,8 @@ impl Repl {
                     already_ctrlc = false;
                     self.abort.reset();
                     match self.handle(&line) {
-                        Ok(quit) => {
-                            if quit {
+                        Ok(exit) => {
+                            if exit {
                                 break;
                             }
                         }
@@ -130,7 +131,7 @@ impl Repl {
                 }
                 Ok(Signal::CtrlC) => {
                     self.abort.set_ctrlc();
-                    if already_ctrlc {
+                    if already_ctrlc && ctrlc_exit {
                         break;
                     }
                     already_ctrlc = true;
