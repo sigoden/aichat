@@ -4,7 +4,7 @@
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 [![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/NYmfN6CA)
 
-All-in-one Copilot CLI for 10+ AI platforms.
+All-in-one CLI Copilot for 10+ AI platforms.
 
 Command Mode:
 
