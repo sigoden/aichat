@@ -31,8 +31,9 @@ Chat REPL mode:
 - Support two modes: [Command](#command) and [Chat-REPL](#chat-repl)
 - Support [roles](#roles)
 - Support sessions (context-aware conversation)
-- [Shell commands](#shell-commands)
-- [Shell integration](#shell-integration)
+- Support image analysis (vision)
+- [Shell commands](#shell-commands): Execute commands using natural language
+- [Shell integration](#shell-integration): GPT based shell autocompletion
 - [Custom theme](https://github.com/sigoden/aichat/wiki/Custom-Theme)
 - Persistent storage for chat messages and sessions
 - Stream/Non-stream output
@@ -160,7 +161,7 @@ aichat --file a.png b.png -- diff images        # Attach files
 Simply input what you want to do in natural language, and aichat will prompt and run the command that achieves your intent.
 
 ```
-aichat -s <text>...
+aichat -e <text>...
 ```
 
 Aichat is aware of OS and `$SHELL` you are using, it will provide shell command for specific system you have. For instance, if you ask `aichat` to update your system, it will return a command based on your OS. Here's an example using macOS:
