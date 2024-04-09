@@ -10,11 +10,11 @@ use serde::Deserialize;
 
 const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta/models/";
 
-const MODELS: [(&str, usize, &str); 2] = [
+const MODELS: [(&str, usize, &str); 3] = [
     // https://ai.google.dev/models/gemini
-    ("gemini-pro", 30720, "text"),
-    ("gemini-pro-vision", 12288, "vision"),
-    // ("gemini-1.5-pro", 1048576, "text,vision"),
+    ("gemini-1.0-pro-latest", 30720, "text"),
+    ("gemini-1.0-pro-vision-latest", 12288, "text,vision"),
+    ("gemini-1.5-pro-latest", 1048576, "text,vision"),
 ];
 
 const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
