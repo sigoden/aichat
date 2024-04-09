@@ -1,4 +1,5 @@
-use clap::Parser;
+use clap::{CommandFactory, Parser, ValueEnum};
+use clap_complete::{generate, shells};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -36,6 +37,9 @@ pub struct Cli {
     /// Use light theme
     #[clap(long)]
     pub light_theme: bool,
+    /// Generate completion script
+    #[arg(long = "completions", value_name = "SHELL", value_enum)]
+    pub completions: Option<Shell>,
     /// Run in dry run mode
     #[clap(long)]
     pub dry_run: bool,
@@ -69,4 +73,31 @@ impl Cli {
         }
         Some(text)
     }
+    pub fn generate_completion_script(shell: Shell) -> Vec<u8> {
+        let mut output: Vec<u8> = vec![];
+        let mut command = Cli::command();
+        let bin_name = env!("CARGO_PKG_NAME");
+        match shell {
+            Shell::Bash => generate(shells::Bash, &mut command, bin_name, &mut output),
+            Shell::Zsh => generate(shells::Zsh, &mut command, bin_name, &mut output),
+            Shell::Fish => generate(shells::Fish, &mut command, bin_name, &mut output),
+            Shell::Powershell => generate(shells::PowerShell, &mut command, bin_name, &mut output),
+            Shell::Nushell => generate(
+                clap_complete_nushell::Nushell,
+                &mut command,
+                bin_name,
+                &mut output,
+            ),
+        };
+        output
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+pub enum Shell {
+    Bash,
+    Zsh,
+    Fish,
+    Powershell,
+    Nushell,
 }

@@ -30,6 +30,12 @@ use utils::{cl100k_base_singleton, create_abort_signal};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    if let Some(shell) = cli.completions {
+        let script = Cli::generate_completion_script(shell);
+        let script = std::str::from_utf8(&script)?;
+        println!("{script}");
+        return Ok(());
+    }
     let text = cli.text();
     let config = Arc::new(RwLock::new(Config::init(text.is_none())?));
     if cli.list_roles {
