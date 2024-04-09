@@ -4,7 +4,7 @@
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 [![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/NYmfN6CA)
 
-All-in-one CLI Copilot for 10+ AI platforms.
+All-in-one chat and copilot CLI for 10+ AI platforms.
 
 Command Mode:
 
@@ -33,9 +33,8 @@ Chat REPL mode:
 - Support sessions (context-aware conversation)
 - Support image analysis (vision)
 - [Shell commands](#shell-commands): Execute commands using natural language
-- [Shell integration](#shell-integration): GPT based shell autocompletion
+- [Shell integration](#shell-integration): AI powered shell autocompletion
 - [Custom theme](https://github.com/sigoden/aichat/wiki/Custom-Theme)
-- Persistent storage for chat messages and sessions
 - Stream/Non-stream output
 
 ## Install
@@ -240,11 +239,12 @@ Aichat has a powerful Chat REPL.
 
 The REPL supports:
 
-- Tab autocomplete
+- Tab autocompletion
 - [Custom REPL Prompt](https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt)
 - Emacs/Vi keybinding
-- Edit/paste multiline text
+- Edit/paste multi-line text
 - Open an editor to modify the current prompt
+- History
 - Undo support
 
 ### `.help` - print help message
@@ -427,7 +427,7 @@ unzip -P PASSWORD app.zip -d /tmp/app
 Aichat with roles will be a universal tool.
 
 ```
-$ aichat --role shell extract encrypted zipfile app.zip to /tmp/app
+$ aichat --role shell -c extract encrypted zipfile app.zip to /tmp/app
 unzip -P password app.zip -d /tmp/app
 
 $ cat README.md | aichat --role spellcheck
