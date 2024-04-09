@@ -16,8 +16,8 @@ use fancy_regex::Regex;
 use lazy_static::lazy_static;
 use reedline::{
     default_emacs_keybindings, default_vi_insert_keybindings, default_vi_normal_keybindings,
-    ColumnarMenu, EditMode, Emacs, KeyCode, KeyModifiers, Keybindings, Reedline, ReedlineEvent,
-    ReedlineMenu, ValidationResult, Validator, Vi,
+    ColumnarMenu, EditCommand, EditMode, Emacs, KeyCode, KeyModifiers, Keybindings, Reedline,
+    ReedlineEvent, ReedlineMenu, ValidationResult, Validator, Vi,
 };
 use reedline::{MenuBuilder, Signal};
 use std::{env, process};
@@ -339,6 +339,11 @@ Type ".help" for more information.
             KeyModifiers::SHIFT,
             KeyCode::BackTab,
             ReedlineEvent::MenuPrevious,
+        );
+        keybindings.add_binding(
+            KeyModifiers::CONTROL,
+            KeyCode::Enter,
+            ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
         );
     }
 
