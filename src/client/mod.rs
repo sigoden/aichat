@@ -12,6 +12,7 @@ register_client!(
     (gemini, "gemini", GeminiConfig, GeminiClient),
     (claude, "claude", ClaudeConfig, ClaudeClient),
     (mistral, "mistral", MistralConfig, MistralClient),
+    (cohere, "cohere", CohereConfig, CohereClient),
     (
         openai_compatible,
         "openai-compatible",

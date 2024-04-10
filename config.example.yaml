@@ -45,8 +45,13 @@ clients:
   - type: claude
     api_key: sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+  # See https://docs.mistral.ai/
   - type: mistral
     api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+  # See https://docs.cohere.com/docs/the-cohere-platform
+  - type: cohere
+    api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
   # Any openai-compatible API providers 
   - type: openai-compatible
