@@ -4,7 +4,7 @@
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 [![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/NYmfN6CA)
 
-All-in-one chat and copilot CLI for 10+ AI platforms.
+All-in-one chat and copilot CLI that integrates 10+ AI platforms.
 
 Command Mode:
 
@@ -16,27 +16,29 @@ Chat REPL mode:
 
 ## Features
 
-- Support most of the LLM platforms
-  - OpenAI: GPT3.5/GPT4 (paid, vision)
-  - Gemini: Gemini-1.0/Gemini-1.5 (free, vision)
-  - Claude: Claude3 (paid)
-  - Mistral (paid)
-  - Cohere (paid)
-  - OpenAI-Compatible
-  - Ollama (free, local)
-  - Azure-OpenAI (paid)
-  - VertexAI (paid, vision)
-  - Ernie (paid)
-  - Qianwen (paid, vision)
-  - Moonshot (paid)
-- Support two modes: [Command](#command) and [Chat-REPL](#chat-repl)
-- Support [roles](#roles)
-- Support sessions (context-aware conversation)
-- Support image analysis (vision)
+- Supports [chat-REPL](#chat-repl)
+- Supports [roles](#roles)
+- Supports sessions (context-aware conversation)
+- Supports image analysis (vision)
 - [Shell commands](#shell-commands): Execute commands using natural language
-- [Shell integration](#shell-integration): AI powered shell autocompletion
+- [Shell integration](#shell-integration): AI-powered shell autocompletion
 - [Custom theme](https://github.com/sigoden/aichat/wiki/Custom-Theme)
-- Stream/Non-stream output
+- Stream/non-stream output
+
+## Integrated platforms
+
+- OpenAI: GPT3.5/GPT4 (paid, vision)
+- Azure-OpenAI (paid)
+- OpenAI-Compatible platforms
+- Gemini: Gemini-1.0/Gemini-1.5 (free, vision)
+- VertexAI (paid, vision)
+- Claude: Claude3 (vision, paid)
+- Mistral (paid)
+- Cohere (paid)
+- Ollama (free, local)
+- Ernie (paid)
+- Qianwen (paid, vision)
+- Moonshot (paid)
 
 ## Install
 
@@ -151,9 +153,9 @@ aichat --info                                   # System info
 aichat -r role1 --info                          # Role info
 aichat -s session1 --info                       # Session info
 
-cat data.toml | aichat -c to json > data.json   # Pipe IO
+cat data.toml | aichat -c to json > data.json   # Pipe stdio/stdout
 
-aichat --file a.png --file b.png diff images    # Attach files
+aichat -f a.png -f b.png diff images            # Attach files
 ```
 
 ### Shell commands
