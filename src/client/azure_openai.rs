@@ -1,4 +1,4 @@
-use super::openai::{openai_build_body, OPENAI_TOKENS_COUNT_FACTORS};
+use super::openai::openai_build_body;
 use super::{AzureOpenAIClient, ExtraConfig, Model, ModelConfig, PromptType, SendData};
 
 use crate::utils::PromptKind;
@@ -45,7 +45,6 @@ impl AzureOpenAIClient {
                 Model::new(client_name, &v.name)
                     .set_max_input_tokens(v.max_input_tokens)
                     .set_capabilities(v.capabilities)
-                    .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })
             .collect()
     }
@@ -54,7 +53,8 @@ impl AzureOpenAIClient {
         let api_base = self.get_api_base()?;
         let api_key = self.get_api_key()?;
 
-        let body = openai_build_body(data, self.model.name.clone());
+        let mut body = openai_build_body(data, self.model.name.clone());
+        self.model.merge_extra_fields(&mut body);
 
         let url = format!(
             "{}/openai/deployments/{}/chat/completions?api-version=2023-05-15",

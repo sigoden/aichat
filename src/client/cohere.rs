@@ -1,6 +1,6 @@
 use super::{
     json_stream, message::*, patch_system_message, Client, CohereClient, ExtraConfig, Model,
-    PromptType, SendData, TokensCountFactors,
+    PromptType, SendData,
 };
 
 use crate::{render::ReplyHandler, utils::PromptKind};
@@ -18,8 +18,6 @@ const MODELS: [(&str, usize, &str); 2] = [
     ("command-r", 128000, "text"),
     ("command-r-plus", 128000, "text"),
 ];
-
-const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct CohereConfig {
@@ -62,7 +60,6 @@ impl CohereClient {
                 Model::new(client_name, name)
                     .set_capabilities(capabilities.into())
                     .set_max_input_tokens(Some(max_input_tokens))
-                    .set_tokens_count_factors(TOKENS_COUNT_FACTORS)
             })
             .collect()
     }
@@ -70,8 +67,7 @@ impl CohereClient {
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
 
-        let mut body = build_body(data, self.model.name.clone())?;
-        self.model.merge_extra_fields(&mut body);
+        let body = build_body(data, self.model.name.clone())?;
 
         let url = API_URL;
 

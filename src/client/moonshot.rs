@@ -1,4 +1,4 @@
-use super::openai::{openai_build_body, OPENAI_TOKENS_COUNT_FACTORS};
+use super::openai::openai_build_body;
 use super::{ExtraConfig, MoonshotClient, Model, PromptType, SendData};
 
 use crate::utils::PromptKind;
@@ -42,7 +42,6 @@ impl MoonshotClient {
                 Model::new(client_name, name)
                     .set_capabilities(capabilities.into())
                     .set_max_input_tokens(Some(max_input_tokens))
-                    .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })
             .collect()
     }
@@ -50,8 +49,7 @@ impl MoonshotClient {
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
 
-        let mut body = openai_build_body(data, self.model.name.clone());
-        self.model.merge_extra_fields(&mut body);
+        let body = openai_build_body(data, self.model.name.clone());
 
         let url = API_URL;
 

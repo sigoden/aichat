@@ -1,6 +1,6 @@
 use super::{
     message::*, patch_system_message, Client, ExtraConfig, Model, ModelConfig, OllamaClient,
-    PromptType, SendData, TokensCountFactors,
+    PromptType, SendData,
 };
 
 use crate::{render::ReplyHandler, utils::PromptKind};
@@ -11,8 +11,6 @@ use futures_util::StreamExt;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
-
-const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct OllamaConfig {
@@ -70,7 +68,6 @@ impl OllamaClient {
                     .set_capabilities(v.capabilities)
                     .set_max_input_tokens(v.max_input_tokens)
                     .set_extra_fields(v.extra_fields.clone())
-                    .set_tokens_count_factors(TOKENS_COUNT_FACTORS)
             })
             .collect()
     }
@@ -79,7 +76,6 @@ impl OllamaClient {
         let api_key = self.get_api_key().ok();
 
         let mut body = build_body(data, self.model.name.clone())?;
-
         self.model.merge_extra_fields(&mut body);
 
         let chat_endpoint = self.config.chat_endpoint.as_deref().unwrap_or("/api/chat");

@@ -1,6 +1,6 @@
 use super::{
     json_stream, message::*, patch_system_message, Client, ExtraConfig, Model, PromptType,
-    SendData, TokensCountFactors, VertexAIClient,
+    SendData, VertexAIClient,
 };
 
 use crate::{render::ReplyHandler, utils::PromptKind};
@@ -19,8 +19,6 @@ const MODELS: [(&str, usize, &str); 3] = [
     ("gemini-1.0-pro-vision", 14336, "text,vision"),
     ("gemini-1.5-pro-preview-0409", 1000000, "text,vision"),
 ];
-
-const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
 
 static mut ACCESS_TOKEN: (String, i64) = (String::new(), 0); // safe under linear operation
 
@@ -69,7 +67,6 @@ impl VertexAIClient {
                 Model::new(client_name, name)
                     .set_capabilities(capabilities.into())
                     .set_max_input_tokens(Some(max_input_tokens))
-                    .set_tokens_count_factors(TOKENS_COUNT_FACTORS)
             })
             .collect()
     }

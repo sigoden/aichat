@@ -1,5 +1,5 @@
 use super::vertexai::{build_body, send_message, send_message_streaming};
-use super::{Client, ExtraConfig, GeminiClient, Model, PromptType, SendData, TokensCountFactors};
+use super::{Client, ExtraConfig, GeminiClient, Model, PromptType, SendData};
 
 use crate::{render::ReplyHandler, utils::PromptKind};
 
@@ -16,8 +16,6 @@ const MODELS: [(&str, usize, &str); 3] = [
     ("gemini-1.0-pro-vision-latest", 12288, "text,vision"),
     ("gemini-1.5-pro-latest", 1048576, "text,vision"),
 ];
-
-const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct GeminiConfig {
@@ -61,7 +59,6 @@ impl GeminiClient {
                 Model::new(client_name, name)
                     .set_capabilities(capabilities.into())
                     .set_max_input_tokens(Some(max_input_tokens))
-                    .set_tokens_count_factors(TOKENS_COUNT_FACTORS)
             })
             .collect()
     }
