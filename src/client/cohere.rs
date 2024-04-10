@@ -1,13 +1,12 @@
 use super::{
-    message::*, patch_system_message, Client, CohereClient, ExtraConfig, Model, PromptType,
-    SendData, TokensCountFactors,
+    json_stream, message::*, patch_system_message, Client, CohereClient, ExtraConfig, Model,
+    PromptType, SendData, TokensCountFactors,
 };
 
 use crate::{render::ReplyHandler, utils::PromptKind};
 
 use anyhow::{bail, Result};
 use async_trait::async_trait;
-use futures_util::StreamExt;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -107,55 +106,14 @@ pub(crate) async fn send_message_streaming(
         let data: Value = res.json().await?;
         check_error(&data)?;
     } else {
-        let mut buffer = vec![];
-        let mut cursor = 0;
-        let mut start = 0;
-        let mut balances = vec![];
-        let mut quoting = false;
-        let mut stream = res.bytes_stream();
-        while let Some(chunk) = stream.next().await {
-            let chunk = chunk?;
-            let chunk = std::str::from_utf8(&chunk)?;
-            buffer.extend(chunk.chars());
-            for i in cursor..buffer.len() {
-                let ch = buffer[i];
-                if quoting {
-                    if ch == '"' && buffer[i - 1] != '\\' {
-                        quoting = false;
-                    }
-                    continue;
-                }
-                match ch {
-                    '"' => quoting = true,
-                    '{' => {
-                        if balances.is_empty() {
-                            start = i;
-                        }
-                        balances.push(ch);
-                    }
-                    '[' => {
-                        if start != 0 {
-                            balances.push(ch);
-                        }
-                    }
-                    '}' => {
-                        balances.pop();
-                        if balances.is_empty() {
-                            let value: String = buffer[start..=i].iter().collect();
-                            let value: Value = serde_json::from_str(&value)?;
-                            if let Some("text-generation") = value["event_type"].as_str() {
-                                handler.text(extract_text(&value)?)?;
-                            }
-                        }
-                    }
-                    ']' => {
-                        balances.pop();
-                    }
-                    _ => {}
-                }
+        let handle = |value: &str| -> Result<()> {
+            let value: Value = serde_json::from_str(value)?;
+            if let Some("text-generation") = value["event_type"].as_str() {
+                handler.text(extract_text(&value)?)?;
             }
-            cursor = buffer.len();
-        }
+            Ok(())
+        };
+        json_stream(res.bytes_stream(), handle).await?;
     }
     Ok(())
 }
