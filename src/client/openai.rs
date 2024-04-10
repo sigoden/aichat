@@ -1,4 +1,4 @@
-use super::{ExtraConfig, Model, OpenAIClient, PromptType, SendData, TokensCountFactors};
+use super::{ExtraConfig, Model, OpenAIClient, PromptType, SendData};
 
 use crate::{render::ReplyHandler, utils::PromptKind};
 
@@ -23,8 +23,6 @@ const MODELS: [(&str, usize, &str); 8] = [
     ("gpt-4", 8192, "text"),
     ("gpt-4-32k", 32768, "text"),
 ];
-
-pub const OPENAI_TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct OpenAIConfig {
@@ -52,7 +50,6 @@ impl OpenAIClient {
                 Model::new(client_name, name)
                     .set_capabilities(capabilities.into())
                     .set_max_input_tokens(Some(max_input_tokens))
-                    .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })
             .collect()
     }

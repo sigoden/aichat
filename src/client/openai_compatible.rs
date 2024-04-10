@@ -1,4 +1,4 @@
-use super::openai::{openai_build_body, OPENAI_TOKENS_COUNT_FACTORS};
+use super::openai::openai_build_body;
 use super::{ExtraConfig, Model, ModelConfig, OpenAICompatibleClient, PromptType, SendData};
 
 use crate::utils::PromptKind;
@@ -47,7 +47,6 @@ impl OpenAICompatibleClient {
                     .set_capabilities(v.capabilities)
                     .set_max_input_tokens(v.max_input_tokens)
                     .set_extra_fields(v.extra_fields.clone())
-                    .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
             })
             .collect()
     }

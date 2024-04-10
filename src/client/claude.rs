@@ -1,7 +1,4 @@
-use super::{
-    patch_system_message, ClaudeClient, Client, ExtraConfig, Model, PromptType, SendData,
-    TokensCountFactors,
-};
+use super::{patch_system_message, ClaudeClient, Client, ExtraConfig, Model, PromptType, SendData};
 
 use crate::{
     client::{ImageUrl, MessageContent, MessageContentPart},
@@ -25,8 +22,6 @@ const MODELS: [(&str, usize, &str); 3] = [
     ("claude-3-sonnet-20240229", 200000, "text,vision"),
     ("claude-3-haiku-20240307", 200000, "text,vision"),
 ];
-
-const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ClaudeConfig {
@@ -69,7 +64,6 @@ impl ClaudeClient {
                 Model::new(client_name, name)
                     .set_capabilities(capabilities.into())
                     .set_max_input_tokens(Some(max_input_tokens))
-                    .set_tokens_count_factors(TOKENS_COUNT_FACTORS)
             })
             .collect()
     }
