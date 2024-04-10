@@ -11,6 +11,7 @@ use crate::{
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use futures_util::{Stream, StreamExt};
 use reqwest::{Client as ReqwestClient, ClientBuilder, Proxy, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -363,6 +364,68 @@ pub fn patch_system_message(messages: &mut Vec<Message>) {
             }
         }
     }
+}
+
+pub async fn json_stream<S, F>(mut stream: S, mut handle: F) -> Result<()>
+where
+    S: Stream<Item = Result<bytes::Bytes, reqwest::Error>> + Unpin,
+    F: FnMut(&str) -> Result<()>,
+{
+    let mut buffer = vec![];
+    let mut cursor = 0;
+    let mut start = 0;
+    let mut balances = vec![];
+    let mut quoting = false;
+    let mut escape = false;
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk?;
+        let chunk = std::str::from_utf8(&chunk)?;
+        buffer.extend(chunk.chars());
+        for i in cursor..buffer.len() {
+            let ch = buffer[i];
+            if quoting {
+                if ch == '\\' {
+                    escape = !escape;
+                } else {
+                    if !escape && ch == '"' {
+                        quoting = false;
+                    }
+                    escape = false;
+                }
+                continue;
+            }
+            match ch {
+                '"' => {
+                    quoting = true;
+                    escape = false;
+                }
+                '{' => {
+                    if balances.is_empty() {
+                        start = i;
+                    }
+                    balances.push(ch);
+                }
+                '[' => {
+                    if start != 0 {
+                        balances.push(ch);
+                    }
+                }
+                '}' => {
+                    balances.pop();
+                    if balances.is_empty() {
+                        let value: String = buffer[start..=i].iter().collect();
+                        handle(&value)?;
+                    }
+                }
+                ']' => {
+                    balances.pop();
+                }
+                _ => {}
+            }
+        }
+        cursor = buffer.len();
+    }
+    Ok(())
 }
 
 fn set_config_value(json: &mut Value, path: &str, kind: &PromptKind, value: &str) {
