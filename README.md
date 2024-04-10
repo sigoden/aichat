@@ -21,6 +21,7 @@ Chat REPL mode:
   - Gemini (free, vision)
   - Claude: (paid)
   - Mistral (paid)
+  - Cohere (paid)
   - OpenAI-Compatible (local)
   - Ollama (free, local)
   - Azure-OpenAI (paid)
