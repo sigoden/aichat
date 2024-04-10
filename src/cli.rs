@@ -21,9 +21,9 @@ pub struct Cli {
     /// Generate only code
     #[clap(short = 'c', long)]
     pub code: bool,
-    /// Attach files to the message to be sent
-    #[clap(short = 'f', long, num_args = 1.., value_name = "FILE")]
-    pub file: Option<Vec<String>>,
+    /// Attach files to the message
+    #[clap(short = 'f', long, value_name = "FILE")]
+    pub file: Vec<String>,
     /// Disable syntax highlighting
     #[clap(short = 'H', long)]
     pub no_highlight: bool,

@@ -234,7 +234,7 @@ impl Repl {
                         let input = Input::new(text, files, self.config.read().input_context())?;
                         self.ask(input)?;
                     }
-                    None => println!("Usage: .file <files>...[ -- <text>...]"),
+                    None => println!("Usage: .file <files>... [-- <text>...]"),
                 },
                 ".exit" => match args {
                     Some("role") => {
