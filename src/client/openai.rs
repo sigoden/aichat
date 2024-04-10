@@ -12,10 +12,14 @@ use serde_json::{json, Value};
 
 const API_BASE: &str = "https://api.openai.com/v1";
 
-const MODELS: [(&str, usize, &str); 4] = [
+const MODELS: [(&str, usize, &str); 8] = [
     // https://platform.openai.com/docs/models
     ("gpt-3.5-turbo", 16385, "text"),
+    ("gpt-3.5-turbo-1106", 16385, "text"),
     ("gpt-4-turbo", 128000, "text,vision"),
+    ("gpt-4-turbo-preview", 128000, "text"),
+    ("gpt-4-1106-preview", 128000, "text"),
+    ("gpt-4-vision-preview", 128000, "text,vision"),
     ("gpt-4", 8192, "text"),
     ("gpt-4-32k", 32768, "text"),
 ];
