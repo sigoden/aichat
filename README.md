@@ -18,14 +18,14 @@ Chat REPL mode:
 
 - Support most of the LLM platforms
   - OpenAI: GPT3.5/GPT4 (paid, vision)
-  - Gemini (free, vision)
-  - Claude: (paid)
+  - Gemini: Gemini-1.0/Gemini-1.5 (free, vision)
+  - Claude: Claude3 (paid)
   - Mistral (paid)
   - Cohere (paid)
-  - OpenAI-Compatible (local)
+  - OpenAI-Compatible
   - Ollama (free, local)
   - Azure-OpenAI (paid)
-  - VertexAI: Gemini-1/Gemini-1.5 (paid, vision)
+  - VertexAI (paid, vision)
   - Ernie (paid)
   - Qianwen (paid, vision)
   - Moonshot (paid)
@@ -122,7 +122,7 @@ Options:
   -s, --session [<SESSION>]  Create or reuse a session
   -e, --execute              Execute commands using natural language
   -c, --code                 Generate only code
-  -f, --file <FILE>...       Attach files to the message to be sent
+  -f, --file <FILE>          Attach files to the message
   -H, --no-highlight         Disable syntax highlighting
   -S, --no-stream            No stream output
   -w, --wrap <WRAP>          Specify the text-wrapping mode (no, auto, <max-width>)
@@ -153,7 +153,7 @@ aichat -s session1 --info                       # Session info
 
 cat data.toml | aichat -c to json > data.json   # Pipe IO
 
-aichat --file a.png b.png -- diff images        # Attach files
+aichat --file a.png --file b.png diff images    # Attach files
 ```
 
 ### Shell commands

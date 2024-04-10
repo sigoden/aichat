@@ -87,18 +87,19 @@ fn main() -> Result<()> {
         return Ok(());
     }
     let text = aggregate_text(text)?;
+    let input = create_input(&config, text, &cli.file)?;
     if cli.execute {
-        match text {
-            Some(text) => {
-                execute(&config, &text)?;
+        match input {
+            Some(input) => {
+                execute(&config, input)?;
                 return Ok(());
             }
             None => bail!("No input text"),
         }
     }
     config.write().prelude()?;
-    if let Err(err) = match text {
-        Some(text) => start_directive(&config, &text, cli.file, cli.no_stream, cli.code),
+    if let Err(err) = match input {
+        Some(input) => start_directive(&config, input, cli.no_stream, cli.code),
         None => start_interactive(&config),
     } {
         let highlight = stderr().is_terminal() && config.read().highlight;
@@ -109,16 +110,10 @@ fn main() -> Result<()> {
 
 fn start_directive(
     config: &GlobalConfig,
-    text: &str,
-    include: Option<Vec<String>>,
+    input: Input,
     no_stream: bool,
     code_mode: bool,
 ) -> Result<()> {
-    let input = Input::new(
-        text,
-        include.unwrap_or_default(),
-        config.read().input_context(),
-    )?;
     let mut client = init_client(config)?;
     ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
     config.read().maybe_print_send_tokens(&input);
@@ -153,8 +148,7 @@ fn start_interactive(config: &GlobalConfig) -> Result<()> {
     repl.run()
 }
 
-fn execute(config: &GlobalConfig, text: &str) -> Result<()> {
-    let input = Input::from_str(text, config.read().input_context());
+fn execute(config: &GlobalConfig, input: Input) -> Result<()> {
     let client = init_client(config)?;
     config.read().maybe_print_send_tokens(&input);
     let mut eval_str = client.send_message(input.clone())?;
@@ -227,4 +221,21 @@ fn aggregate_text(text: Option<String>) -> Result<Option<String>> {
         }
     };
     Ok(text)
+}
+
+fn create_input(
+    config: &GlobalConfig,
+    text: Option<String>,
+    file: &[String],
+) -> Result<Option<Input>> {
+    if text.is_none() && file.is_empty() {
+        return Ok(None);
+    }
+    let input_context = config.read().input_context();
+    let input = if file.is_empty() {
+        Input::from_str(&text.unwrap_or_default(), input_context)
+    } else {
+        Input::new(&text.unwrap_or_default(), file.to_vec(), input_context)?
+    };
+    Ok(Some(input))
 }
