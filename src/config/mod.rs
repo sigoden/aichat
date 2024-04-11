@@ -502,7 +502,12 @@ impl Config {
     pub fn repl_complete(&self, cmd: &str, args: &[&str]) -> Vec<String> {
         let (values, filter) = if args.len() == 1 {
             let values = match cmd {
-                ".role" => self.roles.iter().map(|v| v.name.clone()).collect(),
+                ".role" => self
+                    .roles
+                    .iter()
+                    .filter(|v| !v.is_system())
+                    .map(|v| v.name.clone())
+                    .collect(),
                 ".model" => list_models(self).into_iter().map(|v| v.id()).collect(),
                 ".session" => self.list_sessions(),
                 ".set" => vec![
