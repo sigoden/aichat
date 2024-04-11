@@ -46,8 +46,7 @@ impl Role {
                 r#"Provide only {shell} commands for {os} without any description.
 Ensure the output is a valid {shell} command. {combine}
 If there is a lack of details, provide most logical solution.
-Provide only plain text without Markdown formatting.
-Do not provide markdown formatting such as ```"#
+Output plain text only, without any markdown formatting."#
             ),
             temperature: None,
         }
@@ -68,15 +67,18 @@ APPLY MARKDOWN formatting when possible."#
     pub fn for_code() -> Self {
         Self {
             name: Self::CODE.into(),
-            prompt: r#"Provide only code as output without any description.
-Provide only code in plain text format without Markdown formatting.
-Do not include symbols such as ``` or ```python.
-If there is a lack of details, provide most logical solution.
-You are not allowed to ask for more details.
-For example if the prompt is "Hello world Python", you should return "print('Hello world')"."#
+            prompt: r#"Provide only code, without comments or explanations.
+If there is a lack of details, provide most logical solution, without requesting further clarification."#
                 .into(),
             temperature: None,
         }
+    }
+
+    pub fn is_system(&self) -> bool {
+        matches!(
+            self.name.as_str(),
+            Self::EXECUTE | Self::DESCRIBE_COMMAND | Self::CODE
+        )
     }
 
     pub fn export(&self) -> Result<String> {
