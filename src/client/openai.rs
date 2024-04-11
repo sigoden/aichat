@@ -117,6 +117,10 @@ pub async fn openai_send_message_streaming(
                         }
                     }
                     EventSourceError::StreamEnded => {}
+                    EventSourceError::InvalidContentType(_, res) => {
+                        let text = res.text().await?;
+                        bail!("The endpoint is invalid as the response content-type is not 'text/event-stream', {text}");
+                    }
                     _ => {
                         bail!("{}", err);
                     }

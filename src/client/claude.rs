@@ -122,6 +122,10 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
                         check_error(&data)?;
                         bail!("Invalid status code: {code}");
                     }
+                    EventSourceError::InvalidContentType(_, res) => {
+                        let text = res.text().await?;
+                        bail!("The endpoint is invalid as the response content-type is not 'text/event-stream', {text}");
+                    }
                     _ => {
                         bail!("{}", err);
                     }
