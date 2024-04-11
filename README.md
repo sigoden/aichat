@@ -156,7 +156,9 @@ aichat -s session1 --info                       # Session info
 
 cat data.toml | aichat -c to json > data.json   # Pipe stdio/stdout
 
-aichat -f a.png -f b.png diff images            # Attach files
+aicaht -f data.toml -c to json > data.json      # Attach files
+
+aichat -f a.png -f b.png diff images            # Attach images
 ```
 
 ### Shell commands
