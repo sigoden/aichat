@@ -156,7 +156,7 @@ aichat -s session1 --info                       # Session info
 
 cat data.toml | aichat -c to json > data.json   # Pipe stdio/stdout
 
-aicaht -f data.toml -c to json > data.json      # Attach files
+aichat -f data.toml -c to json > data.json      # Attach files
 
 aichat -f a.png -f b.png diff images            # Attach images
 ```
@@ -420,7 +420,7 @@ For example, we can define a role:
     Do not provide explanations.
 ```
 
-Let ChatGPT answer questions in the role of a Linux shell expert.
+Let LLM answer questions in the role of a Linux shell expert.
 
 ```
 > .role shell
@@ -428,15 +428,6 @@ Let ChatGPT answer questions in the role of a Linux shell expert.
 shell>  extract encrypted zipfile app.zip to /tmp/app
 mkdir /tmp/app
 unzip -P PASSWORD app.zip -d /tmp/app
-```
-
-Aichat with roles will be a universal tool.
-
-```
-$ aichat --role shell -c extract encrypted zipfile app.zip to /tmp/app
-unzip -P password app.zip -d /tmp/app
-
-$ cat README.md | aichat --role spellcheck
 ```
 
 For more details about roles, please visit [Role Guide](https://github.com/sigoden/aichat/wiki/Role-Guide).
