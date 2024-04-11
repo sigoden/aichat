@@ -62,7 +62,7 @@ pub struct Config {
     pub wrap: Option<String>,
     /// Whether wrap code block
     pub wrap_code: bool,
-    /// Whether to exit REPL by pressing Ctrl+C twice
+    /// Whether to exit REPL when Ctrl+C is pressed
     pub ctrlc_exit: bool,
     /// Automatically copy the last output to the clipboard
     pub auto_copy: bool,
@@ -111,7 +111,7 @@ impl Default for Config {
             light_theme: false,
             wrap: None,
             wrap_code: false,
-            ctrlc_exit: true,
+            ctrlc_exit: false,
             auto_copy: false,
             keybindings: Default::default(),
             prelude: String::new(),
