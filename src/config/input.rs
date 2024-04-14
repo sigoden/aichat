@@ -94,6 +94,14 @@ impl Input {
         self.data_urls.clone()
     }
 
+    pub fn text(&self) -> String {
+        self.text.clone()
+    }
+
+    pub fn set_text(&mut self, text: String) {
+        self.text = text;
+    }
+
     pub fn role(&self) -> Option<&Role> {
         self.context.role.as_ref()
     }

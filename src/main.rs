@@ -148,14 +148,14 @@ fn start_interactive(config: &GlobalConfig) -> Result<()> {
     repl.run()
 }
 
-fn execute(config: &GlobalConfig, input: Input) -> Result<()> {
+fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
     let client = init_client(config)?;
     config.read().maybe_print_send_tokens(&input);
     let mut eval_str = client.send_message(input.clone())?;
     if let Ok(true) = CODE_BLOCK_RE.is_match(&eval_str) {
         eval_str = extract_block(&eval_str);
     }
-    config.write().save_message(input, &eval_str)?;
+    config.write().save_message(input.clone(), &eval_str)?;
     config.read().maybe_copy(&eval_str);
     let render_options = config.read().get_render_options()?;
     let mut markdown_render = MarkdownRender::init(render_options)?;
@@ -165,38 +165,40 @@ fn execute(config: &GlobalConfig, input: Input) -> Result<()> {
     }
     if stdout().is_terminal() {
         println!("{}", markdown_render.render(&eval_str).trim());
-        let mut describe = false;
+        let mut explain = false;
         loop {
-            let answer = Text::new("[e]xecute, [d]escribe, [a]bort: ")
-                .with_default("e")
-                .with_validator(|input: &str| {
-                    match matches!(input, "E" | "e" | "D" | "d" | "A" | "a") {
-                        true => Ok(Validation::Valid),
-                        false => Ok(Validation::Invalid(
-                            "Invalid input, choice one of e, d or a".into(),
-                        )),
-                    }
+            let answer = Text::new("[1]:execute [2]:explain [3]:revise [4]:exit")
+                .with_default("1")
+                .with_validator(|input: &str| match matches!(input, "1" | "2" | "3" | "4") {
+                    true => Ok(Validation::Valid),
+                    false => Ok(Validation::Invalid(
+                        "Select a number between 1 and 4.".into(),
+                    )),
                 })
                 .prompt()?;
 
-            println!();
-
             match answer.as_str() {
-                "E" | "e" => {
+                "1" => {
                     let code = run_command(&eval_str)?;
                     if code != 0 {
                         process::exit(code);
                     }
                 }
-                "D" | "d" => {
-                    if !describe {
+                "2" => {
+                    if !explain {
                         config.write().set_role(EXPLAIN_ROLE)?;
                     }
                     let input = Input::from_str(&eval_str, config.read().input_context());
                     let abort = create_abort_signal();
                     render_stream(&input, client.as_ref(), config, abort)?;
-                    describe = true;
+                    explain = true;
                     continue;
+                }
+                "3" => {
+                    let revision = Text::new("Enter your revision:").prompt()?;
+                    let text = format!("INPUT: {}\n{eval_str}\nINPUT: {revision}\n", input.text());
+                    input.set_text(text);
+                    return execute(config, input);
                 }
                 _ => {}
             }
