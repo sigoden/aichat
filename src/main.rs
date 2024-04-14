@@ -11,7 +11,7 @@ mod utils;
 
 use crate::cli::Cli;
 use crate::client::{ensure_model_capabilities, init_client, list_models};
-use crate::config::{Config, GlobalConfig, Input, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE};
+use crate::config::{Config, GlobalConfig, Input, CODE_ROLE, EXPLAIN_ROLE, SHELL_ROLE};
 use crate::render::{render_error, render_stream, MarkdownRender};
 use crate::repl::Repl;
 use crate::utils::{
@@ -190,7 +190,7 @@ fn execute(config: &GlobalConfig, input: Input) -> Result<()> {
                 }
                 "D" | "d" => {
                     if !describe {
-                        config.write().set_role(EXPLAIN_SHELL_ROLE)?;
+                        config.write().set_role(EXPLAIN_ROLE)?;
                     }
                     let input = Input::from_str(&eval_str, config.read().input_context());
                     let abort = create_abort_signal();

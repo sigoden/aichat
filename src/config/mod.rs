@@ -4,7 +4,7 @@ mod session;
 
 pub use self::input::{Input, InputContext};
 use self::role::Role;
-pub use self::role::{CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE};
+pub use self::role::{CODE_ROLE, EXPLAIN_ROLE, SHELL_ROLE};
 use self::session::{Session, TEMP_SESSION_NAME};
 
 use crate::client::{

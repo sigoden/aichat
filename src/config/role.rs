@@ -8,7 +8,7 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 pub const SHELL_ROLE: &str = "%shell%";
-pub const EXPLAIN_SHELL_ROLE: &str = "%explain-shell%";
+pub const EXPLAIN_ROLE: &str = "%explain%";
 pub const CODE_ROLE: &str = "%code%";
 
 pub const INPUT_PLACEHOLDER: &str = "__INPUT__";
@@ -27,7 +27,7 @@ impl Role {
     pub fn find_system_role(name: &str) -> Option<Self> {
         match name {
             SHELL_ROLE => Some(Self::shell()),
-            EXPLAIN_SHELL_ROLE => Some(Self::explain_shell()),
+            EXPLAIN_ROLE => Some(Self::explain()),
             CODE_ROLE => Some(Self::code()),
             _ => None,
         }
@@ -61,9 +61,9 @@ Output plain text only, without any markdown formatting."#
         }
     }
 
-    pub fn explain_shell() -> Self {
+    pub fn explain() -> Self {
         Self {
-            name: EXPLAIN_SHELL_ROLE.into(),
+            name: EXPLAIN_ROLE.into(),
             prompt: r#"Provide a terse, single sentence description of the given shell command.
 Describe each argument and option of the command.
 Provide short responses in about 80 words.
