@@ -4,6 +4,7 @@ mod session;
 
 pub use self::input::{Input, InputContext};
 use self::role::Role;
+pub use self::role::{CODE_ROLE, EXPLAIN_ROLE, SHELL_ROLE};
 use self::session::{Session, TEMP_SESSION_NAME};
 
 use crate::client::{
@@ -201,6 +202,7 @@ impl Config {
                 role.complete_prompt_args(name);
                 role
             })
+            .or_else(|| Role::find_system_role(name))
             .ok_or_else(|| anyhow!("Unknown role `{name}`"))
     }
 
@@ -293,27 +295,6 @@ impl Config {
 
     pub fn set_role(&mut self, name: &str) -> Result<()> {
         let role = self.retrieve_role(name)?;
-        self.set_role_obj(role)
-    }
-
-    pub fn set_execute_role(&mut self) -> Result<()> {
-        let role = self
-            .retrieve_role(Role::EXECUTE)
-            .unwrap_or_else(|_| Role::for_execute());
-        self.set_role_obj(role)
-    }
-
-    pub fn set_describe_command_role(&mut self) -> Result<()> {
-        let role = self
-            .retrieve_role(Role::DESCRIBE_COMMAND)
-            .unwrap_or_else(|_| Role::for_describe_command());
-        self.set_role_obj(role)
-    }
-
-    pub fn set_code_role(&mut self) -> Result<()> {
-        let role = self
-            .retrieve_role(Role::CODE)
-            .unwrap_or_else(|_| Role::for_code());
         self.set_role_obj(role)
     }
 
@@ -502,12 +483,7 @@ impl Config {
     pub fn repl_complete(&self, cmd: &str, args: &[&str]) -> Vec<String> {
         let (values, filter) = if args.len() == 1 {
             let values = match cmd {
-                ".role" => self
-                    .roles
-                    .iter()
-                    .filter(|v| !v.is_system())
-                    .map(|v| v.name.clone())
-                    .collect(),
+                ".role" => self.roles.iter().map(|v| v.name.clone()).collect(),
                 ".model" => list_models(self).into_iter().map(|v| v.id()).collect(),
                 ".session" => self.list_sessions(),
                 ".set" => vec![

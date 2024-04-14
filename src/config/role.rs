@@ -1,3 +1,4 @@
+use super::Input;
 use crate::{
     client::{Message, MessageContent, MessageRole},
     utils::{detect_os, detect_shell},
@@ -6,9 +7,11 @@ use crate::{
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-use super::Input;
+pub const SHELL_ROLE: &str = "%shell%";
+pub const EXPLAIN_ROLE: &str = "%explain%";
+pub const CODE_ROLE: &str = "%code%";
 
-const INPUT_PLACEHOLDER: &str = "__INPUT__";
+pub const INPUT_PLACEHOLDER: &str = "__INPUT__";
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Role {
@@ -21,19 +24,25 @@ pub struct Role {
 }
 
 impl Role {
-    pub const EXECUTE: &'static str = "__execute__";
-    pub const DESCRIBE_COMMAND: &'static str = "__describe_command__";
-    pub const CODE: &'static str = "__code__";
+    pub fn find_system_role(name: &str) -> Option<Self> {
+        match name {
+            SHELL_ROLE => Some(Self::shell()),
+            EXPLAIN_ROLE => Some(Self::explain()),
+            CODE_ROLE => Some(Self::code()),
+            _ => None,
+        }
+    }
 
-    pub fn for_execute() -> Self {
+    pub fn shell() -> Self {
         let os = detect_os();
-        let (shell, _, _) = detect_shell();
-        let (shell, use_semicolon) = match (shell.as_str(), os.as_str()) {
+        let (detected_shell, _, _) = detect_shell();
+        let (shell, use_semicolon) = match (detected_shell.as_str(), os.as_str()) {
+            // GPT doesn’t know much about nushell
             ("nushell", "windows") => ("cmd", true),
             ("nushell", _) => ("bash", true),
             ("powershell", _) => ("powershell", true),
             ("pwsh", _) => ("powershell", false),
-            _ => (shell.as_str(), false),
+            _ => (detected_shell.as_str(), false),
         };
         let combine = if use_semicolon {
             "\nIf multiple steps required try to combine them together using ';'.\nIf it already combined with '&&' try to replace it with ';'.".to_string()
@@ -41,7 +50,7 @@ impl Role {
             "\nIf multiple steps required try to combine them together using &&.".to_string()
         };
         Self {
-            name: Self::EXECUTE.into(),
+            name: SHELL_ROLE.into(),
             prompt: format!(
                 r#"Provide only {shell} commands for {os} without any description.
 Ensure the output is a valid {shell} command. {combine}
@@ -52,9 +61,9 @@ Output plain text only, without any markdown formatting."#
         }
     }
 
-    pub fn for_describe_command() -> Self {
+    pub fn explain() -> Self {
         Self {
-            name: Self::DESCRIBE_COMMAND.into(),
+            name: EXPLAIN_ROLE.into(),
             prompt: r#"Provide a terse, single sentence description of the given shell command.
 Describe each argument and option of the command.
 Provide short responses in about 80 words.
@@ -64,21 +73,14 @@ APPLY MARKDOWN formatting when possible."#
         }
     }
 
-    pub fn for_code() -> Self {
+    pub fn code() -> Self {
         Self {
-            name: Self::CODE.into(),
+            name: CODE_ROLE.into(),
             prompt: r#"Provide only code, without comments or explanations.
 If there is a lack of details, provide most logical solution, without requesting further clarification."#
                 .into(),
             temperature: None,
         }
-    }
-
-    pub fn is_system(&self) -> bool {
-        matches!(
-            self.name.as_str(),
-            Self::EXECUTE | Self::DESCRIBE_COMMAND | Self::CODE
-        )
     }
 
     pub fn export(&self) -> Result<String> {

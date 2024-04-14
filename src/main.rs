@@ -10,23 +10,23 @@ extern crate log;
 mod utils;
 
 use crate::cli::Cli;
-use crate::config::{Config, GlobalConfig};
-use crate::utils::{extract_block, run_command, CODE_BLOCK_RE};
+use crate::client::{ensure_model_capabilities, init_client, list_models};
+use crate::config::{Config, GlobalConfig, Input, CODE_ROLE, EXPLAIN_ROLE, SHELL_ROLE};
+use crate::render::{render_error, render_stream, MarkdownRender};
+use crate::repl::Repl;
+use crate::utils::{
+    cl100k_base_singleton, create_abort_signal, extract_block, run_command, CODE_BLOCK_RE,
+};
 
 use anyhow::{bail, Result};
 use clap::Parser;
-use client::{ensure_model_capabilities, init_client, list_models};
-use config::Input;
 use inquire::validator::Validation;
 use inquire::Text;
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
-use render::{render_error, render_stream, MarkdownRender};
-use repl::Repl;
 use std::io::{stderr, stdin, stdout, Read};
 use std::process;
 use std::sync::Arc;
-use utils::{cl100k_base_singleton, create_abort_signal};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -63,9 +63,9 @@ fn main() -> Result<()> {
     if let Some(name) = &cli.role {
         config.write().set_role(name)?;
     } else if cli.execute {
-        config.write().set_execute_role()?;
+        config.write().set_role(SHELL_ROLE)?;
     } else if cli.code {
-        config.write().set_code_role()?;
+        config.write().set_role(CODE_ROLE)?;
     }
     if let Some(session) = &cli.session {
         config
@@ -190,7 +190,7 @@ fn execute(config: &GlobalConfig, input: Input) -> Result<()> {
                 }
                 "D" | "d" => {
                     if !describe {
-                        config.write().set_describe_command_role()?;
+                        config.write().set_role(EXPLAIN_ROLE)?;
                     }
                     let input = Input::from_str(&eval_str, config.read().input_context());
                     let abort = create_abort_signal();
