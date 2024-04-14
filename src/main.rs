@@ -117,14 +117,15 @@ fn start_directive(
     let mut client = init_client(config)?;
     ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
     config.read().maybe_print_send_tokens(&input);
-    let output = if !stdout().is_terminal() || no_stream {
+    let is_terminal_stdout = stdout().is_terminal();
+    let output = if !is_terminal_stdout || no_stream {
         let output = client.send_message(input.clone())?;
         let output = if code_mode && output.trim_start().starts_with("```") {
             extract_block(&output)
         } else {
             output.clone()
         };
-        if no_stream {
+        if is_terminal_stdout {
             let render_options = config.read().get_render_options()?;
             let mut markdown_render = MarkdownRender::init(render_options)?;
             println!("{}", markdown_render.render(&output).trim());
