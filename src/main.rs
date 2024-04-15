@@ -118,9 +118,10 @@ fn start_directive(
     ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
     config.read().maybe_print_send_tokens(&input);
     let is_terminal_stdout = stdout().is_terminal();
-    let output = if !is_terminal_stdout || no_stream {
+    let extract_code = !is_terminal_stdout && code_mode;
+    let output = if no_stream || extract_code {
         let output = client.send_message(input.clone())?;
-        let output = if code_mode && output.trim_start().starts_with("```") {
+        let output = if extract_code && output.trim_start().starts_with("```") {
             extract_block(&output)
         } else {
             output.clone()
