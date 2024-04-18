@@ -198,7 +198,10 @@ fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
                 }
                 "3" => {
                     let revision = Text::new("Enter your revision:").prompt()?;
-                    let text = format!("INPUT: {}\n{eval_str}\nINPUT: {revision}\n", input.text());
+                    let text = format!(
+                        "[INST] {} [/INST]\n{eval_str}\n[INST] {revision} [/INST]\n",
+                        input.text()
+                    );
                     input.set_text(text);
                     return execute(config, input);
                 }
