@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
-[![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/NYmfN6CA)
+[![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/dSHTvH6S)
 
 All-in-one chat and copilot CLI that integrates 10+ AI platforms.
 
