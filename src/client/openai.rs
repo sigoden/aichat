@@ -106,20 +106,26 @@ pub async fn openai_send_message_streaming(
             }
             Err(err) => {
                 match err {
-                    EventSourceError::InvalidStatusCode(_, res) => {
-                        let data: Value = res.json().await?;
+                    EventSourceError::InvalidStatusCode(code, res) => {
+                        let text = res.text().await?;
+                        let data: Value = match text.parse() {
+                            Ok(data) => data,
+                            Err(_) => {
+                                bail!("Request failed, {code}, {text}");
+                            }
+                        };
                         if let Some(err_msg) = data["error"]["message"].as_str() {
                             bail!("{err_msg}");
                         } else if let Some(err_msg) = data["message"].as_str() {
                             bail!("{err_msg}");
                         } else {
-                            bail!("Request failed, {data}");
+                            bail!("Request failed, {code}, {text}");
                         }
                     }
                     EventSourceError::StreamEnded => {}
                     EventSourceError::InvalidContentType(_, res) => {
                         let text = res.text().await?;
-                        bail!("The endpoint is invalid as the response content-type is not 'text/event-stream', {text}");
+                        bail!("The API server should return data as 'text/event-stream', but it isn't. Check the client config. {text}");
                     }
                     _ => {
                         bail!("{}", err);

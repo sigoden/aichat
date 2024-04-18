@@ -118,13 +118,19 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
                 match err {
                     EventSourceError::StreamEnded => {}
                     EventSourceError::InvalidStatusCode(code, res) => {
-                        let data: Value = res.json().await?;
+                        let text = res.text().await?;
+                        let data: Value = match text.parse() {
+                            Ok(data) => data,
+                            Err(_) => {
+                                bail!("Request failed, {code}, {text}");
+                            }
+                        };
                         check_error(&data)?;
-                        bail!("Invalid status code: {code}");
+                        bail!("Request failed, {code}, {text}");
                     }
                     EventSourceError::InvalidContentType(_, res) => {
                         let text = res.text().await?;
-                        bail!("The endpoint is invalid as the response content-type is not 'text/event-stream', {text}");
+                        bail!("The API server should return data as 'text/event-stream', but it isn't. Check the client config. {text}");
                     }
                     _ => {
                         bail!("{}", err);
