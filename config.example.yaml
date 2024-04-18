@@ -12,7 +12,7 @@ keybindings: emacs               # REPL keybindings. (emacs, vi)
 prelude: null                    # Set a default role or session (role:<name>, session:<name>)
 
 # Command that will be used to edit the current line buffer with ctrl+o
-# if unset fallback to $env.EDITOR and $env.VISUAL
+# if unset fallback to $EDITOR and $VISUAL
 buffer_editor: null
 
 # Compress session if tokens exceed this value (valid when >=1000)
