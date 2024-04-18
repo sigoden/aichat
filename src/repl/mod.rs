@@ -316,7 +316,7 @@ Type ".help" for more information.
             .with_validator(Box::new(ReplValidator))
             .with_ansi_colors(true);
 
-        if let Ok(cmd) = env::var("VISUAL").or_else(|_| env::var("EDITOR")) {
+        if let Some(cmd) = config.read().buffer_editor() {
             let temp_file =
                 env::temp_dir().join(format!("aichat-{}.txt", chrono::Utc::now().timestamp()));
             let command = process::Command::new(cmd);
@@ -425,7 +425,7 @@ fn dump_repl_help() {
         r###"{head}
 
 Type ::: to begin multi-line editing, type ::: to end it.
-Press Ctrl+O to open an editor to modify the current prompt.
+Press Ctrl+O to open an buffer editor to modify the current prompt.
 Press Ctrl+C to abort aichat, Ctrl+D to exit the REPL"###,
     );
 }
