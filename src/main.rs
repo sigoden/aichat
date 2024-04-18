@@ -97,7 +97,7 @@ fn main() -> Result<()> {
             None => bail!("No input text"),
         }
     }
-    config.write().prelude()?;
+    config.write().apply_prelude()?;
     if let Err(err) = match input {
         Some(input) => start_directive(&config, input, cli.no_stream, cli.code),
         None => start_interactive(&config),

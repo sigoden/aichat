@@ -70,7 +70,9 @@ pub struct Config {
     /// REPL keybindings. (emacs, vi)
     pub keybindings: Keybindings,
     /// Set a default role or session (role:<name>, session:<name>)
-    pub prelude: String,
+    pub prelude: Option<String>,
+    /// Command that will be used to edit the current line buffer
+    pub buffer_editor: Option<String>,
     /// Compress session if tokens exceed this value (>=1000)
     pub compress_threshold: usize,
     /// The prompt for summarizing session messages
@@ -115,7 +117,8 @@ impl Default for Config {
             ctrlc_exit: false,
             auto_copy: false,
             keybindings: Default::default(),
-            prelude: String::new(),
+            prelude: None,
+            buffer_editor: None,
             compress_threshold: 2000,
             summarize_prompt: "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.".to_string(),
             summary_prompt: "This is a summary of the chat history as a recap: ".into(),
@@ -171,8 +174,11 @@ impl Config {
         Ok(config)
     }
 
-    pub fn prelude(&mut self) -> Result<()> {
-        let prelude = self.prelude.clone();
+    pub fn apply_prelude(&mut self) -> Result<()> {
+        let prelude = self.prelude.clone().unwrap_or_default();
+        if prelude.is_empty() {
+            return Ok(());
+        }
         let err_msg = || format!("Invalid prelude '{}", prelude);
         match prelude.split_once(':') {
             Some(("role", name)) => {
@@ -185,12 +191,17 @@ impl Config {
                     self.start_session(Some(name)).with_context(err_msg)?;
                 }
             }
-            Some(_) => {
+            _ => {
                 bail!("{}", err_msg())
             }
-            None => {}
         }
         Ok(())
+    }
+
+    pub fn buffer_editor(&self) -> Option<String> {
+        self.buffer_editor
+            .clone()
+            .or_else(|| env::var("VISUAL").ok().or_else(|| env::var("EDITOR").ok()))
     }
 
     pub fn retrieve_role(&self, name: &str) -> Result<Role> {
@@ -413,11 +424,6 @@ impl Config {
             .wrap
             .clone()
             .map_or_else(|| String::from("no"), |v| v.to_string());
-        let prelude = if self.prelude.is_empty() {
-            String::from("-")
-        } else {
-            self.prelude.clone()
-        };
         let items = vec![
             ("model", self.model.id()),
             ("temperature", format_option(&self.temperature)),
@@ -430,7 +436,7 @@ impl Config {
             ("wrap_code", self.wrap_code.to_string()),
             ("auto_copy", self.auto_copy.to_string()),
             ("keybindings", self.keybindings.stringify().into()),
-            ("prelude", prelude),
+            ("prelude", format_option(&self.prelude)),
             ("compress_threshold", self.compress_threshold.to_string()),
             ("config_file", display_path(&Self::config_file()?)),
             ("roles_file", display_path(&Self::roles_file()?)),
