@@ -11,7 +11,7 @@ use crossterm::{
     terminal::{self, disable_raw_mode, enable_raw_mode},
 };
 use std::{
-    io::{self, Stdout, Write},
+    io::{self, stdout, Stdout, Write},
     ops::Div,
     time::{Duration, Instant},
 };
@@ -41,6 +41,7 @@ pub fn raw_stream(rx: &Receiver<ReplyEvent>, abort: &AbortSignal) -> Result<()> 
             match evt {
                 ReplyEvent::Text(text) => {
                     print!("{}", text);
+                    stdout().flush()?;
                 }
                 ReplyEvent::Done => {
                     break;
