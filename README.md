@@ -38,7 +38,6 @@ Chat REPL mode:
 - Ollama (free, local)
 - Ernie (paid)
 - Qianwen (paid, vision)
-- Moonshot (paid)
 
 ## Install
 
