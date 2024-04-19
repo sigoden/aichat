@@ -102,20 +102,13 @@ impl Repl {
     pub fn run(&mut self) -> Result<()> {
         self.banner();
 
-        let mut already_ctrlc = false;
-        let ctrlc_exit = self.config.read().ctrlc_exit;
-
         loop {
             if self.abort.aborted_ctrld() {
                 break;
             }
-            if self.abort.aborted_ctrlc() && !already_ctrlc {
-                already_ctrlc = true;
-            }
             let sig = self.editor.read_line(&self.prompt);
             match sig {
                 Ok(Signal::Success(line)) => {
-                    already_ctrlc = false;
                     self.abort.reset();
                     match self.handle(&line) {
                         Ok(exit) => {
@@ -131,15 +124,7 @@ impl Repl {
                 }
                 Ok(Signal::CtrlC) => {
                     self.abort.set_ctrlc();
-                    if ctrlc_exit {
-                        if already_ctrlc {
-                            break;
-                        }
-                        already_ctrlc = true;
-                        println!("(To exit, press Ctrl+C again or Ctrl+D or type .exit)\n");
-                    } else {
-                        println!("(To exit, press Ctrl+D or type .exit)\n");
-                    }
+                    println!("(To exit, press Ctrl+D or type .exit)\n");
                 }
                 Ok(Signal::CtrlD) => {
                     self.abort.set_ctrld();
@@ -425,8 +410,8 @@ fn dump_repl_help() {
         r###"{head}
 
 Type ::: to begin multi-line editing, type ::: to end it.
-Press Ctrl+O to open an buffer editor to modify the current prompt.
-Press Ctrl+C to abort aichat, Ctrl+D to exit the REPL"###,
+Press Ctrl+O to open an editor to edit line input.
+Press Ctrl+C to cancel reply, Ctrl+D to exit REPL"###,
     );
 }
 
