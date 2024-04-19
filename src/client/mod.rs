@@ -29,5 +29,4 @@ register_client!(
     (ollama, "ollama", OllamaConfig, OllamaClient),
     (ernie, "ernie", ErnieConfig, ErnieClient),
     (qianwen, "qianwen", QianwenConfig, QianwenClient),
-    (moonshot, "moonshot", MoonshotConfig, MoonshotClient),
 );

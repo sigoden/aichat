@@ -106,7 +106,3 @@ clients:
   # See https://help.aliyun.com/zh/dashscope/
   - type: qianwen
     api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-  # See https://platform.moonshot.cn/docs/intro
-  - type: moonshot
-    api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
