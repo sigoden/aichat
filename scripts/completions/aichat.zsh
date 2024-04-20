@@ -15,28 +15,28 @@ _aichat() {
 
     local context curcontext="$curcontext" state line
      local common=(
-'-m+[Choose a LLM model]:MODEL:->models' \
-'--model=[Choose a LLM model]:MODEL:->models' \
-'-r+[Choose a role]:ROLE:->roles' \
-'--role=[Choose a role]:ROLE:->roles' \
-'-s+[Create or reuse a session]:SESSION:->sessions' \
-'--session=[Create or reuse a session]:SESSION:->sessions' \
-'*-f+[Attach files to the message]:FILE:_files' \
-'*--file=[Attach files to the message]:FILE:_files' \
-'-w+[Specify the text-wrapping mode (no, auto, <max-width>)]:WRAP: ' \
-'--wrap=[Specify the text-wrapping mode (no, auto, <max-width>)]:WRAP: ' \
-'--save-session[Whether to save the session]' \
-'-e[Execute commands using natural language]' \
-'--execute[Execute commands using natural language]' \
-'-c[Generate only code]' \
-'--code[Generate only code]' \
-'-H[Disable syntax highlighting]' \
-'--no-highlight[Disable syntax highlighting]' \
-'-S[No stream output]' \
-'--no-stream[No stream output]' \
+'-m+[Select a LLM model]:MODEL:->models' \
+'--model=[Select a LLM model]:MODEL:->models' \
+'-r+[Select a role]:ROLE:->roles' \
+'--role=[Select a role]:ROLE:->roles' \
+'-s+[Start or join a session]:SESSION:->sessions' \
+'--session=[Start or join a session]:SESSION:->sessions' \
+'*-f+[Include files with the message]:FILE:_files' \
+'*--file=[Include files with the message]:FILE:_files' \
+'-w+[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
+'--wrap=[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
+'--save-session[Forces the session to be saved]' \
+'-e[Execute commands in natural language]' \
+'--execute[Execute commands in natural language]' \
+'-c[Output code only]' \
+'--code[Output code only]' \
+'-H[Turn off syntax highlighting]' \
+'--no-highlight[Turn off syntax highlighting]' \
+'-S[Turns off stream mode]' \
+'--no-stream[Turns off stream mode]' \
 '--light-theme[Use light theme]' \
-'--dry-run[Run in dry run mode]' \
-'--info[Print related information]' \
+'--dry-run[Display the message without sending it]' \
+'--info[Dispaly information]' \
 '--list-models[List all available models]' \
 '--list-roles[List all available roles]' \
 '--list-sessions[List all available sessions]' \

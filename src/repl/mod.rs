@@ -26,35 +26,31 @@ const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
     static ref REPL_COMMANDS: [ReplCommand; 16] = [
-        ReplCommand::new(".help", "Print this help message", State::all()),
-        ReplCommand::new(".info", "Print system info", State::all()),
-        ReplCommand::new(".model", "Switch LLM model", State::all()),
+        ReplCommand::new(".help", "Show this help message", State::all()),
+        ReplCommand::new(".info", "View system info", State::all()),
+        ReplCommand::new(".model", "Change the current LLM", State::all()),
         ReplCommand::new(
             ".prompt",
-            "Use a temp role with this prompt",
+            "Make a temporary role using a prompt",
             State::able_change_role()
         ),
-        ReplCommand::new(".role", "Use a role", State::able_change_role()),
-        ReplCommand::new(".info role", "Show the role info", State::in_role(),),
-        ReplCommand::new(".exit role", "Leave current role", State::in_role(),),
         ReplCommand::new(
-            ".session",
-            "Start a context-aware chat session",
-            State::not_in_session(),
+            ".role",
+            "Switch to a specific role",
+            State::able_change_role()
         ),
-        ReplCommand::new(
-            ".info session",
-            "Show the session info",
-            State::in_session(),
-        ),
+        ReplCommand::new(".info role", "View role info", State::in_role(),),
+        ReplCommand::new(".exit role", "Leave the role", State::in_role(),),
+        ReplCommand::new(".session", "Begin a chat session", State::not_in_session(),),
+        ReplCommand::new(".info session", "View session info", State::in_session(),),
         ReplCommand::new(
             ".save session",
-            "Save the session to the file",
+            "Save the chat to file",
             State::in_session(),
         ),
         ReplCommand::new(
             ".clear messages",
-            "Clear messages in the session",
+            "Erase messages in the current session",
             State::unable_change_role()
         ),
         ReplCommand::new(
@@ -62,17 +58,9 @@ lazy_static! {
             "End the current session",
             State::in_session(),
         ),
-        ReplCommand::new(
-            ".file",
-            "Attach files to the message and then submit it",
-            State::all()
-        ),
-        ReplCommand::new(".set", "Modify the configuration parameters", State::all()),
-        ReplCommand::new(
-            ".copy",
-            "Copy the last reply to the clipboard",
-            State::all()
-        ),
+        ReplCommand::new(".file", "Include files with the message", State::all()),
+        ReplCommand::new(".set", "Adjust settings", State::all()),
+        ReplCommand::new(".copy", "Copy the last response", State::all()),
         ReplCommand::new(".exit", "Exit the REPL", State::all()),
     ];
     static ref COMMAND_RE: Regex = Regex::new(r"^\s*(\.\S*)\s*").unwrap();
@@ -420,9 +408,9 @@ fn dump_repl_help() {
     println!(
         r###"{head}
 
-Type ::: to begin multi-line editing, type ::: to end it.
+Type ::: to start multi-line editing, type ::: to finish it.
 Press Ctrl+O to open an editor to edit line input.
-Press Ctrl+C to cancel reply, Ctrl+D to exit REPL"###,
+Press Ctrl+C to cancel the response, Ctrl+D to exit the REPL"###,
     );
 }
 

@@ -1,24 +1,24 @@
-model: openai:gpt-3.5-turbo      # LLM model
-temperature: 1.0                 # LLM temperature
-save: true                       # Whether to save the message
-save_session: null               # Whether to save the session, if null, asking
-highlight: true                  # Set false to turn highlight
-light_theme: false               # Whether to use a light theme
-wrap: no                         # Specify the text-wrapping mode (no, auto, <max-width>)
-wrap_code: false                 # Whether wrap code block
-auto_copy: false                 # Automatically copy the last output to the clipboard
-keybindings: emacs               # REPL keybindings. (emacs, vi)
-prelude: null                    # Set a default role or session (role:<name>, session:<name>)
+model: openai:gpt-3.5-turbo      # The Large Language Model (LLM) to use
+temperature: 1.0                 # Controls the randomness and creativity of the LLM's responses
+save: true                       # Indicates whether to persist the message
+save_session: null               # Controls the persistence of the session, if null, asking the user
+highlight: true                  # Controls syntax highlighting
+light_theme: false               # Activates a light color theme when true
+wrap: no                         # Controls text wrapping (no, auto, <max-width>)
+wrap_code: false                 # Enables or disables wrapping of code blocks
+auto_copy: false                 # Enables or disables automatic copying the last LLM response to the clipboard 
+keybindings: emacs               # Choose keybinding style (emacs, vi)
+prelude: null                    # Set a default role or session to start with (role:<name>, session:<name>)
 
 # Command that will be used to edit the current line buffer with ctrl+o
 # if unset fallback to $EDITOR and $VISUAL
 buffer_editor: null
 
-# Compress session if tokens exceed this value (valid when >=1000)
+# Compress session when token count reaches or exceeds this threshold (must be at least 1000)
 compress_threshold: 1000
-# The prompt for summarizing session messages
+# Text prompt used for creating a concise summary of session message
 summarize_prompt: 'Summarize the discussion briefly in 200 words or less to use as a prompt for future context.'
-# The prompt for the summary of the session
+# Text prompt used for including the summary of the entire session
 summary_prompt: 'This is a summary of the chat history as a recap: '
 
 # Custom REPL prompt, see https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt
@@ -42,7 +42,8 @@ clients:
   # See https://ai.google.dev/docs
   - type: gemini
     api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    block_threshold: BLOCK_NONE                       # Optional field, choices: BLOCK_NONE, BLOCK_ONLY_HIGH, BLOCK_MEDIUM_AND_ABOVE, BLOCK_LOW_AND_ABOVE
+    # Optional field, possible values: BLOCK_NONE, BLOCK_ONLY_HIGH, BLOCK_MEDIUM_AND_ABOVE, BLOCK_LOW_AND_ABOVE
+    block_threshold: BLOCK_NONE
 
   # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
   - type: claude
@@ -91,11 +92,12 @@ clients:
   # See https://cloud.google.com/vertex-ai
   - type: vertexai
     api_base: https://{REGION}-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/{REGION}/publishers/google/models
-    # Setup Application Default Credentials (ADC) file, Optional field
-    # Run `gcloud auth application-default login` to setup adc
+    # Specifies a application-default-credentials (adc) file, Optional field
+    # Run `gcloud auth application-default login` to init the adc file
     # see https://cloud.google.com/docs/authentication/external/set-up-adc
     adc_file: <path-to/gcloud/application_default_credentials.json> 
-    block_threshold: BLOCK_ONLY_HIGH                  # Optional field, choices: BLOCK_NONE, BLOCK_ONLY_HIGH, BLOCK_MEDIUM_AND_ABOVE, BLOCK_LOW_AND_ABOVE
+    # Optional field, possible values: BLOCK_NONE, BLOCK_ONLY_HIGH, BLOCK_MEDIUM_AND_ABOVE, BLOCK_LOW_AND_ABOVE
+    block_threshold: BLOCK_ONLY_HIGH
 
   # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
   - type: ernie
