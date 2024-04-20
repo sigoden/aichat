@@ -7,6 +7,7 @@ use crate::{
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
+pub const TEMP_ROLE: &str = "%%";
 pub const SHELL_ROLE: &str = "%shell%";
 pub const EXPLAIN_ROLE: &str = "%explain%";
 pub const CODE_ROLE: &str = "%code%";
@@ -24,6 +25,14 @@ pub struct Role {
 }
 
 impl Role {
+    pub fn temp(prompt: &str) -> Self {
+        Self {
+            name: TEMP_ROLE.into(),
+            prompt: prompt.into(),
+            temperature: None,
+        }
+    }
+
     pub fn find_system_role(name: &str) -> Option<Self> {
         match name {
             SHELL_ROLE => Some(Self::shell()),

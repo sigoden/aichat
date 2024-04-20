@@ -301,6 +301,11 @@ impl Config {
         Ok(path)
     }
 
+    pub fn set_prompt(&mut self, prompt: &str) -> Result<()> {
+        let role = Role::temp(prompt);
+        self.set_role_obj(role)
+    }
+
     pub fn set_role(&mut self, name: &str) -> Result<()> {
         let role = self.retrieve_role(name)?;
         self.set_role_obj(role)
