@@ -14,6 +14,7 @@ use crate::utils::{create_abort_signal, set_text, AbortSignal};
 use anyhow::{bail, Context, Result};
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
+use nu_ansi_term::Color;
 use reedline::{
     default_emacs_keybindings, default_vi_insert_keybindings, default_vi_normal_keybindings,
     ColumnarMenu, EditCommand, EditMode, Emacs, KeyCode, KeyModifiers, Keybindings, Reedline,
@@ -198,11 +199,14 @@ impl Repl {
                         }
                     }
                 }
-                ".set" => {
-                    if let Some(args) = args {
+                ".set" => match args {
+                    Some(args) => {
                         self.config.write().update(args)?;
                     }
-                }
+                    _ => {
+                        println!("Usage: .set <key> <value>...")
+                    }
+                },
                 ".copy" => {
                     let config = self.config.read();
                     self.copy(config.last_reply())
@@ -266,6 +270,19 @@ impl Repl {
         self.config.read().maybe_copy(&output);
         if self.config.write().should_compress_session() {
             let config = self.config.clone();
+            let color = if config.read().light_theme {
+                Color::LightGray
+            } else {
+                Color::DarkGray
+            };
+            print!(
+                "\n📢 {}{}{}\n",
+                color.normal().paint(
+                    "Session compression is being activated because the current tokens exceed `"
+                ),
+                color.italic().paint("compress_threshold"),
+                color.normal().paint("`."),
+            );
             std::thread::spawn(move || -> anyhow::Result<()> {
                 let _ = compress_session(&config);
                 config.write().end_compressing_session();
