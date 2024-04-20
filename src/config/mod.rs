@@ -44,52 +44,30 @@ const CLIENTS_FIELD: &str = "clients";
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    /// LLM model
     #[serde(rename(serialize = "model", deserialize = "model"))]
     pub model_id: Option<String>,
-    /// LLM temperature
     pub temperature: Option<f64>,
-    /// Dry-run flag
     pub dry_run: bool,
-    /// Whether to save the message
     pub save: bool,
-    /// Whether to save the session
     pub save_session: Option<bool>,
-    /// Whether to disable highlight
     pub highlight: bool,
-    /// Whether to use a light theme
     pub light_theme: bool,
-    /// Specify the text-wrapping mode (no, auto, <max-width>)
     pub wrap: Option<String>,
-    /// Whether wrap code block
     pub wrap_code: bool,
-    /// Automatically copy the last output to the clipboard
     pub auto_copy: bool,
-    /// REPL keybindings. (emacs, vi)
     pub keybindings: Keybindings,
-    /// Set a default role or session (role:<name>, session:<name>)
     pub prelude: Option<String>,
-    /// Command that will be used to edit the current line buffer
     pub buffer_editor: Option<String>,
-    /// Compress session if tokens exceed this value (>=1000)
     pub compress_threshold: usize,
-    /// The prompt for summarizing session messages
     pub summarize_prompt: String,
-    // The prompt for the summary of the session
     pub summary_prompt: String,
-    /// REPL left prompt
     pub left_prompt: String,
-    /// REPL right prompt
     pub right_prompt: String,
-    /// Setup clients
     pub clients: Vec<ClientConfig>,
-    /// Predefined roles
     #[serde(skip)]
     pub roles: Vec<Role>,
-    /// Current selected role
     #[serde(skip)]
     pub role: Option<Role>,
-    /// Current session
     #[serde(skip)]
     pub session: Option<Session>,
     #[serde(skip)]

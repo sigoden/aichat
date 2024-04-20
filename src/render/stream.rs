@@ -66,7 +66,7 @@ fn markdown_stream_inner(
 
     let columns = terminal::size()?.0;
 
-    let mut spinner = Spinner::new(" Thinking");
+    let mut spinner = Spinner::new(" Generating");
 
     'outer: loop {
         if abort.aborted() {

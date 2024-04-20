@@ -169,7 +169,7 @@ fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
         println!("{}", markdown_render.render(&eval_str).trim());
         let mut explain = false;
         loop {
-            let answer = Text::new("[1]:execute [2]:explain [3]:revise [4]:exit")
+            let answer = Text::new("[1]:execute [2]:explain [3]:revise [4]:cancel")
                 .with_default("1")
                 .with_validator(|input: &str| match matches!(input, "1" | "2" | "3" | "4") {
                     true => Ok(Validation::Valid),

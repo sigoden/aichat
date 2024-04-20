@@ -24,19 +24,19 @@ module completions {
 
   # All-in-one chat and copilot CLI that integrates 10+ AI platforms
   export extern aichat [
-    --model(-m): string@"nu-complete aichat model"    # Choose a LLM model
-    --role(-r): string@"nu-complete aichat role"      # Choose a role
-    --session(-s): string@"nu-complete aichat role"   # Create or reuse a session
-    --save-session                                    # Whether to save the session
-    --execute(-e)                                     # Execute commands using natural language
-    --code(-c)                                        # Generate only code
-    --file(-f): string                                # Attach files to the message
-    --no-highlight(-H)                                # Disable syntax highlighting
-    --no-stream(-S)                                   # No stream output
-    --wrap(-w): string                                # Specify the text-wrapping mode (no, auto, <max-width>)
+    --model(-m): string@"nu-complete aichat model"    # Select a LLM model
+    --role(-r): string@"nu-complete aichat role"      # Select a role
+    --session(-s): string@"nu-complete aichat role"   # Start or join a session
+    --save-session                                    # Forces the session to be saved
+    --execute(-e)                                     # Execute commands in natural language
+    --code(-c)                                        # Output code only
+    --file(-f): string                                # Include files with the message
+    --no-highlight(-H)                                # Turn off syntax highlighting
+    --no-stream(-S)                                   # Turns off stream mode
+    --wrap(-w): string                                # Control text wrapping (no, auto, <max-width>)
     --light-theme                                     # Use light theme
-    --dry-run                                         # Run in dry run mode
-    --info                                            # Print related information
+    --dry-run                                         # Display the message without sending it
+    --info                                            # Dispaly information
     --list-models                                     # List all available models
     --list-roles                                      # List all available roles
     --list-sessions                                   # List all available sessions
