@@ -3,12 +3,12 @@ name = "aichat"
 version = "0.16.0"
 edition = "2021"
 authors = ["sigoden <sigoden@gmail.com>"]
-description = "All-in-one chat and copilot CLI that integrates 10+ AI platforms"
+description = "All-in-one AI-Powered CLI Chat & Copilot"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/sigoden/aichat"
 repository = "https://github.com/sigoden/aichat"
 categories = ["command-line-utilities"]
-keywords = ["chatgpt", "localai", "gpt", "repl"]
+keywords = ["chatgpt", "llm", "cli", "gpt", "repl"]
 
 [dependencies]
 anyhow = "1.0.69"
