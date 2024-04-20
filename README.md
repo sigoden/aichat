@@ -117,7 +117,7 @@ Options:
   -w, --wrap <WRAP>          Control text wrapping (no, auto, <max-width>)
       --light-theme          Use light theme
       --dry-run              Display the message without sending it
-      --info                 Dispaly information
+      --info                 Display information
       --list-models          List all available models
       --list-roles           List all available roles
       --list-sessions        List all available sessions
@@ -241,10 +241,10 @@ auto_copy           true
 keybindings         emacs
 prelude             -
 compress_threshold  2000
-config_file         /home/sigo/.config/aichat/config.yaml
-roles_file          /home/sigo/.config/aichat/roles.yaml
-messages_file       /home/sigo/.config/aichat/messages.md
-sessions_dir        /home/sigo/.config/aichat/sessions
+config_file         /home/alice/.config/aichat/config.yaml
+roles_file          /home/alice/.config/aichat/roles.yaml
+messages_file       /home/alice/.config/aichat/messages.md
+sessions_dir        /home/alice/.config/aichat/sessions
 ```
 
 ### `.model` - choose a model

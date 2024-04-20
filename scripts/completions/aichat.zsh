@@ -36,7 +36,7 @@ _aichat() {
 '--no-stream[Turns off stream mode]' \
 '--light-theme[Use light theme]' \
 '--dry-run[Display the message without sending it]' \
-'--info[Dispaly information]' \
+'--info[Display information]' \
 '--list-models[List all available models]' \
 '--list-roles[List all available roles]' \
 '--list-sessions[List all available sessions]' \

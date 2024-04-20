@@ -39,7 +39,7 @@ pub struct Cli {
     /// Display the message without sending it
     #[clap(long)]
     pub dry_run: bool,
-    /// Dispaly information
+    /// Display information
     #[clap(long)]
     pub info: bool,
     /// List all available models
