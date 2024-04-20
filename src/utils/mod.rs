@@ -2,12 +2,14 @@ mod abort_signal;
 mod clipboard;
 mod prompt_input;
 mod render_prompt;
+mod spinner;
 mod tiktoken;
 
 pub use self::abort_signal::{create_abort_signal, AbortSignal};
 pub use self::clipboard::set_text;
 pub use self::prompt_input::*;
 pub use self::render_prompt::render_prompt;
+pub use self::spinner::Spinner;
 pub use self::tiktoken::cl100k_base_singleton;
 
 use fancy_regex::Regex;
