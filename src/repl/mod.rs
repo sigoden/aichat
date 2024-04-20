@@ -25,10 +25,15 @@ use std::{env, process};
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 15] = [
+    static ref REPL_COMMANDS: [ReplCommand; 16] = [
         ReplCommand::new(".help", "Print this help message", State::all()),
         ReplCommand::new(".info", "Print system info", State::all()),
         ReplCommand::new(".model", "Switch LLM model", State::all()),
+        ReplCommand::new(
+            ".prompt",
+            "Use a temp role with this prompt",
+            State::able_change_role()
+        ),
         ReplCommand::new(".role", "Use a role", State::able_change_role()),
         ReplCommand::new(".info role", "Show the role info", State::in_role(),),
         ReplCommand::new(".exit role", "Leave current role", State::in_role(),),
@@ -169,6 +174,12 @@ impl Repl {
                     }
                     None => println!("Usage: .model <name>"),
                 },
+                ".prompt" => match args {
+                    Some(text) => {
+                        self.config.write().set_prompt(text)?;
+                    }
+                    None => println!("Usage: .prompt <text>..."),
+                },
                 ".role" => match args {
                     Some(args) => match args.split_once(|c| c == '\n' || c == ' ') {
                         Some((name, text)) => {
@@ -181,7 +192,7 @@ impl Repl {
                             self.config.write().set_role(args)?;
                         }
                     },
-                    None => println!(r#"Usage: .role <name> [text...]"#),
+                    None => println!(r#"Usage: .role <name> [text]..."#),
                 },
                 ".session" => {
                     self.config.write().start_session(args)?;
