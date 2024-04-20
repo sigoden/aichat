@@ -25,9 +25,8 @@ use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use std::io::{stderr, stdin, stdout, Read};
 use std::sync::{mpsc, Arc};
-use std::time::Duration;
 use std::{process, thread};
-use utils::Spinner;
+use utils::run_spinner;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -155,7 +154,7 @@ fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
     let client = init_client(config)?;
     config.read().maybe_print_send_tokens(&input);
     let (tx, rx) = mpsc::sync_channel::<()>(0);
-    thread::spawn(move || run_spinner(rx));
+    thread::spawn(move || run_spinner(" Generating", rx));
     let ret = client.send_message(input.clone());
     tx.send(())?;
     let mut eval_str = ret?;
@@ -245,19 +244,4 @@ fn create_input(
         Input::new(&text.unwrap_or_default(), file.to_vec(), input_context)?
     };
     Ok(Some(input))
-}
-
-fn run_spinner(rx: mpsc::Receiver<()>) -> Result<()> {
-    let mut writer = stdout();
-    let mut spinner = Spinner::new(" Generating");
-    loop {
-        spinner.step(&mut writer)?;
-        if let Ok(()) = rx.try_recv() {
-            spinner.stop(&mut writer)?;
-            break;
-        }
-        thread::sleep(Duration::from_millis(50))
-    }
-    spinner.stop(&mut writer)?;
-    Ok(())
 }

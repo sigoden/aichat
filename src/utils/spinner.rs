@@ -1,6 +1,11 @@
 use anyhow::Result;
 use crossterm::{cursor, queue, style, terminal};
-use std::io::{Stdout, Write};
+use std::{
+    io::{stdout, Stdout, Write},
+    sync::mpsc,
+    thread,
+    time::Duration,
+};
 
 pub struct Spinner {
     index: usize,
@@ -49,4 +54,19 @@ impl Spinner {
         writer.flush()?;
         Ok(())
     }
+}
+
+pub fn run_spinner(message: &str, rx: mpsc::Receiver<()>) -> Result<()> {
+    let mut writer = stdout();
+    let mut spinner = Spinner::new(message);
+    loop {
+        spinner.step(&mut writer)?;
+        if let Ok(()) = rx.try_recv() {
+            spinner.stop(&mut writer)?;
+            break;
+        }
+        thread::sleep(Duration::from_millis(50))
+    }
+    spinner.stop(&mut writer)?;
+    Ok(())
 }
