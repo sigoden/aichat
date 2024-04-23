@@ -81,9 +81,9 @@ impl VertexAIClient {
 
         let block_threshold = self.config.block_threshold.clone();
 
-        let body = build_body(data, self.model.name.clone(), block_threshold)?;
+        let body = build_body(data, &self.model, block_threshold)?;
 
-        let model = self.model.name.clone();
+        let model = &self.model.name;
 
         let url = format!("{api_base}/{}:{}", model, func);
 
@@ -176,7 +176,7 @@ fn check_error(data: &Value) -> Result<()> {
 
 pub(crate) fn build_body(
     data: SendData,
-    _model: String,
+    model: &Model,
     block_threshold: Option<String>,
 ) -> Result<Value> {
     let SendData {
@@ -228,7 +228,7 @@ pub(crate) fn build_body(
         );
     }
 
-    let mut body = json!({ "contents": contents });
+    let mut body = json!({ "contents": contents, "generationConfig": {} });
 
     if let Some(block_threshold) = block_threshold {
         body["safetySettings"] = json!([
@@ -239,10 +239,12 @@ pub(crate) fn build_body(
         ]);
     }
 
+    if let Some(max_output_tokens) = model.max_output_tokens {
+        body["generationConfig"]["maxOutputTokens"] = max_output_tokens.into();
+    }
+
     if let Some(temperature) = temperature {
-        body["generationConfig"] = json!({
-            "temperature": temperature,
-        });
+        body["generationConfig"]["temperature"] = temperature.into();
     }
 
     Ok(body)

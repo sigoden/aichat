@@ -67,7 +67,7 @@ impl CohereClient {
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
 
-        let body = build_body(data, self.model.name.clone())?;
+        let body = build_body(data, &self.model)?;
 
         let url = API_URL;
 
@@ -131,7 +131,7 @@ fn check_error(data: &Value) -> Result<()> {
     }
 }
 
-pub(crate) fn build_body(data: SendData, model: String) -> Result<Value> {
+pub(crate) fn build_body(data: SendData, model: &Model) -> Result<Value> {
     let SendData {
         mut messages,
         temperature,
@@ -179,9 +179,13 @@ pub(crate) fn build_body(data: SendData, model: String) -> Result<Value> {
     let message = message["message"].as_str().unwrap_or_default();
 
     let mut body = json!({
-        "model": model,
+        "model": &model.name,
         "message": message,
     });
+    
+    if let Some(max_tokens) = model.max_output_tokens {
+        body["max_tokens"] = max_tokens.into();
+    }
 
     if !messages.is_empty() {
         body["chat_history"] = messages.into();

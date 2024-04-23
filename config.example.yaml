@@ -28,7 +28,14 @@ right_prompt: '{color.purple}{?session {?consume_tokens {consume_tokens}({consum
 clients:
   # All clients have the following configuration:
   # - type: xxxx
-  #   name: nova                                      # Only use it to distinguish clients with the same client type. Optional
+  #   name: xxxx                                      # Only use it to distinguish clients with the same client type. Optional
+  #   models:
+  #     - name: xxxx                                  # The model name
+  #       max_input_tokens: 100000                    # Optional field
+  #       max_output_tokens: 4096                     # Optional field
+  #       capabilities: text,vision                   # Optional field, supported capabilities: text, vision
+  #       extra_fields:                               # Optional field, set custom parameters, will merge with the body json
+  #          key: value                               
   #   extra:
   #     proxy: socks5://127.0.0.1:1080                # Specify https/socks5 proxy server. Note HTTPS_PROXY/ALL_PROXY also works.
   #     connect_timeout: 10                           # Set a timeout in seconds for connect to server
