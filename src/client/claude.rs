@@ -15,11 +15,11 @@ use serde_json::{json, Value};
 
 const API_BASE: &str = "https://api.anthropic.com/v1/messages";
 
-const MODELS: [(&str, usize, &str); 3] = [
+const MODELS: [(&str, usize, isize, &str); 3] = [
     // https://docs.anthropic.com/claude/docs/models-overview
-    ("claude-3-opus-20240229", 200000, "text,vision"),
-    ("claude-3-sonnet-20240229", 200000, "text,vision"),
-    ("claude-3-haiku-20240307", 200000, "text,vision"),
+    ("claude-3-opus-20240229", 200000, 4096, "text,vision"),
+    ("claude-3-sonnet-20240229", 200000, 4096, "text,vision"),
+    ("claude-3-haiku-20240307", 200000, 4096, "text,vision"),
 ];
 
 #[derive(Debug, Clone, Deserialize)]
@@ -59,18 +59,21 @@ impl ClaudeClient {
         let client_name = Self::name(local_config);
         MODELS
             .into_iter()
-            .map(|(name, max_input_tokens, capabilities)| {
-                Model::new(client_name, name)
-                    .set_capabilities(capabilities.into())
-                    .set_max_input_tokens(Some(max_input_tokens))
-            })
+            .map(
+                |(name, max_input_tokens, max_output_tokens, capabilities)| {
+                    Model::new(client_name, name)
+                        .set_capabilities(capabilities.into())
+                        .set_max_input_tokens(Some(max_input_tokens))
+                        .set_max_output_tokens(Some(max_output_tokens))
+                },
+            )
             .collect()
     }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
 
-        let body = build_body(data, self.model.name.clone())?;
+        let body = build_body(data, &self.model)?;
 
         let url = API_BASE;
 
@@ -143,7 +146,7 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
     Ok(())
 }
 
-fn build_body(data: SendData, model: String) -> Result<Value> {
+fn build_body(data: SendData, model: &Model) -> Result<Value> {
     let SendData {
         mut messages,
         temperature,
@@ -197,9 +200,11 @@ fn build_body(data: SendData, model: String) -> Result<Value> {
         );
     }
 
+    let max_tokens = model.max_output_tokens.unwrap_or(4096);
+
     let mut body = json!({
-        "model": model,
-        "max_tokens": 4096,
+        "model": &model.name,
+        "max_tokens": max_tokens,
         "messages": messages,
     });
 

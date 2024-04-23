@@ -1,6 +1,6 @@
 use super::{
-    message::*, patch_system_message, Client, ExtraConfig, Model, ModelConfig, OllamaClient,
-    PromptType, ReplyHandler, SendData,
+    convert_models, message::*, patch_system_message, Client, ExtraConfig, Model, ModelConfig,
+    OllamaClient, PromptType, ReplyHandler, SendData,
 };
 
 use crate::utils::PromptKind;
@@ -59,23 +59,13 @@ impl OllamaClient {
 
     pub fn list_models(local_config: &OllamaConfig) -> Vec<Model> {
         let client_name = Self::name(local_config);
-
-        local_config
-            .models
-            .iter()
-            .map(|v| {
-                Model::new(client_name, &v.name)
-                    .set_capabilities(v.capabilities)
-                    .set_max_input_tokens(v.max_input_tokens)
-                    .set_extra_fields(v.extra_fields.clone())
-            })
-            .collect()
+        convert_models(client_name, &local_config.models)
     }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
 
-        let mut body = build_body(data, self.model.name.clone())?;
+        let mut body = build_body(data, &self.model)?;
         self.model.merge_extra_fields(&mut body);
 
         let chat_endpoint = self.config.chat_endpoint.as_deref().unwrap_or("/api/chat");
@@ -133,7 +123,7 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
     Ok(())
 }
 
-fn build_body(data: SendData, model: String) -> Result<Value> {
+fn build_body(data: SendData, model: &Model) -> Result<Value> {
     let SendData {
         mut messages,
         temperature,
@@ -189,15 +179,18 @@ fn build_body(data: SendData, model: String) -> Result<Value> {
     }
 
     let mut body = json!({
-        "model": model,
+        "model": &model.name,
         "messages": messages,
         "stream": stream,
+        "options": {},
     });
 
+    if let Some(num_predict) = model.max_output_tokens {
+        body["options"]["num_predict"] = num_predict.into();
+    }
+
     if let Some(temperature) = temperature {
-        body["options"] = json!({
-            "temperature": temperature,
-        });
+        body["options"]["temperature"] = temperature.into();
     }
 
     Ok(body)

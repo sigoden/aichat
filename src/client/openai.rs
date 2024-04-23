@@ -58,7 +58,7 @@ impl OpenAIClient {
         let api_key = self.get_api_key()?;
         let api_base = self.get_api_base().unwrap_or_else(|_| API_BASE.to_string());
 
-        let body = openai_build_body(data, self.model.name.clone());
+        let body = openai_build_body(data, &self.model);
 
         let url = format!("{api_base}/chat/completions");
 
@@ -139,7 +139,7 @@ pub async fn openai_send_message_streaming(
     Ok(())
 }
 
-pub fn openai_build_body(data: SendData, model: String) -> Value {
+pub fn openai_build_body(data: SendData, model: &Model) -> Value {
     let SendData {
         messages,
         temperature,
@@ -147,15 +147,16 @@ pub fn openai_build_body(data: SendData, model: String) -> Value {
     } = data;
 
     let mut body = json!({
-        "model": model,
+        "model": &model.name,
         "messages": messages,
     });
 
-    // The default max_tokens of gpt-4-vision-preview is only 16, we need to make it larger
-    if model == "gpt-4-vision-preview" {
+    if let Some(max_tokens) = model.max_output_tokens {
+        body["max_tokens"] = json!(max_tokens);
+    } else if model.name == "gpt-4-vision-preview" {
+        // The default max_tokens of gpt-4-vision-preview is only 16, we need to make it larger
         body["max_tokens"] = json!(4096);
     }
-
     if let Some(v) = temperature {
         body["temperature"] = v.into();
     }

@@ -13,6 +13,7 @@ pub struct Model {
     pub client_name: String,
     pub name: String,
     pub max_input_tokens: Option<usize>,
+    pub max_output_tokens: Option<isize>,
     pub extra_fields: Option<serde_json::Map<String, serde_json::Value>>,
     pub capabilities: ModelCapabilities,
 }
@@ -30,6 +31,7 @@ impl Model {
             name: name.into(),
             extra_fields: None,
             max_input_tokens: None,
+            max_output_tokens: None,
             capabilities: ModelCapabilities::Text,
         }
     }
@@ -90,6 +92,14 @@ impl Model {
         self
     }
 
+    pub fn set_max_output_tokens(mut self, max_output_tokens: Option<isize>) -> Self {
+        match max_output_tokens {
+            None | Some(0) => self.max_output_tokens = None,
+            _ => self.max_output_tokens = max_output_tokens,
+        }
+        self
+    }
+
     pub fn messages_tokens(&self, messages: &[Message]) -> usize {
         messages
             .iter()
@@ -127,19 +137,43 @@ impl Model {
 
     pub fn merge_extra_fields(&self, body: &mut serde_json::Value) {
         if let (Some(body), Some(extra_fields)) = (body.as_object_mut(), &self.extra_fields) {
-            for (k, v) in extra_fields {
-                if !body.contains_key(k) {
-                    body.insert(k.clone(), v.clone());
+            for (key, extra_field) in extra_fields {
+                if body.contains_key(key) {
+                    if let (Some(sub_body), Some(extra_field)) =
+                        (body[key].as_object_mut(), extra_field.as_object())
+                    {
+                        for (subkey, sub_field) in extra_field {
+                            if !sub_body.contains_key(subkey) {
+                                sub_body.insert(subkey.clone(), sub_field.clone());
+                            }
+                        }
+                    }
+                } else {
+                    body.insert(key.clone(), extra_field.clone());
                 }
             }
         }
     }
 }
 
+pub fn convert_models(client_name: &str, models: &[ModelConfig]) -> Vec<Model> {
+    models
+        .iter()
+        .map(|v| {
+            Model::new(client_name, &v.name)
+                .set_capabilities(v.capabilities)
+                .set_max_input_tokens(v.max_input_tokens)
+                .set_max_output_tokens(v.max_output_tokens)
+                .set_extra_fields(v.extra_fields.clone())
+        })
+        .collect()
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct ModelConfig {
     pub name: String,
     pub max_input_tokens: Option<usize>,
+    pub max_output_tokens: Option<isize>,
     pub extra_fields: Option<serde_json::Map<String, serde_json::Value>>,
     #[serde(deserialize_with = "deserialize_capabilities")]
     #[serde(default = "default_capabilities")]

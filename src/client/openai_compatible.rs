@@ -1,5 +1,5 @@
 use super::openai::openai_build_body;
-use super::{ExtraConfig, Model, ModelConfig, OpenAICompatibleClient, PromptType, SendData};
+use super::{convert_models, ExtraConfig, Model, ModelConfig, OpenAICompatibleClient, PromptType, SendData};
 
 use crate::utils::PromptKind;
 
@@ -38,23 +38,13 @@ impl OpenAICompatibleClient {
 
     pub fn list_models(local_config: &OpenAICompatibleConfig) -> Vec<Model> {
         let client_name = Self::name(local_config);
-
-        local_config
-            .models
-            .iter()
-            .map(|v| {
-                Model::new(client_name, &v.name)
-                    .set_capabilities(v.capabilities)
-                    .set_max_input_tokens(v.max_input_tokens)
-                    .set_extra_fields(v.extra_fields.clone())
-            })
-            .collect()
+        convert_models(client_name, &local_config.models)
     }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
 
-        let mut body = openai_build_body(data, self.model.name.clone());
+        let mut body = openai_build_body(data, &self.model);
         self.model.merge_extra_fields(&mut body);
 
         let chat_endpoint = self

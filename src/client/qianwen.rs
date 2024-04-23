@@ -97,7 +97,7 @@ impl QianwenClient {
             true => API_URL_VL,
             false => API_URL,
         };
-        let (body, has_upload) = build_body(data, self.model.name.clone(), is_vl)?;
+        let (body, has_upload) = build_body(data, &self.model, is_vl)?;
 
         debug!("Qianwen Request: {url} {body}");
 
@@ -180,7 +180,7 @@ fn check_error(data: &Value) -> Result<()> {
     Ok(())
 }
 
-fn build_body(data: SendData, model: String, is_vl: bool) -> Result<(Value, bool)> {
+fn build_body(data: SendData, model: &Model, is_vl: bool) -> Result<(Value, bool)> {
     let SendData {
         messages,
         temperature,
@@ -233,6 +233,10 @@ fn build_body(data: SendData, model: String, is_vl: bool) -> Result<(Value, bool
             parameters["incremental_output"] = true.into();
         }
 
+        if let Some(max_tokens) = model.max_output_tokens {
+            parameters["max_tokens"] = max_tokens.into();
+        }
+
         if let Some(v) = temperature {
             parameters["temperature"] = v.into();
         }
@@ -240,7 +244,7 @@ fn build_body(data: SendData, model: String, is_vl: bool) -> Result<(Value, bool
     };
 
     let body = json!({
-        "model": model,
+        "model": &model.name,
         "input": input,
         "parameters": parameters
     });

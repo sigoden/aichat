@@ -73,9 +73,9 @@ impl GeminiClient {
 
         let block_threshold = self.config.block_threshold.clone();
 
-        let body = build_body(data, self.model.name.clone(), block_threshold)?;
+        let body = build_body(data, &self.model, block_threshold)?;
 
-        let model = self.model.name.clone();
+        let model = &self.model.name;
 
         let url = format!("{API_BASE}{}:{}?key={}", model, func, api_key);
 
