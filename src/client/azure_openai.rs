@@ -1,5 +1,5 @@
 use super::openai::openai_build_body;
-use super::{convert_models, AzureOpenAIClient, ExtraConfig, Model, ModelConfig, PromptType, SendData};
+use super::{AzureOpenAIClient, ExtraConfig, Model, ModelConfig, PromptType, SendData};
 
 use crate::utils::PromptKind;
 
@@ -20,6 +20,7 @@ pub struct AzureOpenAIConfig {
 openai_compatible_client!(AzureOpenAIClient);
 
 impl AzureOpenAIClient {
+    list_models_fn!(AzureOpenAIConfig);
     config_get_fn!(api_base, get_api_base);
     config_get_fn!(api_key, get_api_key);
 
@@ -34,11 +35,6 @@ impl AzureOpenAIClient {
             PromptKind::Integer,
         ),
     ];
-
-    pub fn list_models(local_config: &AzureOpenAIConfig) -> Vec<Model> {
-        let client_name = Self::name(local_config);
-        convert_models(client_name, &local_config.models)
-    }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_base = self.get_api_base()?;

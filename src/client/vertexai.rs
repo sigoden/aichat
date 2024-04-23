@@ -1,6 +1,6 @@
 use super::{
-    json_stream, message::*, patch_system_message, Client, ExtraConfig, Model, PromptType,
-    ReplyHandler, SendData, VertexAIClient,
+    json_stream, message::*, patch_system_message, Client, ExtraConfig, Model, ModelConfig,
+    PromptType, ReplyHandler, SendData, VertexAIClient,
 };
 
 use crate::utils::PromptKind;
@@ -28,6 +28,8 @@ pub struct VertexAIConfig {
     pub api_base: Option<String>,
     pub adc_file: Option<String>,
     pub block_threshold: Option<String>,
+    #[serde(default)]
+    pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -54,22 +56,11 @@ impl Client for VertexAIClient {
 }
 
 impl VertexAIClient {
+    list_models_fn!(VertexAIConfig, &MODELS);
     config_get_fn!(api_base, get_api_base);
 
     pub const PROMPTS: [PromptType<'static>; 1] =
         [("api_base", "API Base:", true, PromptKind::String)];
-
-    pub fn list_models(local_config: &VertexAIConfig) -> Vec<Model> {
-        let client_name = Self::name(local_config);
-        MODELS
-            .into_iter()
-            .map(|(name, max_input_tokens, capabilities)| {
-                Model::new(client_name, name)
-                    .set_capabilities(capabilities.into())
-                    .set_max_input_tokens(Some(max_input_tokens))
-            })
-            .collect()
-    }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_base = self.get_api_base()?;

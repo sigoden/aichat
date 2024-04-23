@@ -1,6 +1,6 @@
 use super::{
     patch_system_message, ClaudeClient, Client, ExtraConfig, ImageUrl, MessageContent,
-    MessageContentPart, Model, PromptType, ReplyHandler, SendData,
+    MessageContentPart, Model, ModelConfig, PromptType, ReplyHandler, SendData,
 };
 
 use crate::utils::PromptKind;
@@ -15,17 +15,19 @@ use serde_json::{json, Value};
 
 const API_BASE: &str = "https://api.anthropic.com/v1/messages";
 
-const MODELS: [(&str, usize, isize, &str); 3] = [
+const MODELS: [(&str, usize, &str); 3] = [
     // https://docs.anthropic.com/claude/docs/models-overview
-    ("claude-3-opus-20240229", 200000, 4096, "text,vision"),
-    ("claude-3-sonnet-20240229", 200000, 4096, "text,vision"),
-    ("claude-3-haiku-20240307", 200000, 4096, "text,vision"),
+    ("claude-3-opus-20240229", 200000, "text,vision"),
+    ("claude-3-sonnet-20240229", 200000, "text,vision"),
+    ("claude-3-haiku-20240307", 200000, "text,vision"),
 ];
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ClaudeConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
+    #[serde(default)]
+    pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -50,25 +52,11 @@ impl Client for ClaudeClient {
 }
 
 impl ClaudeClient {
+    list_models_fn!(ClaudeConfig, &MODELS);
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 1] =
         [("api_key", "API Key:", false, PromptKind::String)];
-
-    pub fn list_models(local_config: &ClaudeConfig) -> Vec<Model> {
-        let client_name = Self::name(local_config);
-        MODELS
-            .into_iter()
-            .map(
-                |(name, max_input_tokens, max_output_tokens, capabilities)| {
-                    Model::new(client_name, name)
-                        .set_capabilities(capabilities.into())
-                        .set_max_input_tokens(Some(max_input_tokens))
-                        .set_max_output_tokens(Some(max_output_tokens))
-                },
-            )
-            .collect()
-    }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();

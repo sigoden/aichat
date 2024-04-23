@@ -1,6 +1,6 @@
 use super::{
-    convert_models, message::*, patch_system_message, Client, ExtraConfig, Model, ModelConfig,
-    OllamaClient, PromptType, ReplyHandler, SendData,
+    message::*, patch_system_message, Client, ExtraConfig, Model, ModelConfig, OllamaClient,
+    PromptType, ReplyHandler, SendData,
 };
 
 use crate::utils::PromptKind;
@@ -43,6 +43,7 @@ impl Client for OllamaClient {
 }
 
 impl OllamaClient {
+    list_models_fn!(OllamaConfig);
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 4] = [
@@ -56,11 +57,6 @@ impl OllamaClient {
             PromptKind::Integer,
         ),
     ];
-
-    pub fn list_models(local_config: &OllamaConfig) -> Vec<Model> {
-        let client_name = Self::name(local_config);
-        convert_models(client_name, &local_config.models)
-    }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();

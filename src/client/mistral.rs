@@ -1,5 +1,5 @@
 use super::openai::openai_build_body;
-use super::{ExtraConfig, MistralClient, Model, PromptType, SendData};
+use super::{ExtraConfig, MistralClient, Model, ModelConfig, PromptType, SendData};
 
 use crate::utils::PromptKind;
 
@@ -19,34 +19,23 @@ const MODELS: [(&str, usize, &str); 5] = [
     ("mistral-large-latest", 32000, "text"),
 ];
 
-
 #[derive(Debug, Clone, Deserialize)]
 pub struct MistralConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
+    #[serde(default)]
+    pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
 }
 
 openai_compatible_client!(MistralClient);
 
 impl MistralClient {
+    list_models_fn!(MistralConfig, &MODELS);
     config_get_fn!(api_key, get_api_key);
 
-    pub const PROMPTS: [PromptType<'static>; 1] = [
-        ("api_key", "API Key:", false, PromptKind::String),
-    ];
-
-    pub fn list_models(local_config: &MistralConfig) -> Vec<Model> {
-        let client_name = Self::name(local_config);
-        MODELS
-            .into_iter()
-            .map(|(name, max_input_tokens, capabilities)| {
-                Model::new(client_name, name)
-                    .set_capabilities(capabilities.into())
-                    .set_max_input_tokens(Some(max_input_tokens))
-            })
-            .collect()
-    }
+    pub const PROMPTS: [PromptType<'static>; 1] =
+        [("api_key", "API Key:", false, PromptKind::String)];
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();

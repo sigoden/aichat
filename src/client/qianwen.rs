@@ -1,5 +1,6 @@
 use super::{
-    message::*, Client, ExtraConfig, Model, PromptType, QianwenClient, ReplyHandler, SendData,
+    message::*, Client, ExtraConfig, Model, ModelConfig, PromptType, QianwenClient, ReplyHandler,
+    SendData,
 };
 
 use crate::utils::{sha256sum, PromptKind};
@@ -38,6 +39,8 @@ const MODELS: [(&str, usize, &str); 6] = [
 pub struct QianwenConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
+    #[serde(default)]
+    pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -70,22 +73,11 @@ impl Client for QianwenClient {
 }
 
 impl QianwenClient {
+    list_models_fn!(QianwenConfig, &MODELS);
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
-
-    pub fn list_models(local_config: &QianwenConfig) -> Vec<Model> {
-        let client_name = Self::name(local_config);
-        MODELS
-            .into_iter()
-            .map(|(name, max_input_tokens, capabilities)| {
-                Model::new(client_name, name)
-                    .set_capabilities(capabilities.into())
-                    .set_max_input_tokens(Some(max_input_tokens))
-            })
-            .collect()
-    }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;

@@ -1,5 +1,5 @@
 use super::openai::openai_build_body;
-use super::{convert_models, ExtraConfig, Model, ModelConfig, OpenAICompatibleClient, PromptType, SendData};
+use super::{ExtraConfig, Model, ModelConfig, OpenAICompatibleClient, PromptType, SendData};
 
 use crate::utils::PromptKind;
 
@@ -21,6 +21,7 @@ pub struct OpenAICompatibleConfig {
 openai_compatible_client!(OpenAICompatibleClient);
 
 impl OpenAICompatibleClient {
+    list_models_fn!(OpenAICompatibleConfig);
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 5] = [
@@ -35,11 +36,6 @@ impl OpenAICompatibleClient {
             PromptKind::Integer,
         ),
     ];
-
-    pub fn list_models(local_config: &OpenAICompatibleConfig) -> Vec<Model> {
-        let client_name = Self::name(local_config);
-        convert_models(client_name, &local_config.models)
-    }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
