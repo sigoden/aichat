@@ -1,9 +1,9 @@
 use super::{
     message::*, patch_system_message, Client, ExtraConfig, Model, ModelConfig, OllamaClient,
-    PromptType, SendData,
+    PromptType, ReplyHandler, SendData,
 };
 
-use crate::{render::ReplyHandler, utils::PromptKind};
+use crate::utils::PromptKind;
 
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
@@ -118,7 +118,7 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
         while let Some(chunk) = stream.next().await {
             let chunk = chunk?;
             if chunk.is_empty() {
-              continue;
+                continue;
             }
             let data: Value = serde_json::from_slice(&chunk)?;
             if data["done"].is_boolean() {

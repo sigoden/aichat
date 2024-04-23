@@ -1,7 +1,7 @@
 use super::vertexai::{build_body, send_message, send_message_streaming};
-use super::{Client, ExtraConfig, GeminiClient, Model, PromptType, SendData};
+use super::{Client, ExtraConfig, GeminiClient, Model, PromptType, ReplyHandler, SendData};
 
-use crate::{render::ReplyHandler, utils::PromptKind};
+use crate::utils::PromptKind;
 
 use anyhow::Result;
 use async_trait::async_trait;

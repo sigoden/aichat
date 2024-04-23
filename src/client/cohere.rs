@@ -1,9 +1,9 @@
 use super::{
     json_stream, message::*, patch_system_message, Client, CohereClient, ExtraConfig, Model,
-    PromptType, SendData,
+    PromptType, ReplyHandler, SendData,
 };
 
-use crate::{render::ReplyHandler, utils::PromptKind};
+use crate::utils::PromptKind;
 
 use anyhow::{bail, Result};
 use async_trait::async_trait;

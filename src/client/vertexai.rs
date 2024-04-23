@@ -1,9 +1,9 @@
 use super::{
     json_stream, message::*, patch_system_message, Client, ExtraConfig, Model, PromptType,
-    SendData, VertexAIClient,
+    ReplyHandler, SendData, VertexAIClient,
 };
 
-use crate::{render::ReplyHandler, utils::PromptKind};
+use crate::utils::PromptKind;
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;

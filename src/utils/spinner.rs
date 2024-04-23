@@ -2,10 +2,9 @@ use anyhow::Result;
 use crossterm::{cursor, queue, style, terminal};
 use std::{
     io::{stdout, Stdout, Write},
-    sync::mpsc,
-    thread,
     time::Duration,
 };
+use tokio::{sync::oneshot, time::interval};
 
 pub struct Spinner {
     index: usize,
@@ -56,17 +55,20 @@ impl Spinner {
     }
 }
 
-pub fn run_spinner(message: &str, rx: mpsc::Receiver<()>) -> Result<()> {
+pub async fn run_spinner(message: &str, rx: oneshot::Receiver<()>) -> Result<()> {
     let mut writer = stdout();
     let mut spinner = Spinner::new(message);
-    loop {
-        spinner.step(&mut writer)?;
-        if let Ok(()) = rx.try_recv() {
+    let mut interval = interval(Duration::from_millis(50));
+    tokio::select! {
+        _ = async {
+            loop {
+                interval.tick().await;
+                let _ = spinner.step(&mut writer);
+            }
+        } => {}
+        _ = rx => {
             spinner.stop(&mut writer)?;
-            break;
         }
-        thread::sleep(Duration::from_millis(50))
     }
-    spinner.stop(&mut writer)?;
     Ok(())
 }

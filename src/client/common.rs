@@ -1,12 +1,9 @@
-use super::{openai::OpenAIConfig, ClientConfig, Message, MessageContent, Model};
+use super::{openai::OpenAIConfig, ClientConfig, Message, MessageContent, Model, ReplyHandler};
 
 use crate::{
     config::{GlobalConfig, Input},
-    render::ReplyHandler,
-    utils::{
-        init_tokio_runtime, prompt_input_integer, prompt_input_string, tokenize, AbortSignal,
-        PromptKind,
-    },
+    render::{render_error, render_stream},
+    utils::{prompt_input_integer, prompt_input_string, tokenize, AbortSignal, PromptKind},
 };
 
 use anyhow::{Context, Result};
@@ -16,7 +13,7 @@ use reqwest::{Client as ReqwestClient, ClientBuilder, Proxy, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{env, future::Future, time::Duration};
-use tokio::time::sleep;
+use tokio::{sync::mpsc::unbounded_channel, time::sleep};
 
 #[macro_export]
 macro_rules! register_client {
@@ -173,7 +170,7 @@ macro_rules! openai_compatible_client {
             async fn send_message_streaming_inner(
                 &self,
                 client: &reqwest::Client,
-                handler: &mut $crate::render::ReplyHandler,
+                handler: &mut $crate::client::ReplyHandler,
                 data: $crate::client::SendData,
             ) -> Result<()> {
                 let builder = self.request_builder(client, data)?;
@@ -201,7 +198,7 @@ macro_rules! config_get_fn {
 }
 
 #[async_trait]
-pub trait Client {
+pub trait Client: Sync + Send {
     fn config(&self) -> (&GlobalConfig, &Option<ExtraConfig>);
 
     fn models(&self) -> Vec<Model>;
@@ -226,22 +223,24 @@ pub trait Client {
         Ok(client)
     }
 
-    fn send_message(&self, input: Input) -> Result<String> {
-        init_tokio_runtime()?.block_on(async {
-            let global_config = self.config().0;
-            if global_config.read().dry_run {
-                let content = global_config.read().echo_messages(&input);
-                return Ok(content);
-            }
-            let client = self.build_client()?;
-            let data = global_config.read().prepare_send_data(&input, false)?;
-            self.send_message_inner(&client, data)
-                .await
-                .with_context(|| "Failed to get answer")
-        })
+    async fn send_message(&self, input: Input) -> Result<String> {
+        let global_config = self.config().0;
+        if global_config.read().dry_run {
+            let content = global_config.read().echo_messages(&input);
+            return Ok(content);
+        }
+        let client = self.build_client()?;
+        let data = global_config.read().prepare_send_data(&input, false)?;
+        self.send_message_inner(&client, data)
+            .await
+            .with_context(|| "Failed to get answer")
     }
 
-    fn send_message_streaming(&self, input: &Input, handler: &mut ReplyHandler) -> Result<()> {
+    async fn send_message_streaming(
+        &self,
+        input: &Input,
+        handler: &mut ReplyHandler,
+    ) -> Result<()> {
         async fn watch_abort(abort: AbortSignal) {
             loop {
                 if abort.aborted() {
@@ -252,32 +251,30 @@ pub trait Client {
         }
         let abort = handler.get_abort();
         let input = input.clone();
-        init_tokio_runtime()?.block_on(async move {
-            tokio::select! {
-                ret = async {
-                    let global_config = self.config().0;
-                    if global_config.read().dry_run {
-                        let content = global_config.read().echo_messages(&input);
-                        let tokens = tokenize(&content);
-                        for token in tokens {
-                            tokio::time::sleep(Duration::from_millis(10)).await;
-                            handler.text(&token)?;
-                        }
-                        return Ok(());
+        tokio::select! {
+            ret = async {
+                let global_config = self.config().0;
+                if global_config.read().dry_run {
+                    let content = global_config.read().echo_messages(&input);
+                    let tokens = tokenize(&content);
+                    for token in tokens {
+                        tokio::time::sleep(Duration::from_millis(10)).await;
+                        handler.text(&token)?;
                     }
-                    let client = self.build_client()?;
-                    let data = global_config.read().prepare_send_data(&input, true)?;
-                    self.send_message_streaming_inner(&client, handler, data).await
-                } => {
-                    handler.done()?;
-                    ret.with_context(|| "Failed to get answer")
+                    return Ok(());
                 }
-                _ = watch_abort(abort.clone()) => {
-                    handler.done()?;
-                    Ok(())
-                 },
+                let client = self.build_client()?;
+                let data = global_config.read().prepare_send_data(&input, true)?;
+                self.send_message_streaming_inner(&client, handler, data).await
+            } => {
+                handler.done()?;
+                ret.with_context(|| "Failed to get answer")
             }
-        })
+            _ = watch_abort(abort.clone()) => {
+                handler.done()?;
+                Ok(())
+            },
+        }
     }
 
     async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String>;
@@ -334,6 +331,37 @@ pub fn create_config(list: &[PromptType], client: &str) -> Result<(String, Value
 
     let clients = json!(vec![config]);
     Ok((model, clients))
+}
+
+pub async fn send_stream(
+    input: &Input,
+    client: &dyn Client,
+    config: &GlobalConfig,
+    abort: AbortSignal,
+) -> Result<String> {
+    let (tx, rx) = unbounded_channel();
+    let mut stream_handler = ReplyHandler::new(tx, abort.clone());
+
+    let (send_ret, rend_ret) = tokio::join!(
+        client.send_message_streaming(input, &mut stream_handler),
+        render_stream(rx, config, abort.clone()),
+    );
+    if let Err(err) = rend_ret {
+        render_error(err, config.read().highlight);
+    }
+    let output = stream_handler.get_buffer().to_string();
+    match send_ret {
+        Ok(_) => {
+            println!();
+            Ok(output)
+        }
+        Err(err) => {
+            if !output.is_empty() {
+                println!();
+            }
+            Err(err)
+        }
+    }
 }
 
 #[allow(unused)]

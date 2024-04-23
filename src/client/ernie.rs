@@ -1,6 +1,9 @@
-use super::{patch_system_message, Client, ErnieClient, ExtraConfig, Model, PromptType, SendData};
+use super::{
+    patch_system_message, Client, ErnieClient, ExtraConfig, Model, PromptType, ReplyHandler,
+    SendData,
+};
 
-use crate::{render::ReplyHandler, utils::PromptKind};
+use crate::utils::PromptKind;
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;

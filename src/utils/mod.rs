@@ -9,7 +9,7 @@ pub use self::abort_signal::{create_abort_signal, AbortSignal};
 pub use self::clipboard::set_text;
 pub use self::prompt_input::*;
 pub use self::render_prompt::render_prompt;
-pub use self::spinner::{run_spinner, Spinner};
+pub use self::spinner::run_spinner;
 pub use self::tiktoken::cl100k_base_singleton;
 
 use fancy_regex::Regex;
@@ -80,14 +80,6 @@ pub fn light_theme_from_colorfgbg(colorfgbg: &str) -> Option<bool> {
 
     let light = v > 128.0;
     Some(light)
-}
-
-pub fn init_tokio_runtime() -> anyhow::Result<tokio::runtime::Runtime> {
-    use anyhow::Context;
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .with_context(|| "Failed to init tokio")
 }
 
 pub fn sha256sum(input: &str) -> String {

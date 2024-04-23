@@ -2,10 +2,12 @@
 mod common;
 mod message;
 mod model;
+mod reply_handler;
 
 pub use common::*;
 pub use message::*;
 pub use model::*;
+pub use reply_handler::*;
 
 register_client!(
     (openai, "openai", OpenAIConfig, OpenAIClient),

@@ -1,10 +1,9 @@
-use super::{patch_system_message, ClaudeClient, Client, ExtraConfig, Model, PromptType, SendData};
-
-use crate::{
-    client::{ImageUrl, MessageContent, MessageContentPart},
-    render::ReplyHandler,
-    utils::PromptKind,
+use super::{
+    patch_system_message, ClaudeClient, Client, ExtraConfig, ImageUrl, MessageContent,
+    MessageContentPart, Model, PromptType, ReplyHandler, SendData,
 };
+
+use crate::utils::PromptKind;
 
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
