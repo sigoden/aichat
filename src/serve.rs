@@ -49,7 +49,7 @@ pub async fn run(config: GlobalConfig, addr: Option<String>) -> Result<()> {
     let listener = TcpListener::bind(&addr).await?;
     let server = Arc::new(Server { clients, model });
     let stop_server = server.run(listener).await?;
-    println!("Access the API server at: http://{addr}/v1/chat/completions");
+    println!("Access the chat completion API at: http://{addr}/v1/chat/completions");
     shutdown_signal().await;
     let _ = stop_server.send(());
     Ok(())
