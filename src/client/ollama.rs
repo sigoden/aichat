@@ -1,6 +1,6 @@
 use super::{
-    message::*, patch_system_message, Client, ExtraConfig, Model, ModelConfig, OllamaClient,
-    PromptType, ReplyHandler, SendData,
+    message::*, Client, ExtraConfig, Model, ModelConfig, OllamaClient, PromptType, ReplyHandler,
+    SendData,
 };
 
 use crate::utils::PromptKind;
@@ -121,12 +121,10 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
 
 fn build_body(data: SendData, model: &Model) -> Result<Value> {
     let SendData {
-        mut messages,
+        messages,
         temperature,
         stream,
     } = data;
-
-    patch_system_message(&mut messages);
 
     let mut network_image_urls = vec![];
     let messages: Vec<Value> = messages

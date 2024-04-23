@@ -1,5 +1,5 @@
 use super::{
-    patch_system_message, ClaudeClient, Client, ExtraConfig, ImageUrl, MessageContent,
+    extract_sytem_message, ClaudeClient, Client, ExtraConfig, ImageUrl, MessageContent,
     MessageContentPart, Model, ModelConfig, PromptType, ReplyHandler, SendData,
 };
 
@@ -141,7 +141,7 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
         stream,
     } = data;
 
-    patch_system_message(&mut messages);
+    let system_message = extract_sytem_message(&mut messages);
 
     let mut network_image_urls = vec![];
     let messages: Vec<Value> = messages
@@ -195,6 +195,10 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
         "max_tokens": max_tokens,
         "messages": messages,
     });
+
+    if let Some(system) = system_message {
+        body["system"] = system.into();
+    }
 
     if let Some(v) = temperature {
         body["temperature"] = v.into();
