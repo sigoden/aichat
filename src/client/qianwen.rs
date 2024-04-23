@@ -1,11 +1,8 @@
 use super::{
-    message::*, Client, ExtraConfig, Model, PromptType, QianwenClient, SendData,
+    message::*, Client, ExtraConfig, Model, PromptType, QianwenClient, ReplyHandler, SendData,
 };
 
-use crate::{
-    render::ReplyHandler,
-    utils::{sha256sum, PromptKind},
-};
+use crate::utils::{sha256sum, PromptKind};
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;

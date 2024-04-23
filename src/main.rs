@@ -10,12 +10,13 @@ extern crate log;
 mod utils;
 
 use crate::cli::Cli;
-use crate::client::{ensure_model_capabilities, init_client, list_models};
+use crate::client::{ensure_model_capabilities, init_client, list_models, send_stream};
 use crate::config::{Config, GlobalConfig, Input, CODE_ROLE, EXPLAIN_ROLE, SHELL_ROLE};
-use crate::render::{render_error, render_stream, MarkdownRender};
+use crate::render::{render_error, MarkdownRender};
 use crate::repl::Repl;
 use crate::utils::{
-    cl100k_base_singleton, create_abort_signal, extract_block, run_command, CODE_BLOCK_RE,
+    cl100k_base_singleton, create_abort_signal, extract_block, run_command, run_spinner,
+    CODE_BLOCK_RE,
 };
 
 use anyhow::{bail, Result};
@@ -24,11 +25,12 @@ use inquire::{Select, Text};
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use std::io::{stderr, stdin, stdout, Read};
-use std::sync::{mpsc, Arc};
-use std::{process, thread};
-use utils::run_spinner;
+use std::process;
+use std::sync::Arc;
+use tokio::sync::oneshot;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
     let text = cli.text();
     let config = Arc::new(RwLock::new(Config::init(text.is_none())?));
@@ -91,7 +93,7 @@ fn main() -> Result<()> {
     if cli.execute {
         match input {
             Some(input) => {
-                execute(&config, input)?;
+                execute(&config, input).await?;
                 return Ok(());
             }
             None => bail!("No input text"),
@@ -99,8 +101,8 @@ fn main() -> Result<()> {
     }
     config.write().apply_prelude()?;
     if let Err(err) = match input {
-        Some(input) => start_directive(&config, input, cli.no_stream, cli.code),
-        None => start_interactive(&config),
+        Some(input) => start_directive(&config, input, cli.no_stream, cli.code).await,
+        None => start_interactive(&config).await,
     } {
         let highlight = stderr().is_terminal() && config.read().highlight;
         render_error(err, highlight)
@@ -108,7 +110,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn start_directive(
+async fn start_directive(
     config: &GlobalConfig,
     input: Input,
     no_stream: bool,
@@ -120,7 +122,7 @@ fn start_directive(
     let is_terminal_stdout = stdout().is_terminal();
     let extract_code = !is_terminal_stdout && code_mode;
     let output = if no_stream || extract_code {
-        let output = client.send_message(input.clone())?;
+        let output = client.send_message(input.clone()).await?;
         let output = if extract_code && output.trim_start().starts_with("```") {
             extract_block(&output)
         } else {
@@ -136,7 +138,7 @@ fn start_directive(
         output
     } else {
         let abort = create_abort_signal();
-        render_stream(&input, client.as_ref(), config, abort)?
+        send_stream(&input, client.as_ref(), config, abort).await?
     };
     // Save the message/session
     config.write().save_message(input, &output)?;
@@ -144,19 +146,20 @@ fn start_directive(
     Ok(())
 }
 
-fn start_interactive(config: &GlobalConfig) -> Result<()> {
+async fn start_interactive(config: &GlobalConfig) -> Result<()> {
     cl100k_base_singleton();
     let mut repl: Repl = Repl::init(config)?;
-    repl.run()
+    repl.run().await
 }
 
-fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
+#[async_recursion::async_recursion]
+async fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
     let client = init_client(config)?;
     config.read().maybe_print_send_tokens(&input);
-    let (tx, rx) = mpsc::sync_channel::<()>(0);
-    thread::spawn(move || run_spinner(" Generating", rx));
-    let ret = client.send_message(input.clone());
-    tx.send(())?;
+    let (spinner_tx, spinner_rx) = oneshot::channel();
+    tokio::spawn(run_spinner(" Generating", spinner_rx));
+    let ret = client.send_message(input.clone()).await;
+    let _ = spinner_tx.send(());
     let mut eval_str = ret?;
     if let Ok(true) = CODE_BLOCK_RE.is_match(&eval_str) {
         eval_str = extract_block(&eval_str);
@@ -191,7 +194,7 @@ fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
                     }
                     let input = Input::from_str(&eval_str, config.read().input_context());
                     let abort = create_abort_signal();
-                    render_stream(&input, client.as_ref(), config, abort)?;
+                    send_stream(&input, client.as_ref(), config, abort).await?;
                     explain = true;
                     continue;
                 }
@@ -202,7 +205,7 @@ fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
                         input.text()
                     );
                     input.set_text(text);
-                    return execute(config, input);
+                    return execute(config, input).await;
                 }
                 _ => {}
             }

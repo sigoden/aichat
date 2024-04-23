@@ -1,6 +1,6 @@
-use super::{ExtraConfig, Model, OpenAIClient, PromptType, SendData};
+use super::{ExtraConfig, Model, OpenAIClient, PromptType, ReplyHandler, SendData};
 
-use crate::{render::ReplyHandler, utils::PromptKind};
+use crate::utils::PromptKind;
 
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;

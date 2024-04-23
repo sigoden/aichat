@@ -41,6 +41,12 @@ const SESSIONS_DIR_NAME: &str = "sessions";
 
 const CLIENTS_FIELD: &str = "clients";
 
+const SUMMARIZE_PROMPT: &str =
+    "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.";
+const SUMMARY_PROMPT: &str = "This is a summary of the chat history as a recap: ";
+const LEFT_PROMPT: &str = "{color.green}{?session {session}{?role /}}{role}{color.cyan}{?session )}{!session >}{color.reset} ";
+const RIGHT_PROMPT: &str = "{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}";
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -59,10 +65,10 @@ pub struct Config {
     pub prelude: Option<String>,
     pub buffer_editor: Option<String>,
     pub compress_threshold: usize,
-    pub summarize_prompt: String,
-    pub summary_prompt: String,
-    pub left_prompt: String,
-    pub right_prompt: String,
+    pub summarize_prompt: Option<String>,
+    pub summary_prompt: Option<String>,
+    pub left_prompt: Option<String>,
+    pub right_prompt: Option<String>,
     pub clients: Vec<ClientConfig>,
     #[serde(skip)]
     pub roles: Vec<Role>,
@@ -95,12 +101,11 @@ impl Default for Config {
             prelude: None,
             buffer_editor: None,
             compress_threshold: 2000,
-            summarize_prompt: "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.".to_string(),
-            summary_prompt: "This is a summary of the chat history as a recap: ".into(),
-            left_prompt: "{color.green}{?session {session}{?role /}}{role}{color.cyan}{?session )}{!session >}{color.reset} ".to_string(),
-            right_prompt: "{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}"
-                .to_string(),
-            clients: vec![ClientConfig::default()],
+            summarize_prompt: None,
+            summary_prompt: None,
+            left_prompt: None,
+            right_prompt: None,
+            clients: vec![],
             roles: vec![],
             role: None,
             session: None,
@@ -677,8 +682,13 @@ impl Config {
 
     pub fn compress_session(&mut self, summary: &str) {
         if let Some(session) = self.session.as_mut() {
-            session.compress(format!("{}{}", self.summary_prompt, summary));
+            let summary_prompt = self.summary_prompt.as_deref().unwrap_or(SUMMARY_PROMPT);
+            session.compress(format!("{}{}", summary_prompt, summary));
         }
+    }
+
+    pub fn summarize_prompt(&self) -> &str {
+        self.summarize_prompt.as_deref().unwrap_or(SUMMARIZE_PROMPT)
     }
 
     pub fn is_compressing_session(&self) -> bool {
@@ -728,12 +738,14 @@ impl Config {
 
     pub fn render_prompt_left(&self) -> String {
         let variables = self.generate_prompt_context();
-        render_prompt(&self.left_prompt, &variables)
+        let left_prompt = self.left_prompt.as_deref().unwrap_or(LEFT_PROMPT);
+        render_prompt(left_prompt, &variables)
     }
 
     pub fn render_prompt_right(&self) -> String {
         let variables = self.generate_prompt_context();
-        render_prompt(&self.right_prompt, &variables)
+        let right_prompt = self.right_prompt.as_deref().unwrap_or(RIGHT_PROMPT);
+        render_prompt(right_prompt, &variables)
     }
 
     pub fn prepare_send_data(&self, input: &Input, stream: bool) -> Result<SendData> {
@@ -940,7 +952,7 @@ impl Config {
             }
         }
 
-        if let Some(ClientConfig::OpenAIConfig(client_config)) = self.clients.get_mut(0) {
+        if let Some(ClientConfig::OpenAIConfig(client_config)) = self.clients.first_mut() {
             if let Some(api_key) = value.get("api_key").and_then(|v| v.as_str()) {
                 client_config.api_key = Some(api_key.to_string())
             }
