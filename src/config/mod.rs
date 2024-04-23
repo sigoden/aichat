@@ -79,9 +79,9 @@ pub struct Config {
     #[serde(skip)]
     pub model: Model,
     #[serde(skip)]
-    pub last_message: Option<(Input, String)>,
+    pub working_mode: WorkingMode,
     #[serde(skip)]
-    pub in_repl: bool,
+    pub last_message: Option<(Input, String)>,
 }
 
 impl Default for Config {
@@ -110,8 +110,8 @@ impl Default for Config {
             role: None,
             session: None,
             model: Default::default(),
+            working_mode: WorkingMode::Command,
             last_message: None,
-            in_repl: false,
         }
     }
 }
@@ -119,13 +119,13 @@ impl Default for Config {
 pub type GlobalConfig = Arc<RwLock<Config>>;
 
 impl Config {
-    pub fn init(is_interactive: bool) -> Result<Self> {
+    pub fn init(working_mode: WorkingMode) -> Result<Self> {
         let config_path = Self::config_file()?;
 
         let api_key = env::var("OPENAI_API_KEY").ok();
 
         let exist_config_path = config_path.exists();
-        if is_interactive && api_key.is_none() && !exist_config_path {
+        if working_mode != WorkingMode::Command && api_key.is_none() && !exist_config_path {
             create_config_file(&config_path)?;
         }
         let mut config = if api_key.is_some() && !exist_config_path {
@@ -143,13 +143,12 @@ impl Config {
             config.set_wrap(&wrap)?;
         }
 
+        config.working_mode = working_mode;
         config.load_roles()?;
 
         config.setup_model()?;
         config.setup_highlight();
         config.setup_light_theme()?;
-
-        setup_logger()?;
 
         Ok(config)
     }
@@ -611,7 +610,7 @@ impl Config {
             let save_session = session.save_session();
             if session.dirty && save_session != Some(false) {
                 if save_session.is_none() || session.is_temp() {
-                    if !self.in_repl {
+                    if self.working_mode != WorkingMode::Repl {
                         return Ok(());
                     }
                     let ans = Confirm::new("Save session?").with_default(false).prompt()?;
@@ -999,6 +998,13 @@ impl Keybindings {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum WorkingMode {
+    Command,
+    Repl,
+    Serve,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum State {
     Normal,
     Role,
@@ -1144,26 +1150,4 @@ fn complete_option_bool(value: Option<bool>) -> Vec<String> {
         Some(false) => vec!["true".to_string(), "null".to_string()],
         None => vec!["true".to_string(), "false".to_string()],
     }
-}
-
-#[cfg(debug_assertions)]
-fn setup_logger() -> Result<()> {
-    use simplelog::{LevelFilter, WriteLogger};
-    let file = std::fs::File::create(Config::local_path("debug.log")?)?;
-    let log_filter = match std::env::var("AICHAT_LOG_FILTER") {
-        Ok(v) => v,
-        Err(_) => "aichat".into(),
-    };
-    let config = simplelog::ConfigBuilder::new()
-        .add_filter_allow(log_filter)
-        .set_thread_level(LevelFilter::Off)
-        .set_time_level(LevelFilter::Off)
-        .build();
-    WriteLogger::init(log::LevelFilter::Debug, config, file)?;
-    Ok(())
-}
-
-#[cfg(not(debug_assertions))]
-fn setup_logger() -> Result<()> {
-    Ok(())
 }

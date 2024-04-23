@@ -19,7 +19,7 @@ impl ReplyHandler {
     }
 
     pub fn text(&mut self, text: &str) -> Result<()> {
-        debug!("ReplyText: {}", text);
+        // debug!("ReplyText: {}", text);
         if text.is_empty() {
             return Ok(());
         }
@@ -33,7 +33,7 @@ impl ReplyHandler {
     }
 
     pub fn done(&mut self) -> Result<()> {
-        debug!("ReplyDone");
+        // debug!("ReplyDone");
         let ret = self
             .sender
             .send(ReplyEvent::Done)

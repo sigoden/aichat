@@ -15,6 +15,9 @@ pub struct Cli {
     /// Forces the session to be saved
     #[clap(long)]
     pub save_session: bool,
+    /// Serve all LLMs as OpenAI-compatible API
+    #[clap(long, value_name = "ADDRESS")]
+    pub serve: Option<Option<String>>,
     /// Execute commands in natural language
     #[clap(short = 'e', long)]
     pub execute: bool,
