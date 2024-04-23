@@ -1,5 +1,5 @@
 use super::{
-    json_stream, message::*, patch_system_message, Client, CohereClient, ExtraConfig, Model,
+    extract_sytem_message, json_stream, message::*, Client, CohereClient, ExtraConfig, Model,
     ModelConfig, PromptType, ReplyHandler, SendData,
 };
 
@@ -129,7 +129,7 @@ pub(crate) fn build_body(data: SendData, model: &Model) -> Result<Value> {
         stream,
     } = data;
 
-    patch_system_message(&mut messages);
+    let system_message = extract_sytem_message(&mut messages);
 
     let mut image_urls = vec![];
     let mut messages: Vec<Value> = messages
@@ -173,6 +173,10 @@ pub(crate) fn build_body(data: SendData, model: &Model) -> Result<Value> {
         "model": &model.name,
         "message": message,
     });
+
+    if let Some(preamble) = system_message {
+        body["preamble"] = preamble.into();
+    }
 
     if let Some(max_tokens) = model.max_output_tokens {
         body["max_tokens"] = max_tokens.into();

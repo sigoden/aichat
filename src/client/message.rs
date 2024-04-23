@@ -85,6 +85,21 @@ impl MessageContent {
             }
         }
     }
+
+    pub fn to_text(&self) -> String {
+        match self {
+            MessageContent::Text(text) => text.to_string(),
+            MessageContent::Array(list) => {
+                let mut parts = vec![];
+                for item in list {
+                    if let MessageContentPart::Text { text } = item {
+                        parts.push(text.clone())
+                    }
+                }
+                parts.join("\n\n")
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
