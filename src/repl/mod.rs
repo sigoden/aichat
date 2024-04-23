@@ -77,8 +77,6 @@ pub struct Repl {
 
 impl Repl {
     pub fn init(config: &GlobalConfig) -> Result<Self> {
-        config.write().in_repl = true;
-
         let editor = Self::create_editor(config)?;
 
         let prompt = ReplPrompt::new(config);

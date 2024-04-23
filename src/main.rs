@@ -1,17 +1,21 @@
 mod cli;
 mod client;
 mod config;
+mod logger;
 mod render;
 mod repl;
-
-#[macro_use]
-extern crate log;
+mod serve;
 #[macro_use]
 mod utils;
 
+#[macro_use]
+extern crate log;
+
 use crate::cli::Cli;
 use crate::client::{ensure_model_capabilities, init_client, list_models, send_stream};
-use crate::config::{Config, GlobalConfig, Input, CODE_ROLE, EXPLAIN_ROLE, SHELL_ROLE};
+use crate::config::{
+    Config, GlobalConfig, Input, WorkingMode, CODE_ROLE, EXPLAIN_ROLE, SHELL_ROLE,
+};
 use crate::render::{render_error, MarkdownRender};
 use crate::repl::Repl;
 use crate::utils::{
@@ -33,7 +37,21 @@ use tokio::sync::oneshot;
 async fn main() -> Result<()> {
     let cli = Cli::parse();
     let text = cli.text();
-    let config = Arc::new(RwLock::new(Config::init(text.is_none())?));
+    let file = &cli.file;
+    let no_input = text.is_none() && file.is_empty();
+    let working_mode = if cli.serve.is_some() {
+        WorkingMode::Serve
+    } else if no_input {
+        WorkingMode::Repl
+    } else {
+        WorkingMode::Command
+    };
+    crate::logger::setup_logger(working_mode)?;
+    let config = Arc::new(RwLock::new(Config::init(working_mode)?));
+
+    if let Some(addr) = cli.serve {
+        return serve::run(config, addr).await;
+    }
     if cli.list_roles {
         config
             .read()
@@ -89,20 +107,21 @@ async fn main() -> Result<()> {
         return Ok(());
     }
     let text = aggregate_text(text)?;
-    let input = create_input(&config, text, &cli.file)?;
     if cli.execute {
-        match input {
-            Some(input) => {
-                execute(&config, input).await?;
-                return Ok(());
-            }
-            None => bail!("No input text"),
+        if no_input {
+            bail!("No input");
         }
+        let input = create_input(&config, text, file)?;
+        execute(&config, input).await?;
+        return Ok(());
     }
     config.write().apply_prelude()?;
-    if let Err(err) = match input {
-        Some(input) => start_directive(&config, input, cli.no_stream, cli.code).await,
-        None => start_interactive(&config).await,
+    if let Err(err) = match no_input {
+        false => {
+            let input = create_input(&config, text, file)?;
+            start_directive(&config, input, cli.no_stream, cli.code).await
+        }
+        true => start_interactive(&config).await,
     } {
         let highlight = stderr().is_terminal() && config.read().highlight;
         render_error(err, highlight)
@@ -232,19 +251,15 @@ fn aggregate_text(text: Option<String>) -> Result<Option<String>> {
     Ok(text)
 }
 
-fn create_input(
-    config: &GlobalConfig,
-    text: Option<String>,
-    file: &[String],
-) -> Result<Option<Input>> {
-    if text.is_none() && file.is_empty() {
-        return Ok(None);
-    }
+fn create_input(config: &GlobalConfig, text: Option<String>, file: &[String]) -> Result<Input> {
     let input_context = config.read().input_context();
     let input = if file.is_empty() {
         Input::from_str(&text.unwrap_or_default(), input_context)
     } else {
         Input::new(&text.unwrap_or_default(), file.to_vec(), input_context)?
     };
-    Ok(Some(input))
+    if input.is_empty() {
+        bail!("No input");
+    }
+    Ok(input)
 }

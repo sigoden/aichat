@@ -26,6 +26,7 @@ _aichat() {
 '-w+[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
 '--wrap=[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
 '--save-session[Forces the session to be saved]' \
+'--serve[Serve all LLMs as OpenAI-compatible API]' \
 '-e[Execute commands in natural language]' \
 '--execute[Execute commands in natural language]' \
 '-c[Output code only]' \
