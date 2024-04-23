@@ -36,6 +36,30 @@ impl Model {
         }
     }
 
+    pub fn from_config(client_name: &str, models: &[ModelConfig]) -> Vec<Self> {
+        models
+            .iter()
+            .map(|v| {
+                Model::new(client_name, &v.name)
+                    .set_capabilities(v.capabilities)
+                    .set_max_input_tokens(v.max_input_tokens)
+                    .set_max_output_tokens(v.max_output_tokens)
+                    .set_extra_fields(v.extra_fields.clone())
+            })
+            .collect()
+    }
+
+    pub fn from_static(client_name: &str, models: &[(&str, usize, &str)]) -> Vec<Self> {
+        models
+            .iter()
+            .map(|(name, max_input_tokens, capabilities)| {
+                Model::new(client_name, name)
+                    .set_capabilities((*capabilities).into())
+                    .set_max_input_tokens(Some(*max_input_tokens))
+            })
+            .collect()
+    }
+
     pub fn find(models: &[Self], value: &str) -> Option<Self> {
         let mut model = None;
         let (client_name, model_name) = match value.split_once(':') {
@@ -154,19 +178,6 @@ impl Model {
             }
         }
     }
-}
-
-pub fn convert_models(client_name: &str, models: &[ModelConfig]) -> Vec<Model> {
-    models
-        .iter()
-        .map(|v| {
-            Model::new(client_name, &v.name)
-                .set_capabilities(v.capabilities)
-                .set_max_input_tokens(v.max_input_tokens)
-                .set_max_output_tokens(v.max_output_tokens)
-                .set_extra_fields(v.extra_fields.clone())
-        })
-        .collect()
 }
 
 #[derive(Debug, Clone, Deserialize)]

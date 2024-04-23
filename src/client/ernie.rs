@@ -1,6 +1,6 @@
 use super::{
-    patch_system_message, Client, ErnieClient, ExtraConfig, Model, PromptType, ReplyHandler,
-    SendData,
+    patch_system_message, Client, ErnieClient, ExtraConfig, Model, ModelConfig, PromptType,
+    ReplyHandler, SendData,
 };
 
 use crate::utils::PromptKind;
@@ -73,6 +73,8 @@ pub struct ErnieConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
     pub secret_key: Option<String>,
+    #[serde(default)]
+    pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -106,14 +108,18 @@ impl ErnieClient {
 
     pub fn list_models(local_config: &ErnieConfig) -> Vec<Model> {
         let client_name = Self::name(local_config);
-        MODELS
-            .into_iter()
-            .map(|(name, _, max_input_tokens, max_output_tokens)| {
-                Model::new(client_name, name)
-                    .set_max_input_tokens(Some(max_input_tokens))
-                    .set_max_output_tokens(Some(max_output_tokens))
-            }) // ERNIE tokenizer is different from cl100k_base
-            .collect()
+        if local_config.models.is_empty() {
+            MODELS
+                .into_iter()
+                .map(|(name, _, max_input_tokens, max_output_tokens)| {
+                    Model::new(client_name, name)
+                        .set_max_input_tokens(Some(max_input_tokens))
+                        .set_max_output_tokens(Some(max_output_tokens))
+                }) // ERNIE tokenizer is different from cl100k_base
+                .collect()
+        } else {
+            Model::from_config(client_name, &local_config.models)
+        }
     }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {

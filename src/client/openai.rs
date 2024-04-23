@@ -1,4 +1,4 @@
-use super::{ExtraConfig, Model, OpenAIClient, PromptType, ReplyHandler, SendData};
+use super::{ExtraConfig, Model, ModelConfig, OpenAIClient, PromptType, ReplyHandler, SendData};
 
 use crate::utils::PromptKind;
 
@@ -30,29 +30,20 @@ pub struct OpenAIConfig {
     pub api_key: Option<String>,
     pub api_base: Option<String>,
     pub organization_id: Option<String>,
+    #[serde(default)]
+    pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
 }
 
 openai_compatible_client!(OpenAIClient);
 
 impl OpenAIClient {
+    list_models_fn!(OpenAIConfig, &MODELS);
     config_get_fn!(api_key, get_api_key);
     config_get_fn!(api_base, get_api_base);
 
     pub const PROMPTS: [PromptType<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
-
-    pub fn list_models(local_config: &OpenAIConfig) -> Vec<Model> {
-        let client_name = Self::name(local_config);
-        MODELS
-            .into_iter()
-            .map(|(name, max_input_tokens, capabilities)| {
-                Model::new(client_name, name)
-                    .set_capabilities(capabilities.into())
-                    .set_max_input_tokens(Some(max_input_tokens))
-            })
-            .collect()
-    }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;

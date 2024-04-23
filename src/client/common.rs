@@ -86,7 +86,7 @@ macro_rules! register_client {
 
         pub fn ensure_model_capabilities(client: &mut dyn Client, capabilities: $crate::client::ModelCapabilities) -> anyhow::Result<()> {
             if !client.model().capabilities.contains(capabilities) {
-                let models = client.models();
+                let models = client.list_models();
                 if let Some(model) = models.into_iter().find(|v| v.capabilities.contains(capabilities)) {
                     client.set_model(model);
                 } else {
@@ -137,7 +137,7 @@ macro_rules! client_common_fns {
             (&self.global_config, &self.config.extra)
         }
 
-        fn models(&self) -> Vec<Model> {
+        fn list_models(&self) -> Vec<Model> {
             Self::list_models(&self.config)
         }
 
@@ -197,11 +197,31 @@ macro_rules! config_get_fn {
     };
 }
 
+#[macro_export]
+macro_rules! list_models_fn {
+    ($config:ident) => {
+        pub fn list_models(local_config: &$config) -> Vec<Model> {
+            let client_name = Self::name(local_config);
+            Model::from_config(client_name, &local_config.models)
+        }
+    };
+    ($config:ident, $models:expr) => {
+        pub fn list_models(local_config: &$config) -> Vec<Model> {
+            let client_name = Self::name(local_config);
+            if local_config.models.is_empty() {
+                Model::from_static(client_name, $models)
+            } else {
+                Model::from_config(client_name, &local_config.models)
+            }
+        }
+    };
+}
+
 #[async_trait]
 pub trait Client: Sync + Send {
     fn config(&self) -> (&GlobalConfig, &Option<ExtraConfig>);
 
-    fn models(&self) -> Vec<Model>;
+    fn list_models(&self) -> Vec<Model>;
 
     fn model(&self) -> &Model;
 

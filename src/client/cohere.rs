@@ -1,6 +1,6 @@
 use super::{
     json_stream, message::*, patch_system_message, Client, CohereClient, ExtraConfig, Model,
-    PromptType, ReplyHandler, SendData,
+    ModelConfig, PromptType, ReplyHandler, SendData,
 };
 
 use crate::utils::PromptKind;
@@ -23,6 +23,8 @@ const MODELS: [(&str, usize, &str); 2] = [
 pub struct CohereConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
+    #[serde(default)]
+    pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -47,22 +49,11 @@ impl Client for CohereClient {
 }
 
 impl CohereClient {
+    list_models_fn!(CohereConfig, &MODELS);
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 1] =
         [("api_key", "API Key:", false, PromptKind::String)];
-
-    pub fn list_models(local_config: &CohereConfig) -> Vec<Model> {
-        let client_name = Self::name(local_config);
-        MODELS
-            .into_iter()
-            .map(|(name, max_input_tokens, capabilities)| {
-                Model::new(client_name, name)
-                    .set_capabilities(capabilities.into())
-                    .set_max_input_tokens(Some(max_input_tokens))
-            })
-            .collect()
-    }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
@@ -182,7 +173,7 @@ pub(crate) fn build_body(data: SendData, model: &Model) -> Result<Value> {
         "model": &model.name,
         "message": message,
     });
-    
+
     if let Some(max_tokens) = model.max_output_tokens {
         body["max_tokens"] = max_tokens.into();
     }

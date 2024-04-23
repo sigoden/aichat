@@ -1,5 +1,7 @@
 use super::vertexai::{build_body, send_message, send_message_streaming};
-use super::{Client, ExtraConfig, GeminiClient, Model, PromptType, ReplyHandler, SendData};
+use super::{
+    Client, ExtraConfig, GeminiClient, Model, ModelConfig, PromptType, ReplyHandler, SendData,
+};
 
 use crate::utils::PromptKind;
 
@@ -22,6 +24,8 @@ pub struct GeminiConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
     pub block_threshold: Option<String>,
+    #[serde(default)]
+    pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -46,22 +50,11 @@ impl Client for GeminiClient {
 }
 
 impl GeminiClient {
+    list_models_fn!(GeminiConfig, &MODELS);
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
-
-    pub fn list_models(local_config: &GeminiConfig) -> Vec<Model> {
-        let client_name = Self::name(local_config);
-        MODELS
-            .into_iter()
-            .map(|(name, max_input_tokens, capabilities)| {
-                Model::new(client_name, name)
-                    .set_capabilities(capabilities.into())
-                    .set_max_input_tokens(Some(max_input_tokens))
-            })
-            .collect()
-    }
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
