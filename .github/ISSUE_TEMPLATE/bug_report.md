@@ -7,8 +7,7 @@ assignees: ''
 
 ---
 
-Your issue may already be reported!
-Please search on the [issue tracker](https://github.com/sigoden/aichat/issues) before creating one.
+<!-- Your issue may already be reported!  Please search on the [issue tracker](https://github.com/sigoden/aichat/issues) before creating one. -->
 
 **Describe the bug**
 A clear and concise description of what the bug is. 
