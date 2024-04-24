@@ -134,6 +134,7 @@ impl Server {
             model,
             messages,
             temperature,
+            top_p,
             max_tokens,
             stream,
         } = req_body;
@@ -161,6 +162,7 @@ impl Server {
         let send_data: SendData = SendData {
             messages,
             temperature,
+            top_p,
             stream,
         };
 
@@ -242,6 +244,7 @@ struct ChatCompletionReqBody {
     model: String,
     messages: Vec<Message>,
     temperature: Option<f64>,
+    top_p: Option<f64>,
     max_tokens: Option<isize>,
     #[serde(default)]
     stream: bool,

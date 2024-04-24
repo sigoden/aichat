@@ -130,6 +130,7 @@ pub fn openai_build_body(data: SendData, model: &Model) -> Value {
     let SendData {
         messages,
         temperature,
+        top_p,
         stream,
     } = data;
 
@@ -139,13 +140,16 @@ pub fn openai_build_body(data: SendData, model: &Model) -> Value {
     });
 
     if let Some(max_tokens) = model.max_output_tokens {
-        body["max_tokens"] = json!(max_tokens);
+        body["max_tokens"] = max_tokens.into();
     } else if model.name == "gpt-4-vision-preview" {
         // The default max_tokens of gpt-4-vision-preview is only 16, we need to make it larger
-        body["max_tokens"] = json!(4096);
+        body["max_tokens"] = 4096.into();
     }
-    if let Some(v) = temperature {
-        body["temperature"] = v.into();
+    if let Some(temperature) = temperature {
+        body["temperature"] = temperature.into();
+    }
+    if let Some(top_p) = top_p {
+        body["top_p"] = top_p.into();
     }
     if stream {
         body["stream"] = true.into();

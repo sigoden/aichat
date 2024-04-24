@@ -230,6 +230,7 @@ fn build_body(data: SendData, model: &Model) -> Value {
     let SendData {
         mut messages,
         temperature,
+        top_p,
         stream,
     } = data;
 
@@ -241,6 +242,9 @@ fn build_body(data: SendData, model: &Model) -> Value {
 
     if let Some(temperature) = temperature {
         body["temperature"] = temperature.into();
+    }
+    if let Some(top_p) = top_p {
+        body["top_p"] = top_p.into();
     }
 
     if let Some(max_output_tokens) = model.max_output_tokens {

@@ -63,8 +63,9 @@ Feel free to adjust the configuration according to your needs.
 > Get `config.yaml` path with command `aichat --info` or repl command `.info`.
 
 ```yaml
-model: openai:gpt-3.5-turbo      # The Large Language Model (LLM) to use
-temperature: 1.0                 # Controls the randomness and creativity of the LLM's responses
+model: openai:gpt-3.5-turbo      # Specify the language model to use
+temperature: null                # Set default temperature parameter
+top_p: null                      # Set default top-p parameter
 save: true                       # Indicates whether to persist the message
 save_session: null               # Controls the persistence of the session, if null, asking the user
 highlight: true                  # Controls syntax highlighting

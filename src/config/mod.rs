@@ -53,6 +53,7 @@ pub struct Config {
     #[serde(rename(serialize = "model", deserialize = "model"))]
     pub model_id: Option<String>,
     pub temperature: Option<f64>,
+    pub top_p: Option<f64>,
     pub dry_run: bool,
     pub save: bool,
     pub save_session: Option<bool>,
@@ -89,6 +90,7 @@ impl Default for Config {
         Self {
             model_id: None,
             temperature: None,
+            top_p: None,
             save: true,
             save_session: None,
             highlight: true,
@@ -297,6 +299,7 @@ impl Config {
         if let Some(session) = self.session.as_mut() {
             session.guard_empty()?;
             session.set_temperature(role.temperature);
+            session.set_top_p(role.top_p);
         }
         self.role = Some(role);
         Ok(())
@@ -332,6 +335,16 @@ impl Config {
             role.set_temperature(value);
         } else {
             self.temperature = value;
+        }
+    }
+
+    pub fn set_top_p(&mut self, value: Option<f64>) {
+        if let Some(session) = self.session.as_mut() {
+            session.set_top_p(value);
+        } else if let Some(role) = self.role.as_mut() {
+            role.set_top_p(value);
+        } else {
+            self.top_p = value;
         }
     }
 
@@ -411,6 +424,7 @@ impl Config {
         let items = vec![
             ("model", self.model.id()),
             ("temperature", format_option(&self.temperature)),
+            ("top_p", format_option(&self.top_p)),
             ("dry_run", self.dry_run.to_string()),
             ("save", self.save.to_string()),
             ("save_session", format_option(&self.save_session)),
@@ -478,6 +492,7 @@ impl Config {
                 ".session" => self.list_sessions(),
                 ".set" => vec![
                     "temperature ",
+                    "top_p ",
                     "compress_threshold",
                     "save ",
                     "save_session ",
@@ -528,6 +543,10 @@ impl Config {
             "temperature" => {
                 let value = parse_value(value)?;
                 self.set_temperature(value);
+            }
+            "top_p" => {
+                let value = parse_value(value)?;
+                self.set_top_p(value);
             }
             "compress_threshold" => {
                 let value = parse_value(value)?;
@@ -756,10 +775,18 @@ impl Config {
         } else {
             self.temperature
         };
+        let top_p = if let Some(session) = input.session(&self.session) {
+            session.top_p()
+        } else if let Some(role) = input.role() {
+            role.top_p
+        } else {
+            self.top_p
+        };
         self.model.max_input_tokens_limit(&messages)?;
         Ok(SendData {
             messages,
             temperature,
+            top_p,
             stream,
         })
     }
@@ -789,6 +816,11 @@ impl Config {
         if let Some(temperature) = self.temperature {
             if temperature != 0.0 {
                 output.insert("temperature", temperature.to_string());
+            }
+        }
+        if let Some(top_p) = self.top_p {
+            if top_p != 0.0 {
+                output.insert("top_p", top_p.to_string());
             }
         }
         if self.dry_run {
