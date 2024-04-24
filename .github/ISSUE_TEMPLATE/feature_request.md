@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-<!-- Your issue may already be reported! Please search on the [issue tracker](https://github.com/sigoden/aichat/issues) before creating one. -->
+<!-- Your issue may already be reported! Please search for it before creating one. -->
 
 If you are requesting support for the new model, goto [model-request](https://github.com/sigoden/aichat/issues/new?assignees=&labels=enhancement&projects=&template=model_request.md&title=).
 
