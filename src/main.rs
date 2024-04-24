@@ -196,7 +196,7 @@ async fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
         loop {
             let answer = Select::new(
                 markdown_render.render(&eval_str).trim(),
-                vec!["✅ Execute", "📙 Explain", "🤔 Revise", "❌ Cancel"],
+                vec!["✅ Execute", "🤔 Revise", "📙 Explain", "❌ Cancel"],
             )
             .prompt()?;
 
@@ -207,6 +207,14 @@ async fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
                         process::exit(code);
                     }
                 }
+                "🤔 Revise" => {
+                    let revision = Text::new("Enter your revision:").prompt()?;
+                    let text = input.text();
+                    let text =
+                        format!("[INST] {text} [/INST]\n{eval_str}\n[INST] {revision} [/INST]\n");
+                    input.set_text(text);
+                    return execute(config, input).await;
+                }
                 "📙 Explain" => {
                     if !explain {
                         config.write().set_role(EXPLAIN_ROLE)?;
@@ -216,15 +224,6 @@ async fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
                     send_stream(&input, client.as_ref(), config, abort).await?;
                     explain = true;
                     continue;
-                }
-                "🤔 Revise" => {
-                    let revision = Text::new("Enter your revision:").prompt()?;
-                    let text = format!(
-                        "[INST] {} [/INST]\n{eval_str}\n[INST] {revision} [/INST]\n",
-                        input.text()
-                    );
-                    input.set_text(text);
-                    return execute(config, input).await;
                 }
                 _ => {}
             }
