@@ -29,7 +29,7 @@ use tokio::{
 use tokio_graceful::Shutdown;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
-const DEFAULT_ADDRESS: &str = "0.0.0.0:8080";
+const DEFAULT_ADDRESS: &str = "127.0.0.1:8000";
 
 type AppResponse = Response<BoxBody<Bytes, Infallible>>;
 
@@ -37,7 +37,7 @@ pub async fn run(config: GlobalConfig, addr: Option<String>) -> Result<()> {
     let addr = match addr {
         Some(addr) => {
             if let Ok(port) = addr.parse::<u16>() {
-                format!("0.0.0.0:{port}")
+                format!("127.0.0.1:{port}")
             } else {
                 addr
             }
