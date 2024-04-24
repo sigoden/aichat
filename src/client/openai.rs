@@ -70,7 +70,7 @@ pub async fn openai_send_message(builder: RequestBuilder) -> Result<String> {
     let status = res.status();
     let data: Value = res.json().await?;
     if status != 200 {
-        check_error(&data, status.as_u16())?;
+        catch_error(&data, status.as_u16())?;
     }
 
     let output = data["choices"][0]["message"]["content"]
@@ -107,7 +107,7 @@ pub async fn openai_send_message_streaming(
                                 bail!("Invalid respoinse, status: {status}, text: {text}");
                             }
                         };
-                        check_error(&data, status.as_u16())?;
+                        catch_error(&data, status.as_u16())?;
                     }
                     EventSourceError::StreamEnded => {}
                     EventSourceError::InvalidContentType(_, res) => {
@@ -153,7 +153,7 @@ pub fn openai_build_body(data: SendData, model: &Model) -> Value {
     body
 }
 
-fn check_error(data: &Value, status: u16) -> Result<()> {
+fn catch_error(data: &Value, status: u16) -> Result<()> {
     debug!("Invalid response, status: {status}, data: {data}");
     if let Some(error) = data["error"].as_object() {
         if let (Some(type_), Some(message)) = (error["type"].as_str(), error["message"].as_str()) {

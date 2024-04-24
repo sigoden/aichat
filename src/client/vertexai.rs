@@ -108,7 +108,7 @@ pub(crate) async fn send_message(builder: RequestBuilder) -> Result<String> {
     let status = res.status();
     let data: Value = res.json().await?;
     if status != 200 {
-        check_error(&data, status.as_u16())?;
+        catch_error(&data, status.as_u16())?;
     }
     let output = extract_text(&data)?;
     Ok(output.to_string())
@@ -122,7 +122,7 @@ pub(crate) async fn send_message_streaming(
     let status = res.status();
     if status != 200 {
         let data: Value = res.json().await?;
-        check_error(&data, status.as_u16())?;
+        catch_error(&data, status.as_u16())?;
     } else {
         let handle = |value: &str| -> Result<()> {
             let value: Value = serde_json::from_str(value)?;
@@ -147,24 +147,6 @@ fn extract_text(data: &Value) -> Result<&str> {
                 bail!("Invalid response data: {data}")
             }
         }
-    }
-}
-
-fn check_error(data: &Value, status: u16) -> Result<()> {
-    debug!("Invalid response, status: {status}, data: {data}");
-
-    if let Some((Some(status), Some(message))) = data[0]["error"].as_object().map(|v| {
-        (
-            v.get("status").and_then(|v| v.as_str()),
-            v.get("message").and_then(|v| v.as_str()),
-        )
-    }) {
-        if status == "UNAUTHENTICATED" {
-            unsafe { ACCESS_TOKEN = (String::new(), 0) }
-        }
-        bail!("{message} (status: {status})")
-    } else {
-        bail!("Invalid response, status: {status}, data: {data}",);
     }
 }
 
@@ -242,6 +224,24 @@ pub(crate) fn build_body(
     }
 
     Ok(body)
+}
+
+fn catch_error(data: &Value, status: u16) -> Result<()> {
+    debug!("Invalid response, status: {status}, data: {data}");
+
+    if let Some((Some(status), Some(message))) = data[0]["error"].as_object().map(|v| {
+        (
+            v.get("status").and_then(|v| v.as_str()),
+            v.get("message").and_then(|v| v.as_str()),
+        )
+    }) {
+        if status == "UNAUTHENTICATED" {
+            unsafe { ACCESS_TOKEN = (String::new(), 0) }
+        }
+        bail!("{message} (status: {status})")
+    } else {
+        bail!("Invalid response, status: {status}, data: {data}",);
+    }
 }
 
 async fn fetch_access_token(

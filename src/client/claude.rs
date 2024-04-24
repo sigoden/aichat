@@ -82,7 +82,7 @@ async fn send_message(builder: RequestBuilder) -> Result<String> {
     let status = res.status();
     let data: Value = res.json().await?;
     if status != 200 {
-        check_error(&data, status.as_u16())?;
+        catch_error(&data, status.as_u16())?;
     }
 
     let output = data["content"][0]["text"]
@@ -118,7 +118,7 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
                                 bail!("Invalid respoinse, status: {status}, text: {text}");
                             }
                         };
-                        check_error(&data, status.as_u16())?;
+                        catch_error(&data, status.as_u16())?;
                     }
                     EventSourceError::InvalidContentType(_, res) => {
                         let text = res.text().await?;
@@ -211,7 +211,7 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
     Ok(body)
 }
 
-fn check_error(data: &Value, status: u16) -> Result<()> {
+fn catch_error(data: &Value, status: u16) -> Result<()> {
     debug!("Invalid response, status: {status}, data: {data}");
     if let Some(error) = data["error"].as_object() {
         if let (Some(type_), Some(message)) = (error["type"].as_str(), error["message"].as_str()) {

@@ -84,7 +84,7 @@ async fn send_message(builder: RequestBuilder) -> Result<String> {
     let status = res.status();
     let data = res.json().await?;
     if status != 200 {
-        check_error(&data, status.as_u16())?;
+        catch_error(&data, status.as_u16())?;
     }
     let output = data["message"]["content"]
         .as_str()
@@ -97,7 +97,7 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
     let status = res.status();
     if status != 200 {
         let data = res.json().await?;
-        check_error(&data, status.as_u16())?;
+        catch_error(&data, status.as_u16())?;
     } else {
         let mut stream = res.bytes_stream();
         while let Some(chunk) = stream.next().await {
@@ -116,14 +116,6 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
         }
     }
     Ok(())
-}
-
-fn check_error(data: &Value, status: u16) -> Result<()> {
-    debug!("Invalid response, status: {status}, data: {data}");
-    if let Some(error) = data["error"].as_str() {
-        bail!("{error}");
-    }
-    bail!("Invalid response, status: {status}, data: {data}");
 }
 
 fn build_body(data: SendData, model: &Model) -> Result<Value> {
@@ -195,4 +187,12 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
     }
 
     Ok(body)
+}
+
+fn catch_error(data: &Value, status: u16) -> Result<()> {
+    debug!("Invalid response, status: {status}, data: {data}");
+    if let Some(error) = data["error"].as_str() {
+        bail!("{error}");
+    }
+    bail!("Invalid response, status: {status}, data: {data}");
 }
