@@ -323,6 +323,7 @@ pub struct ExtraConfig {
 pub struct SendData {
     pub messages: Vec<Message>,
     pub temperature: Option<f64>,
+    pub top_p: Option<f64>,
     pub stream: bool,
 }
 

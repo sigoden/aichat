@@ -16,12 +16,10 @@ pub const INPUT_PLACEHOLDER: &str = "__INPUT__";
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Role {
-    /// Role name
     pub name: String,
-    /// Prompt text
     pub prompt: String,
-    /// Temperature value
     pub temperature: Option<f64>,
+    pub top_p: Option<f64>,
 }
 
 impl Role {
@@ -30,6 +28,7 @@ impl Role {
             name: TEMP_ROLE.into(),
             prompt: prompt.into(),
             temperature: None,
+            top_p: None,
         }
     }
 
@@ -67,6 +66,7 @@ If there is a lack of details, provide most logical solution.
 Output plain text only, without any markdown formatting."#
             ),
             temperature: None,
+            top_p: None,
         }
     }
 
@@ -79,6 +79,7 @@ Provide short responses in about 80 words.
 APPLY MARKDOWN formatting when possible."#
                 .into(),
             temperature: None,
+            top_p: None,
         }
     }
 
@@ -89,6 +90,7 @@ APPLY MARKDOWN formatting when possible."#
 If there is a lack of details, provide most logical solution, without requesting further clarification."#
                 .into(),
             temperature: None,
+            top_p: None,
         }
     }
 
@@ -104,6 +106,10 @@ If there is a lack of details, provide most logical solution, without requesting
 
     pub fn set_temperature(&mut self, value: Option<f64>) {
         self.temperature = value;
+    }
+
+    pub fn set_top_p(&mut self, value: Option<f64>) {
+        self.top_p = value;
     }
 
     pub fn complete_prompt_args(&mut self, name: &str) {

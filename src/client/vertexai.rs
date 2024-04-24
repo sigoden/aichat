@@ -158,7 +158,8 @@ pub(crate) fn build_body(
     let SendData {
         mut messages,
         temperature,
-        ..
+        top_p,
+        stream: _,
     } = data;
 
     patch_system_message(&mut messages);
@@ -221,6 +222,10 @@ pub(crate) fn build_body(
 
     if let Some(temperature) = temperature {
         body["generationConfig"]["temperature"] = temperature.into();
+    }
+
+    if let Some(top_p) = top_p {
+        body["generationConfig"]["topP"] = top_p.into();
     }
 
     Ok(body)

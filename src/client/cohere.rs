@@ -110,6 +110,7 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
     let SendData {
         mut messages,
         temperature,
+        top_p,
         stream,
     } = data;
 
@@ -172,6 +173,9 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
 
     if let Some(temperature) = temperature {
         body["temperature"] = temperature.into();
+    }
+    if let Some(top_p) = top_p {
+        body["p"] = top_p.into();
     }
     if stream {
         body["stream"] = true.into();

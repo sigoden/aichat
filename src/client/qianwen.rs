@@ -130,7 +130,6 @@ async fn send_message_streaming(
     is_vl: bool,
 ) -> Result<()> {
     let mut es = builder.eventsource()?;
-    let mut offset = 0;
 
     while let Some(event) = es.next().await {
         match event {
@@ -139,12 +138,10 @@ async fn send_message_streaming(
                 let data: Value = serde_json::from_str(&message.data)?;
                 catch_error(&data)?;
                 if is_vl {
-                    let text =
-                        data["output"]["choices"][0]["message"]["content"][0]["text"].as_str();
-                    if let Some(text) = text {
-                        let text = &text[offset..];
+                    if let Some(text) =
+                        data["output"]["choices"][0]["message"]["content"][0]["text"].as_str()
+                    {
                         handler.text(text)?;
-                        offset += text.len();
                     }
                 } else if let Some(text) = data["output"]["text"].as_str() {
                     handler.text(text)?;
@@ -169,11 +166,12 @@ fn build_body(data: SendData, model: &Model, is_vl: bool) -> Result<(Value, bool
     let SendData {
         messages,
         temperature,
+        top_p,
         stream,
     } = data;
 
     let mut has_upload = false;
-    let (input, parameters) = if is_vl {
+    let input = if is_vl {
         let messages: Vec<Value> = messages
             .into_iter()
             .map(|message| {
@@ -199,40 +197,37 @@ fn build_body(data: SendData, model: &Model, is_vl: bool) -> Result<(Value, bool
             })
             .collect();
 
-        let input = json!({
+        json!({
             "messages": messages,
-        });
-
-        let mut parameters = json!({});
-        if let Some(v) = temperature {
-            parameters["temperature"] = v.into();
-        }
-        (input, parameters)
+        })
     } else {
-        let input = json!({
+        json!({
             "messages": messages,
-        });
-
-        let mut parameters = json!({});
-        if stream {
-            parameters["incremental_output"] = true.into();
-        }
-
-        if let Some(max_tokens) = model.max_output_tokens {
-            parameters["max_tokens"] = max_tokens.into();
-        }
-
-        if let Some(v) = temperature {
-            parameters["temperature"] = v.into();
-        }
-        (input, parameters)
+        })
     };
+
+    let mut parameters = json!({});
+    if stream {
+        parameters["incremental_output"] = true.into();
+    }
+
+    if let Some(max_tokens) = model.max_output_tokens {
+        parameters["max_tokens"] = max_tokens.into();
+    }
+
+    if let Some(temperature) = temperature {
+        parameters["temperature"] = temperature.into();
+    }
+    if let Some(top_p) = top_p {
+        parameters["top_p"] = top_p.into();
+    }
 
     let body = json!({
         "model": &model.name,
         "input": input,
         "parameters": parameters
     });
+
     Ok((body, has_upload))
 }
 

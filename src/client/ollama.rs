@@ -122,6 +122,7 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
     let SendData {
         messages,
         temperature,
+        top_p,
         stream,
     } = data;
 
@@ -184,6 +185,9 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
 
     if let Some(temperature) = temperature {
         body["options"]["temperature"] = temperature.into();
+    }
+    if let Some(top_p) = top_p {
+        body["options"]["top_p"] = top_p.into();
     }
 
     Ok(body)
