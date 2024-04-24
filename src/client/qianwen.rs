@@ -167,7 +167,8 @@ async fn send_message_streaming(
 
 fn check_error(data: &Value) -> Result<()> {
     if let (Some(code), Some(message)) = (data["code"].as_str(), data["message"].as_str()) {
-        bail!("{code}: {message}");
+        debug!("Invalid response: {}", data);
+        bail!("{message} (code: {code})");
     }
     Ok(())
 }

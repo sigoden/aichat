@@ -78,7 +78,7 @@ pub(crate) async fn send_message(builder: RequestBuilder) -> Result<String> {
     let status = res.status();
     let data: Value = res.json().await?;
     if status != 200 {
-        check_error(&data)?;
+        check_error(&data, status.as_u16())?;
     }
     let output = extract_text(&data)?;
     Ok(output.to_string())
@@ -89,9 +89,10 @@ pub(crate) async fn send_message_streaming(
     handler: &mut ReplyHandler,
 ) -> Result<()> {
     let res = builder.send().await?;
-    if res.status() != 200 {
+    let status = res.status();
+    if status != 200 {
         let data: Value = res.json().await?;
-        check_error(&data)?;
+        check_error(&data, status.as_u16())?;
     } else {
         let handle = |value: &str| -> Result<()> {
             let value: Value = serde_json::from_str(value)?;
@@ -114,11 +115,13 @@ fn extract_text(data: &Value) -> Result<&str> {
     }
 }
 
-fn check_error(data: &Value) -> Result<()> {
+fn check_error(data: &Value, status: u16) -> Result<()> {
+    debug!("Invalid response, status: {status}, data: {data}");
+
     if let Some(message) = data["message"].as_str() {
         bail!("{message}");
     } else {
-        bail!("Error {}", data);
+        bail!("Invalid response, status: {status}, data: {data}");
     }
 }
 

@@ -227,15 +227,15 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
 }
 
 fn check_error(data: &Value) -> Result<()> {
-    if let Some(err_msg) = data["error_msg"].as_str() {
-        if let Some(code) = data["error_code"].as_number().and_then(|v| v.as_u64()) {
-            if code == 110 {
-                *ACCESS_TOKEN.lock().unwrap() = None;
-            }
-            bail!("{err_msg}. err_code: {code}");
-        } else {
-            bail!("{err_msg}");
+    if let (Some(error_code), Some(error_msg)) =
+        (data["error_code"].as_number(), data["error_msg"].as_str())
+    {
+        debug!("Invalid response: {}", data);
+        let error_code = error_code.as_i64().unwrap_or_default();
+        if error_code == 110 {
+            *ACCESS_TOKEN.lock().unwrap() = None;
         }
+        bail!("{error_msg} (error_code: {error_code})");
     }
     Ok(())
 }
