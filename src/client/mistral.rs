@@ -10,12 +10,10 @@ use serde::Deserialize;
 
 const API_URL: &str = "https://api.mistral.ai/v1/chat/completions";
 
-const MODELS: [(&str, usize, &str); 5] = [
+const MODELS: [(&str, usize, &str); 3] = [
     // https://docs.mistral.ai/platform/endpoints/
-    ("open-mistral-7b", 32000, "text"),
-    ("open-mixtral-8x7b", 32000, "text"),
+    ("open-mixtral-8x22b", 64000, "text"),
     ("mistral-small-latest", 32000, "text"),
-    ("mistral-medium-latest", 32000, "text"),
     ("mistral-large-latest", 32000, "text"),
 ];
 
