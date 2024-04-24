@@ -78,8 +78,12 @@ impl ClaudeClient {
 }
 
 async fn send_message(builder: RequestBuilder) -> Result<String> {
-    let data: Value = builder.send().await?.json().await?;
-    check_error(&data)?;
+    let res = builder.send().await?;
+    let status = res.status();
+    let data: Value = res.json().await?;
+    if status != 200 {
+        catch_error(&data, status.as_u16())?;
+    }
 
     let output = data["content"][0]["text"]
         .as_str()
@@ -95,7 +99,6 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
             Ok(Event::Open) => {}
             Ok(Event::Message(message)) => {
                 let data: Value = serde_json::from_str(&message.data)?;
-                check_error(&data)?;
                 if let Some(typ) = data["type"].as_str() {
                     if typ == "content_block_delta" {
                         if let Some(text) = data["delta"]["text"].as_str() {
@@ -107,16 +110,15 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
             Err(err) => {
                 match err {
                     EventSourceError::StreamEnded => {}
-                    EventSourceError::InvalidStatusCode(code, res) => {
+                    EventSourceError::InvalidStatusCode(status, res) => {
                         let text = res.text().await?;
                         let data: Value = match text.parse() {
                             Ok(data) => data,
                             Err(_) => {
-                                bail!("Request failed, {code}, {text}");
+                                bail!("Invalid respoinse, status: {status}, text: {text}");
                             }
                         };
-                        check_error(&data)?;
-                        bail!("Request failed, {code}, {text}");
+                        catch_error(&data, status.as_u16())?;
                     }
                     EventSourceError::InvalidContentType(_, res) => {
                         let text = res.text().await?;
@@ -209,13 +211,12 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
     Ok(body)
 }
 
-fn check_error(data: &Value) -> Result<()> {
+fn catch_error(data: &Value, status: u16) -> Result<()> {
+    debug!("Invalid response, status: {status}, data: {data}");
     if let Some(error) = data["error"].as_object() {
-        if let (Some(typ), Some(message)) = (error["type"].as_str(), error["message"].as_str()) {
-            bail!("{typ}: {message}");
-        } else {
-            bail!("{}", Value::Object(error.clone()))
+        if let (Some(type_), Some(message)) = (error["type"].as_str(), error["message"].as_str()) {
+            bail!("{message} (type: {type_})");
         }
     }
-    Ok(())
+    bail!("Invalid response, status: {status}, data: {data}");
 }

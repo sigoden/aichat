@@ -82,11 +82,10 @@ impl OllamaClient {
 async fn send_message(builder: RequestBuilder) -> Result<String> {
     let res = builder.send().await?;
     let status = res.status();
+    let data = res.json().await?;
     if status != 200 {
-        let text = res.text().await?;
-        bail!("{status}, {text}");
+        catch_error(&data, status.as_u16())?;
     }
-    let data: Value = res.json().await?;
     let output = data["message"]["content"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
@@ -97,8 +96,8 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
     let res = builder.send().await?;
     let status = res.status();
     if status != 200 {
-        let text = res.text().await?;
-        bail!("{status}, {text}");
+        let data = res.json().await?;
+        catch_error(&data, status.as_u16())?;
     } else {
         let mut stream = res.bytes_stream();
         while let Some(chunk) = stream.next().await {
@@ -188,4 +187,12 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
     }
 
     Ok(body)
+}
+
+fn catch_error(data: &Value, status: u16) -> Result<()> {
+    debug!("Invalid response, status: {status}, data: {data}");
+    if let Some(error) = data["error"].as_str() {
+        bail!("{error}");
+    }
+    bail!("Invalid response, status: {status}, data: {data}");
 }

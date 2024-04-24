@@ -171,7 +171,7 @@ impl ErnieClient {
 
 async fn send_message(builder: RequestBuilder) -> Result<String> {
     let data: Value = builder.send().await?.json().await?;
-    check_error(&data)?;
+    catch_error(&data)?;
 
     let output = data["result"]
         .as_str()
@@ -199,7 +199,7 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
                             .map_err(|_| anyhow!("Invalid response header"))?;
                         if content_type.contains("application/json") {
                             let data: Value = res.json().await?;
-                            check_error(&data)?;
+                            catch_error(&data)?;
                             bail!("Request failed");
                         } else {
                             let text = res.text().await?;
@@ -223,20 +223,6 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
         }
     }
 
-    Ok(())
-}
-
-fn check_error(data: &Value) -> Result<()> {
-    if let Some(err_msg) = data["error_msg"].as_str() {
-        if let Some(code) = data["error_code"].as_number().and_then(|v| v.as_u64()) {
-            if code == 110 {
-                *ACCESS_TOKEN.lock().unwrap() = None;
-            }
-            bail!("{err_msg}. err_code: {code}");
-        } else {
-            bail!("{err_msg}");
-        }
-    }
     Ok(())
 }
 
@@ -266,6 +252,20 @@ fn build_body(data: SendData, model: &Model) -> Value {
     }
 
     body
+}
+
+fn catch_error(data: &Value) -> Result<()> {
+    if let (Some(error_code), Some(error_msg)) =
+        (data["error_code"].as_number(), data["error_msg"].as_str())
+    {
+        debug!("Invalid response: {}", data);
+        let error_code = error_code.as_i64().unwrap_or_default();
+        if error_code == 110 {
+            *ACCESS_TOKEN.lock().unwrap() = None;
+        }
+        bail!("{error_msg} (error_code: {error_code})");
+    }
+    Ok(())
 }
 
 async fn fetch_access_token(

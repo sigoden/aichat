@@ -66,9 +66,11 @@ impl OpenAIClient {
 }
 
 pub async fn openai_send_message(builder: RequestBuilder) -> Result<String> {
-    let data: Value = builder.send().await?.json().await?;
-    if let Some(err_msg) = data["error"]["message"].as_str() {
-        bail!("{err_msg}");
+    let res = builder.send().await?;
+    let status = res.status();
+    let data: Value = res.json().await?;
+    if status != 200 {
+        catch_error(&data, status.as_u16())?;
     }
 
     let output = data["choices"][0]["message"]["content"]
@@ -97,21 +99,15 @@ pub async fn openai_send_message_streaming(
             }
             Err(err) => {
                 match err {
-                    EventSourceError::InvalidStatusCode(code, res) => {
+                    EventSourceError::InvalidStatusCode(status, res) => {
                         let text = res.text().await?;
                         let data: Value = match text.parse() {
                             Ok(data) => data,
                             Err(_) => {
-                                bail!("Request failed, {code}, {text}");
+                                bail!("Invalid respoinse, status: {status}, text: {text}");
                             }
                         };
-                        if let Some(err_msg) = data["error"]["message"].as_str() {
-                            bail!("{err_msg}");
-                        } else if let Some(err_msg) = data["message"].as_str() {
-                            bail!("{err_msg}");
-                        } else {
-                            bail!("Request failed, {code}, {text}");
-                        }
+                        catch_error(&data, status.as_u16())?;
                     }
                     EventSourceError::StreamEnded => {}
                     EventSourceError::InvalidContentType(_, res) => {
@@ -155,4 +151,16 @@ pub fn openai_build_body(data: SendData, model: &Model) -> Value {
         body["stream"] = true.into();
     }
     body
+}
+
+fn catch_error(data: &Value, status: u16) -> Result<()> {
+    debug!("Invalid response, status: {status}, data: {data}");
+    if let Some(error) = data["error"].as_object() {
+        if let (Some(type_), Some(message)) = (error["type"].as_str(), error["message"].as_str()) {
+            bail!("{message} (type: {type_})");
+        }
+    } else if let Some(message) = data["message"].as_str() {
+        bail!("{message}");
+    }
+    bail!("Invalid response, status: {status}, data: {data}");
 }
