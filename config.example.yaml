@@ -84,7 +84,7 @@ clients:
   - type: ollama
     api_base: http://localhost:11434
     api_key: Basic xxx                                # Set authorization header
-    chat_endpoint: /chat                              # Optional field
+    chat_endpoint: /api/chat                          # Optional field
     models:
       - name: llama2
         max_input_tokens: 8192
