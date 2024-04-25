@@ -320,7 +320,7 @@ async fn upload(model: &str, api_key: &str, url: &str) -> Result<String> {
     let status = res.status();
     if res.status() != 200 {
         let text = res.text().await?;
-        bail!("{status}, {text}")
+        bail!("Invalid response data: {text} (status: {status})")
     }
     Ok(format!("oss://{key}"))
 }

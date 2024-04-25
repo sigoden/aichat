@@ -1,6 +1,6 @@
 use super::{
-    catch_error, extract_sytem_message, json_stream, message::*, Client, CohereClient, ExtraConfig,
-    Model, ModelConfig, PromptType, ReplyHandler, SendData,
+    catch_error, extract_system_message, json_stream, message::*, Client, CohereClient,
+    ExtraConfig, Model, ModelConfig, PromptType, ReplyHandler, SendData,
 };
 
 use crate::utils::PromptKind;
@@ -115,7 +115,7 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
         stream,
     } = data;
 
-    let system_message = extract_sytem_message(&mut messages);
+    let system_message = extract_system_message(&mut messages);
 
     let mut image_urls = vec![];
     let mut messages: Vec<Value> = messages
