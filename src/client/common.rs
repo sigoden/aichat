@@ -108,7 +108,7 @@ macro_rules! register_client {
                     return create_config(&$client::PROMPTS, $client::NAME)
                 }
             )+
-            anyhow::bail!("Unknown client {}", client)
+            anyhow::bail!("Unknown client '{}'", client)
         }
 
         pub fn list_models(config: &$crate::config::Config) -> Vec<$crate::client::Model> {
@@ -192,7 +192,9 @@ macro_rules! config_get_fn {
                         format!("{}_{}", env_prefix, stringify!($field_name)).to_ascii_uppercase();
                     std::env::var(&env_name).ok()
                 })
-                .ok_or_else(|| anyhow::anyhow!("Miss {}", stringify!($field_name)))
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Miss '{}' in client configuration", stringify!($field_name))
+                })
         }
     };
 }
@@ -435,7 +437,7 @@ pub fn catch_error(data: &Value, status: u16) -> Result<()> {
     } else if let Some(message) = data["message"].as_str() {
         bail!("{message}");
     }
-    bail!("Invalid response, status: {status}, data: {data}");
+    bail!("Invalid response data: {data} (status: {status})");
 }
 
 pub fn maybe_catch_error(data: &Value) -> Result<()> {

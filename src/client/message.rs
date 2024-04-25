@@ -127,7 +127,7 @@ pub fn patch_system_message(messages: &mut Vec<Message>) {
     }
 }
 
-pub fn extract_sytem_message(messages: &mut Vec<Message>) -> Option<String> {
+pub fn extract_system_message(messages: &mut Vec<Message>) -> Option<String> {
     if messages[0].role.is_system() {
         let system_message = messages.remove(0);
         return Some(system_message.content.to_text());

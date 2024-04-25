@@ -1,5 +1,5 @@
 use super::{
-    catch_error, extract_sytem_message, ClaudeClient, Client, ExtraConfig, ImageUrl,
+    catch_error, extract_system_message, ClaudeClient, Client, ExtraConfig, ImageUrl,
     MessageContent, MessageContentPart, Model, ModelConfig, PromptType, ReplyHandler, SendData,
 };
 
@@ -120,7 +120,10 @@ pub async fn claude_send_message_streaming(
                         let data: Value = match text.parse() {
                             Ok(data) => data,
                             Err(_) => {
-                                bail!("Invalid respoinse, status: {status}, text: {text}");
+                                bail!(
+                                    "Invalid response data: {text} (status: {})",
+                                    status.as_u16()
+                                );
                             }
                         };
                         catch_error(&data, status.as_u16())?;
@@ -149,7 +152,7 @@ pub fn claude_build_body(data: SendData, model: &Model) -> Result<Value> {
         stream,
     } = data;
 
-    let system_message = extract_sytem_message(&mut messages);
+    let system_message = extract_system_message(&mut messages);
 
     let mut network_image_urls = vec![];
     let messages: Vec<Value> = messages

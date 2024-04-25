@@ -246,7 +246,7 @@ async fn fetch_access_token(
     } else if let Some(err_msg) = value["error_description"].as_str() {
         bail!("{err_msg}")
     } else {
-        bail!("Invalid response data")
+        bail!("Invalid response data: {value}")
     }
 }
 

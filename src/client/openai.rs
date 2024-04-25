@@ -107,7 +107,10 @@ pub async fn openai_send_message_streaming(
                         let data: Value = match text.parse() {
                             Ok(data) => data,
                             Err(_) => {
-                                bail!("Invalid respoinse, status: {status}, text: {text}");
+                                bail!(
+                                    "Invalid response data: {text} (status: {})",
+                                    status.as_u16()
+                                );
                             }
                         };
                         catch_error(&data, status.as_u16())?;
