@@ -65,6 +65,10 @@ clients:
   - type: cohere
     api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+  # See https://docs.perplexity.ai/docs/getting-started
+  - type: perplexity
+    api_key: pplx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
   # See https://console.groq.com/docs/quickstart
   - type: groq
     api_key: gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
