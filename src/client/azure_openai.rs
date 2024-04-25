@@ -4,7 +4,6 @@ use super::{AzureOpenAIClient, ExtraConfig, Model, ModelConfig, PromptType, Send
 use crate::utils::PromptKind;
 
 use anyhow::Result;
-use async_trait::async_trait;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 
@@ -16,8 +15,6 @@ pub struct AzureOpenAIConfig {
     pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
 }
-
-openai_compatible_client!(AzureOpenAIClient);
 
 impl AzureOpenAIClient {
     list_models_fn!(AzureOpenAIConfig);
@@ -55,3 +52,9 @@ impl AzureOpenAIClient {
         Ok(builder)
     }
 }
+
+impl_client_trait!(
+    AzureOpenAIClient,
+    crate::client::openai::openai_send_message,
+    crate::client::openai::openai_send_message_streaming
+);

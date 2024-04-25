@@ -1,12 +1,9 @@
-use super::vertexai::{gemini_build_body, gemini_send_message, gemini_send_message_streaming};
-use super::{
-    Client, ExtraConfig, GeminiClient, Model, ModelConfig, PromptType, ReplyHandler, SendData,
-};
+use super::vertexai::gemini_build_body;
+use super::{ExtraConfig, GeminiClient, Model, ModelConfig, PromptType, SendData};
 
 use crate::utils::PromptKind;
 
 use anyhow::Result;
-use async_trait::async_trait;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 
@@ -20,26 +17,6 @@ pub struct GeminiConfig {
     #[serde(default)]
     pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
-}
-
-#[async_trait]
-impl Client for GeminiClient {
-    client_common_fns!();
-
-    async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
-        let builder = self.request_builder(client, data)?;
-        gemini_send_message(builder).await
-    }
-
-    async fn send_message_streaming_inner(
-        &self,
-        client: &ReqwestClient,
-        handler: &mut ReplyHandler,
-        data: SendData,
-    ) -> Result<()> {
-        let builder = self.request_builder(client, data)?;
-        gemini_send_message_streaming(builder, handler).await
-    }
 }
 
 impl GeminiClient {
@@ -80,3 +57,9 @@ impl GeminiClient {
         Ok(builder)
     }
 }
+
+impl_client_trait!(
+    GeminiClient,
+    crate::client::vertexai::gemini_send_message,
+    crate::client::vertexai::gemini_send_message_streaming
+);

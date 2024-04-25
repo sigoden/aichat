@@ -28,7 +28,10 @@ register_client!(
     (claude, "claude", ClaudeConfig, ClaudeClient),
     (mistral, "mistral", MistralConfig, MistralClient),
     (cohere, "cohere", CohereConfig, CohereClient),
+    (perplexity, "perplexity", PerplexityConfig, PerplexityClient),
+    (groq, "groq", GroqConfig, GroqClient),
     (ollama, "ollama", OllamaConfig, OllamaClient),
     (ernie, "ernie", ErnieConfig, ErnieClient),
     (qianwen, "qianwen", QianwenConfig, QianwenClient),
+    (moonshot, "moonshot", MoonshotConfig, MoonshotClient),
 );

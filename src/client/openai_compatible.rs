@@ -4,7 +4,6 @@ use super::{ExtraConfig, Model, ModelConfig, OpenAICompatibleClient, PromptType,
 use crate::utils::PromptKind;
 
 use anyhow::Result;
-use async_trait::async_trait;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 
@@ -17,8 +16,6 @@ pub struct OpenAICompatibleConfig {
     pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
 }
-
-openai_compatible_client!(OpenAICompatibleClient);
 
 impl OpenAICompatibleClient {
     list_models_fn!(OpenAICompatibleConfig);
@@ -61,3 +58,9 @@ impl OpenAICompatibleClient {
         Ok(builder)
     }
 }
+
+impl_client_trait!(
+    OpenAICompatibleClient,
+    crate::client::openai::openai_send_message,
+    crate::client::openai::openai_send_message_streaming
+);
