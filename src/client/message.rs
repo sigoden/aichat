@@ -114,6 +114,27 @@ pub struct ImageUrl {
     pub url: String,
 }
 
+pub fn patch_system_message(messages: &mut Vec<Message>) {
+    if messages[0].role.is_system() {
+        let system_message = messages.remove(0);
+        if let (Some(message), MessageContent::Text(system_text)) =
+            (messages.get_mut(0), system_message.content)
+        {
+            if let MessageContent::Text(text) = message.content.clone() {
+                message.content = MessageContent::Text(format!("{}\n\n{}", system_text, text))
+            }
+        }
+    }
+}
+
+pub fn extract_sytem_message(messages: &mut Vec<Message>) -> Option<String> {
+    if messages[0].role.is_system() {
+        let system_message = messages.remove(0);
+        return Some(system_message.content.to_text());
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

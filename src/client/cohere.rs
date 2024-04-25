@@ -13,12 +13,6 @@ use serde_json::{json, Value};
 
 const API_URL: &str = "https://api.cohere.ai/v1/chat";
 
-const MODELS: [(&str, usize, &str); 2] = [
-    // https://docs.cohere.com/docs/command-r
-    ("command-r", 128000, "text"),
-    ("command-r-plus", 128000, "text"),
-];
-
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct CohereConfig {
     pub name: Option<String>,
@@ -49,7 +43,14 @@ impl Client for CohereClient {
 }
 
 impl CohereClient {
-    list_models_fn!(CohereConfig, &MODELS);
+    list_models_fn!(
+        CohereConfig,
+        [
+            // https://docs.cohere.com/docs/command-r
+            ("command-r", "text", 128000),
+            ("command-r-plus", "text", 128000),
+        ]
+    );
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 1] =
@@ -159,23 +160,22 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
         "message": message,
     });
 
-    if let Some(preamble) = system_message {
-        body["preamble"] = preamble.into();
-    }
-
-    if let Some(max_tokens) = model.max_output_tokens {
-        body["max_tokens"] = max_tokens.into();
+    if let Some(v) = system_message {
+        body["preamble"] = v.into();
     }
 
     if !messages.is_empty() {
         body["chat_history"] = messages.into();
     }
 
-    if let Some(temperature) = temperature {
-        body["temperature"] = temperature.into();
+    if let Some(v) = model.max_output_tokens {
+        body["max_tokens"] = v.into();
     }
-    if let Some(top_p) = top_p {
-        body["p"] = top_p.into();
+    if let Some(v) = temperature {
+        body["temperature"] = v.into();
+    }
+    if let Some(v) = top_p {
+        body["p"] = v.into();
     }
     if stream {
         body["stream"] = true.into();

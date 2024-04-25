@@ -1,4 +1,4 @@
-use super::{openai::OpenAIConfig, ClientConfig, Message, MessageContent, Model, ReplyHandler};
+use super::{openai::OpenAIConfig, ClientConfig, Message, Model, ReplyHandler};
 
 use crate::{
     config::{GlobalConfig, Input},
@@ -205,11 +205,18 @@ macro_rules! list_models_fn {
             Model::from_config(client_name, &local_config.models)
         }
     };
-    ($config:ident, $models:expr) => {
+    ($config:ident, [$(($name:literal, $capabilities:literal, $max_input_tokens:literal $(, $max_output_tokens:literal)? )),+$(,)?]) => {
         pub fn list_models(local_config: &$config) -> Vec<Model> {
             let client_name = Self::name(local_config);
             if local_config.models.is_empty() {
-                Model::from_static(client_name, $models)
+                vec![
+                    $(
+                        Model::new(client_name, $name)
+                            .set_capabilities($capabilities.into())
+                            .set_max_input_tokens(Some($max_input_tokens))
+                            $(.set_max_output_tokens(Some($max_output_tokens)))?
+                    ),+
+                ]
             } else {
                 Model::from_config(client_name, &local_config.models)
             }
@@ -400,27 +407,6 @@ where
     handler.done()?;
 
     Ok(())
-}
-
-pub fn patch_system_message(messages: &mut Vec<Message>) {
-    if messages[0].role.is_system() {
-        let system_message = messages.remove(0);
-        if let (Some(message), MessageContent::Text(system_text)) =
-            (messages.get_mut(0), system_message.content)
-        {
-            if let MessageContent::Text(text) = message.content.clone() {
-                message.content = MessageContent::Text(format!("{}\n\n{}", system_text, text))
-            }
-        }
-    }
-}
-
-pub fn extract_sytem_message(messages: &mut Vec<Message>) -> Option<String> {
-    if messages[0].role.is_system() {
-        let system_message = messages.remove(0);
-        return Some(system_message.content.to_text());
-    }
-    None
 }
 
 pub async fn json_stream<S, F>(mut stream: S, mut handle: F) -> Result<()>

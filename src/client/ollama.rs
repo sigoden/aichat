@@ -179,15 +179,14 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
         "options": {},
     });
 
-    if let Some(num_predict) = model.max_output_tokens {
-        body["options"]["num_predict"] = num_predict.into();
+    if let Some(v) = model.max_output_tokens {
+        body["options"]["num_predict"] = v.into();
     }
-
-    if let Some(temperature) = temperature {
-        body["options"]["temperature"] = temperature.into();
+    if let Some(v) = temperature {
+        body["options"]["temperature"] = v.into();
     }
-    if let Some(top_p) = top_p {
-        body["options"]["top_p"] = top_p.into();
+    if let Some(v) = top_p {
+        body["options"]["top_p"] = v.into();
     }
 
     Ok(body)

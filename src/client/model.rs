@@ -49,17 +49,6 @@ impl Model {
             .collect()
     }
 
-    pub fn from_static(client_name: &str, models: &[(&str, usize, &str)]) -> Vec<Self> {
-        models
-            .iter()
-            .map(|(name, max_input_tokens, capabilities)| {
-                Model::new(client_name, name)
-                    .set_capabilities((*capabilities).into())
-                    .set_max_input_tokens(Some(*max_input_tokens))
-            })
-            .collect()
-    }
-
     pub fn find(models: &[Self], value: &str) -> Option<Self> {
         let mut model = None;
         let (client_name, model_name) = match value.split_once(':') {

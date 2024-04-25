@@ -12,18 +12,6 @@ use serde_json::{json, Value};
 
 const API_BASE: &str = "https://api.openai.com/v1";
 
-const MODELS: [(&str, usize, &str); 8] = [
-    // https://platform.openai.com/docs/models
-    ("gpt-3.5-turbo", 16385, "text"),
-    ("gpt-3.5-turbo-1106", 16385, "text"),
-    ("gpt-4-turbo", 128000, "text,vision"),
-    ("gpt-4-turbo-preview", 128000, "text"),
-    ("gpt-4-1106-preview", 128000, "text"),
-    ("gpt-4-vision-preview", 128000, "text,vision"),
-    ("gpt-4", 8192, "text"),
-    ("gpt-4-32k", 32768, "text"),
-];
-
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct OpenAIConfig {
     pub name: Option<String>,
@@ -38,7 +26,20 @@ pub struct OpenAIConfig {
 openai_compatible_client!(OpenAIClient);
 
 impl OpenAIClient {
-    list_models_fn!(OpenAIConfig, &MODELS);
+    list_models_fn!(
+        OpenAIConfig,
+        [
+            // https://platform.openai.com/docs/models
+            ("gpt-3.5-turbo", "text", 16385),
+            ("gpt-3.5-turbo-1106", "text", 16385),
+            ("gpt-4-turbo", "text,vision", 128000),
+            ("gpt-4-turbo-preview", "text", 128000),
+            ("gpt-4-1106-preview", "text", 128000),
+            ("gpt-4-vision-preview", "text,vision", 128000, 4096),
+            ("gpt-4", "text", 8192),
+            ("gpt-4-32k", "text", 32768),
+        ]
+    );
     config_get_fn!(api_key, get_api_key);
     config_get_fn!(api_base, get_api_base);
 
@@ -139,17 +140,14 @@ pub fn openai_build_body(data: SendData, model: &Model) -> Value {
         "messages": messages,
     });
 
-    if let Some(max_tokens) = model.max_output_tokens {
-        body["max_tokens"] = max_tokens.into();
-    } else if model.name == "gpt-4-vision-preview" {
-        // The default max_tokens of gpt-4-vision-preview is only 16, we need to make it larger
-        body["max_tokens"] = 4096.into();
+    if let Some(v) = model.max_output_tokens {
+        body["max_tokens"] = v.into();
     }
-    if let Some(temperature) = temperature {
-        body["temperature"] = temperature.into();
+    if let Some(v) = temperature {
+        body["temperature"] = v.into();
     }
-    if let Some(top_p) = top_p {
-        body["top_p"] = top_p.into();
+    if let Some(v) = top_p {
+        body["top_p"] = v.into();
     }
     if stream {
         body["stream"] = true.into();
