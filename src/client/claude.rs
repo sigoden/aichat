@@ -1,12 +1,11 @@
 use super::{
-    catch_error, extract_system_message, ClaudeClient, Client, ExtraConfig, ImageUrl,
-    MessageContent, MessageContentPart, Model, ModelConfig, PromptType, ReplyHandler, SendData,
+    catch_error, extract_system_message, ClaudeClient, ExtraConfig, ImageUrl, MessageContent,
+    MessageContentPart, Model, ModelConfig, PromptType, ReplyHandler, SendData,
 };
 
 use crate::utils::PromptKind;
 
 use anyhow::{anyhow, bail, Result};
-use async_trait::async_trait;
 use futures_util::StreamExt;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use reqwest_eventsource::{Error as EventSourceError, Event, RequestBuilderExt};
@@ -22,26 +21,6 @@ pub struct ClaudeConfig {
     #[serde(default)]
     pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
-}
-
-#[async_trait]
-impl Client for ClaudeClient {
-    client_common_fns!();
-
-    async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
-        let builder = self.request_builder(client, data)?;
-        claude_send_message(builder).await
-    }
-
-    async fn send_message_streaming_inner(
-        &self,
-        client: &ReqwestClient,
-        handler: &mut ReplyHandler,
-        data: SendData,
-    ) -> Result<()> {
-        let builder = self.request_builder(client, data)?;
-        claude_send_message_streaming(builder, handler).await
-    }
 }
 
 impl ClaudeClient {
@@ -78,6 +57,12 @@ impl ClaudeClient {
         Ok(builder)
     }
 }
+
+impl_client_trait!(
+    ClaudeClient,
+    claude_send_message,
+    claude_send_message_streaming
+);
 
 pub async fn claude_send_message(builder: RequestBuilder) -> Result<String> {
     let res = builder.send().await?;

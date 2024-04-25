@@ -1,12 +1,11 @@
 use super::{
-    catch_error, message::*, Client, ExtraConfig, Model, ModelConfig, OllamaClient, PromptType,
+    catch_error, message::*, ExtraConfig, Model, ModelConfig, OllamaClient, PromptType,
     ReplyHandler, SendData,
 };
 
 use crate::utils::PromptKind;
 
 use anyhow::{anyhow, bail, Result};
-use async_trait::async_trait;
 use futures_util::StreamExt;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
@@ -20,26 +19,6 @@ pub struct OllamaConfig {
     pub chat_endpoint: Option<String>,
     pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
-}
-
-#[async_trait]
-impl Client for OllamaClient {
-    client_common_fns!();
-
-    async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
-        let builder = self.request_builder(client, data)?;
-        send_message(builder).await
-    }
-
-    async fn send_message_streaming_inner(
-        &self,
-        client: &ReqwestClient,
-        handler: &mut ReplyHandler,
-        data: SendData,
-    ) -> Result<()> {
-        let builder = self.request_builder(client, data)?;
-        send_message_streaming(builder, handler).await
-    }
 }
 
 impl OllamaClient {
@@ -78,6 +57,8 @@ impl OllamaClient {
         Ok(builder)
     }
 }
+
+impl_client_trait!(OllamaClient, send_message, send_message_streaming);
 
 async fn send_message(builder: RequestBuilder) -> Result<String> {
     let res = builder.send().await?;

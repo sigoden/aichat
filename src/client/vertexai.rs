@@ -26,28 +26,6 @@ pub struct VertexAIConfig {
     pub extra: Option<ExtraConfig>,
 }
 
-#[async_trait]
-impl Client for VertexAIClient {
-    client_common_fns!();
-
-    async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
-        self.prepare_access_token().await?;
-        let builder = self.request_builder(client, data)?;
-        gemini_send_message(builder).await
-    }
-
-    async fn send_message_streaming_inner(
-        &self,
-        client: &ReqwestClient,
-        handler: &mut ReplyHandler,
-        data: SendData,
-    ) -> Result<()> {
-        self.prepare_access_token().await?;
-        let builder = self.request_builder(client, data)?;
-        gemini_send_message_streaming(builder, handler).await
-    }
-}
-
 impl VertexAIClient {
     list_models_fn!(
         VertexAIConfig,
@@ -97,6 +75,28 @@ impl VertexAIClient {
             unsafe { ACCESS_TOKEN = (token, expires_at.timestamp()) };
         }
         Ok(())
+    }
+}
+
+#[async_trait]
+impl Client for VertexAIClient {
+    client_common_fns!();
+
+    async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
+        self.prepare_access_token().await?;
+        let builder = self.request_builder(client, data)?;
+        gemini_send_message(builder).await
+    }
+
+    async fn send_message_streaming_inner(
+        &self,
+        client: &ReqwestClient,
+        handler: &mut ReplyHandler,
+        data: SendData,
+    ) -> Result<()> {
+        self.prepare_access_token().await?;
+        let builder = self.request_builder(client, data)?;
+        gemini_send_message_streaming(builder, handler).await
     }
 }
 

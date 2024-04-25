@@ -5,7 +5,6 @@ use super::{
 use crate::utils::PromptKind;
 
 use anyhow::{anyhow, bail, Result};
-use async_trait::async_trait;
 use futures_util::StreamExt;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use reqwest_eventsource::{Error as EventSourceError, Event, RequestBuilderExt};
@@ -24,8 +23,6 @@ pub struct OpenAIConfig {
     pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
 }
-
-openai_compatible_client!(OpenAIClient);
 
 impl OpenAIClient {
     list_models_fn!(
@@ -159,3 +156,9 @@ pub fn openai_build_body(data: SendData, model: &Model) -> Value {
     }
     body
 }
+
+impl_client_trait!(
+    OpenAIClient,
+    openai_send_message,
+    openai_send_message_streaming
+);
