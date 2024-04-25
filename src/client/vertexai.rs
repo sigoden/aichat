@@ -13,13 +13,6 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
-const MODELS: [(&str, usize, &str); 3] = [
-    // https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
-    ("gemini-1.0-pro", 24568, "text"),
-    ("gemini-1.0-pro-vision", 14336, "text,vision"),
-    ("gemini-1.5-pro-preview-0409", 1000000, "text,vision"),
-];
-
 static mut ACCESS_TOKEN: (String, i64) = (String::new(), 0); // safe under linear operation
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -56,7 +49,15 @@ impl Client for VertexAIClient {
 }
 
 impl VertexAIClient {
-    list_models_fn!(VertexAIConfig, &MODELS);
+    list_models_fn!(
+        VertexAIConfig,
+        [
+            // https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
+            ("gemini-1.0-pro", "text", 24568),
+            ("gemini-1.0-pro-vision", "text,vision", 14336),
+            ("gemini-1.5-pro-preview-0409", "text,vision", 1000000),
+        ]
+    );
     config_get_fn!(api_base, get_api_base);
 
     pub const PROMPTS: [PromptType<'static>; 1] =
@@ -216,16 +217,14 @@ pub(crate) fn build_body(
         ]);
     }
 
-    if let Some(max_output_tokens) = model.max_output_tokens {
-        body["generationConfig"]["maxOutputTokens"] = max_output_tokens.into();
+    if let Some(v) = model.max_output_tokens {
+        body["generationConfig"]["maxOutputTokens"] = v.into();
     }
-
-    if let Some(temperature) = temperature {
-        body["generationConfig"]["temperature"] = temperature.into();
+    if let Some(v) = temperature {
+        body["generationConfig"]["temperature"] = v.into();
     }
-
-    if let Some(top_p) = top_p {
-        body["generationConfig"]["topP"] = top_p.into();
+    if let Some(v) = top_p {
+        body["generationConfig"]["topP"] = v.into();
     }
 
     Ok(body)

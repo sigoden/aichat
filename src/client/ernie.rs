@@ -18,52 +18,6 @@ use std::{env, sync::Mutex};
 const API_BASE: &str = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1";
 const ACCESS_TOKEN_URL: &str = "https://aip.baidubce.com/oauth/2.0/token";
 
-const MODELS: [(&str, &str, usize, isize); 7] = [
-    // https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t
-    (
-        "ernie-4.0-8k",
-        "/wenxinworkshop/chat/completions_pro",
-        5120,
-        2048,
-    ),
-    (
-        "ernie-3.5-8k",
-        "/wenxinworkshop/chat/ernie-3.5-8k-0205",
-        5120,
-        2048,
-    ),
-    (
-        "ernie-3.5-4k",
-        "/wenxinworkshop/chat/ernie-3.5-4k-0205",
-        2048,
-        2048,
-    ),
-    (
-        "ernie-speed-8k",
-        "/wenxinworkshop/chat/ernie_speed",
-        7168,
-        2048,
-    ),
-    (
-        "ernie-speed-128k",
-        "/wenxinworkshop/chat/ernie-speed-128k",
-        124000,
-        4096,
-    ),
-    (
-        "ernie-lite-8k",
-        "/wenxinworkshop/chat/ernie-lite-8k",
-        7168,
-        2048,
-    ),
-    (
-        "ernie-tiny-8k",
-        "/wenxinworkshop/chat/ernie-tiny-8k",
-        7168,
-        2048,
-    ),
-];
-
 lazy_static! {
     static ref ACCESS_TOKEN: Mutex<Option<String>> = Mutex::new(None);
 }
@@ -101,35 +55,38 @@ impl Client for ErnieClient {
 }
 
 impl ErnieClient {
+    list_models_fn!(
+        ErnieConfig,
+        [
+            // https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t
+            ("ernie-4.0-8k", "text", 5120, 2048),
+            ("ernie-3.5-8k", "text", 5120, 2048),
+            ("ernie-3.5-4k", "text", 2048, 2048),
+            ("ernie-speed-8k", "text", 7168, 2048),
+            ("ernie-speed-128k", "text", 124000, 4096),
+            ("ernie-lite-8k", "text", 7168, 2048),
+            ("ernie-tiny-8k", "text", 7168, 2048),
+        ]
+    );
+
     pub const PROMPTS: [PromptType<'static>; 2] = [
         ("api_key", "API Key:", true, PromptKind::String),
         ("secret_key", "Secret Key:", true, PromptKind::String),
     ];
 
-    pub fn list_models(local_config: &ErnieConfig) -> Vec<Model> {
-        let client_name = Self::name(local_config);
-        if local_config.models.is_empty() {
-            MODELS
-                .into_iter()
-                .map(|(name, _, max_input_tokens, max_output_tokens)| {
-                    Model::new(client_name, name)
-                        .set_max_input_tokens(Some(max_input_tokens))
-                        .set_max_output_tokens(Some(max_output_tokens))
-                }) // ERNIE tokenizer is different from cl100k_base
-                .collect()
-        } else {
-            Model::from_config(client_name, &local_config.models)
-        }
-    }
-
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let body = build_body(data, &self.model);
 
-        let model = &self.model.name;
-        let (_, chat_endpoint, _, _) = MODELS
-            .iter()
-            .find(|(v, _, _, _)| v == model)
-            .ok_or_else(|| anyhow!("Miss Model '{}'", self.model.id()))?;
+        let endpoint = match self.model.name.as_str() {
+            "ernie-4.0-8k" => "/wenxinworkshop/chat/completions_pro",
+            "ernie-3.5-8k" => "/wenxinworkshop/chat/ernie-3.5-8k-0205",
+            "ernie-3.5-4k" => "/wenxinworkshop/chat/ernie-3.5-4k-0205",
+            "ernie-speed-8k" => "/wenxinworkshop/chat/ernie_speed",
+            "ernie-speed-128k" => "/wenxinworkshop/chat/ernie-speed-128k",
+            "ernie-lite-8k" => "/wenxinworkshop/chat/ernie-lite-8k",
+            "ernie-tiny-8k" => "/wenxinworkshop/chat/ernie-tiny-8k",
+            _ => bail!("Miss Model '{}'", self.model.id()),
+        };
 
         let access_token = ACCESS_TOKEN
             .lock()
@@ -137,7 +94,7 @@ impl ErnieClient {
             .clone()
             .ok_or_else(|| anyhow!("Failed to load access token"))?;
 
-        let url = format!("{API_BASE}{chat_endpoint}?access_token={access_token}");
+        let url = format!("{API_BASE}{endpoint}?access_token={access_token}");
 
         debug!("Ernie Request: {url} {body}");
 
@@ -240,15 +197,14 @@ fn build_body(data: SendData, model: &Model) -> Value {
         "messages": messages,
     });
 
-    if let Some(temperature) = temperature {
-        body["temperature"] = temperature.into();
+    if let Some(v) = model.max_output_tokens {
+        body["max_output_tokens"] = v.into();
     }
-    if let Some(top_p) = top_p {
-        body["top_p"] = top_p.into();
+    if let Some(v) = temperature {
+        body["temperature"] = v.into();
     }
-
-    if let Some(max_output_tokens) = model.max_output_tokens {
-        body["max_output_tokens"] = max_output_tokens.into();
+    if let Some(v) = top_p {
+        body["top_p"] = v.into();
     }
 
     if stream {

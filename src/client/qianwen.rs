@@ -24,17 +24,6 @@ const API_URL: &str =
 const API_URL_VL: &str =
     "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
 
-const MODELS: [(&str, usize, &str); 6] = [
-    // https://help.aliyun.com/zh/dashscope/developer-reference/api-details
-    ("qwen-turbo", 6000, "text"),
-    ("qwen-plus", 30000, "text"),
-    ("qwen-max", 6000, "text"),
-    ("qwen-max-longcontext", 28000, "text"),
-    // https://help.aliyun.com/zh/dashscope/developer-reference/tongyi-qianwen-vl-plus-api
-    ("qwen-vl-plus", 0, "text,vision"),
-    ("qwen-vl-max", 0, "text,vision"),
-];
-
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct QianwenConfig {
     pub name: Option<String>,
@@ -73,7 +62,19 @@ impl Client for QianwenClient {
 }
 
 impl QianwenClient {
-    list_models_fn!(QianwenConfig, &MODELS);
+    list_models_fn!(
+        QianwenConfig,
+        [
+            // https://help.aliyun.com/zh/dashscope/developer-reference/api-details
+            ("qwen-turbo", "text", 6000),
+            ("qwen-plus", "text", 30000),
+            ("qwen-max", "text", 6000),
+            ("qwen-max-longcontext", "text", 28000),
+            // https://help.aliyun.com/zh/dashscope/developer-reference/tongyi-qianwen-vl-plus-api
+            ("qwen-vl-plus", "text,vision", 0),
+            ("qwen-vl-max", "text,vision", 0),
+        ]
+    );
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 1] =
@@ -211,15 +212,14 @@ fn build_body(data: SendData, model: &Model, is_vl: bool) -> Result<(Value, bool
         parameters["incremental_output"] = true.into();
     }
 
-    if let Some(max_tokens) = model.max_output_tokens {
-        parameters["max_tokens"] = max_tokens.into();
+    if let Some(v) = model.max_output_tokens {
+        parameters["max_tokens"] = v.into();
     }
-
-    if let Some(temperature) = temperature {
-        parameters["temperature"] = temperature.into();
+    if let Some(v) = temperature {
+        parameters["temperature"] = v.into();
     }
-    if let Some(top_p) = top_p {
-        parameters["top_p"] = top_p.into();
+    if let Some(v) = top_p {
+        parameters["top_p"] = v.into();
     }
 
     let body = json!({

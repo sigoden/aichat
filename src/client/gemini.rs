@@ -12,13 +12,6 @@ use serde::Deserialize;
 
 const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta/models/";
 
-const MODELS: [(&str, usize, &str); 3] = [
-    // https://ai.google.dev/models/gemini
-    ("gemini-1.0-pro-latest", 30720, "text"),
-    ("gemini-1.0-pro-vision-latest", 12288, "text,vision"),
-    ("gemini-1.5-pro-latest", 1048576, "text,vision"),
-];
-
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct GeminiConfig {
     pub name: Option<String>,
@@ -50,7 +43,15 @@ impl Client for GeminiClient {
 }
 
 impl GeminiClient {
-    list_models_fn!(GeminiConfig, &MODELS);
+    list_models_fn!(
+        GeminiConfig,
+        [
+            // https://ai.google.dev/models/gemini
+            ("gemini-1.0-pro-latest", "text", 30720),
+            ("gemini-1.0-pro-vision-latest", "text,vision", 12288),
+            ("gemini-1.5-pro-latest", "text,vision", 1048576),
+        ]
+    );
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 1] =

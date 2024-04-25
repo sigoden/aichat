@@ -10,13 +10,6 @@ use serde::Deserialize;
 
 const API_URL: &str = "https://api.mistral.ai/v1/chat/completions";
 
-const MODELS: [(&str, usize, &str); 3] = [
-    // https://docs.mistral.ai/platform/endpoints/
-    ("open-mixtral-8x22b", 64000, "text"),
-    ("mistral-small-latest", 32000, "text"),
-    ("mistral-large-latest", 32000, "text"),
-];
-
 #[derive(Debug, Clone, Deserialize)]
 pub struct MistralConfig {
     pub name: Option<String>,
@@ -29,7 +22,15 @@ pub struct MistralConfig {
 openai_compatible_client!(MistralClient);
 
 impl MistralClient {
-    list_models_fn!(MistralConfig, &MODELS);
+    list_models_fn!(
+        MistralConfig,
+        [
+            // https://docs.mistral.ai/platform/endpoints/
+            ("open-mixtral-8x22b", "text", 64000),
+            ("mistral-small-latest", "text", 32000),
+            ("mistral-large-latest", "text", 32000),
+        ]
+    );
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 1] =
