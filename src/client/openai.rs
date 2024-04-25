@@ -1,4 +1,6 @@
-use super::{ExtraConfig, Model, ModelConfig, OpenAIClient, PromptType, ReplyHandler, SendData};
+use super::{
+    catch_error, ExtraConfig, Model, ModelConfig, OpenAIClient, PromptType, ReplyHandler, SendData,
+};
 
 use crate::utils::PromptKind;
 
@@ -153,16 +155,4 @@ pub fn openai_build_body(data: SendData, model: &Model) -> Value {
         body["stream"] = true.into();
     }
     body
-}
-
-fn catch_error(data: &Value, status: u16) -> Result<()> {
-    debug!("Invalid response, status: {status}, data: {data}");
-    if let Some(error) = data["error"].as_object() {
-        if let (Some(type_), Some(message)) = (error["type"].as_str(), error["message"].as_str()) {
-            bail!("{message} (type: {type_})");
-        }
-    } else if let Some(message) = data["message"].as_str() {
-        bail!("{message}");
-    }
-    bail!("Invalid response, status: {status}, data: {data}");
 }

@@ -1,26 +1,24 @@
 use super::{
-    patch_system_message, Client, ErnieClient, ExtraConfig, Model, ModelConfig, PromptType,
-    ReplyHandler, SendData,
+    maybe_catch_error, patch_system_message, Client, ErnieClient, ExtraConfig, Model, ModelConfig,
+    PromptType, ReplyHandler, SendData,
 };
 
 use crate::utils::PromptKind;
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
+use chrono::Utc;
 use futures_util::StreamExt;
-use lazy_static::lazy_static;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use reqwest_eventsource::{Error as EventSourceError, Event, RequestBuilderExt};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::{env, sync::Mutex};
+use std::env;
 
 const API_BASE: &str = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1";
 const ACCESS_TOKEN_URL: &str = "https://aip.baidubce.com/oauth/2.0/token";
 
-lazy_static! {
-    static ref ACCESS_TOKEN: Mutex<Option<String>> = Mutex::new(None);
-}
+static mut ACCESS_TOKEN: (String, i64) = (String::new(), 0);
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct ErnieConfig {
@@ -78,23 +76,17 @@ impl ErnieClient {
         let body = build_body(data, &self.model);
 
         let endpoint = match self.model.name.as_str() {
-            "ernie-4.0-8k" => "/wenxinworkshop/chat/completions_pro",
-            "ernie-3.5-8k" => "/wenxinworkshop/chat/ernie-3.5-8k-0205",
-            "ernie-3.5-4k" => "/wenxinworkshop/chat/ernie-3.5-4k-0205",
-            "ernie-speed-8k" => "/wenxinworkshop/chat/ernie_speed",
-            "ernie-speed-128k" => "/wenxinworkshop/chat/ernie-speed-128k",
-            "ernie-lite-8k" => "/wenxinworkshop/chat/ernie-lite-8k",
-            "ernie-tiny-8k" => "/wenxinworkshop/chat/ernie-tiny-8k",
-            _ => bail!("Miss Model '{}'", self.model.id()),
+            "ernie-4.0-8k" => "completions_pro",
+            "ernie-3.5-8k" => "ernie-3.5-8k-0205",
+            "ernie-3.5-4k" => "ernie-3.5-4k-0205",
+            "ernie-speed-8k" => "ernie_speed",
+            _ => &self.model.name,
         };
 
-        let access_token = ACCESS_TOKEN
-            .lock()
-            .unwrap()
-            .clone()
-            .ok_or_else(|| anyhow!("Failed to load access token"))?;
-
-        let url = format!("{API_BASE}{endpoint}?access_token={access_token}");
+        let url = format!(
+            "{API_BASE}/wenxinworkshop/chat/{endpoint}?access_token={}",
+            unsafe { &ACCESS_TOKEN.0 }
+        );
 
         debug!("Ernie Request: {url} {body}");
 
@@ -104,7 +96,7 @@ impl ErnieClient {
     }
 
     async fn prepare_access_token(&self) -> Result<()> {
-        if ACCESS_TOKEN.lock().unwrap().is_none() {
+        if unsafe { ACCESS_TOKEN.0.is_empty() || Utc::now().timestamp() > ACCESS_TOKEN.1 } {
             let env_prefix = Self::name(&self.config).to_uppercase();
             let api_key = self.config.api_key.clone();
             let api_key = api_key
@@ -120,7 +112,7 @@ impl ErnieClient {
             let token = fetch_access_token(&client, &api_key, &secret_key)
                 .await
                 .with_context(|| "Failed to fetch access token")?;
-            *ACCESS_TOKEN.lock().unwrap() = Some(token);
+            unsafe { ACCESS_TOKEN = (token, 86400) };
         }
         Ok(())
     }
@@ -128,7 +120,7 @@ impl ErnieClient {
 
 async fn send_message(builder: RequestBuilder) -> Result<String> {
     let data: Value = builder.send().await?.json().await?;
-    catch_error(&data)?;
+    maybe_catch_error(&data)?;
 
     let output = data["result"]
         .as_str()
@@ -156,8 +148,8 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHand
                             .map_err(|_| anyhow!("Invalid response header"))?;
                         if content_type.contains("application/json") {
                             let data: Value = res.json().await?;
-                            catch_error(&data)?;
-                            bail!("Request failed");
+                            maybe_catch_error(&data)?;
+                            bail!("Invalid response data: {data}");
                         } else {
                             let text = res.text().await?;
                             if let Some(text) = text.strip_prefix("data: ") {
@@ -212,20 +204,6 @@ fn build_body(data: SendData, model: &Model) -> Value {
     }
 
     body
-}
-
-fn catch_error(data: &Value) -> Result<()> {
-    if let (Some(error_code), Some(error_msg)) =
-        (data["error_code"].as_number(), data["error_msg"].as_str())
-    {
-        debug!("Invalid response: {}", data);
-        let error_code = error_code.as_i64().unwrap_or_default();
-        if error_code == 110 {
-            *ACCESS_TOKEN.lock().unwrap() = None;
-        }
-        bail!("{error_msg} (error_code: {error_code})");
-    }
-    Ok(())
 }
 
 async fn fetch_access_token(

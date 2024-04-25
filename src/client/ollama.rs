@@ -1,6 +1,6 @@
 use super::{
-    message::*, Client, ExtraConfig, Model, ModelConfig, OllamaClient, PromptType, ReplyHandler,
-    SendData,
+    catch_error, message::*, Client, ExtraConfig, Model, ModelConfig, OllamaClient, PromptType,
+    ReplyHandler, SendData,
 };
 
 use crate::utils::PromptKind;
@@ -190,12 +190,4 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
     }
 
     Ok(body)
-}
-
-fn catch_error(data: &Value, status: u16) -> Result<()> {
-    debug!("Invalid response, status: {status}, data: {data}");
-    if let Some(error) = data["error"].as_str() {
-        bail!("{error}");
-    }
-    bail!("Invalid response, status: {status}, data: {data}");
 }

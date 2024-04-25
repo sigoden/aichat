@@ -1,4 +1,4 @@
-use super::vertexai::{build_body, send_message, send_message_streaming};
+use super::vertexai::{gemini_build_body, gemini_send_message, gemini_send_message_streaming};
 use super::{
     Client, ExtraConfig, GeminiClient, Model, ModelConfig, PromptType, ReplyHandler, SendData,
 };
@@ -28,7 +28,7 @@ impl Client for GeminiClient {
 
     async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
         let builder = self.request_builder(client, data)?;
-        send_message(builder).await
+        gemini_send_message(builder).await
     }
 
     async fn send_message_streaming_inner(
@@ -38,7 +38,7 @@ impl Client for GeminiClient {
         data: SendData,
     ) -> Result<()> {
         let builder = self.request_builder(client, data)?;
-        send_message_streaming(builder, handler).await
+        gemini_send_message_streaming(builder, handler).await
     }
 }
 
@@ -67,7 +67,7 @@ impl GeminiClient {
 
         let block_threshold = self.config.block_threshold.clone();
 
-        let body = build_body(data, &self.model, block_threshold)?;
+        let body = gemini_build_body(data, &self.model, block_threshold)?;
 
         let model = &self.model.name;
 
