@@ -30,28 +30,6 @@ pub struct ErnieConfig {
     pub extra: Option<ExtraConfig>,
 }
 
-#[async_trait]
-impl Client for ErnieClient {
-    client_common_fns!();
-
-    async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
-        self.prepare_access_token().await?;
-        let builder = self.request_builder(client, data)?;
-        send_message(builder).await
-    }
-
-    async fn send_message_streaming_inner(
-        &self,
-        client: &ReqwestClient,
-        handler: &mut ReplyHandler,
-        data: SendData,
-    ) -> Result<()> {
-        self.prepare_access_token().await?;
-        let builder = self.request_builder(client, data)?;
-        send_message_streaming(builder, handler).await
-    }
-}
-
 impl ErnieClient {
     list_models_fn!(
         ErnieConfig,
@@ -115,6 +93,28 @@ impl ErnieClient {
             unsafe { ACCESS_TOKEN = (token, 86400) };
         }
         Ok(())
+    }
+}
+
+#[async_trait]
+impl Client for ErnieClient {
+    client_common_fns!();
+
+    async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
+        self.prepare_access_token().await?;
+        let builder = self.request_builder(client, data)?;
+        send_message(builder).await
+    }
+
+    async fn send_message_streaming_inner(
+        &self,
+        client: &ReqwestClient,
+        handler: &mut ReplyHandler,
+        data: SendData,
+    ) -> Result<()> {
+        self.prepare_access_token().await?;
+        let builder = self.request_builder(client, data)?;
+        send_message_streaming(builder, handler).await
     }
 }
 

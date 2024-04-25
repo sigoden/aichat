@@ -33,34 +33,6 @@ pub struct QianwenConfig {
     pub extra: Option<ExtraConfig>,
 }
 
-#[async_trait]
-impl Client for QianwenClient {
-    client_common_fns!();
-
-    async fn send_message_inner(
-        &self,
-        client: &ReqwestClient,
-        mut data: SendData,
-    ) -> Result<String> {
-        let api_key = self.get_api_key()?;
-        patch_messages(&self.model.name, &api_key, &mut data.messages).await?;
-        let builder = self.request_builder(client, data)?;
-        send_message(builder, self.is_vl()).await
-    }
-
-    async fn send_message_streaming_inner(
-        &self,
-        client: &ReqwestClient,
-        handler: &mut ReplyHandler,
-        mut data: SendData,
-    ) -> Result<()> {
-        let api_key = self.get_api_key()?;
-        patch_messages(&self.model.name, &api_key, &mut data.messages).await?;
-        let builder = self.request_builder(client, data)?;
-        send_message_streaming(builder, handler, self.is_vl()).await
-    }
-}
-
 impl QianwenClient {
     list_models_fn!(
         QianwenConfig,
@@ -323,4 +295,32 @@ async fn upload(model: &str, api_key: &str, url: &str) -> Result<String> {
         bail!("Invalid response data: {text} (status: {status})")
     }
     Ok(format!("oss://{key}"))
+}
+
+#[async_trait]
+impl Client for QianwenClient {
+    client_common_fns!();
+
+    async fn send_message_inner(
+        &self,
+        client: &ReqwestClient,
+        mut data: SendData,
+    ) -> Result<String> {
+        let api_key = self.get_api_key()?;
+        patch_messages(&self.model.name, &api_key, &mut data.messages).await?;
+        let builder = self.request_builder(client, data)?;
+        send_message(builder, self.is_vl()).await
+    }
+
+    async fn send_message_streaming_inner(
+        &self,
+        client: &ReqwestClient,
+        handler: &mut ReplyHandler,
+        mut data: SendData,
+    ) -> Result<()> {
+        let api_key = self.get_api_key()?;
+        patch_messages(&self.model.name, &api_key, &mut data.messages).await?;
+        let builder = self.request_builder(client, data)?;
+        send_message_streaming(builder, handler, self.is_vl()).await
+    }
 }

@@ -139,7 +139,6 @@ macro_rules! openai_compatible_module {
         use $crate::utils::PromptKind;
 
         use anyhow::Result;
-        use async_trait::async_trait;
         use reqwest::{Client as ReqwestClient, RequestBuilder};
         use serde::Deserialize;
 
@@ -154,7 +153,12 @@ macro_rules! openai_compatible_module {
             pub extra: Option<ExtraConfig>,
         }
 
-        openai_compatible_client!($client);
+        impl_client_trait!(
+            $client,
+            $crate::client::openai::openai_send_message,
+            $crate::client::openai::openai_send_message_streaming
+        );
+
 
         impl $client {
             list_models_fn!(
@@ -218,9 +222,9 @@ macro_rules! client_common_fns {
 }
 
 #[macro_export]
-macro_rules! openai_compatible_client {
-    ($client:ident) => {
-        #[async_trait]
+macro_rules! impl_client_trait {
+    ($client:ident, $send_message:path, $send_message_streaming:path) => {
+        #[async_trait::async_trait]
         impl $crate::client::Client for $crate::client::$client {
             client_common_fns!();
 
@@ -230,7 +234,7 @@ macro_rules! openai_compatible_client {
                 data: $crate::client::SendData,
             ) -> anyhow::Result<String> {
                 let builder = self.request_builder(client, data)?;
-                $crate::client::openai::openai_send_message(builder).await
+                $send_message(builder).await
             }
 
             async fn send_message_streaming_inner(
@@ -240,7 +244,7 @@ macro_rules! openai_compatible_client {
                 data: $crate::client::SendData,
             ) -> Result<()> {
                 let builder = self.request_builder(client, data)?;
-                $crate::client::openai::openai_send_message_streaming(builder, handler).await
+                $send_message_streaming(builder, handler).await
             }
         }
     };
