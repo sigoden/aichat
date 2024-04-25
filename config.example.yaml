@@ -65,6 +65,10 @@ clients:
   - type: cohere
     api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+  # See https://console.groq.com/docs/quickstart
+  - type: groq
+    api_key: gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
   # Any openai-compatible API providers 
   - type: openai-compatible
     name: localai
