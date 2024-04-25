@@ -1,6 +1,6 @@
 use super::{
-    extract_sytem_message, json_stream, message::*, Client, CohereClient, ExtraConfig, Model,
-    ModelConfig, PromptType, ReplyHandler, SendData,
+    catch_error, extract_sytem_message, json_stream, message::*, Client, CohereClient, ExtraConfig,
+    Model, ModelConfig, PromptType, ReplyHandler, SendData,
 };
 
 use crate::utils::PromptKind;
@@ -182,16 +182,6 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
     }
 
     Ok(body)
-}
-
-fn catch_error(data: &Value, status: u16) -> Result<()> {
-    debug!("Invalid response, status: {status}, data: {data}");
-
-    if let Some(message) = data["message"].as_str() {
-        bail!("{message}");
-    } else {
-        bail!("Invalid response, status: {status}, data: {data}");
-    }
 }
 
 fn extract_text(data: &Value) -> Result<&str> {

@@ -1,6 +1,6 @@
 use super::{
-    extract_sytem_message, ClaudeClient, Client, ExtraConfig, ImageUrl, MessageContent,
-    MessageContentPart, Model, ModelConfig, PromptType, ReplyHandler, SendData,
+    catch_error, extract_sytem_message, ClaudeClient, Client, ExtraConfig, ImageUrl,
+    MessageContent, MessageContentPart, Model, ModelConfig, PromptType, ReplyHandler, SendData,
 };
 
 use crate::utils::PromptKind;
@@ -30,7 +30,7 @@ impl Client for ClaudeClient {
 
     async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
         let builder = self.request_builder(client, data)?;
-        send_message(builder).await
+        claude_send_message(builder).await
     }
 
     async fn send_message_streaming_inner(
@@ -40,7 +40,7 @@ impl Client for ClaudeClient {
         data: SendData,
     ) -> Result<()> {
         let builder = self.request_builder(client, data)?;
-        send_message_streaming(builder, handler).await
+        claude_send_message_streaming(builder, handler).await
     }
 }
 
@@ -79,7 +79,7 @@ impl ClaudeClient {
     }
 }
 
-async fn send_message(builder: RequestBuilder) -> Result<String> {
+pub async fn claude_send_message(builder: RequestBuilder) -> Result<String> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -94,7 +94,10 @@ async fn send_message(builder: RequestBuilder) -> Result<String> {
     Ok(output.to_string())
 }
 
-async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHandler) -> Result<()> {
+pub async fn claude_send_message_streaming(
+    builder: RequestBuilder,
+    handler: &mut ReplyHandler,
+) -> Result<()> {
     let mut es = builder.eventsource()?;
     while let Some(event) = es.next().await {
         match event {
@@ -213,14 +216,4 @@ pub fn claude_build_body(data: SendData, model: &Model) -> Result<Value> {
         body["stream"] = true.into();
     }
     Ok(body)
-}
-
-fn catch_error(data: &Value, status: u16) -> Result<()> {
-    debug!("Invalid response, status: {status}, data: {data}");
-    if let Some(error) = data["error"].as_object() {
-        if let (Some(typ), Some(message)) = (error["type"].as_str(), error["message"].as_str()) {
-            bail!("{message} (type: {typ})");
-        }
-    }
-    bail!("Invalid response, status: {status}, data: {data}");
 }
