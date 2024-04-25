@@ -126,6 +126,72 @@ macro_rules! register_client {
 }
 
 #[macro_export]
+macro_rules! openai_compatible_module {
+    (
+        $config:ident,
+        $client:ident,
+        $api_base:literal,
+        [$(($name:literal, $capabilities:literal, $max_input_tokens:literal $(, $max_output_tokens:literal)? )),+$(,)?]
+    ) => {
+        use $crate::client::openai::openai_build_body;
+        use $crate::client::{ExtraConfig, $client, Model, ModelConfig, PromptType, SendData};
+
+        use $crate::utils::PromptKind;
+
+        use anyhow::Result;
+        use async_trait::async_trait;
+        use reqwest::{Client as ReqwestClient, RequestBuilder};
+        use serde::Deserialize;
+
+        const API_BASE: &str = $api_base;
+
+        #[derive(Debug, Clone, Deserialize)]
+        pub struct $config {
+            pub name: Option<String>,
+            pub api_key: Option<String>,
+            #[serde(default)]
+            pub models: Vec<ModelConfig>,
+            pub extra: Option<ExtraConfig>,
+        }
+
+        openai_compatible_client!($client);
+
+        impl $client {
+            list_models_fn!(
+                $config,
+                [
+                    $(
+                        ($name, $capabilities, $max_input_tokens $(, $max_output_tokens)?),
+                    )+
+                ]
+            );
+            config_get_fn!(api_key, get_api_key);
+
+            pub const PROMPTS: [PromptType<'static>; 1] =
+                [("api_key", "API Key:", false, PromptKind::String)];
+
+            fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
+                let api_key = self.get_api_key().ok();
+
+                let body = openai_build_body(data, &self.model);
+
+                let url = format!("{API_BASE}/chat/completions");
+
+                debug!("Request: {url} {body}");
+
+                let mut builder = client.post(url).json(&body);
+                if let Some(api_key) = api_key {
+                    builder = builder.bearer_auth(api_key);
+                }
+
+                Ok(builder)
+            }
+        }
+
+    }
+}
+
+#[macro_export]
 macro_rules! client_common_fns {
     () => {
         fn config(
