@@ -126,7 +126,7 @@ macro_rules! register_client {
 }
 
 #[macro_export]
-macro_rules! openai_compatible_module {
+macro_rules! openai_compatible_client {
     (
         $config:ident,
         $client:ident,
