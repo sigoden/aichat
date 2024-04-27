@@ -2,11 +2,13 @@
 mod common;
 mod message;
 mod model;
+mod prompt_format;
 mod reply_handler;
 
 pub use common::*;
 pub use message::*;
 pub use model::*;
+pub use prompt_format::*;
 pub use reply_handler::*;
 
 register_client!(
@@ -25,6 +27,7 @@ register_client!(
     ),
     (gemini, "gemini", GeminiConfig, GeminiClient),
     (vertexai, "vertexai", VertexAIConfig, VertexAIClient),
+    (bedrock, "bedrock", BedrockConfig, BedrockClient),
     (claude, "claude", ClaudeConfig, ClaudeClient),
     (mistral, "mistral", MistralConfig, MistralClient),
     (cohere, "cohere", CohereConfig, CohereClient),
