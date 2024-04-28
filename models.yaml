@@ -240,6 +240,18 @@
       input_price: 2.5
       output_price: 7.5
       supports_vision: true
+    - name: claude-3-opus@20240229
+      max_input_tokens: 200000
+      max_output_tokens: 4096
+      supports_vision: true
+    - name: claude-3-sonnet@20240229
+      max_input_tokens: 200000
+      max_output_tokens: 4096
+      supports_vision: true
+    - name: claude-3-haiku@20240307
+      max_input_tokens: 200000
+      max_output_tokens: 4096
+      supports_vision: true
 
 - type: ernie
   # docs: 
