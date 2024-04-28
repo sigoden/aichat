@@ -18,7 +18,6 @@ pub struct OpenAICompatibleConfig {
 }
 
 impl OpenAICompatibleClient {
-    list_models_fn!(OpenAICompatibleConfig);
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 5] = [

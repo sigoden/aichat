@@ -22,14 +22,6 @@ pub struct CohereConfig {
 }
 
 impl CohereClient {
-    list_models_fn!(
-        CohereConfig,
-        [
-            // https://docs.cohere.com/docs/command-r
-            ("command-r", "text", 128000),
-            ("command-r-plus", "text", 128000),
-        ]
-    );
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 1] =

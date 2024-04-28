@@ -27,15 +27,6 @@ pub struct VertexAIConfig {
 }
 
 impl VertexAIClient {
-    list_models_fn!(
-        VertexAIConfig,
-        [
-            // https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
-            ("gemini-1.0-pro", "text", 24568),
-            ("gemini-1.0-pro-vision", "text,vision", 14336),
-            ("gemini-1.5-pro-preview-0409", "text,vision", 1000000),
-        ]
-    );
     config_get_fn!(api_base, get_api_base);
 
     pub const PROMPTS: [PromptType<'static>; 1] =
