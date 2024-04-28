@@ -2,11 +2,13 @@
 mod common;
 mod message;
 mod model;
+mod prompt_format;
 mod reply_handler;
 
 pub use common::*;
 pub use message::*;
 pub use model::*;
+pub use prompt_format::*;
 pub use reply_handler::*;
 
 register_client!(
@@ -31,6 +33,7 @@ register_client!(
         AzureOpenAIClient
     ),
     (vertexai, "vertexai", VertexAIConfig, VertexAIClient),
+    (bedrock, "bedrock", BedrockConfig, BedrockClient),
     (ernie, "ernie", ErnieConfig, ErnieClient),
     (qianwen, "qianwen", QianwenConfig, QianwenClient),
     (moonshot, "moonshot", MoonshotConfig, MoonshotClient),

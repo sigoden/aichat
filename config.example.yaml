@@ -116,6 +116,12 @@ clients:
     # Optional field, possible values: BLOCK_NONE, BLOCK_ONLY_HIGH, BLOCK_MEDIUM_AND_ABOVE, BLOCK_LOW_AND_ABOVE
     block_threshold: BLOCK_ONLY_HIGH
 
+  # See https://docs.aws.amazon.com/bedrock/latest/userguide/
+  - type: bedrock
+    access_key_id: xxxxxxxxxxxxxxxxxxxx
+    secret_access_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    region: xxx
+
   # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
   - type: ernie
     api_key: xxxxxxxxxxxxxxxxxxxxxxxx
