@@ -8,8 +8,7 @@ pub use self::role::{CODE_ROLE, EXPLAIN_ROLE, SHELL_ROLE};
 use self::session::{Session, TEMP_SESSION_NAME};
 
 use crate::client::{
-    create_client_config, list_client_types, list_models, ClientConfig, ExtraConfig, Message,
-    Model, OpenAIClient, SendData,
+    create_client_config, list_client_types, list_models, ClientConfig, Message, Model, SendData,
 };
 use crate::render::{MarkdownRender, RenderOptions};
 use crate::utils::{get_env_name, light_theme_from_colorfgbg, now, render_prompt, set_text};
@@ -91,7 +90,7 @@ impl Default for Config {
             model_id: None,
             temperature: None,
             top_p: None,
-            save: true,
+            save: false,
             save_session: None,
             highlight: true,
             dry_run: false,
@@ -124,22 +123,15 @@ impl Config {
     pub fn init(working_mode: WorkingMode) -> Result<Self> {
         let config_path = Self::config_file()?;
 
-        let api_key = env::var("OPENAI_API_KEY").ok();
-
-        let exist_config_path = config_path.exists();
-        if working_mode != WorkingMode::Command && api_key.is_none() && !exist_config_path {
+        let client_type = env::var(get_env_name("client_type")).ok();
+        if working_mode != WorkingMode::Command && client_type.is_none() && !config_path.exists() {
             create_config_file(&config_path)?;
         }
-        let mut config = if api_key.is_some() && !exist_config_path {
-            Self::default()
+        let mut config = if client_type.is_some() {
+            Self::load_config_env(&client_type.unwrap())?
         } else {
-            Self::load_config(&config_path)?
+            Self::load_config_file(&config_path)?
         };
-
-        // Compatible with old configuration files
-        if exist_config_path {
-            config.compat_old_config(&config_path)?;
-        }
 
         if let Some(wrap) = config.wrap.clone() {
             config.set_wrap(&wrap)?;
@@ -898,20 +890,39 @@ impl Config {
         Ok(())
     }
 
-    fn load_config(config_path: &Path) -> Result<Self> {
+    fn load_config_file(config_path: &Path) -> Result<Self> {
         let ctx = || format!("Failed to load config at {}", config_path.display());
         let content = read_to_string(config_path).with_context(ctx)?;
+        let config = Self::load_config(&content).with_context(ctx)?;
+        Ok(config)
+    }
 
-        let config: Self = serde_yaml::from_str(&content)
-            .map_err(|err| {
-                let err_msg = err.to_string();
-                if err_msg.starts_with(&format!("{}: ", CLIENTS_FIELD)) {
-                    anyhow!("clients: invalid value")
-                } else {
-                    anyhow!("{err_msg}")
-                }
-            })
-            .with_context(ctx)?;
+    fn load_config_env(client_type: &str) -> Result<Self> {
+        let model_id = match env::var(get_env_name("model_name")) {
+            Ok(model_name) => format!("{client_type}:{model_name}"),
+            Err(_) => client_type.to_string(),
+        };
+        let content = format!(
+            r#"
+model: {model_id}
+save: false
+clients:
+  - type: {client_type}
+"#
+        );
+        let config = Self::load_config(&content).with_context(|| "Failed to load config")?;
+        Ok(config)
+    }
+
+    fn load_config(content: &str) -> Result<Self> {
+        let config: Self = serde_yaml::from_str(content).map_err(|err| {
+            let err_msg = err.to_string();
+            if err_msg.starts_with(&format!("{}: ", CLIENTS_FIELD)) {
+                anyhow!("clients: invalid value")
+            } else {
+                anyhow!("{err_msg}")
+            }
+        })?;
 
         Ok(config)
     }
@@ -967,43 +978,6 @@ impl Config {
                 self.light_theme = light
             }
         };
-        Ok(())
-    }
-
-    fn compat_old_config(&mut self, config_path: &PathBuf) -> Result<()> {
-        let content = read_to_string(config_path)?;
-        let value: serde_json::Value = serde_yaml::from_str(&content)?;
-        if value.get(CLIENTS_FIELD).is_some() {
-            return Ok(());
-        }
-
-        if let Some(model_name) = value.get("model").and_then(|v| v.as_str()) {
-            if model_name.starts_with("gpt") {
-                self.model_id = Some(format!("{}:{}", OpenAIClient::NAME, model_name));
-            }
-        }
-
-        if let Some(ClientConfig::OpenAIConfig(client_config)) = self.clients.first_mut() {
-            if let Some(api_key) = value.get("api_key").and_then(|v| v.as_str()) {
-                client_config.api_key = Some(api_key.to_string())
-            }
-
-            if let Some(organization_id) = value.get("organization_id").and_then(|v| v.as_str()) {
-                client_config.organization_id = Some(organization_id.to_string())
-            }
-
-            let mut extra_config = ExtraConfig::default();
-
-            if let Some(proxy) = value.get("proxy").and_then(|v| v.as_str()) {
-                extra_config.proxy = Some(proxy.to_string())
-            }
-
-            if let Some(connect_timeout) = value.get("connect_timeout").and_then(|v| v.as_i64()) {
-                extra_config.connect_timeout = Some(connect_timeout as _)
-            }
-
-            client_config.extra = Some(extra_config);
-        }
         Ok(())
     }
 }

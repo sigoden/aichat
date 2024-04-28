@@ -4,7 +4,7 @@ top_p: null                      # Set default top-p parameter
 save: true                       # Indicates whether to persist the message
 save_session: null               # Controls the persistence of the session, if null, asking the user
 highlight: true                  # Controls syntax highlighting
-light_theme: false               # Activates a light color theme when true
+light_theme: false               # Activates a light color theme when true. ENV: AICHAT_LIGHT_THEME
 wrap: no                         # Controls text wrapping (no, auto, <max-width>)
 wrap_code: false                 # Enables or disables wrapping of code blocks
 auto_copy: false                 # Enables or disables automatic copying the last LLM response to the clipboard 
@@ -32,83 +32,78 @@ clients:
   #   name: xxxx                                      # Only use it to distinguish clients with the same client type. Optional
   #   models:
   #     - name: xxxx                                  # The model name
-  #       max_input_tokens: 100000                    # Optional field
-  #       max_output_tokens: 4096                     # Optional field
-  #       capabilities: text,vision                   # Optional field, supported capabilities: text, vision
-  #       extra_fields:                               # Optional field, set custom parameters, will merge with the body json
+  #       max_input_tokens: 100000
+  #       max_output_tokens: 4096
+  #       supports_vision: true
+  #       extra_fields:                               # Set custom parameters, will merge with the body json
   #          key: value                               
   #   extra:
-  #     proxy: socks5://127.0.0.1:1080                # Specify https/socks5 proxy server. Note HTTPS_PROXY/ALL_PROXY also works.
+  #     proxy: socks5://127.0.0.1:1080                # Specify https/socks5 proxy server. ENV: HTTPS_PROXY/ALL_PROXY
   #     connect_timeout: 10                           # Set a timeout in seconds for connect to server
 
   # See https://platform.openai.com/docs/quickstart
   - type: openai
-    api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    api_base: https://api.openai.com/v1               # Optional field
-    organization_id: org-xxxxxxxxxxxxxxxxxxxxxxxx     # Optional field
+    api_key: sk-xxx                                   # ENV: {client_name}_API_KEY
+    api_base: https://api.openai.com/v1               # ENV: {client_name}_API_BASE
+    organization_id: org-xxx                          # Optional
 
   # See https://ai.google.dev/docs
   - type: gemini
-    api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Optional field, possible values: BLOCK_NONE, BLOCK_ONLY_HIGH, BLOCK_MEDIUM_AND_ABOVE, BLOCK_LOW_AND_ABOVE
-    block_threshold: BLOCK_NONE
+    api_key: xxx                                      # ENV: {client_name}_API_KEY
+    # possible values: BLOCK_NONE, BLOCK_ONLY_HIGH, BLOCK_MEDIUM_AND_ABOVE, BLOCK_LOW_AND_ABOVE
+    block_threshold: BLOCK_NONE                       # Optional
 
   # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
   - type: claude
-    api_key: sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    api_key: sk-ant-xxx                               # ENV: {client_name}_API_KEY
 
   # See https://docs.mistral.ai/
   - type: mistral
-    api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    api_key: xxx                                      # ENV: {client_name}_API_KEY
 
   # See https://docs.cohere.com/docs/the-cohere-platform
   - type: cohere
-    api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    api_key: xxx                                      # ENV: {client_name}_API_KEY
 
   # See https://docs.perplexity.ai/docs/getting-started
   - type: perplexity
-    api_key: pplx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    api_key: pplx-xxx                                 # ENV: {client_name}_API_KEY
 
   # See https://console.groq.com/docs/quickstart
   - type: groq
-    api_key: gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    api_key: gsk_xxx                                  # ENV: {client_name}_API_KEY
 
   # Any openai-compatible API providers 
   - type: openai-compatible
     name: localai
     api_base: http://localhost:8080/v1
-    api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    chat_endpoint: /chat/completions                  # Optional field
+    api_key: sk-xxx                                   # ENV: {client_name}_API_BASE
+    chat_endpoint: /chat/completions
     models:
-      - name: llama2
+      - name: llama3
         max_input_tokens: 8192
-        extra_fields:                                 # Optional field, set custom parameters
-          key: value
-      - name: llava
-        max_input_tokens: 8192
-        capabilities: text,vision                     # Optional field, choices: text, vision
 
   # See https://github.com/jmorganca/ollama
   - type: ollama
     api_base: http://localhost:11434
-    api_key: Basic xxx                                # Set authorization header
-    chat_endpoint: /api/chat                          # Optional field
+    api_key: Basic xxx                                # Set authorization header, ENV: {client_name}_API_BASE
+    chat_endpoint: /api/chat                          # Optional
     models:
-      - name: llama2
+      - name: llama3
         max_input_tokens: 8192
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
   - type: azure-openai
     api_base: https://{RESOURCE}.openai.azure.com
-    api_key: xxx
+    api_key: xxx                                     # ENV: {client_name}_API_BASE
     models:
-      - name: MyGPT4                                  # Model deployment name
+      - name: gpt-35-turbo                           # Model deployment name
         max_input_tokens: 8192
 
   # See https://cloud.google.com/vertex-ai
   - type: vertexai
-    project_id: xxx
-    location: xxx
+    project_id: xxx                                  # ENV: {client_name}_PROJECT_ID
+    location: xxx                                    # ENV: {client_name}_LOCATION
     # Specifies a application-default-credentials (adc) file, Optional field
     # Run `gcloud auth application-default login` to init the adc file
     # see https://cloud.google.com/docs/authentication/external/set-up-adc
@@ -118,19 +113,19 @@ clients:
 
   # See https://docs.aws.amazon.com/bedrock/latest/userguide/
   - type: bedrock
-    access_key_id: xxxxxxxxxxxxxxxxxxxx
-    secret_access_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    region: xxx
+    access_key_id: xxx                               # ENV: {client_name}_ACCESS_KEY_ID
+    secret_access_key: xxx                           # ENV: {client_name}_SECRET_ACCESS_KEY
+    region: xxx                                      # ENV: {client_name}_REGION
 
   # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
   - type: ernie
-    api_key: xxxxxxxxxxxxxxxxxxxxxxxx
-    secret_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    api_key: xxx                                     # ENV: {client_name}_API_KEY
+    secret_key: xxxx                                 # ENV: {client_name}_SECRET_KEY
 
   # See https://help.aliyun.com/zh/dashscope/
   - type: qianwen
-    api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    api_key: sk-xxx                                  # ENV: {client_name}_API_KEY
 
   # See https://platform.moonshot.cn/docs/intro
   - type: moonshot
-    api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    api_key: sk-xxx                                  # ENV: {client_name}_API_KEY
