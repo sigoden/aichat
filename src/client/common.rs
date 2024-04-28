@@ -126,7 +126,7 @@ macro_rules! register_client {
                     client.set_model(model);
                 } else {
                     anyhow::bail!(
-                        "The current model lacks the corresponding capability."
+                        "The current model is incapable of doing that."
                     );
                 }
             }
@@ -260,7 +260,7 @@ macro_rules! impl_client_trait {
                 &self,
                 client: &reqwest::Client,
                 data: $crate::client::SendData,
-            ) -> anyhow::Result<String> {
+            ) -> anyhow::Result<(String, $crate::client::CompletionStats)> {
                 let builder = self.request_builder(client, data)?;
                 $send_message(builder).await
             }
@@ -330,11 +330,11 @@ pub trait Client: Sync + Send {
         Ok(client)
     }
 
-    async fn send_message(&self, input: Input) -> Result<String> {
+    async fn send_message(&self, input: Input) -> Result<(String, CompletionStats)> {
         let global_config = self.config().0;
         if global_config.read().dry_run {
             let content = global_config.read().echo_messages(&input);
-            return Ok(content);
+            return Ok((content, CompletionStats::default()));
         }
         let client = self.build_client()?;
         let data = global_config.read().prepare_send_data(&input, false)?;
@@ -384,7 +384,11 @@ pub trait Client: Sync + Send {
         }
     }
 
-    async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String>;
+    async fn send_message_inner(
+        &self,
+        client: &ReqwestClient,
+        data: SendData,
+    ) -> Result<(String, CompletionStats)>;
 
     async fn send_message_streaming_inner(
         &self,
@@ -412,6 +416,13 @@ pub struct SendData {
     pub temperature: Option<f64>,
     pub top_p: Option<f64>,
     pub stream: bool,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct CompletionStats {
+    pub id: Option<String>,
+    pub input_tokens: Option<u64>,
+    pub output_tokens: Option<u64>,
 }
 
 pub type PromptType<'a> = (&'a str, &'a str, bool, PromptKind);

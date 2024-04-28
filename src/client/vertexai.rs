@@ -1,7 +1,7 @@
 use super::claude::{claude_build_body, claude_send_message, claude_send_message_streaming};
 use super::{
-    catch_error, json_stream, message::*, patch_system_message, Client, ExtraConfig, Model,
-    ModelConfig, PromptType, ReplyHandler, SendData, VertexAIClient,
+    catch_error, json_stream, message::*, patch_system_message, Client, CompletionStats,
+    ExtraConfig, Model, ModelConfig, PromptType, ReplyHandler, SendData, VertexAIClient,
 };
 
 use crate::utils::PromptKind;
@@ -81,7 +81,11 @@ impl VertexAIClient {
 impl Client for VertexAIClient {
     client_common_fns!();
 
-    async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
+    async fn send_message_inner(
+        &self,
+        client: &ReqwestClient,
+        data: SendData,
+    ) -> Result<(String, CompletionStats)> {
         let model_category = ModelCategory::from_str(&self.model.name)?;
         self.prepare_access_token().await?;
         let builder = self.request_builder(client, data, &model_category)?;
@@ -107,15 +111,14 @@ impl Client for VertexAIClient {
     }
 }
 
-pub async fn gemini_send_message(builder: RequestBuilder) -> Result<String> {
+pub async fn gemini_send_message(builder: RequestBuilder) -> Result<(String, CompletionStats)> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
     if status != 200 {
         catch_error(&data, status.as_u16())?;
     }
-    let output = gemini_extract_text(&data)?;
-    Ok(output.to_string())
+    gemini_extract_completion_text(&data)
 }
 
 pub async fn gemini_send_message_streaming(
@@ -136,6 +139,16 @@ pub async fn gemini_send_message_streaming(
         json_stream(res.bytes_stream(), handle).await?;
     }
     Ok(())
+}
+
+fn gemini_extract_completion_text(data: &Value) -> Result<(String, CompletionStats)> {
+    let text = gemini_extract_text(data)?;
+    let stats = CompletionStats {
+        id: None,
+        input_tokens: data["usageMetadata"]["promptTokenCount"].as_u64(),
+        output_tokens: data["usageMetadata"]["candidatesTokenCount"].as_u64(),
+    };
+    Ok((text.to_string(), stats))
 }
 
 fn gemini_extract_text(data: &Value) -> Result<&str> {
