@@ -396,7 +396,7 @@ impl Config {
         let models = list_models(self);
         let model = Model::find(&models, value);
         match model {
-            None => bail!("Invalid model '{}'", value),
+            None => bail!("No model '{}'", value),
             Some(model) => {
                 if let Some(session) = self.session.as_mut() {
                     session.set_model(model.clone())?;

@@ -79,7 +79,7 @@ clients:
     api_base: http://localhost:8080/v1
     api_key: sk-xxx                                   # ENV: {client_name}_API_BASE
     chat_endpoint: /chat/completions                  # Optional
-    models:
+    models:                                           # Required
       - name: llama3
         max_input_tokens: 8192
 
@@ -88,16 +88,16 @@ clients:
     api_base: http://localhost:11434
     api_auth: Basic xxx                               # ENV: {client_name}_API_AUTH
     chat_endpoint: /api/chat                          # Optional
-    models:
+    models:                                           # Required
       - name: llama3
         max_input_tokens: 8192
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
   - type: azure-openai
     api_base: https://{RESOURCE}.openai.azure.com
-    api_key: xxx                                     # ENV: {client_name}_API_BASE
-    models:
-      - name: gpt-35-turbo                           # Model deployment name
+    api_key: xxx                                      # ENV: {client_name}_API_BASE
+    models:                                           # Required
+      - name: gpt-35-turbo                            # Model deployment name
         max_input_tokens: 8192
 
   # See https://cloud.google.com/vertex-ai

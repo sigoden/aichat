@@ -4,7 +4,7 @@ complete -c aichat -s s -l session -x  -a"(aichat --list-sessions)" -d 'Start or
 complete -c aichat -s f -l file -d 'Include files with the message' -r -F
 complete -c aichat -s w -l wrap -d 'Control text wrapping (no, auto, <max-width>)'
 complete -c aichat -l save-session -d 'Forces the session to be saved'
-complete -c aichat -l serve -d 'Serve all LLMs as OpenAI-compatible API'
+complete -c aichat -l serve -d 'Serve all LLMs via an OpenAI-compatible API'
 complete -c aichat -s e -l execute -d 'Execute commands in natural language'
 complete -c aichat -s c -l code -d 'Output code only'
 complete -c aichat -s H -l no-highlight -d 'Turn off syntax highlighting'
