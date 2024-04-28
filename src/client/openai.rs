@@ -1,6 +1,6 @@
 use super::{
-    catch_error, CompletionStats, ExtraConfig, Model, ModelConfig, OpenAIClient, PromptType,
-    ReplyHandler, SendData,
+    catch_error, CompletionDetails, ExtraConfig, Model, ModelConfig, OpenAIClient, PromptType,
+    SendData, SseHandler,
 };
 
 use crate::utils::PromptKind;
@@ -52,7 +52,7 @@ impl OpenAIClient {
     }
 }
 
-pub async fn openai_send_message(builder: RequestBuilder) -> Result<(String, CompletionStats)> {
+pub async fn openai_send_message(builder: RequestBuilder) -> Result<(String, CompletionDetails)> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -65,7 +65,7 @@ pub async fn openai_send_message(builder: RequestBuilder) -> Result<(String, Com
 
 pub async fn openai_send_message_streaming(
     builder: RequestBuilder,
-    handler: &mut ReplyHandler,
+    handler: &mut SseHandler,
 ) -> Result<()> {
     let mut es = builder.eventsource()?;
     while let Some(event) = es.next().await {
@@ -140,16 +140,16 @@ pub fn openai_build_body(data: SendData, model: &Model) -> Value {
     body
 }
 
-pub fn openai_extract_completion(data: &Value) -> Result<(String, CompletionStats)> {
+pub fn openai_extract_completion(data: &Value) -> Result<(String, CompletionDetails)> {
     let text = data["choices"][0]["message"]["content"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
-    let stats = CompletionStats {
+    let details = CompletionDetails {
         id: data["id"].as_str().map(|v| v.to_string()),
         input_tokens: data["usage"]["prompt_tokens"].as_u64(),
         output_tokens: data["usage"]["completion_tokens"].as_u64(),
     };
-    Ok((text.to_string(), stats))
+    Ok((text.to_string(), details))
 }
 
 impl_client_trait!(

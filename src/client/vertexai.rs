@@ -1,7 +1,7 @@
 use super::claude::{claude_build_body, claude_send_message, claude_send_message_streaming};
 use super::{
-    catch_error, json_stream, message::*, patch_system_message, Client, CompletionStats,
-    ExtraConfig, Model, ModelConfig, PromptType, ReplyHandler, SendData, VertexAIClient,
+    catch_error, json_stream, message::*, patch_system_message, Client, CompletionDetails,
+    ExtraConfig, Model, ModelConfig, PromptType, SendData, SseHandler, VertexAIClient,
 };
 
 use crate::utils::PromptKind;
@@ -85,7 +85,7 @@ impl Client for VertexAIClient {
         &self,
         client: &ReqwestClient,
         data: SendData,
-    ) -> Result<(String, CompletionStats)> {
+    ) -> Result<(String, CompletionDetails)> {
         let model_category = ModelCategory::from_str(&self.model.name)?;
         self.prepare_access_token().await?;
         let builder = self.request_builder(client, data, &model_category)?;
@@ -98,7 +98,7 @@ impl Client for VertexAIClient {
     async fn send_message_streaming_inner(
         &self,
         client: &ReqwestClient,
-        handler: &mut ReplyHandler,
+        handler: &mut SseHandler,
         data: SendData,
     ) -> Result<()> {
         let model_category = ModelCategory::from_str(&self.model.name)?;
@@ -111,7 +111,7 @@ impl Client for VertexAIClient {
     }
 }
 
-pub async fn gemini_send_message(builder: RequestBuilder) -> Result<(String, CompletionStats)> {
+pub async fn gemini_send_message(builder: RequestBuilder) -> Result<(String, CompletionDetails)> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -123,7 +123,7 @@ pub async fn gemini_send_message(builder: RequestBuilder) -> Result<(String, Com
 
 pub async fn gemini_send_message_streaming(
     builder: RequestBuilder,
-    handler: &mut ReplyHandler,
+    handler: &mut SseHandler,
 ) -> Result<()> {
     let res = builder.send().await?;
     let status = res.status();
@@ -141,14 +141,14 @@ pub async fn gemini_send_message_streaming(
     Ok(())
 }
 
-fn gemini_extract_completion_text(data: &Value) -> Result<(String, CompletionStats)> {
+fn gemini_extract_completion_text(data: &Value) -> Result<(String, CompletionDetails)> {
     let text = gemini_extract_text(data)?;
-    let stats = CompletionStats {
+    let details = CompletionDetails {
         id: None,
         input_tokens: data["usageMetadata"]["promptTokenCount"].as_u64(),
         output_tokens: data["usageMetadata"]["candidatesTokenCount"].as_u64(),
     };
-    Ok((text.to_string(), stats))
+    Ok((text.to_string(), details))
 }
 
 fn gemini_extract_text(data: &Value) -> Result<&str> {

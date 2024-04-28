@@ -3,14 +3,14 @@ use crate::utils::AbortSignal;
 use anyhow::{Context, Result};
 use tokio::sync::mpsc::UnboundedSender;
 
-pub struct ReplyHandler {
-    sender: UnboundedSender<ReplyEvent>,
+pub struct SseHandler {
+    sender: UnboundedSender<SseEvent>,
     buffer: String,
     abort: AbortSignal,
 }
 
-impl ReplyHandler {
-    pub fn new(sender: UnboundedSender<ReplyEvent>, abort: AbortSignal) -> Self {
+impl SseHandler {
+    pub fn new(sender: UnboundedSender<SseEvent>, abort: AbortSignal) -> Self {
         Self {
             sender,
             abort,
@@ -26,7 +26,7 @@ impl ReplyHandler {
         self.buffer.push_str(text);
         let ret = self
             .sender
-            .send(ReplyEvent::Text(text.to_string()))
+            .send(SseEvent::Text(text.to_string()))
             .with_context(|| "Failed to send ReplyEvent:Text");
         self.safe_ret(ret)?;
         Ok(())
@@ -36,7 +36,7 @@ impl ReplyHandler {
         // debug!("ReplyDone");
         let ret = self
             .sender
-            .send(ReplyEvent::Done)
+            .send(SseEvent::Done)
             .with_context(|| "Failed to send ReplyEvent::Done");
         self.safe_ret(ret)?;
         Ok(())
@@ -59,7 +59,7 @@ impl ReplyHandler {
 }
 
 #[derive(Debug)]
-pub enum ReplyEvent {
+pub enum SseEvent {
     Text(String),
     Done,
 }

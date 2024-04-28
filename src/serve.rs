@@ -1,7 +1,7 @@
 use crate::{
     client::{
-        init_client, ClientConfig, CompletionStats, Message, Model, ReplyEvent, ReplyHandler,
-        SendData,
+        init_client, ClientConfig, CompletionDetails, Message, Model, SendData, SseEvent,
+        SseHandler,
     },
     config::{Config, GlobalConfig},
     utils::create_abort_signal,
@@ -184,9 +184,9 @@ impl Server {
             tokio::spawn(async move {
                 let mut is_first = true;
                 let (tx2, rx2) = unbounded_channel();
-                let mut handler = ReplyHandler::new(tx2, abort);
+                let mut handler = SseHandler::new(tx2, abort);
                 async fn map_event(
-                    mut rx: UnboundedReceiver<ReplyEvent>,
+                    mut rx: UnboundedReceiver<SseEvent>,
                     tx: &UnboundedSender<ResEvent>,
                     is_first: &mut bool,
                 ) {
@@ -196,10 +196,10 @@ impl Server {
                             *is_first = false;
                         }
                         match reply_event {
-                            ReplyEvent::Text(text) => {
+                            SseEvent::Text(text) => {
                                 let _ = tx.send(ResEvent::Text(text));
                             }
-                            ReplyEvent::Done => {
+                            SseEvent::Done => {
                                 let _ = tx.send(ResEvent::Done);
                             }
                         }
@@ -251,7 +251,7 @@ impl Server {
                 .body(BodyExt::boxed(StreamBody::new(stream)))?;
             Ok(res)
         } else {
-            let (content, stats) = client.send_message_inner(&http_client, send_data).await?;
+            let (content, details) = client.send_message_inner(&http_client, send_data).await?;
             let res = Response::builder()
                 .header("Content-Type", "application/json")
                 .body(
@@ -260,7 +260,7 @@ impl Server {
                         &model_name,
                         created,
                         &content,
-                        &stats,
+                        &details,
                     ))
                     .boxed(),
                 )?;
@@ -357,11 +357,11 @@ fn ret_non_stream(
     model: &str,
     created: i64,
     content: &str,
-    stats: &CompletionStats,
+    details: &CompletionDetails,
 ) -> Bytes {
-    let id = stats.id.as_deref().unwrap_or(id);
-    let input_tokens = stats.input_tokens.unwrap_or_default();
-    let output_tokens = stats.output_tokens.unwrap_or_default();
+    let id = details.id.as_deref().unwrap_or(id);
+    let input_tokens = details.input_tokens.unwrap_or_default();
+    let output_tokens = details.output_tokens.unwrap_or_default();
     let total_tokens = input_tokens + output_tokens;
     let res_body = json!({
         "id": id,
