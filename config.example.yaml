@@ -107,7 +107,8 @@ clients:
 
   # See https://cloud.google.com/vertex-ai
   - type: vertexai
-    api_base: https://{REGION}-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/{REGION}/publishers/google/models
+    project_id: xxx
+    location: xxx
     # Specifies a application-default-credentials (adc) file, Optional field
     # Run `gcloud auth application-default login` to init the adc file
     # see https://cloud.google.com/docs/authentication/external/set-up-adc

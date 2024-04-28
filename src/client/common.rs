@@ -1,4 +1,4 @@
-use super::{openai::OpenAIConfig, ClientConfig, Message, Model, ReplyHandler};
+use super::{openai::OpenAIConfig, ClientConfig, ClientModel, Message, Model, ReplyHandler};
 
 use crate::{
     config::{GlobalConfig, Input},
@@ -9,11 +9,18 @@ use crate::{
 use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
 use futures_util::{Stream, StreamExt};
+use lazy_static::lazy_static;
 use reqwest::{Client as ReqwestClient, ClientBuilder, Proxy, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{env, future::Future, time::Duration};
 use tokio::{sync::mpsc::unbounded_channel, time::sleep};
+
+const MODELS_YAML: &str = include_str!("../../models.yaml");
+
+lazy_static! {
+    pub static ref CLIENT_MODELS: Vec<ClientModel> = serde_yaml::from_str(MODELS_YAML).unwrap();
+}
 
 #[macro_export]
 macro_rules! register_client {
@@ -33,6 +40,17 @@ macro_rules! register_client {
             $(
                 #[serde(rename = $name)]
                 $config($config),
+            )+
+            #[serde(other)]
+            Unknown,
+        }
+
+        #[derive(Debug, Clone, serde::Deserialize)]
+        #[serde(tag = "type")]
+        pub enum ClientModel {
+            $(
+                #[serde(rename = $name)]
+                $config { models: Vec<ModelConfig> },
             )+
             #[serde(other)]
             Unknown,
@@ -66,6 +84,23 @@ macro_rules! register_client {
                         config,
                         model,
                     }))
+                }
+
+                pub fn list_models(local_config: &$config) -> Vec<Model> {
+                    let client_name = Self::name(local_config);
+                    if local_config.models.is_empty() {
+                        for model in $crate::client::CLIENT_MODELS.iter() {
+                            match model {
+                                $crate::client::ClientModel::$config { models } => {
+                                    return Model::from_config(client_name, models);
+                                }
+                                _ => {}
+                            }
+                        }
+                        vec![]
+                    } else {
+                        Model::from_config(client_name, &local_config.models)
+                    }
                 }
 
                 pub fn name(config: &$config) -> &str {
@@ -131,10 +166,9 @@ macro_rules! openai_compatible_client {
         $config:ident,
         $client:ident,
         $api_base:literal,
-        [$(($name:literal, $capabilities:literal, $max_input_tokens:literal $(, $max_output_tokens:literal)? )),+$(,)?]
     ) => {
         use $crate::client::openai::openai_build_body;
-        use $crate::client::{ExtraConfig, $client, Model, ModelConfig, PromptType, SendData};
+        use $crate::client::{$client, ExtraConfig, Model, ModelConfig, PromptType, SendData};
 
         use $crate::utils::PromptKind;
 
@@ -159,22 +193,17 @@ macro_rules! openai_compatible_client {
             $crate::client::openai::openai_send_message_streaming
         );
 
-
         impl $client {
-            list_models_fn!(
-                $config,
-                [
-                    $(
-                        ($name, $capabilities, $max_input_tokens $(, $max_output_tokens)?),
-                    )+
-                ]
-            );
             config_get_fn!(api_key, get_api_key);
 
             pub const PROMPTS: [PromptType<'static>; 1] =
                 [("api_key", "API Key:", false, PromptKind::String)];
 
-            fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
+            fn request_builder(
+                &self,
+                client: &ReqwestClient,
+                data: SendData,
+            ) -> Result<RequestBuilder> {
                 let api_key = self.get_api_key().ok();
 
                 let body = openai_build_body(data, &self.model);
@@ -191,8 +220,7 @@ macro_rules! openai_compatible_client {
                 Ok(builder)
             }
         }
-
-    }
+    };
 }
 
 #[macro_export]
@@ -265,33 +293,6 @@ macro_rules! config_get_fn {
                 .ok_or_else(|| {
                     anyhow::anyhow!("Miss '{}' in client configuration", stringify!($field_name))
                 })
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! list_models_fn {
-    ($config:ident) => {
-        pub fn list_models(local_config: &$config) -> Vec<Model> {
-            let client_name = Self::name(local_config);
-            Model::from_config(client_name, &local_config.models)
-        }
-    };
-    ($config:ident, [$(($name:literal, $capabilities:literal, $max_input_tokens:literal $(, $max_output_tokens:literal)? )),+$(,)?]) => {
-        pub fn list_models(local_config: &$config) -> Vec<Model> {
-            let client_name = Self::name(local_config);
-            if local_config.models.is_empty() {
-                vec![
-                    $(
-                        Model::new(client_name, $name)
-                            .set_capabilities($capabilities.into())
-                            .set_max_input_tokens(Some($max_input_tokens))
-                            $(.set_max_output_tokens(Some($max_output_tokens)))?
-                    ),+
-                ]
-            } else {
-                Model::from_config(client_name, &local_config.models)
-            }
         }
     };
 }

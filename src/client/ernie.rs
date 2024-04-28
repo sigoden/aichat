@@ -31,19 +31,6 @@ pub struct ErnieConfig {
 }
 
 impl ErnieClient {
-    list_models_fn!(
-        ErnieConfig,
-        [
-            // https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t
-            ("ernie-4.0-8k", "text", 5120, 2048),
-            ("ernie-3.5-8k", "text", 5120, 2048),
-            ("ernie-3.5-4k", "text", 2048, 2048),
-            ("ernie-speed-8k", "text", 7168, 2048),
-            ("ernie-speed-128k", "text", 124000, 4096),
-            ("ernie-lite-8k", "text", 7168, 2048),
-            ("ernie-tiny-8k", "text", 7168, 2048),
-        ]
-    );
 
     pub const PROMPTS: [PromptType<'static>; 2] = [
         ("api_key", "API Key:", true, PromptKind::String),
@@ -53,16 +40,9 @@ impl ErnieClient {
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let body = build_body(data, &self.model);
 
-        let endpoint = match self.model.name.as_str() {
-            "ernie-4.0-8k" => "completions_pro",
-            "ernie-3.5-8k" => "ernie-3.5-8k-0205",
-            "ernie-3.5-4k" => "ernie-3.5-4k-0205",
-            "ernie-speed-8k" => "ernie_speed",
-            _ => &self.model.name,
-        };
-
         let url = format!(
-            "{API_BASE}/wenxinworkshop/chat/{endpoint}?access_token={}",
+            "{API_BASE}/wenxinworkshop/chat/{}?access_token={}",
+            &self.model.name,
             unsafe { &ACCESS_TOKEN.0 }
         );
 

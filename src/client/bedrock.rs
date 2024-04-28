@@ -59,37 +59,6 @@ impl Client for BedrockClient {
 }
 
 impl BedrockClient {
-    list_models_fn!(
-        BedrockConfig,
-        // https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html#model-ids-arns
-        [
-            (
-                "anthropic.claude-3-opus-20240229-v1:0",
-                "text,vision",
-                200000,
-                4096
-            ),
-            (
-                "anthropic.claude-3-sonnet-20240229-v1:0",
-                "text,vision",
-                200000,
-                4096
-            ),
-            (
-                "anthropic.claude-3-haiku-20240307-v1:0",
-                "text,vision",
-                200000,
-                4096
-            ),
-            ("meta.llama2-13b-chat-v1", "text", 4096, 2048),
-            ("meta.llama2-70b-chat-v1", "text", 4096, 2048),
-            ("meta.llama3-8b-instruct-v1:0", "text", 8192, 4096),
-            ("meta.llama3-70b-instruct-v1:0", "text", 8192, 4096),
-            ("mistral.mistral-7b-instruct-v0:2", "text", 32000, 8192),
-            ("mistral.mixtral-8x7b-instruct-v0:1", "text", 32000, 4096),
-            ("mistral.mistral-large-2402-v1:0", "text", 32000, 8192),
-        ]
-    );
     config_get_fn!(access_key_id, get_access_key_id);
     config_get_fn!(secret_access_key, get_secret_access_key);
     config_get_fn!(region, get_region);
