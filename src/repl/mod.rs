@@ -32,7 +32,7 @@ lazy_static! {
         ReplCommand::new(".model", "Change the current LLM", State::all()),
         ReplCommand::new(
             ".prompt",
-            "Make a temporary role using a prompt",
+            "Create a temporary role using a custom prompt",
             State::able_change_role()
         ),
         ReplCommand::new(

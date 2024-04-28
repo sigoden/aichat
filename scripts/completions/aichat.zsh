@@ -16,6 +16,7 @@ _aichat() {
     local context curcontext="$curcontext" state line
      local common=(
 '-m+[Select a LLM model]:MODEL:->models' \
+'--prompt=[Use the system prompt]:PROMPT: ' \
 '--model=[Select a LLM model]:MODEL:->models' \
 '-r+[Select a role]:ROLE:->roles' \
 '--role=[Select a role]:ROLE:->roles' \

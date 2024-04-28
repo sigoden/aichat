@@ -80,7 +80,9 @@ async fn main() -> Result<()> {
     if cli.dry_run {
         config.write().dry_run = true;
     }
-    if let Some(name) = &cli.role {
+    if let Some(prompt) = &cli.prompt {
+        config.write().set_prompt(prompt)?;
+    } else if let Some(name) = &cli.role {
         config.write().set_role(name)?;
     } else if cli.execute {
         config.write().set_role(SHELL_ROLE)?;
