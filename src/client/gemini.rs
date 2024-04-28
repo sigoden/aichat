@@ -20,15 +20,6 @@ pub struct GeminiConfig {
 }
 
 impl GeminiClient {
-    list_models_fn!(
-        GeminiConfig,
-        [
-            // https://ai.google.dev/models/gemini
-            ("gemini-1.0-pro-latest", "text", 30720),
-            ("gemini-1.0-pro-vision-latest", "text,vision", 12288),
-            ("gemini-1.5-pro-latest", "text,vision", 1048576),
-        ]
-    );
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 1] =

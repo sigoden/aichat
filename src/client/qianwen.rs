@@ -34,19 +34,6 @@ pub struct QianwenConfig {
 }
 
 impl QianwenClient {
-    list_models_fn!(
-        QianwenConfig,
-        [
-            // https://help.aliyun.com/zh/dashscope/developer-reference/api-details
-            ("qwen-turbo", "text", 6000),
-            ("qwen-plus", "text", 30000),
-            ("qwen-max", "text", 6000),
-            ("qwen-max-longcontext", "text", 28000),
-            // https://help.aliyun.com/zh/dashscope/developer-reference/tongyi-qianwen-vl-plus-api
-            ("qwen-vl-plus", "text,vision", 0),
-            ("qwen-vl-max", "text,vision", 0),
-        ]
-    );
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 1] =

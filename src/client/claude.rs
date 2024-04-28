@@ -24,16 +24,6 @@ pub struct ClaudeConfig {
 }
 
 impl ClaudeClient {
-    list_models_fn!(
-        ClaudeConfig,
-        [
-            // https://docs.anthropic.com/claude/docs/models-overview
-            ("claude-3-opus-20240229", "text,vision", 200000, 4096),
-            ("claude-3-sonnet-20240229", "text,vision", 200000, 4096),
-            ("claude-3-haiku-20240307", "text,vision", 200000, 4096),
-        ]
-    );
-
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 1] =
