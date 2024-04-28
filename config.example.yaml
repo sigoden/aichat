@@ -78,7 +78,7 @@ clients:
     name: localai
     api_base: http://localhost:8080/v1
     api_key: sk-xxx                                   # ENV: {client_name}_API_BASE
-    chat_endpoint: /chat/completions
+    chat_endpoint: /chat/completions                  # Optional
     models:
       - name: llama3
         max_input_tokens: 8192
@@ -86,7 +86,7 @@ clients:
   # See https://github.com/jmorganca/ollama
   - type: ollama
     api_base: http://localhost:11434
-    api_key: Basic xxx                                # Set authorization header, ENV: {client_name}_API_BASE
+    api_auth: Basic xxx                               # ENV: {client_name}_API_AUTH
     chat_endpoint: /api/chat                          # Optional
     models:
       - name: llama3

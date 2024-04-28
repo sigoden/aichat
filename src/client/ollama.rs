@@ -15,18 +15,18 @@ use serde_json::{json, Value};
 pub struct OllamaConfig {
     pub name: Option<String>,
     pub api_base: String,
-    pub api_key: Option<String>,
+    pub api_auth: Option<String>,
     pub chat_endpoint: Option<String>,
     pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
 }
 
 impl OllamaClient {
-    config_get_fn!(api_key, get_api_key);
+    config_get_fn!(api_auth, get_api_auth);
 
     pub const PROMPTS: [PromptType<'static>; 4] = [
         ("api_base", "API Base:", true, PromptKind::String),
-        ("api_key", "API Key:", false, PromptKind::String),
+        ("api_auth", "API Key:", false, PromptKind::String),
         ("models[].name", "Model Name:", true, PromptKind::String),
         (
             "models[].max_input_tokens",
@@ -37,7 +37,7 @@ impl OllamaClient {
     ];
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
-        let api_key = self.get_api_key().ok();
+        let api_auth = self.get_api_auth().ok();
 
         let mut body = build_body(data, &self.model)?;
         self.model.merge_extra_fields(&mut body);
@@ -49,8 +49,8 @@ impl OllamaClient {
         debug!("Ollama Request: {url} {body}");
 
         let mut builder = client.post(url).json(&body);
-        if let Some(api_key) = api_key {
-            builder = builder.header("Authorization", api_key)
+        if let Some(api_auth) = api_auth {
+            builder = builder.header("Authorization", api_auth)
         }
 
         Ok(builder)
