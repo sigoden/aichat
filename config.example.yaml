@@ -73,7 +73,12 @@ clients:
   - type: groq
     api_key: gsk_xxx                                  # ENV: {client_name}_API_KEY
 
-  # Any openai-compatible API providers 
+  # Any platform that is compatible with OpenAI's API can be used here, including:
+  #   - anyscale: https://docs.anyscale.com/endpoints/model-serving/openai-migration-guide
+  #   - deepinfra: https://deepinfra.com/docs/advanced/openai_api
+  #   - fireworks: https://readme.fireworks.ai/docs/openai-compatibility
+  #   - together: https://docs.together.ai/docs/openai-api-compatibility
+  #   - huggingface: https://huggingface.co/docs/text-generation-inference/messages_api
   - type: openai-compatible
     name: localai
     api_base: http://localhost:8080/v1
