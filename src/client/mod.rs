@@ -32,8 +32,8 @@ register_client!(
         AzureOpenAIConfig,
         AzureOpenAIClient
     ),
-    (bedrock, "bedrock", BedrockConfig, BedrockClient),
     (vertexai, "vertexai", VertexAIConfig, VertexAIClient),
+    (bedrock, "bedrock", BedrockConfig, BedrockClient),
     (ernie, "ernie", ErnieConfig, ErnieClient),
     (qianwen, "qianwen", QianwenConfig, QianwenClient),
     (moonshot, "moonshot", MoonshotConfig, MoonshotClient),
