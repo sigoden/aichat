@@ -22,6 +22,7 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
         'aichat' {
             [CompletionResult]::new('-m', '-m', [CompletionResultType]::ParameterName, 'Select a LLM model')
             [CompletionResult]::new('--model', '--model', [CompletionResultType]::ParameterName, 'Select a LLM model')
+            [CompletionResult]::new('--prompt', '--prompt', [CompletionResultType]::ParameterName, 'Use the system prompt')
             [CompletionResult]::new('-r', '-r', [CompletionResultType]::ParameterName, 'Select a role')
             [CompletionResult]::new('--role', '--role', [CompletionResultType]::ParameterName, 'Select a role')
             [CompletionResult]::new('-s', '-s', [CompletionResultType]::ParameterName, 'Start or join a session')

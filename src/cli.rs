@@ -6,6 +6,9 @@ pub struct Cli {
     /// Select a LLM model
     #[clap(short, long)]
     pub model: Option<String>,
+    /// Use the system prompt
+    #[clap(long)]
+    pub prompt: Option<String>,
     /// Select a role
     #[clap(short, long)]
     pub role: Option<String>,

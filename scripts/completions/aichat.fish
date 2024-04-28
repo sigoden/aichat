@@ -1,4 +1,5 @@
 complete -c aichat -s m -l model -x -a "(aichat --list-models)" -d 'Select a LLM model' -r
+complete -c aichat -l prompt -d 'Use the system prompt'
 complete -c aichat -s r -l role -x -a "(aichat --list-roles)" -d 'Select a role' -r
 complete -c aichat -s s -l session -x  -a"(aichat --list-sessions)" -d 'Start or join a session' -r
 complete -c aichat -s f -l file -d 'Include files with the message' -r -F

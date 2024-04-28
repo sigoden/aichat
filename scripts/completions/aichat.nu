@@ -25,6 +25,7 @@ module completions {
   # All-in-one chat and copilot CLI that integrates 10+ AI platforms
   export extern aichat [
     --model(-m): string@"nu-complete aichat model"    # Select a LLM model
+    --prompt                                          # Use the system prompt
     --role(-r): string@"nu-complete aichat role"      # Select a role
     --session(-s): string@"nu-complete aichat role"   # Start or join a session
     --save-session                                    # Forces the session to be saved
