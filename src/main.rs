@@ -143,7 +143,7 @@ async fn start_directive(
     let is_terminal_stdout = stdout().is_terminal();
     let extract_code = !is_terminal_stdout && code_mode;
     let output = if no_stream || extract_code {
-        let output = client.send_message(input.clone()).await?;
+        let (output, _) = client.send_message(input.clone()).await?;
         let output = if extract_code && output.trim_start().starts_with("```") {
             extract_block(&output)
         } else {
@@ -181,7 +181,7 @@ async fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
     tokio::spawn(run_spinner(" Generating", spinner_rx));
     let ret = client.send_message(input.clone()).await;
     let _ = spinner_tx.send(());
-    let mut eval_str = ret?;
+    let (mut eval_str, _) = ret?;
     if let Ok(true) = CODE_BLOCK_RE.is_match(&eval_str) {
         eval_str = extract_block(&eval_str);
     }

@@ -1,6 +1,6 @@
 use super::{
-    catch_error, message::*, ExtraConfig, Model, ModelConfig, OllamaClient, PromptType,
-    ReplyHandler, SendData,
+    catch_error, message::*, CompletionStats, ExtraConfig, Model, ModelConfig, OllamaClient,
+    PromptType, ReplyHandler, SendData,
 };
 
 use crate::utils::PromptKind;
@@ -59,17 +59,17 @@ impl OllamaClient {
 
 impl_client_trait!(OllamaClient, send_message, send_message_streaming);
 
-async fn send_message(builder: RequestBuilder) -> Result<String> {
+async fn send_message(builder: RequestBuilder) -> Result<(String, CompletionStats)> {
     let res = builder.send().await?;
     let status = res.status();
     let data = res.json().await?;
     if status != 200 {
         catch_error(&data, status.as_u16())?;
     }
-    let output = data["message"]["content"]
+    let text = data["message"]["content"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
-    Ok(output.to_string())
+    Ok((text.to_string(), CompletionStats::default()))
 }
 
 async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHandler) -> Result<()> {

@@ -1,5 +1,8 @@
 use crate::{
-    client::{init_client, ClientConfig, Message, Model, ReplyEvent, ReplyHandler, SendData},
+    client::{
+        init_client, ClientConfig, CompletionStats, Message, Model, ReplyEvent, ReplyHandler,
+        SendData,
+    },
     config::{Config, GlobalConfig},
     utils::create_abort_signal,
 };
@@ -248,10 +251,19 @@ impl Server {
                 .body(BodyExt::boxed(StreamBody::new(stream)))?;
             Ok(res)
         } else {
-            let content = client.send_message_inner(&http_client, send_data).await?;
+            let (content, stats) = client.send_message_inner(&http_client, send_data).await?;
             let res = Response::builder()
                 .header("Content-Type", "application/json")
-                .body(Full::new(ret_non_stream(&completion_id, created, &content)).boxed())?;
+                .body(
+                    Full::new(ret_non_stream(
+                        &completion_id,
+                        &model_name,
+                        created,
+                        &content,
+                        &stats,
+                    ))
+                    .boxed(),
+                )?;
             Ok(res)
         }
     }
@@ -340,12 +352,22 @@ fn create_frame(id: &str, model: &str, created: i64, content: &str, done: bool) 
     Frame::data(Bytes::from(output))
 }
 
-fn ret_non_stream(id: &str, created: i64, content: &str) -> Bytes {
+fn ret_non_stream(
+    id: &str,
+    model: &str,
+    created: i64,
+    content: &str,
+    stats: &CompletionStats,
+) -> Bytes {
+    let id = stats.id.as_deref().unwrap_or(id);
+    let input_tokens = stats.input_tokens.unwrap_or_default();
+    let output_tokens = stats.output_tokens.unwrap_or_default();
+    let total_tokens = input_tokens + output_tokens;
     let res_body = json!({
         "id": id,
         "object": "chat.completion",
         "created": created,
-        "model": "gpt-3.5-turbo",
+        "model": model,
         "choices": [
             {
                 "index": 0,
@@ -353,13 +375,14 @@ fn ret_non_stream(id: &str, created: i64, content: &str) -> Bytes {
                     "role": "assistant",
                     "content": content,
                 },
+                "logprobs": null,
                 "finish_reason": "stop",
             },
         ],
         "usage": {
-            "prompt_tokens": 0,
-            "completion_tokens": 0,
-            "total_tokens": 0,
+            "prompt_tokens": input_tokens,
+            "completion_tokens": output_tokens,
+            "total_tokens": total_tokens,
         },
     });
     Bytes::from(res_body.to_string())

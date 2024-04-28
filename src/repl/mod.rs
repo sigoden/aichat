@@ -447,7 +447,7 @@ async fn compress_session(config: &GlobalConfig) -> Result<()> {
     );
     let mut client = init_client(config)?;
     ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
-    let summary = client.send_message(input).await?;
+    let (summary, _) = client.send_message(input).await?;
     config.write().compress_session(&summary);
     Ok(())
 }

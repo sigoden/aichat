@@ -36,7 +36,7 @@ test-clients() {
 }
 
 # @cmd Test proxy server
-# @option -m --model=default
+# @option -m --model[`_choice_model`]
 # @flag -S --no-stream
 # @arg text~
 test-server() {
@@ -44,9 +44,9 @@ test-server() {
     if [[ -n "$argc_no_stream" ]]; then
         args+=("-S")
     fi
-    argc generic-chat "${args[@]}" \
+    argc chat-llm "${args[@]}" \
     --api-base http://localhost:8000/v1 \
-    --model $argc_model \
+    --model "${argc_model:-default}" \
     "$@"
 }
 
@@ -56,7 +56,7 @@ test-server() {
 # @option -m --model! $$
 # @flag -S --no-stream
 # @arg text~
-generic-chat() {
+chat-llm() {
     curl_args="$CURL_ARGS"
     _openai_chat "$@"
 }
@@ -64,7 +64,7 @@ generic-chat() {
 # @cmd List models by openai-comptabile api
 # @option --api-base! $$
 # @option --api-key! $$
-generic-models() {
+models-llm() {
     curl_args="$CURL_ARGS"
     _openai_models
 }
@@ -75,7 +75,7 @@ generic-models() {
 # @option -m --model=gpt-3.5-turbo $OPENAI_MODEL
 # @flag -S --no-stream
 # @arg text~
-openai-chat() {
+chat-openai() {
     api_base=https://api.openai.com/v1
     api_key=$OPENAI_API_KEY
     curl_args="-i $OPENAI_CURL_ARGS"
@@ -84,7 +84,7 @@ openai-chat() {
 
 # @cmd List openai models
 # @env OPENAI_API_KEY!
-openai-models() {
+models-openai() {
     api_base=https://api.openai.com/v1
     api_key=$OPENAI_API_KEY
     curl_args="$OPENAI_CURL_ARGS"
@@ -96,7 +96,7 @@ openai-models() {
 # @option -m --model=gemini-1.0-pro-latest $GEMINI_MODEL
 # @flag -S --no-stream
 # @arg text~
-gemini-chat() {
+chat-gemini() {
     method="streamGenerateContent"
     if [[ -n "$argc_no_stream" ]]; then
         method="generateContent"
@@ -112,7 +112,7 @@ gemini-chat() {
 
 # @cmd List gemini models
 # @env GEMINI_API_KEY!
-gemini-models() {
+models-gemini() {
     _wrapper curl $GEMINI_CURL_ARGS "https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}" \
 -H 'Content-Type: application/json' \
 
@@ -123,7 +123,7 @@ gemini-models() {
 # @option -m --model=claude-3-haiku-20240307 $CLAUDE_MODEL
 # @flag -S --no-stream
 # @arg text~
-claude-chat() {
+chat-claude() {
     _wrapper curl -i $CLAUDE_CURL_ARGS https://api.anthropic.com/v1/messages \
 -X POST \
 -H 'content-type: application/json' \
@@ -143,7 +143,7 @@ claude-chat() {
 # @option -m --model=mistral-small-latest $MISTRAL_MODEL
 # @flag -S --no-stream
 # @arg text~
-mistral-chat() {
+chat-mistral() {
     api_base=https://api.mistral.ai/v1
     api_key=$MISTRAL_API_KEY
     curl_args="$MISTRAL_CURL_ARGS"
@@ -152,7 +152,7 @@ mistral-chat() {
 
 # @cmd List mistral models
 # @env MISTRAL_API_KEY!
-mistral-models() {
+models-mistral() {
     api_base=https://api.mistral.ai/v1
     api_key=$MISTRAL_API_KEY
     curl_args="$MISTRAL_CURL_ARGS"
@@ -164,7 +164,7 @@ mistral-models() {
 # @option -m --model=command-r $COHERE_MODEL
 # @flag -S --no-stream
 # @arg text~
-cohere-chat() {
+chat-cohere() {
     _wrapper curl -i $COHERE_CURL_ARGS https://api.cohere.ai/v1/chat \
 -X POST \
 -H 'Content-Type: application/json' \
@@ -179,7 +179,7 @@ cohere-chat() {
 
 # @cmd List cohere models
 # @env COHERE_API_KEY!
-cohere-models() {
+models-cohere() {
     _wrapper curl $COHERE_CURL_ARGS https://api.cohere.ai/v1/models \
 -H "Authorization: Bearer $COHERE_API_KEY" \
 
@@ -190,7 +190,7 @@ cohere-models() {
 # @option -m --model=sonar-small-chat $PERPLEXITY_MODEL
 # @flag -S --no-stream
 # @arg text~
-perplexity-chat() {
+chat-perplexity() {
     api_base=https://api.perplexity.ai
     api_key=$PERPLEXITY_API_KEY
     curl_args="$PERPLEXITY_CURL_ARGS"
@@ -202,7 +202,7 @@ perplexity-chat() {
 # @option -m --model=llama3-70b-8192 $GROQ_MODEL
 # @flag -S --no-stream
 # @arg text~
-groq-chat() {
+chat-groq() {
     api_base=https://api.groq.com/openai/v1
     api_key=$GROQ_API_KEY
     curl_args="$GROQ_CURL_ARGS"
@@ -211,7 +211,7 @@ groq-chat() {
 
 # @cmd List groq models
 # @env GROQ_API_KEY!
-groq-models() {
+models-groq() {
     api_base=https://api.groq.com/openai/v1
     api_key=$GROQ_API_KEY
     curl_args="$GROQ_CURL_ARGS"
@@ -222,7 +222,7 @@ groq-models() {
 # @option -m --model=codegemma $OLLAMA_MODEL
 # @flag -S --no-stream
 # @arg text~
-ollama-chat() {
+chat-ollama() {
     _wrapper curl -i $OLLAMA_CURL_ARGS http://localhost:11434/api/chat \
 -X POST \
 -H 'Content-Type: application/json' \
@@ -240,7 +240,7 @@ ollama-chat() {
 # @option -m --model=gemini-1.0-pro $VERTEXAI_GEMINI_MODEL
 # @flag -S --no-stream
 # @arg text~
-vertexai-gemini-chat() {
+chat-vertexai-gemini() {
     api_key="$(gcloud auth print-access-token)"
     func="streamGenerateContent"
     if [[ -n "$argc_no_stream" ]]; then
@@ -264,7 +264,7 @@ vertexai-gemini-chat() {
 # @option -m --model=claude-3-haiku@20240307 $VERTEXAI_CLAUDE_MODEL
 # @flag -S --no-stream
 # @arg text~
-vertexai-claude-chat() {
+chat-vertexai-claude() {
     api_key="$(gcloud auth print-access-token)"
     url=https://$VERTEXAI_LOCATION-aiplatform.googleapis.com/v1/projects/$VERTEXAI_PROJECT_ID/locations/$VERTEXAI_LOCATION/publishers/anthropic/models/$argc_model:streamRawPredict
     _wrapper curl -i $VERTEXAI_CURL_ARGS $url \
@@ -283,7 +283,7 @@ vertexai-claude-chat() {
 # @meta require-tools aws
 # @option -m --model=mistral.mistral-7b-instruct-v0:2 $BEDROCK_MODEL
 # @env AWS_REGION=us-east-1
-bedrock-chat() {
+chat-bedrock() {
     file="$(mktemp)"
     case "$argc_model" in
         mistral.* | meta.*)
@@ -315,7 +315,7 @@ bedrock-chat() {
 # @option -m --model=ernie-tiny-8k $ERNIE_MODEL
 # @flag -S --no-stream
 # @arg text~
-ernie-chat() {
+chat-ernie() {
     ACCESS_TOKEN="$(curl -fsSL "https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=$ERNIE_API_KEY&client_secret=$ERNIE_SECRET_KEY" | jq -r '.access_token')"
     _wrapper curl -i $ERNIE_CURL_ARGS "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/$argc_model?access_token=$ACCESS_TOKEN" \
 -X POST \
@@ -331,7 +331,7 @@ ernie-chat() {
 # @option -m --model=qwen-turbo $QIANWEN_MODEL
 # @flag -S --no-stream
 # @arg text~
-qianwen-chat() {
+chat-qianwen() {
     stream_args="-H X-DashScope-SSE:enable"
     parameters_args='{"incremental_output": true}'
     if [[ -n "$argc_no_stream" ]]; then
@@ -358,7 +358,7 @@ qianwen-chat() {
 # @option -m --model=moonshot-v1-8k @MOONSHOT_MODEL
 # @flag -S --no-stream
 # @arg text~
-moonshot-chat() {
+chat-moonshot() {
     api_base=https://api.moonshot.cn/v1
     api_key=$MOONSHOT_API_KEY
     curl_args="$MOONSHOT_CURL_ARGS"
@@ -367,11 +367,15 @@ moonshot-chat() {
 
 # @cmd List moonshot models
 # @env MOONSHOT_API_KEY!
-moonshot-models() {
+models-moonshot() {
     api_base=https://api.moonshot.cn/v1
     api_key=$MOONSHOT_API_KEY
     curl_args="$MOONSHOT_CURL_ARGS"
     _openai_models
+}
+
+_choice_model() {
+    aichat --list-models
 }
 
 _argc_before() {

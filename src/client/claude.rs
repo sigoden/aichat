@@ -1,6 +1,6 @@
 use super::{
-    catch_error, extract_system_message, ClaudeClient, ExtraConfig, ImageUrl, MessageContent,
-    MessageContentPart, Model, ModelConfig, PromptType, ReplyHandler, SendData,
+    catch_error, extract_system_message, ClaudeClient, CompletionStats, ExtraConfig, ImageUrl,
+    MessageContent, MessageContentPart, Model, ModelConfig, PromptType, ReplyHandler, SendData,
 };
 
 use crate::utils::PromptKind;
@@ -54,19 +54,14 @@ impl_client_trait!(
     claude_send_message_streaming
 );
 
-pub async fn claude_send_message(builder: RequestBuilder) -> Result<String> {
+pub async fn claude_send_message(builder: RequestBuilder) -> Result<(String, CompletionStats)> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
     if status != 200 {
         catch_error(&data, status.as_u16())?;
     }
-
-    let output = data["content"][0]["text"]
-        .as_str()
-        .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
-
-    Ok(output.to_string())
+    claude_extract_completion(&data)
 }
 
 pub async fn claude_send_message_streaming(
@@ -194,4 +189,17 @@ pub fn claude_build_body(data: SendData, model: &Model) -> Result<Value> {
         body["stream"] = true.into();
     }
     Ok(body)
+}
+
+pub fn claude_extract_completion(data: &Value) -> Result<(String, CompletionStats)> {
+    let text = data["content"][0]["text"]
+        .as_str()
+        .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
+
+    let stats = CompletionStats {
+        id: data["id"].as_str().map(|v| v.to_string()),
+        input_tokens: data["usage"]["input_tokens"].as_u64(),
+        output_tokens: data["usage"]["output_tokens"].as_u64(),
+    };
+    Ok((text.to_string(), stats))
 }

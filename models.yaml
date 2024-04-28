@@ -203,19 +203,19 @@
   models:
     - name: llama3-8b-8192
       max_input_tokens: 8192
-      max_output_tokens: 8192
+      max_output_tokens?: 8192
     - name: llama3-70b-8192
       max_input_tokens: 8192
-      max_output_tokens: 8192
+      max_output_tokens?: 8192
     - name: llama2-70b-4096
       max_input_tokens: 4096
-      max_output_tokens: 4096
+      max_output_tokens?: 4096
     - name: mixtral-8x7b-32768
       max_input_tokens: 32768
-      max_output_tokens: 32768
+      max_output_tokens?: 32768
     - name: gemma-7b-it
       max_input_tokens: 8192
-      max_output_tokens: 8192
+      max_output_tokens?: 8192
 
 - type: vertexai
   # docs:
