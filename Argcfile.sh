@@ -28,18 +28,23 @@ test-without-config() {
 # @arg clients+[`_choice_client`]
 test-clients() {
     for c in "${argc_clients[@]}"; do
-        echo "### $c streaming"
+        echo "### $c stream"
         aichat -m "$c" 1 + 2 = ?
-        echo "### $c non-streaming"
+        echo "### $c non-stream"
         aichat -m "$c" -S 1 + 2 = ?
     done
 }
 
 # @cmd Test proxy server
-# @option --model=default
+# @option -m --model=default
+# @flag -S --no-stream
 # @arg text~
 test-server() {
-    argc generic-chat \
+    args=()
+    if [[ -n "$argc_no_stream" ]]; then
+        args+=("-S")
+    fi
+    argc generic-chat "${args[@]}" \
     --api-base http://localhost:8000/v1 \
     --model $argc_model \
     "$@"
