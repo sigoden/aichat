@@ -25,20 +25,6 @@ pub struct OpenAIConfig {
 }
 
 impl OpenAIClient {
-    list_models_fn!(
-        OpenAIConfig,
-        [
-            // https://platform.openai.com/docs/models
-            ("gpt-3.5-turbo", "text", 16385),
-            ("gpt-3.5-turbo-1106", "text", 16385),
-            ("gpt-4-turbo", "text,vision", 128000),
-            ("gpt-4-turbo-preview", "text", 128000),
-            ("gpt-4-1106-preview", "text", 128000),
-            ("gpt-4-vision-preview", "text,vision", 128000, 4096),
-            ("gpt-4", "text", 8192),
-            ("gpt-4-32k", "text", 32768),
-        ]
-    );
     config_get_fn!(api_key, get_api_key);
     config_get_fn!(api_base, get_api_base);
 

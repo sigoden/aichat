@@ -17,7 +17,6 @@ pub struct AzureOpenAIConfig {
 }
 
 impl AzureOpenAIClient {
-    list_models_fn!(AzureOpenAIConfig);
     config_get_fn!(api_base, get_api_base);
     config_get_fn!(api_key, get_api_key);
 

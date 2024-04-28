@@ -29,18 +29,6 @@ pub struct VertexAIConfig {
 }
 
 impl VertexAIClient {
-    list_models_fn!(
-        VertexAIConfig,
-        [
-            // https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
-            ("gemini-1.0-pro", "text", 24568),
-            ("gemini-1.0-pro-vision", "text,vision", 14336),
-            ("gemini-1.5-pro-preview-0409", "text,vision", 1000000),
-            ("claude-3-opus@20240229", "text,vision", 200000, 4096),
-            ("claude-3-sonnet@20240229", "text,vision", 200000, 4096),
-            ("claude-3-haiku@20240307", "text,vision", 200000, 4096),
-        ]
-    );
     config_get_fn!(project_id, get_project_id);
     config_get_fn!(location, get_location);
 
