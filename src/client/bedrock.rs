@@ -396,11 +396,11 @@ fn aws_fetch(
 
     debug!("Bedrock Request: {endpoint} {body}");
 
-    let requst_builder = client
+    let request_builder = client
         .request(method, endpoint)
         .headers(req_headers)
         .body(body);
-    Ok(requst_builder)
+    Ok(request_builder)
 }
 
 fn sha256(data: &str) -> String {
