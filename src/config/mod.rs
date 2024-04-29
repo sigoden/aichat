@@ -11,7 +11,10 @@ use crate::client::{
     create_client_config, list_client_types, list_models, ClientConfig, Message, Model, SendData,
 };
 use crate::render::{MarkdownRender, RenderOptions};
-use crate::utils::{get_env_name, light_theme_from_colorfgbg, now, render_prompt, set_text};
+use crate::utils::{
+    format_option_value, fuzzy_match, get_env_name, light_theme_from_colorfgbg, now, render_prompt,
+    set_text,
+};
 
 use anyhow::{anyhow, bail, Context, Result};
 use inquire::{Confirm, Select, Text};
@@ -415,18 +418,18 @@ impl Config {
             .map_or_else(|| String::from("no"), |v| v.to_string());
         let items = vec![
             ("model", self.model.id()),
-            ("temperature", format_option(&self.temperature)),
-            ("top_p", format_option(&self.top_p)),
+            ("temperature", format_option_value(&self.temperature)),
+            ("top_p", format_option_value(&self.top_p)),
             ("dry_run", self.dry_run.to_string()),
             ("save", self.save.to_string()),
-            ("save_session", format_option(&self.save_session)),
+            ("save_session", format_option_value(&self.save_session)),
             ("highlight", self.highlight.to_string()),
             ("light_theme", self.light_theme.to_string()),
             ("wrap", wrap),
             ("wrap_code", self.wrap_code.to_string()),
             ("auto_copy", self.auto_copy.to_string()),
             ("keybindings", self.keybindings.stringify().into()),
-            ("prelude", format_option(&self.prelude)),
+            ("prelude", format_option_value(&self.prelude)),
             ("compress_threshold", self.compress_threshold.to_string()),
             ("config_file", display_path(&Self::config_file()?)),
             ("roles_file", display_path(&Self::roles_file()?)),
@@ -476,12 +479,23 @@ impl Config {
             .unwrap_or_default()
     }
 
-    pub fn repl_complete(&self, cmd: &str, args: &[&str]) -> Vec<String> {
+    pub fn repl_complete(&self, cmd: &str, args: &[&str]) -> Vec<(String, String)> {
         let (values, filter) = if args.len() == 1 {
             let values = match cmd {
-                ".role" => self.roles.iter().map(|v| v.name.clone()).collect(),
-                ".model" => list_models(self).into_iter().map(|v| v.id()).collect(),
-                ".session" => self.list_sessions(),
+                ".role" => self
+                    .roles
+                    .iter()
+                    .map(|v| (v.name.clone(), String::new()))
+                    .collect(),
+                ".model" => list_models(self)
+                    .into_iter()
+                    .map(|v| (v.id(), v.description()))
+                    .collect(),
+                ".session" => self
+                    .list_sessions()
+                    .into_iter()
+                    .map(|v| (v.clone(), String::new()))
+                    .collect(),
                 ".set" => vec![
                     "temperature ",
                     "top_p ",
@@ -493,7 +507,7 @@ impl Config {
                     "auto_copy ",
                 ]
                 .into_iter()
-                .map(|v| v.to_string())
+                .map(|v| (v.to_string(), String::new()))
                 .collect(),
                 _ => vec![],
             };
@@ -514,13 +528,16 @@ impl Config {
                 "auto_copy" => complete_bool(self.auto_copy),
                 _ => vec![],
             };
-            (values, args[1])
+            (
+                values.into_iter().map(|v| (v, String::new())).collect(),
+                args[1],
+            )
         } else {
             return vec![];
         };
         values
             .into_iter()
-            .filter(|v| v.starts_with(filter))
+            .filter(|(value, _)| fuzzy_match(value, filter))
             .collect()
     }
 
@@ -1134,16 +1151,6 @@ where
         Some(value)
     };
     Ok(value)
-}
-
-fn format_option<T>(value: &Option<T>) -> String
-where
-    T: std::fmt::Display,
-{
-    match value {
-        Some(value) => value.to_string(),
-        None => "-".to_string(),
-    }
 }
 
 fn complete_bool(value: bool) -> Vec<String> {

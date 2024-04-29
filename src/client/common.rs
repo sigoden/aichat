@@ -147,17 +147,22 @@ macro_rules! register_client {
             anyhow::bail!("Unknown client '{}'", client)
         }
 
-        pub fn list_models(config: &$crate::config::Config) -> Vec<$crate::client::Model> {
-            config
-                .clients
-                .iter()
-                .flat_map(|v| match v {
-                    $(ClientConfig::$config(c) => $client::list_models(c),)+
-                    ClientConfig::Unknown => vec![],
-                })
-                .collect()
-        }
+        static mut ALL_CLIENTS: Option<Vec<$crate::client::Model>> = None;
 
+        pub fn list_models(config: &$crate::config::Config) -> Vec<&$crate::client::Model> {
+            if unsafe { ALL_CLIENTS.is_none() } {
+                let models: Vec<_> = config
+                    .clients
+                    .iter()
+                    .flat_map(|v| match v {
+                        $(ClientConfig::$config(c) => $client::list_models(c),)+
+                        ClientConfig::Unknown => vec![],
+                    })
+                    .collect();
+                unsafe { ALL_CLIENTS = Some(models) };
+            }
+            unsafe { ALL_CLIENTS.as_ref().unwrap().iter().collect() }
+        }
     };
 }
 
