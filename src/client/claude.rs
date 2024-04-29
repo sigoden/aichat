@@ -1,14 +1,13 @@
 use super::{
-    catch_error, extract_system_message, ClaudeClient, CompletionDetails, ExtraConfig, ImageUrl,
-    MessageContent, MessageContentPart, Model, ModelConfig, PromptType, SendData, SseHandler,
+    catch_error, extract_system_message, sse_stream, ClaudeClient, CompletionDetails, ExtraConfig,
+    ImageUrl, MessageContent, MessageContentPart, Model, ModelConfig, PromptType, SendData,
+    SseHandler,
 };
 
 use crate::utils::PromptKind;
 
 use anyhow::{anyhow, bail, Result};
-use futures_util::StreamExt;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
-use reqwest_eventsource::{Error as EventSourceError, Event, RequestBuilderExt};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -68,50 +67,19 @@ pub async fn claude_send_message_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
 ) -> Result<()> {
-    let mut es = builder.eventsource()?;
-    while let Some(event) = es.next().await {
-        match event {
-            Ok(Event::Open) => {}
-            Ok(Event::Message(message)) => {
-                let data: Value = serde_json::from_str(&message.data)?;
-                if let Some(typ) = data["type"].as_str() {
-                    if typ == "content_block_delta" {
-                        if let Some(text) = data["delta"]["text"].as_str() {
-                            handler.text(text)?;
-                        }
-                    }
+    let handle = |data: &str| -> Result<bool> {
+        let data: Value = serde_json::from_str(data)?;
+        if let Some(typ) = data["type"].as_str() {
+            if typ == "content_block_delta" {
+                if let Some(text) = data["delta"]["text"].as_str() {
+                    handler.text(text)?;
                 }
-            }
-            Err(err) => {
-                match err {
-                    EventSourceError::StreamEnded => {}
-                    EventSourceError::InvalidStatusCode(status, res) => {
-                        let text = res.text().await?;
-                        let data: Value = match text.parse() {
-                            Ok(data) => data,
-                            Err(_) => {
-                                bail!(
-                                    "Invalid response data: {text} (status: {})",
-                                    status.as_u16()
-                                );
-                            }
-                        };
-                        catch_error(&data, status.as_u16())?;
-                    }
-                    EventSourceError::InvalidContentType(_, res) => {
-                        let text = res.text().await?;
-                        bail!("The API server should return data as 'text/event-stream', but it isn't. Check the client config. {text}");
-                    }
-                    _ => {
-                        bail!("{}", err);
-                    }
-                }
-                es.close();
             }
         }
-    }
+        Ok(false)
+    };
 
-    Ok(())
+    sse_stream(builder, handle).await
 }
 
 pub fn claude_build_body(data: SendData, model: &Model) -> Result<Value> {
