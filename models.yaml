@@ -1,3 +1,7 @@
+# NOTES:
+#   - This model list is scheduled to be updated with each new aichat release. Please do not submit PR to add new models.
+#   - This model list does not include models officially marked as legacy or beta.
+
 - type: openai
   # docs:
   #   - https://platform.openai.com/docs/models

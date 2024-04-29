@@ -124,14 +124,7 @@ clients:
   - type: moonshot
     api_key: sk-xxx                                  # ENV: {client_name}_API_KEY
 
-  # Any platform that is compatible with OpenAI's API can be used here, including:
-  #   - localai: https://github.com/mudler/LocalAI
-  #   - anyscale: https://docs.anyscale.com/endpoints/model-serving/openai-migration-guide
-  #   - deepinfra: https://deepinfra.com/docs/advanced/openai_api
-  #   - fireworks: https://readme.fireworks.ai/docs/openai-compatibility
-  #   - together.ai: https://docs.together.ai/docs/openai-api-compatibility
-  #   - huggingface: https://huggingface.co/docs/text-generation-inference/messages_api
-  #   - OctoAI: https://octo.ai/docs/text-gen-solution/migration-from-openai
+  # For any platform compatible with OpenAI's API
   - type: openai-compatible
     name: localai
     api_base: http://localhost:8080/v1                # ENV: {client_name}_API_BASE
@@ -140,3 +133,64 @@ clients:
     models:                                           # Required
       - name: llama3
         max_input_tokens: 8192
+
+  # See https://docs.endpoints.anyscale.com/
+  - type: openai-compatible
+    name: anyscale
+    api_base: https://api.endpoints.anyscale.com/v1
+    api_key: xxx
+    models:
+      # https://docs.endpoints.anyscale.com/text-generation/query-a-model#select-a-model
+      - name: meta-llama/Meta-Llama-3-70B-Instruct
+        max_input_tokens: 8192
+        input_price: 1
+        output_price: 1
+
+  # See https://deepinfra.com/docs
+  - type: openai-compatible
+    name: deepinfra
+    api_base: https://api.deepinfra.com/v1/openai
+    api_key: xxx
+    models:
+      # https://deepinfra.com/models
+      - name: meta-llama/Meta-Llama-3-70B-Instruct
+        max_input_tokens: 8192
+        input_price: 0.59
+        output_price: 0.79
+
+  # See https://readme.fireworks.ai/docs/quickstart
+  - type: openai-compatible
+    name: fireworks
+    api_base: https://api.fireworks.ai/inference/v1
+    api_key: xxx
+    models:
+      # https://fireworks.ai/models
+      - name: accounts/fireworks/models/llama-v3-70b-instruct
+        max_input_tokens: 8192
+        input_price: 0.9
+        output_price: 0.9
+
+
+  # See https://octo.ai/docs/getting-started/quickstart
+  - type: openai-compatible
+    name: octoai
+    api_base: https://text.octoai.run/v1
+    api_key: xxx
+    models:
+      # https://octo.ai/docs/getting-started/inference-models
+      - name: meta-llama-3-70b-instruct
+        max_input_tokens: 8192
+        input_price: 0.86
+        output_price: 0.86
+
+  # See https://docs.together.ai/docs/quickstart
+  - type: openai-compatible
+    name: together
+    api_base: https://api.together.xyz/v1
+    api_key: xxx
+    models:
+      # https://docs.together.ai/docs/inference-models
+      - name: meta-llama/Llama-3-70b-chat-hf
+        max_input_tokens: 8192
+        input_price: 0.9
+        output_price: 0.9
