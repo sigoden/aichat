@@ -318,8 +318,29 @@
       input_price: 8
       output_price: 2.4
 
+- type: cloudflare
+  # docs:
+  #   - https://developers.cloudflare.com/workers-ai/models/
+  #   - https://developers.cloudflare.com/workers-ai/platform/pricing/
+  models:
+    - name: '@cf/meta/llama-2-7b-chat-fp16'
+      max_input_tokens: 3072
+      max_output_tokens: 2500
+      input_price: 0.56
+      output_price: 6.6
+    - name: '@cf/meta/llama-2-7b-chat-int8'
+      max_input_tokens: 2048
+      max_output_tokens: 1800
+      input_price: 0.16
+      output_price: 0.24
+    - name: '@cf/mistral/mistral-7b-instruct-v0.1'
+      max_input_tokens: 8192
+      max_output_tokens: 8192
+      input_price: 0.11
+      output_price: 0.19
+
 - type: ernie
-  # docs: 
+  # docs:
   #   - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu
   #   - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7
   models:
