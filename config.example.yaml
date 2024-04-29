@@ -101,15 +101,20 @@ clients:
     # Optional field, possible values: BLOCK_NONE, BLOCK_ONLY_HIGH, BLOCK_MEDIUM_AND_ABOVE, BLOCK_LOW_AND_ABOVE
     block_threshold: BLOCK_ONLY_HIGH
 
-  - type: cloudflare
-    account_id: xxx                                   # ENV: {client_name}_ACCOUNT_ID
-    api_key: xxx                                      # ENV: {client_name}_API_KEY
-
   # See https://docs.aws.amazon.com/bedrock/latest/userguide/
   - type: bedrock
     access_key_id: xxx                               # ENV: {client_name}_ACCESS_KEY_ID
     secret_access_key: xxx                           # ENV: {client_name}_SECRET_ACCESS_KEY
     region: xxx                                      # ENV: {client_name}_REGION
+
+  # See https://developers.cloudflare.com/workers-ai/
+  - type: cloudflare
+    account_id: xxx                                   # ENV: {client_name}_ACCOUNT_ID
+    api_key: xxx                                      # ENV: {client_name}_API_KEY
+
+  # See https://replicate.com/docs
+  - type: replicate
+    api_key: xxx                                      # ENV: {client_name}_API_KEY
 
   # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
   - type: ernie

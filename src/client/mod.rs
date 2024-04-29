@@ -29,6 +29,7 @@ register_client!(
     (vertexai, "vertexai", VertexAIConfig, VertexAIClient),
     (bedrock, "bedrock", BedrockConfig, BedrockClient),
     (cloudflare, "cloudflare", CloudflareConfig, CloudflareClient),
+    (replicate, "replicate", ReplicateConfig, ReplicateClient),
     (ernie, "ernie", ErnieConfig, ErnieClient),
     (qianwen, "qianwen", QianwenConfig, QianwenClient),
     (moonshot, "moonshot", MoonshotConfig, MoonshotClient),

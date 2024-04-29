@@ -367,6 +367,34 @@
       input_price: 0.11
       output_price: 0.19
 
+- type: replicate
+  # docs:
+  #   - https://replicate.com/docs
+  #   - https://replicate.com/pricing
+  # notes:
+  #   - max_output_tokens is required but unknown
+  models:
+    - name: meta/meta-llama-3-70b-instruct
+      max_input_tokens: 8192
+      max_output_tokens: 4096
+      input_price: 0.65
+      output_price: 2.75
+    - name: meta/meta-llama-3-8b-instruct
+      max_input_tokens: 8192
+      max_output_tokens: 4096
+      input_price: 0.05
+      output_price: 0.25
+    - name: mistralai/mistral-7b-instruct-v0.2
+      max_input_tokens: 32000
+      max_output_tokens: 8192
+      input_price: 0.05
+      output_price: 0.25
+    - name: mistralai/mixtral-8x7b-instruct-v0.1
+      max_input_tokens: 32000
+      max_output_tokens: 8192
+      input_price: 0.3
+      output_price: 1
+
 - type: ernie
   # docs:
   #   - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu
