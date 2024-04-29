@@ -73,21 +73,6 @@ clients:
   - type: groq
     api_key: gsk_xxx                                  # ENV: {client_name}_API_KEY
 
-  # Any platform that is compatible with OpenAI's API can be used here, including:
-  #   - anyscale: https://docs.anyscale.com/endpoints/model-serving/openai-migration-guide
-  #   - deepinfra: https://deepinfra.com/docs/advanced/openai_api
-  #   - fireworks: https://readme.fireworks.ai/docs/openai-compatibility
-  #   - together: https://docs.together.ai/docs/openai-api-compatibility
-  #   - huggingface: https://huggingface.co/docs/text-generation-inference/messages_api
-  - type: openai-compatible
-    name: localai
-    api_base: http://localhost:8080/v1
-    api_key: sk-xxx                                   # ENV: {client_name}_API_BASE
-    chat_endpoint: /chat/completions                  # Optional
-    models:                                           # Required
-      - name: llama3
-        max_input_tokens: 8192
-
   # See https://github.com/jmorganca/ollama
   - type: ollama
     api_base: http://localhost:11434
@@ -116,6 +101,10 @@ clients:
     # Optional field, possible values: BLOCK_NONE, BLOCK_ONLY_HIGH, BLOCK_MEDIUM_AND_ABOVE, BLOCK_LOW_AND_ABOVE
     block_threshold: BLOCK_ONLY_HIGH
 
+  - type: cloudflare
+    account_id: xxx                                   # ENV: {client_name}_ACCOUNT_ID
+    api_key: xxx                                      # ENV: {client_name}_API_BASE
+
   # See https://docs.aws.amazon.com/bedrock/latest/userguide/
   - type: bedrock
     access_key_id: xxx                               # ENV: {client_name}_ACCESS_KEY_ID
@@ -134,3 +123,19 @@ clients:
   # See https://platform.moonshot.cn/docs/intro
   - type: moonshot
     api_key: sk-xxx                                  # ENV: {client_name}_API_KEY
+
+  # Any platform that is compatible with OpenAI's API can be used here, including:
+  #   - localai: https://github.com/mudler/LocalAI
+  #   - anyscale: https://docs.anyscale.com/endpoints/model-serving/openai-migration-guide
+  #   - deepinfra: https://deepinfra.com/docs/advanced/openai_api
+  #   - fireworks: https://readme.fireworks.ai/docs/openai-compatibility
+  #   - together: https://docs.together.ai/docs/openai-api-compatibility
+  #   - huggingface: https://huggingface.co/docs/text-generation-inference/messages_api
+  - type: openai-compatible
+    name: localai
+    api_base: http://localhost:8080/v1
+    api_key: sk-xxx                                   # ENV: {client_name}_API_BASE
+    chat_endpoint: /chat/completions                  # Optional
+    models:                                           # Required
+      - name: llama3
+        max_input_tokens: 8192

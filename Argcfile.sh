@@ -309,6 +309,22 @@ chat-bedrock() {
     cat "$file"
 }
 
+# @cmd Chat with cloudflare api
+# @env CLOUDFLARE_API_KEY!
+# @option -m --model=@cf/meta/llama-3-8b-instruct $CLOUDFLARE_MODEL
+# @flag -S --no-stream
+# @arg text~
+chat-cloudflare() {
+    url="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/ai/run/$argc_model"
+    _wrapper curl -i $CLOUDFLARE_CURL_ARGS "$url" \
+-X POST \
+-H "Authorization: Bearer $CLOUDFLARE_API_KEY" \
+-d '{
+  "messages": '"$(_build_msg $*)"',
+  "stream": '$stream'
+}'
+}
+
 # @cmd Chat with ernie api
 # @meta require-tools jq
 # @env ERNIE_API_KEY!
@@ -316,8 +332,10 @@ chat-bedrock() {
 # @flag -S --no-stream
 # @arg text~
 chat-ernie() {
-    ACCESS_TOKEN="$(curl -fsSL "https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=$ERNIE_API_KEY&client_secret=$ERNIE_SECRET_KEY" | jq -r '.access_token')"
-    _wrapper curl -i $ERNIE_CURL_ARGS "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/$argc_model?access_token=$ACCESS_TOKEN" \
+    auth_url="https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=$ERNIE_API_KEY&client_secret=$ERNIE_SECRET_KEY"
+    ACCESS_TOKEN="$(curl -fsSL "$auth_url" | jq -r '.access_token')"
+    url="https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/$argc_model?access_token=$ACCESS_TOKEN"
+    _wrapper curl -i $ERNIE_CURL_ARGS "$url" \
 -X POST \
 -d '{
     "messages": '"$(_build_msg $*)"',
@@ -338,9 +356,8 @@ chat-qianwen() {
         stream_args=""
         parameters_args='{}'
     fi
-    parameters_args='{ "temperature": 0.5 }'
-
-    _wrapper curl -i $QIANWEN_CURL_ARGS 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation' \
+    url=https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation
+    _wrapper curl -i $QIANWEN_CURL_ARGS "$url" \
 -X POST \
 -H "Authorization: Bearer $QIANWEN_API_KEY" \
 -H 'Content-Type: application/json' $stream_args  \

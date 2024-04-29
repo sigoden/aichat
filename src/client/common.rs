@@ -506,6 +506,10 @@ pub fn catch_error(data: &Value, status: u16) -> Result<()> {
         if let (Some(typ), Some(message)) = (error["type"].as_str(), error["message"].as_str()) {
             bail!("{message} (type: {typ})");
         }
+    } else if let Some(error) = data["errors"][0].as_object() {
+        if let (Some(code), Some(message)) = (error["code"].as_u64(), error["message"].as_str()) {
+            bail!("{message} (status: {code})")
+        }
     } else if let Some(error) = data[0]["error"].as_object() {
         if let (Some(status), Some(message)) = (error["status"].as_str(), error["message"].as_str())
         {

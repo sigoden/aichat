@@ -19,12 +19,6 @@ register_client!(
     (cohere, "cohere", CohereConfig, CohereClient),
     (perplexity, "perplexity", PerplexityConfig, PerplexityClient),
     (groq, "groq", GroqConfig, GroqClient),
-    (
-        openai_compatible,
-        "openai-compatible",
-        OpenAICompatibleConfig,
-        OpenAICompatibleClient
-    ),
     (ollama, "ollama", OllamaConfig, OllamaClient),
     (
         azure_openai,
@@ -34,7 +28,14 @@ register_client!(
     ),
     (vertexai, "vertexai", VertexAIConfig, VertexAIClient),
     (bedrock, "bedrock", BedrockConfig, BedrockClient),
+    (cloudflare, "cloudflare", CloudflareConfig, CloudflareClient),
     (ernie, "ernie", ErnieConfig, ErnieClient),
     (qianwen, "qianwen", QianwenConfig, QianwenClient),
     (moonshot, "moonshot", MoonshotConfig, MoonshotClient),
+    (
+        openai_compatible,
+        "openai-compatible",
+        OpenAICompatibleConfig,
+        OpenAICompatibleClient
+    ),
 );
