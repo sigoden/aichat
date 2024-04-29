@@ -1,4 +1,4 @@
-use super::{MarkdownRender, ReplyEvent};
+use super::{MarkdownRender, SseEvent};
 
 use crate::utils::{run_spinner, AbortSignal};
 
@@ -17,7 +17,7 @@ use textwrap::core::display_width;
 use tokio::sync::{mpsc::UnboundedReceiver, oneshot};
 
 pub async fn markdown_stream(
-    rx: UnboundedReceiver<ReplyEvent>,
+    rx: UnboundedReceiver<SseEvent>,
     render: &mut MarkdownRender,
     abort: &AbortSignal,
 ) -> Result<()> {
@@ -31,18 +31,18 @@ pub async fn markdown_stream(
     ret
 }
 
-pub async fn raw_stream(mut rx: UnboundedReceiver<ReplyEvent>, abort: &AbortSignal) -> Result<()> {
+pub async fn raw_stream(mut rx: UnboundedReceiver<SseEvent>, abort: &AbortSignal) -> Result<()> {
     loop {
         if abort.aborted() {
             return Ok(());
         }
         if let Some(evt) = rx.recv().await {
             match evt {
-                ReplyEvent::Text(text) => {
+                SseEvent::Text(text) => {
                     print!("{}", text);
                     stdout().flush()?;
                 }
-                ReplyEvent::Done => {
+                SseEvent::Done => {
                     break;
                 }
             }
@@ -52,7 +52,7 @@ pub async fn raw_stream(mut rx: UnboundedReceiver<ReplyEvent>, abort: &AbortSign
 }
 
 async fn markdown_stream_inner(
-    mut rx: UnboundedReceiver<ReplyEvent>,
+    mut rx: UnboundedReceiver<SseEvent>,
     render: &mut MarkdownRender,
     abort: &AbortSignal,
     writer: &mut Stdout,
@@ -76,7 +76,7 @@ async fn markdown_stream_inner(
             }
 
             match reply_event {
-                ReplyEvent::Text(mut text) => {
+                SseEvent::Text(mut text) => {
                     // tab width hacking
                     text = text.replace('\t', "    ");
 
@@ -127,7 +127,7 @@ async fn markdown_stream_inner(
 
                     writer.flush()?;
                 }
-                ReplyEvent::Done => {
+                SseEvent::Done => {
                     break 'outer;
                 }
             }
@@ -156,15 +156,15 @@ async fn markdown_stream_inner(
     Ok(())
 }
 
-async fn gather_events(rx: &mut UnboundedReceiver<ReplyEvent>) -> Vec<ReplyEvent> {
+async fn gather_events(rx: &mut UnboundedReceiver<SseEvent>) -> Vec<SseEvent> {
     let mut texts = vec![];
     let mut done = false;
     tokio::select! {
         _ = async {
             while let Some(reply_event) = rx.recv().await {
                 match reply_event {
-                    ReplyEvent::Text(v) => texts.push(v),
-                    ReplyEvent::Done => {
+                    SseEvent::Text(v) => texts.push(v),
+                    SseEvent::Done => {
                         done = true;
                         break;
                     }
@@ -175,10 +175,10 @@ async fn gather_events(rx: &mut UnboundedReceiver<ReplyEvent>) -> Vec<ReplyEvent
     };
     let mut events = vec![];
     if !texts.is_empty() {
-        events.push(ReplyEvent::Text(texts.join("")))
+        events.push(SseEvent::Text(texts.join("")))
     }
     if done {
-        events.push(ReplyEvent::Done)
+        events.push(SseEvent::Done)
     }
     events
 }

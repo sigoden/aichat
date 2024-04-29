@@ -1,6 +1,6 @@
 use super::{
-    catch_error, extract_system_message, ClaudeClient, CompletionStats, ExtraConfig, ImageUrl,
-    MessageContent, MessageContentPart, Model, ModelConfig, PromptType, ReplyHandler, SendData,
+    catch_error, extract_system_message, ClaudeClient, CompletionDetails, ExtraConfig, ImageUrl,
+    MessageContent, MessageContentPart, Model, ModelConfig, PromptType, SendData, SseHandler,
 };
 
 use crate::utils::PromptKind;
@@ -54,7 +54,7 @@ impl_client_trait!(
     claude_send_message_streaming
 );
 
-pub async fn claude_send_message(builder: RequestBuilder) -> Result<(String, CompletionStats)> {
+pub async fn claude_send_message(builder: RequestBuilder) -> Result<(String, CompletionDetails)> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -66,7 +66,7 @@ pub async fn claude_send_message(builder: RequestBuilder) -> Result<(String, Com
 
 pub async fn claude_send_message_streaming(
     builder: RequestBuilder,
-    handler: &mut ReplyHandler,
+    handler: &mut SseHandler,
 ) -> Result<()> {
     let mut es = builder.eventsource()?;
     while let Some(event) = es.next().await {
@@ -191,15 +191,15 @@ pub fn claude_build_body(data: SendData, model: &Model) -> Result<Value> {
     Ok(body)
 }
 
-pub fn claude_extract_completion(data: &Value) -> Result<(String, CompletionStats)> {
+pub fn claude_extract_completion(data: &Value) -> Result<(String, CompletionDetails)> {
     let text = data["content"][0]["text"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
 
-    let stats = CompletionStats {
+    let details = CompletionDetails {
         id: data["id"].as_str().map(|v| v.to_string()),
         input_tokens: data["usage"]["input_tokens"].as_u64(),
         output_tokens: data["usage"]["output_tokens"].as_u64(),
     };
-    Ok((text.to_string(), stats))
+    Ok((text.to_string(), details))
 }

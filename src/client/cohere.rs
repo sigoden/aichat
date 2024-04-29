@@ -1,6 +1,6 @@
 use super::{
-    catch_error, extract_system_message, json_stream, message::*, CohereClient, CompletionStats,
-    ExtraConfig, Model, ModelConfig, PromptType, ReplyHandler, SendData,
+    catch_error, extract_system_message, json_stream, message::*, CohereClient, CompletionDetails,
+    ExtraConfig, Model, ModelConfig, PromptType, SendData, SseHandler,
 };
 
 use crate::utils::PromptKind;
@@ -47,7 +47,7 @@ impl CohereClient {
 
 impl_client_trait!(CohereClient, send_message, send_message_streaming);
 
-async fn send_message(builder: RequestBuilder) -> Result<(String, CompletionStats)> {
+async fn send_message(builder: RequestBuilder) -> Result<(String, CompletionDetails)> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -58,7 +58,7 @@ async fn send_message(builder: RequestBuilder) -> Result<(String, CompletionStat
     cohere_extract_completion(&data)
 }
 
-async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHandler) -> Result<()> {
+async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
     let res = builder.send().await?;
     let status = res.status();
     if status != 200 {
@@ -156,15 +156,15 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
     Ok(body)
 }
 
-fn cohere_extract_completion(data: &Value) -> Result<(String, CompletionStats)> {
+fn cohere_extract_completion(data: &Value) -> Result<(String, CompletionDetails)> {
     let text = data["text"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
 
-    let stats = CompletionStats {
+    let details = CompletionDetails {
         id: data["generation_id"].as_str().map(|v| v.to_string()),
         input_tokens: data["meta"]["billed_units"]["input_tokens"].as_u64(),
         output_tokens: data["meta"]["billed_units"]["output_tokens"].as_u64(),
     };
-    Ok((text.to_string(), stats))
+    Ok((text.to_string(), details))
 }

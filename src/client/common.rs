@@ -1,4 +1,4 @@
-use super::{openai::OpenAIConfig, ClientConfig, ClientModel, Message, Model, ReplyHandler};
+use super::{openai::OpenAIConfig, ClientConfig, ClientModel, Message, Model, SseHandler};
 
 use crate::{
     config::{GlobalConfig, Input},
@@ -260,7 +260,7 @@ macro_rules! impl_client_trait {
                 &self,
                 client: &reqwest::Client,
                 data: $crate::client::SendData,
-            ) -> anyhow::Result<(String, $crate::client::CompletionStats)> {
+            ) -> anyhow::Result<(String, $crate::client::CompletionDetails)> {
                 let builder = self.request_builder(client, data)?;
                 $send_message(builder).await
             }
@@ -268,7 +268,7 @@ macro_rules! impl_client_trait {
             async fn send_message_streaming_inner(
                 &self,
                 client: &reqwest::Client,
-                handler: &mut $crate::client::ReplyHandler,
+                handler: &mut $crate::client::SseHandler,
                 data: $crate::client::SendData,
             ) -> Result<()> {
                 let builder = self.request_builder(client, data)?;
@@ -330,11 +330,11 @@ pub trait Client: Sync + Send {
         Ok(client)
     }
 
-    async fn send_message(&self, input: Input) -> Result<(String, CompletionStats)> {
+    async fn send_message(&self, input: Input) -> Result<(String, CompletionDetails)> {
         let global_config = self.config().0;
         if global_config.read().dry_run {
             let content = global_config.read().echo_messages(&input);
-            return Ok((content, CompletionStats::default()));
+            return Ok((content, CompletionDetails::default()));
         }
         let client = self.build_client()?;
         let data = global_config.read().prepare_send_data(&input, false)?;
@@ -343,11 +343,7 @@ pub trait Client: Sync + Send {
             .with_context(|| "Failed to get answer")
     }
 
-    async fn send_message_streaming(
-        &self,
-        input: &Input,
-        handler: &mut ReplyHandler,
-    ) -> Result<()> {
+    async fn send_message_streaming(&self, input: &Input, handler: &mut SseHandler) -> Result<()> {
         async fn watch_abort(abort: AbortSignal) {
             loop {
                 if abort.aborted() {
@@ -388,12 +384,12 @@ pub trait Client: Sync + Send {
         &self,
         client: &ReqwestClient,
         data: SendData,
-    ) -> Result<(String, CompletionStats)>;
+    ) -> Result<(String, CompletionDetails)>;
 
     async fn send_message_streaming_inner(
         &self,
         client: &ReqwestClient,
-        handler: &mut ReplyHandler,
+        handler: &mut SseHandler,
         data: SendData,
     ) -> Result<()>;
 }
@@ -419,7 +415,7 @@ pub struct SendData {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct CompletionStats {
+pub struct CompletionDetails {
     pub id: Option<String>,
     pub input_tokens: Option<u64>,
     pub output_tokens: Option<u64>,
@@ -459,7 +455,7 @@ pub async fn send_stream(
     abort: AbortSignal,
 ) -> Result<String> {
     let (tx, rx) = unbounded_channel();
-    let mut stream_handler = ReplyHandler::new(tx, abort.clone());
+    let mut stream_handler = SseHandler::new(tx, abort.clone());
 
     let (send_ret, rend_ret) = tokio::join!(
         client.send_message_streaming(input, &mut stream_handler),
@@ -486,7 +482,7 @@ pub async fn send_stream(
 #[allow(unused)]
 pub async fn send_message_as_streaming<F, Fut>(
     builder: RequestBuilder,
-    handler: &mut ReplyHandler,
+    handler: &mut SseHandler,
     f: F,
 ) -> Result<()>
 where

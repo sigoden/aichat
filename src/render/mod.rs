@@ -5,7 +5,7 @@ pub use self::markdown::{MarkdownRender, RenderOptions};
 use self::stream::{markdown_stream, raw_stream};
 
 use crate::utils::AbortSignal;
-use crate::{client::ReplyEvent, config::GlobalConfig};
+use crate::{client::SseEvent, config::GlobalConfig};
 
 use anyhow::Result;
 use is_terminal::IsTerminal;
@@ -14,7 +14,7 @@ use std::io::stdout;
 use tokio::sync::mpsc::UnboundedReceiver;
 
 pub async fn render_stream(
-    rx: UnboundedReceiver<ReplyEvent>,
+    rx: UnboundedReceiver<SseEvent>,
     config: &GlobalConfig,
     abort: AbortSignal,
 ) -> Result<()> {

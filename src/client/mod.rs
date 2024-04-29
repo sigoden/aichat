@@ -3,13 +3,13 @@ mod common;
 mod message;
 mod model;
 mod prompt_format;
-mod reply_handler;
+mod sse_handler;
 
 pub use common::*;
 pub use message::*;
 pub use model::*;
 pub use prompt_format::*;
-pub use reply_handler::*;
+pub use sse_handler::*;
 
 register_client!(
     (openai, "openai", OpenAIConfig, OpenAIClient),

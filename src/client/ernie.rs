@@ -1,6 +1,6 @@
 use super::{
-    maybe_catch_error, patch_system_message, Client, CompletionStats, ErnieClient, ExtraConfig,
-    Model, ModelConfig, PromptType, ReplyHandler, SendData,
+    maybe_catch_error, patch_system_message, Client, CompletionDetails, ErnieClient, ExtraConfig,
+    Model, ModelConfig, PromptType, SendData, SseHandler,
 };
 
 use crate::utils::PromptKind;
@@ -83,7 +83,7 @@ impl Client for ErnieClient {
         &self,
         client: &ReqwestClient,
         data: SendData,
-    ) -> Result<(String, CompletionStats)> {
+    ) -> Result<(String, CompletionDetails)> {
         self.prepare_access_token().await?;
         let builder = self.request_builder(client, data)?;
         send_message(builder).await
@@ -92,7 +92,7 @@ impl Client for ErnieClient {
     async fn send_message_streaming_inner(
         &self,
         client: &ReqwestClient,
-        handler: &mut ReplyHandler,
+        handler: &mut SseHandler,
         data: SendData,
     ) -> Result<()> {
         self.prepare_access_token().await?;
@@ -101,13 +101,13 @@ impl Client for ErnieClient {
     }
 }
 
-async fn send_message(builder: RequestBuilder) -> Result<(String, CompletionStats)> {
+async fn send_message(builder: RequestBuilder) -> Result<(String, CompletionDetails)> {
     let data: Value = builder.send().await?.json().await?;
     maybe_catch_error(&data)?;
     extract_completion_text(&data)
 }
 
-async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHandler) -> Result<()> {
+async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
     let mut es = builder.eventsource()?;
     while let Some(event) = es.next().await {
         match event {
@@ -184,16 +184,16 @@ fn build_body(data: SendData, model: &Model) -> Value {
     body
 }
 
-fn extract_completion_text(data: &Value) -> Result<(String, CompletionStats)> {
+fn extract_completion_text(data: &Value) -> Result<(String, CompletionDetails)> {
     let text = data["result"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
-    let stats = CompletionStats {
+    let details = CompletionDetails {
         id: data["id"].as_str().map(|v| v.to_string()),
         input_tokens: data["usage"]["prompt_tokens"].as_u64(),
         output_tokens: data["usage"]["completion_tokens"].as_u64(),
     };
-    Ok((text.to_string(), stats))
+    Ok((text.to_string(), details))
 }
 
 async fn fetch_access_token(
