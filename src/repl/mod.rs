@@ -32,7 +32,7 @@ lazy_static! {
         ReplCommand::new(".model", "Change the current LLM", State::all()),
         ReplCommand::new(
             ".prompt",
-            "Create a temporary role using a custom prompt",
+            "Create a temporary role using a prompt",
             State::able_change_role()
         ),
         ReplCommand::new(
@@ -116,7 +116,7 @@ impl Repl {
                 }
                 Ok(Signal::CtrlC) => {
                     self.abort.set_ctrlc();
-                    println!("(To exit, press Ctrl+D or type .exit)\n");
+                    println!("(To exit, press Ctrl+D or enter \".exit\")\n");
                 }
                 Ok(Signal::CtrlD) => {
                     self.abort.set_ctrld();
@@ -293,7 +293,7 @@ impl Repl {
         let version = env!("CARGO_PKG_VERSION");
         print!(
             r#"Welcome to aichat {version}
-Type ".help" for more information.
+Type ".help" for additional help.
 "#
         )
     }
@@ -410,7 +410,7 @@ impl Validator for ReplValidator {
 }
 
 fn unknown_command() -> Result<()> {
-    bail!(r#"Unknown command. Type ".help" for more information."#);
+    bail!(r#"Unknown command. Type ".help" for additional help."#);
 }
 
 fn dump_repl_help() {
@@ -423,8 +423,8 @@ fn dump_repl_help() {
         r###"{head}
 
 Type ::: to start multi-line editing, type ::: to finish it.
-Press Ctrl+O to open an editor to edit line input.
-Press Ctrl+C to cancel the response, Ctrl+D to exit the REPL"###,
+Press Ctrl+O to open an editor for editing the input buffer.
+Press Ctrl+C to cancel the response, Ctrl+D to exit the REPL."###,
     );
 }
 
