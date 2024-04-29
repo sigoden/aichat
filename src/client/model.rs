@@ -3,7 +3,6 @@ use super::message::{Message, MessageContent};
 use crate::utils::count_tokens;
 
 use anyhow::{bail, Result};
-use indexmap::IndexMap;
 use serde::Deserialize;
 
 const PER_MESSAGES_TOKENS: usize = 5;
@@ -37,17 +36,9 @@ impl Model {
         }
     }
 
-    pub fn from_config(
-        client_name: &str,
-        config_models: &[ModelConfig],
-        client_models: &[ModelConfig],
-    ) -> Vec<Self> {
-        let mut models = IndexMap::new();
-        for model in client_models.iter().chain(config_models.iter()) {
-            models.insert(&model.name, model);
-        }
+    pub fn from_config(client_name: &str, models: &[ModelConfig]) -> Vec<Self> {
         models
-            .values()
+            .iter()
             .map(|v| {
                 Model::new(client_name, &v.name)
                     .set_max_input_tokens(v.max_input_tokens)

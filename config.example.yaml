@@ -129,8 +129,9 @@ clients:
   #   - anyscale: https://docs.anyscale.com/endpoints/model-serving/openai-migration-guide
   #   - deepinfra: https://deepinfra.com/docs/advanced/openai_api
   #   - fireworks: https://readme.fireworks.ai/docs/openai-compatibility
-  #   - together: https://docs.together.ai/docs/openai-api-compatibility
+  #   - together.ai: https://docs.together.ai/docs/openai-api-compatibility
   #   - huggingface: https://huggingface.co/docs/text-generation-inference/messages_api
+  #   - OctoAI: https://octo.ai/docs/text-gen-solution/migration-from-openai
   - type: openai-compatible
     name: localai
     api_base: http://localhost:8080/v1
