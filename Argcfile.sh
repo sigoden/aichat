@@ -325,6 +325,47 @@ chat-cloudflare() {
 }'
 }
 
+# @cmd Chat with replicate api
+# @env REPLICATE_API_KEY!
+# @option -m --model=meta/meta-llama-3-8b-instruct $REPLICATE_MODEL
+# @flag -S --no-stream
+# @arg text~
+chat-replicate() {
+    url="https://api.replicate.com/v1/models/$argc_model/predictions"
+    res="$(_wrapper curl -s $DEEPINFRA_CURL_ARGS "$url" \
+-X POST \
+-H "Authorization: Bearer $REPLICATE_API_KEY" \
+-H "Content-Type: application/json" \
+-d '{	
+    "stream": '$stream',
+	"input": {
+      "prompt": "'"$*"'"
+	}
+}')"
+    echo "$res"
+    if [[ -n "$argc_no_stream" ]]; then
+        prediction_url="$(echo "$res" | jq -r '.urls.get')"
+        while true; do
+            output="$(_wrapper curl $DEEPINFRA_CURL_ARGS -s -H "Authorization: Bearer $REPLICATE_API_KEY" "$prediction_url")"
+            prediction_status=$(printf "%s" "$output" | jq -r .status)
+            if [ "$prediction_status"=="succeeded" ]; then
+                echo "$output"
+                break
+            fi
+            if [ "$prediction_status"=="failed" ]; then
+                exit 1
+            fi
+            sleep 2
+        done
+    else
+        stream_url="$(echo "$res" | jq -r '.urls.stream')"
+    _wrapper curl -i $DEEPINFRA_CURL_ARGS --no-buffer "$stream_url" \
+-H "Accept: text/event-stream" \
+
+    fi
+
+}
+
 # @cmd Chat with ernie api
 # @meta require-tools jq
 # @env ERNIE_API_KEY!
