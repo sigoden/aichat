@@ -1,6 +1,6 @@
 use super::{
     catch_error, sse_stream, CompletionDetails, ExtraConfig, Model, ModelConfig, OpenAIClient,
-    PromptType, SendData, SseHandler,
+    PromptType, SendData, SsMmessage, SseHandler,
 };
 
 use crate::utils::PromptKind;
@@ -65,11 +65,11 @@ pub async fn openai_send_message_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
 ) -> Result<()> {
-    let handle = |data: &str| -> Result<bool> {
-        if data == "[DONE]" {
+    let handle = |message: SsMmessage| -> Result<bool> {
+        if message.data == "[DONE]" {
             return Ok(true);
         }
-        let data: Value = serde_json::from_str(data)?;
+        let data: Value = serde_json::from_str(&message.data)?;
         if let Some(text) = data["choices"][0]["delta"]["content"].as_str() {
             handler.text(text)?;
         }

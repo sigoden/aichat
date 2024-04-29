@@ -1,6 +1,6 @@
 use super::{
     catch_error, sse_stream, CloudflareClient, CompletionDetails, ExtraConfig, Model, ModelConfig,
-    PromptType, SendData, SseHandler,
+    PromptType, SendData, SsMmessage, SseHandler,
 };
 
 use crate::utils::PromptKind;
@@ -64,11 +64,11 @@ async fn send_message(builder: RequestBuilder) -> Result<(String, CompletionDeta
 }
 
 async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
-    let handle = |data: &str| -> Result<bool> {
-        if data == "[DONE]" {
+    let handle = |message: SsMmessage| -> Result<bool> {
+        if message.data == "[DONE]" {
             return Ok(true);
         }
-        let data: Value = serde_json::from_str(data)?;
+        let data: Value = serde_json::from_str(&message.data)?;
         if let Some(text) = data["response"].as_str() {
             handler.text(text)?;
         }

@@ -541,16 +541,26 @@ pub fn maybe_catch_error(data: &Value) -> Result<()> {
     Ok(())
 }
 
+#[derive(Debug)]
+pub struct SsMmessage {
+    pub event: String,
+    pub data: String,
+}
+
 pub async fn sse_stream<F>(builder: RequestBuilder, mut handle: F) -> Result<()>
 where
-    F: FnMut(&str) -> Result<bool>,
+    F: FnMut(SsMmessage) -> Result<bool>,
 {
     let mut es = builder.eventsource()?;
     while let Some(event) = es.next().await {
         match event {
             Ok(Event::Open) => {}
             Ok(Event::Message(message)) => {
-                if handle(&message.data)? {
+                let message = SsMmessage {
+                    event: message.event,
+                    data: message.data,
+                };
+                if handle(message)? {
                     break;
                 }
             }
