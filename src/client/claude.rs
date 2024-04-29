@@ -26,7 +26,7 @@ impl ClaudeClient {
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 1] =
-        [("api_key", "API Key:", false, PromptKind::String)];
+        [("api_key", "API Key:", true, PromptKind::String)];
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();

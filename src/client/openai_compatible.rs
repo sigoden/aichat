@@ -10,7 +10,7 @@ use serde::Deserialize;
 #[derive(Debug, Clone, Deserialize)]
 pub struct OpenAICompatibleConfig {
     pub name: Option<String>,
-    pub api_base: String,
+    pub api_base: Option<String>,
     pub api_key: Option<String>,
     pub chat_endpoint: Option<String>,
     pub models: Vec<ModelConfig>,
@@ -18,6 +18,7 @@ pub struct OpenAICompatibleConfig {
 }
 
 impl OpenAICompatibleClient {
+    config_get_fn!(api_base, get_api_base);
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 5] = [
@@ -34,6 +35,7 @@ impl OpenAICompatibleClient {
     ];
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
+        let api_base = self.get_api_base()?;
         let api_key = self.get_api_key().ok();
 
         let mut body = openai_build_body(data, &self.model);
@@ -45,7 +47,7 @@ impl OpenAICompatibleClient {
             .as_deref()
             .unwrap_or("/chat/completions");
 
-        let url = format!("{}{chat_endpoint}", self.config.api_base);
+        let url = format!("{api_base}{chat_endpoint}");
 
         debug!("OpenAICompatible Request: {url} {body}");
 

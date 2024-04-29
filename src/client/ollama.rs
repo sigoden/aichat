@@ -14,7 +14,7 @@ use serde_json::{json, Value};
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct OllamaConfig {
     pub name: Option<String>,
-    pub api_base: String,
+    pub api_base: Option<String>,
     pub api_auth: Option<String>,
     pub chat_endpoint: Option<String>,
     pub models: Vec<ModelConfig>,
@@ -22,11 +22,12 @@ pub struct OllamaConfig {
 }
 
 impl OllamaClient {
+    config_get_fn!(api_base, get_api_base);
     config_get_fn!(api_auth, get_api_auth);
 
     pub const PROMPTS: [PromptType<'static>; 4] = [
         ("api_base", "API Base:", true, PromptKind::String),
-        ("api_auth", "API Key:", false, PromptKind::String),
+        ("api_auth", "API Auth:", false, PromptKind::String),
         ("models[].name", "Model Name:", true, PromptKind::String),
         (
             "models[].max_input_tokens",
@@ -37,6 +38,7 @@ impl OllamaClient {
     ];
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
+        let api_base = self.get_api_base()?;
         let api_auth = self.get_api_auth().ok();
 
         let mut body = build_body(data, &self.model)?;
@@ -44,7 +46,7 @@ impl OllamaClient {
 
         let chat_endpoint = self.config.chat_endpoint.as_deref().unwrap_or("/api/chat");
 
-        let url = format!("{}{chat_endpoint}", self.config.api_base);
+        let url = format!("{api_base}{chat_endpoint}");
 
         debug!("Ollama Request: {url} {body}");
 

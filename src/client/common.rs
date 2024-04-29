@@ -203,7 +203,7 @@ macro_rules! openai_compatible_client {
             config_get_fn!(api_key, get_api_key);
 
             pub const PROMPTS: [PromptType<'static>; 1] =
-                [("api_key", "API Key:", false, PromptKind::String)];
+                [("api_key", "API Key:", true, PromptKind::String)];
 
             fn request_builder(
                 &self,
