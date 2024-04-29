@@ -564,7 +564,7 @@ where
                     EventSourceError::InvalidContentType(header_value, res) => {
                         let text = res.text().await?;
                         bail!(
-                            "Invalid event stream, content-type: {}, data: {text}",
+                            "Invalid response event-stream. content-type: {}, data: {text}",
                             header_value.to_str().unwrap_or_default()
                         );
                     }
