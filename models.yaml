@@ -208,21 +208,32 @@
 - type: groq
   # docs:
   #   - https://console.groq.com/docs/models
+  #   - https://wow.groq.com
   #   - https://console.groq.com/docs/text-chat
   # notes:
-  #   - unable to get max_output_tokens info
+  #   - get max_output_tokens info from playgourd
   #   - all models are free with rate limits
   models:
     - name: llama3-8b-8192
       max_input_tokens: 8192
+      max_output_tokens?: 8192
+      input_price: 0.05
+      output_price: 0.10
     - name: llama3-70b-8192
       max_input_tokens: 8192
-    - name: llama2-70b-4096
-      max_input_tokens: 4096
+      max_output_tokens?: 8192
+      input_price: 0.59
+      output_price: 0.79
     - name: mixtral-8x7b-32768
       max_input_tokens: 32768
+      max_output_tokens?: 32768
+      input_price: 0.27
+      output_price: 0.27
     - name: gemma-7b-it
       max_input_tokens: 8192
+      max_output_tokens?: 8192
+      input_price: 0.10
+      output_price: 0.10
 
 - type: vertexai
   # docs:
