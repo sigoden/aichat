@@ -75,7 +75,7 @@ clients:
 
   # See https://github.com/jmorganca/ollama
   - type: ollama
-    api_base: http://localhost:11434
+    api_base: http://localhost:11434                  # ENV: {client_name}_API_BASE
     api_auth: Basic xxx                               # ENV: {client_name}_API_AUTH
     chat_endpoint: /api/chat                          # Optional
     models:                                           # Required
@@ -84,8 +84,8 @@ clients:
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
   - type: azure-openai
-    api_base: https://{RESOURCE}.openai.azure.com
-    api_key: xxx                                      # ENV: {client_name}_API_BASE
+    api_base: https://{RESOURCE}.openai.azure.com     # ENV: {client_name}_API_BASE
+    api_key: xxx                                      # ENV: {client_name}_API_KEY
     models:                                           # Required
       - name: gpt-35-turbo                            # Model deployment name
         max_input_tokens: 8192
@@ -103,7 +103,7 @@ clients:
 
   - type: cloudflare
     account_id: xxx                                   # ENV: {client_name}_ACCOUNT_ID
-    api_key: xxx                                      # ENV: {client_name}_API_BASE
+    api_key: xxx                                      # ENV: {client_name}_API_KEY
 
   # See https://docs.aws.amazon.com/bedrock/latest/userguide/
   - type: bedrock
@@ -134,8 +134,8 @@ clients:
   #   - OctoAI: https://octo.ai/docs/text-gen-solution/migration-from-openai
   - type: openai-compatible
     name: localai
-    api_base: http://localhost:8080/v1
-    api_key: sk-xxx                                   # ENV: {client_name}_API_BASE
+    api_base: http://localhost:8080/v1                # ENV: {client_name}_API_BASE
+    api_key: sk-xxx                                   # ENV: {client_name}_API_KEY
     chat_endpoint: /chat/completions                  # Optional
     models:                                           # Required
       - name: llama3

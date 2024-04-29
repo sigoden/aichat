@@ -27,7 +27,7 @@ impl AzureOpenAIClient {
         (
             "models[].max_input_tokens",
             "Max Input Tokens:",
-            true,
+            false,
             PromptKind::Integer,
         ),
     ];

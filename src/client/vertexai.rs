@@ -34,7 +34,7 @@ impl VertexAIClient {
 
     pub const PROMPTS: [PromptType<'static>; 2] = [
         ("project_id", "Project ID", true, PromptKind::String),
-        ("location", "Global Location", true, PromptKind::String),
+        ("location", "Location", true, PromptKind::String),
     ];
 
     fn request_builder(

@@ -27,8 +27,8 @@ impl CloudflareClient {
     config_get_fn!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptType<'static>; 2] = [
-        ("account_id", "Account ID:", false, PromptKind::String),
-        ("api_key", "API Key:", false, PromptKind::String),
+        ("account_id", "Account ID:", true, PromptKind::String),
+        ("api_key", "API Key:", true, PromptKind::String),
     ];
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
