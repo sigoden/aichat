@@ -1,6 +1,6 @@
 use super::{
-    maybe_catch_error, message::*, Client, CompletionDetails, ExtraConfig, Model, ModelConfig,
-    PromptType, QianwenClient, SendData, SseHandler,
+    maybe_catch_error, message::*, sse_stream, Client, CompletionDetails, ExtraConfig, Model,
+    ModelConfig, PromptType, QianwenClient, SendData, SseHandler,
 };
 
 use crate::utils::{sha256sum, PromptKind};
@@ -8,12 +8,10 @@ use crate::utils::{sha256sum, PromptKind};
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
 use base64::{engine::general_purpose::STANDARD, Engine};
-use futures_util::StreamExt;
 use reqwest::{
     multipart::{Form, Part},
     Client as ReqwestClient, RequestBuilder,
 };
-use reqwest_eventsource::{Error as EventSourceError, Event, RequestBuilderExt};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::borrow::BorrowMut;
@@ -109,37 +107,22 @@ async fn send_message_streaming(
     handler: &mut SseHandler,
     is_vl: bool,
 ) -> Result<()> {
-    let mut es = builder.eventsource()?;
-
-    while let Some(event) = es.next().await {
-        match event {
-            Ok(Event::Open) => {}
-            Ok(Event::Message(message)) => {
-                let data: Value = serde_json::from_str(&message.data)?;
-                maybe_catch_error(&data)?;
-                if is_vl {
-                    if let Some(text) =
-                        data["output"]["choices"][0]["message"]["content"][0]["text"].as_str()
-                    {
-                        handler.text(text)?;
-                    }
-                } else if let Some(text) = data["output"]["text"].as_str() {
-                    handler.text(text)?;
-                }
+    let handle = |data: &str| -> Result<bool> {
+        let data: Value = serde_json::from_str(data)?;
+        maybe_catch_error(&data)?;
+        if is_vl {
+            if let Some(text) =
+                data["output"]["choices"][0]["message"]["content"][0]["text"].as_str()
+            {
+                handler.text(text)?;
             }
-            Err(err) => {
-                match err {
-                    EventSourceError::StreamEnded => {}
-                    _ => {
-                        bail!("{}", err);
-                    }
-                }
-                es.close();
-            }
+        } else if let Some(text) = data["output"]["text"].as_str() {
+            handler.text(text)?;
         }
-    }
+        Ok(false)
+    };
 
-    Ok(())
+    sse_stream(builder, handle).await
 }
 
 fn build_body(data: SendData, model: &Model, is_vl: bool) -> Result<(Value, bool)> {

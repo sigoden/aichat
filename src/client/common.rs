@@ -11,6 +11,7 @@ use async_trait::async_trait;
 use futures_util::{Stream, StreamExt};
 use lazy_static::lazy_static;
 use reqwest::{Client as ReqwestClient, ClientBuilder, Proxy, RequestBuilder};
+use reqwest_eventsource::{Error as EventSourceError, Event, RequestBuilderExt};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{env, future::Future, time::Duration};
@@ -527,6 +528,53 @@ pub fn maybe_catch_error(data: &Value) -> Result<()> {
     {
         debug!("Invalid response: {}", data);
         bail!("{error_msg} (error_code: {error_code})");
+    }
+    Ok(())
+}
+
+pub async fn sse_stream<F>(builder: RequestBuilder, mut handle: F) -> Result<()>
+where
+    F: FnMut(&str) -> Result<bool>,
+{
+    let mut es = builder.eventsource()?;
+    while let Some(event) = es.next().await {
+        match event {
+            Ok(Event::Open) => {}
+            Ok(Event::Message(message)) => {
+                if handle(&message.data)? {
+                    break;
+                }
+            }
+            Err(err) => {
+                match err {
+                    EventSourceError::StreamEnded => {}
+                    EventSourceError::InvalidStatusCode(status, res) => {
+                        let text = res.text().await?;
+                        let data: Value = match text.parse() {
+                            Ok(data) => data,
+                            Err(_) => {
+                                bail!(
+                                    "Invalid response data: {text} (status: {})",
+                                    status.as_u16()
+                                );
+                            }
+                        };
+                        catch_error(&data, status.as_u16())?;
+                    }
+                    EventSourceError::InvalidContentType(header_value, res) => {
+                        let text = res.text().await?;
+                        bail!(
+                            "Invalid response event-stream. content-type: {}, data: {text}",
+                            header_value.to_str().unwrap_or_default()
+                        );
+                    }
+                    _ => {
+                        bail!("{}", err);
+                    }
+                }
+                es.close();
+            }
+        }
     }
     Ok(())
 }

@@ -28,7 +28,7 @@ impl CohereClient {
         [("api_key", "API Key:", false, PromptKind::String)];
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
-        let api_key = self.get_api_key().ok();
+        let api_key = self.get_api_key()?;
 
         let body = build_body(data, &self.model)?;
 
@@ -36,10 +36,7 @@ impl CohereClient {
 
         debug!("Cohere Request: {url} {body}");
 
-        let mut builder = client.post(url).json(&body);
-        if let Some(api_key) = api_key {
-            builder = builder.bearer_auth(api_key);
-        }
+        let builder = client.post(url).bearer_auth(api_key).json(&body);
 
         Ok(builder)
     }
@@ -55,7 +52,7 @@ async fn send_message(builder: RequestBuilder) -> Result<(String, CompletionDeta
         catch_error(&data, status.as_u16())?;
     }
 
-    cohere_extract_completion(&data)
+    extract_completion(&data)
 }
 
 async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
@@ -156,7 +153,7 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
     Ok(body)
 }
 
-fn cohere_extract_completion(data: &Value) -> Result<(String, CompletionDetails)> {
+fn extract_completion(data: &Value) -> Result<(String, CompletionDetails)> {
     let text = data["text"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
