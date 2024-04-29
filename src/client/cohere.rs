@@ -48,7 +48,7 @@ async fn send_message(builder: RequestBuilder) -> Result<(String, CompletionDeta
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
-    if status != 200 {
+    if !status.is_success() {
         catch_error(&data, status.as_u16())?;
     }
 
@@ -58,7 +58,7 @@ async fn send_message(builder: RequestBuilder) -> Result<(String, CompletionDeta
 async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
     let res = builder.send().await?;
     let status = res.status();
-    if status != 200 {
+    if !status.is_success() {
         let data: Value = res.json().await?;
         catch_error(&data, status.as_u16())?;
     } else {

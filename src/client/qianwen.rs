@@ -298,7 +298,7 @@ async fn upload(model: &str, api_key: &str, url: &str) -> Result<String> {
     let res = client.post(upload_host).multipart(form).send().await?;
 
     let status = res.status();
-    if res.status() != 200 {
+    if !status.is_success() {
         let text = res.text().await?;
         bail!("Invalid response data: {text} (status: {status})")
     }
