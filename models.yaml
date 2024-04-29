@@ -1,8 +1,10 @@
 - type: openai
-  # docs: 
+  # docs:
   #   - https://platform.openai.com/docs/models
   #   - https://openai.com/pricing
   #   - https://platform.openai.com/docs/api-reference/chat
+  # notes
+  #   - get max_output_tokens info from api error
   models:
     - name: gpt-3.5-turbo
       max_input_tokens: 16385
@@ -48,10 +50,12 @@
       output_price: 120
 
 - type: gemini 
-  docs:
-    # - https://ai.google.dev/models/gemini
-    # - https://ai.google.dev/pricing
-    # - https://ai.google.dev/api/rest/v1beta/models/streamGenerateContent
+  # docs:
+  #   - https://ai.google.dev/models/gemini
+  #   - https://ai.google.dev/pricing
+  #   - https://ai.google.dev/api/rest/v1beta/models/streamGenerateContent
+  # notes:
+  #   - get max_output_tokens info from list models api
   models:
     - name: gemini-1.0-pro-latest
       max_input_tokens: 30720
@@ -75,6 +79,8 @@
   # docs:
   #   - https://docs.anthropic.com/claude/docs/models-overview
   #   - https://docs.anthropic.com/claude/reference/messages-streaming
+  # notes:
+  #   - get max_output_tokens info from models doc
   models:
     - name: claude-3-opus-20240229
       max_input_tokens: 200000
@@ -100,53 +106,50 @@
   #   - https://docs.mistral.ai/getting-started/models/
   #   - https://mistral.ai/technology/#pricing
   #   - https://docs.mistral.ai/api/
+  # notes:
+  #   - unable to get max_output_tokens info
   models:
     - name: open-mistral-7b
       max_input_tokens: 32000
-      max_output_tokens?: 8191
       input_price: 0.25
       output_price: 0.25
     - name: open-mixtral-8x7b
       max_input_tokens: 32000
-      max_output_tokens?: 8191
       input_price: 0.7
       output_price: 0.7
     - name: open-mixtral-8x22b
       max_input_tokens: 64000
-      max_output_tokens?: 8191
       input_price: 2
       output_price: 6
     - name: mistral-small-latest
       max_input_tokens: 32000
-      max_output_tokens?: 8191
       input_price: 2
       output_price: 6
     - name: mistral-medium-latest
       max_input_tokens: 32000
-      max_output_tokens?: 8191
       input_price: 2.7
       output_price: 8.1
     - name: mistral-large-latest
       max_input_tokens: 32000
-      max_output_tokens?: 8191
       input_price: 8
       output_price: 24
 
 - type: cohere
   # docs:
   #   - https://docs.cohere.com/docs/command-r
-  #   - https://docs.cohere.com/docs/command-r-plus
   #   - https://cohere.com/pricing
   #   - https://docs.cohere.com/reference/chat
+  # notes
+  #   - get max_output_tokens info from api error
   models:
     - name: command-r
       max_input_tokens: 128000
-      max_output_tokens?: 4096
+      max_output_tokens?: 4000
       input_price: 0.5
       output_price: 1.5
     - name: command-r-plus
       max_input_tokens: 128000
-      max_output_tokens?: 4096
+      max_output_tokens?: 4000
       input_price: 3
       output_price: 15
 
@@ -155,15 +158,21 @@
   #   - https://docs.perplexity.ai/docs/model-cards
   #   - https://docs.perplexity.ai/docs/pricing
   #   - https://docs.perplexity.ai/reference/post_chat_completions
+  # notes
+  #   - get max_output_tokens info from api error
   models:
     - name: sonar-small-chat
       max_input_tokens: 16384
+      max_output_tokens?: 16384
     - name: sonar-small-online
       max_input_tokens: 12000
+      max_output_tokens?: 12288
     - name: sonar-medium-chat
       max_input_tokens: 16384
+      max_output_tokens?: 16384
     - name: sonar-medium-online
       max_input_tokens: 12000
+      max_output_tokens?: 12288
 
     - name: llama-3-8b-instruct
       max_input_tokens: 8192
@@ -177,22 +186,22 @@
       output_price: 1
     - name: codellama-70b-instruct
       max_input_tokens: 16384
-      max_output_tokens?: 4096
+      max_output_tokens?: 16384
       input_price: 1
       output_price: 1
     - name: mistral-7b-instruct
       max_input_tokens: 16384
-      max_output_tokens?: 8191
+      max_output_tokens?: 16384
       input_price: 0.2
       output_price: 0.2
     - name: mixtral-8x7b-instruct
       max_input_tokens: 16384
-      max_output_tokens?: 8191
+      max_output_tokens?: 16384
       input_price: 0.6
       output_price: 0.6
     - name: mixtral-8x22b-instruct
       max_input_tokens: 16384
-      max_output_tokens?: 8191
+      max_output_tokens?: 16384
       input_price: 1
       output_price: 1
 
@@ -200,43 +209,44 @@
   # docs:
   #   - https://console.groq.com/docs/models
   #   - https://console.groq.com/docs/text-chat
+  # notes:
+  #   - unable to get max_output_tokens info
+  #   - all models are free with rate limits
   models:
     - name: llama3-8b-8192
       max_input_tokens: 8192
-      max_output_tokens?: 8192
     - name: llama3-70b-8192
       max_input_tokens: 8192
-      max_output_tokens?: 8192
     - name: llama2-70b-4096
       max_input_tokens: 4096
-      max_output_tokens?: 4096
     - name: mixtral-8x7b-32768
       max_input_tokens: 32768
-      max_output_tokens?: 32768
     - name: gemma-7b-it
       max_input_tokens: 8192
-      max_output_tokens?: 8192
 
 - type: vertexai
   # docs:
   #   - https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
   #   - https://cloud.google.com/vertex-ai/generative-ai/pricing
   #   - https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/gemini
+  # notes:
+  #   - get max_output_tokens info from models doc
+  #   - claude models have not been tested
   models:
     - name: gemini-1.0-pro
       max_input_tokens: 24568
-      max_output_tokens?: 8193
+      max_output_tokens?: 8192
       input_price: 0.125
       output_price: 0.375
     - name: gemini-1.0-pro-vision
       max_input_tokens: 14336
-      max_output_tokens?: 2049
+      max_output_tokens?: 2048
       input_price: 0.125
       output_price: 0.375
       supports_vision: true
     - name: gemini-1.5-pro-preview-0409
       max_input_tokens: 1000000
-      max_output_tokens?: 8193
+      max_output_tokens?: 8192
       input_price: 2.5
       output_price: 7.5
       supports_vision: true
@@ -263,6 +273,9 @@
   # docs:
   #   - https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html#model-ids-arns
   #   - https://aws.amazon.com/bedrock/pricing/
+  # notes:
+  #   - get max_output_tokens info from playground
+  #   - claude/llama models have not been tested
   models:
     - name: anthropic.claude-3-opus-20240229-v1:0
       max_input_tokens: 200000
@@ -309,7 +322,7 @@
       output_price: 0.2
     - name: mistral.mixtral-8x7b-instruct-v0:1
       max_input_tokens: 32000
-      max_output_tokens: 4096
+      max_output_tokens: 8192
       input_price: 0.45
       output_price: 0.7
     - name: mistral.mistral-large-2402-v1:0
@@ -322,6 +335,8 @@
   # docs:
   #   - https://developers.cloudflare.com/workers-ai/models/
   #   - https://developers.cloudflare.com/workers-ai/platform/pricing/
+  # notes:
+  #   - get max_output_tokens info from models doc
   models:
     - name: '@cf/meta/llama-2-7b-chat-fp16'
       max_input_tokens: 3072
@@ -334,8 +349,6 @@
       input_price: 0.16
       output_price: 0.24
     - name: '@cf/mistral/mistral-7b-instruct-v0.1'
-      max_input_tokens: 8192
-      max_output_tokens: 8192
       input_price: 0.11
       output_price: 0.19
 
@@ -343,6 +356,8 @@
   # docs:
   #   - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu
   #   - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7
+  # notes:
+  #   - get max_output_tokens info from models doc
   models:
     - name: ernie-4.0-8k-preview
       max_input_tokens: 5120
@@ -374,6 +389,8 @@
   # docs:
   #   - https://help.aliyun.com/zh/dashscope/developer-reference/tongyiqianwen-large-language-models/
   #   - https://help.aliyun.com/zh/dashscope/developer-reference/qwen-vl-plus/
+  # notes:
+  #   - get max_output_tokens info from models doc
   models:
     - name: qwen-turbo
       max_input_tokens: 6000
@@ -407,6 +424,8 @@
   #   - https://platform.moonshot.cn/docs/intro
   #   - https://platform.moonshot.cn/docs/pricing
   #   - https://platform.moonshot.cn/docs/api-reference
+  # notes:
+  #   - unable to get max_output_tokens info
   models:
     - name: moonshot-v1-8k
       max_input_tokens: 8000
