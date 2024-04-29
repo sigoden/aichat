@@ -1,7 +1,7 @@
 use super::{
     catch_error, extract_system_message, sse_stream, ClaudeClient, CompletionDetails, ExtraConfig,
     ImageUrl, MessageContent, MessageContentPart, Model, ModelConfig, PromptType, SendData,
-    SseHandler,
+    SsMmessage, SseHandler,
 };
 
 use crate::utils::PromptKind;
@@ -67,8 +67,8 @@ pub async fn claude_send_message_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
 ) -> Result<()> {
-    let handle = |data: &str| -> Result<bool> {
-        let data: Value = serde_json::from_str(data)?;
+    let handle = |message: SsMmessage| -> Result<bool> {
+        let data: Value = serde_json::from_str(&message.data)?;
         if let Some(typ) = data["type"].as_str() {
             if typ == "content_block_delta" {
                 if let Some(text) = data["delta"]["text"].as_str() {

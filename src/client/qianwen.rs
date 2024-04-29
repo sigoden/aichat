@@ -1,6 +1,6 @@
 use super::{
     maybe_catch_error, message::*, sse_stream, Client, CompletionDetails, ExtraConfig, Model,
-    ModelConfig, PromptType, QianwenClient, SendData, SseHandler,
+    ModelConfig, PromptType, QianwenClient, SendData, SsMmessage, SseHandler,
 };
 
 use crate::utils::{sha256sum, PromptKind};
@@ -107,8 +107,8 @@ async fn send_message_streaming(
     handler: &mut SseHandler,
     is_vl: bool,
 ) -> Result<()> {
-    let handle = |data: &str| -> Result<bool> {
-        let data: Value = serde_json::from_str(data)?;
+    let handle = |message: SsMmessage| -> Result<bool> {
+        let data: Value = serde_json::from_str(&message.data)?;
         maybe_catch_error(&data)?;
         if is_vl {
             if let Some(text) =

@@ -1,6 +1,6 @@
 use super::{
     maybe_catch_error, patch_system_message, sse_stream, Client, CompletionDetails, ErnieClient,
-    ExtraConfig, Model, ModelConfig, PromptType, SendData, SseHandler,
+    ExtraConfig, Model, ModelConfig, PromptType, SendData, SsMmessage, SseHandler,
 };
 
 use crate::utils::PromptKind;
@@ -106,8 +106,8 @@ async fn send_message(builder: RequestBuilder) -> Result<(String, CompletionDeta
 }
 
 async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
-    let handle = |data: &str| -> Result<bool> {
-        let data: Value = serde_json::from_str(data)?;
+    let handle = |message: SsMmessage| -> Result<bool> {
+        let data: Value = serde_json::from_str(&message.data)?;
         if let Some(text) = data["result"].as_str() {
             handler.text(text)?;
         }
