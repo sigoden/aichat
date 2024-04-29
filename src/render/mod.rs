@@ -21,7 +21,8 @@ pub async fn render_stream(
     if stdout().is_terminal() {
         let render_options = config.read().get_render_options()?;
         let mut render = MarkdownRender::init(render_options)?;
-        markdown_stream(rx, &mut render, &abort).await
+        let model_id = config.read().model_id.clone();
+        markdown_stream(rx, &mut render, &abort, &model_id).await
     } else {
         raw_stream(rx, &abort).await
     }

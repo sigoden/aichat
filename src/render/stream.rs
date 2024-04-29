@@ -9,6 +9,7 @@ use crossterm::{
     queue, style,
     terminal::{self, disable_raw_mode, enable_raw_mode},
 };
+use nu_ansi_term::{Color, Style};
 use std::{
     io::{self, stdout, Stdout, Write},
     time::Duration,
@@ -20,11 +21,12 @@ pub async fn markdown_stream(
     rx: UnboundedReceiver<SseEvent>,
     render: &mut MarkdownRender,
     abort: &AbortSignal,
+    model_id: &Option<String>,
 ) -> Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
 
-    let ret = markdown_stream_inner(rx, render, abort, &mut stdout).await;
+    let ret = markdown_stream_inner(rx, render, abort, &mut stdout, model_id).await;
 
     disable_raw_mode()?;
 
@@ -56,8 +58,13 @@ async fn markdown_stream_inner(
     render: &mut MarkdownRender,
     abort: &AbortSignal,
     writer: &mut Stdout,
+    model_id: &Option<String>,
 ) -> Result<()> {
-    let mut buffer = String::new();
+    let mut buffer = {
+        let style = Style::new().fg(Color::Blue);
+        let model_id = model_id.clone().unwrap_or("Assistant".to_string());
+        style.paint(model_id + &String::from(") ")).to_string()
+    };
     let mut buffer_rows = 1;
 
     let columns = terminal::size()?.0;
