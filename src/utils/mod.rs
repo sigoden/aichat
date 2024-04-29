@@ -166,6 +166,33 @@ pub fn extract_block(input: &str) -> String {
     }
 }
 
+pub fn format_option_value<T>(value: &Option<T>) -> String
+where
+    T: std::fmt::Display,
+{
+    match value {
+        Some(value) => value.to_string(),
+        None => "-".to_string(),
+    }
+}
+
+pub fn fuzzy_match(text: &str, pattern: &str) -> bool {
+    let text_chars: Vec<char> = text.chars().collect();
+    let pattern_chars: Vec<char> = pattern.chars().collect();
+
+    let mut pattern_index = 0;
+    let mut text_index = 0;
+
+    while pattern_index < pattern_chars.len() && text_index < text_chars.len() {
+        if pattern_chars[pattern_index] == text_chars[text_index] {
+            pattern_index += 1;
+        }
+        text_index += 1;
+    }
+
+    pattern_index == pattern_chars.len()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -179,5 +206,12 @@ mod tests {
     #[test]
     fn test_count_tokens() {
         assert_eq!(count_tokens("😊 hello world"), 4);
+    }
+
+    #[test]
+    fn test_fuzzy_match() {
+        assert!(fuzzy_match("openai:gpt-4-turbo", "gpt4"));
+        assert!(fuzzy_match("openai:gpt-4-turbo", "oai4"));
+        assert!(!fuzzy_match("openai:gpt-4-turbo", "4gpt"));
     }
 }

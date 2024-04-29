@@ -54,7 +54,7 @@ impl Completer for ReplCompleter {
                     .read()
                     .repl_complete(cmd, &args)
                     .iter()
-                    .map(|name| create_suggestion(name.clone(), None, span)),
+                    .map(|(value, description)| create_suggestion(value, description, span)),
             )
         }
 
@@ -69,7 +69,7 @@ impl Completer for ReplCompleter {
                 } else {
                     format!("{name} ")
                 };
-                create_suggestion(name, Some(description.to_string()), span)
+                create_suggestion(&name, description, span)
             }))
         }
         suggestions
@@ -105,9 +105,14 @@ impl ReplCompleter {
     }
 }
 
-fn create_suggestion(value: String, description: Option<String>, span: Span) -> Suggestion {
+fn create_suggestion(value: &str, description: &str, span: Span) -> Suggestion {
+    let description = if description.is_empty() {
+        None
+    } else {
+        Some(description.to_string())
+    };
     Suggestion {
-        value,
+        value: value.to_string(),
         description,
         style: None,
         extra: None,
