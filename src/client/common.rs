@@ -89,19 +89,15 @@ macro_rules! register_client {
 
                 pub fn list_models(local_config: &$config) -> Vec<Model> {
                     let client_name = Self::name(local_config);
-                    if local_config.models.is_empty() {
-                        for model in $crate::client::CLIENT_MODELS.iter() {
-                            match model {
-                                $crate::client::ClientModel::$config { models } => {
-                                    return Model::from_config(client_name, models);
-                                }
-                                _ => {}
+                    for model in $crate::client::CLIENT_MODELS.iter() {
+                        match model {
+                            $crate::client::ClientModel::$config { models } => {
+                                return Model::from_config(client_name, &local_config.models, models);
                             }
+                            _ => {}
                         }
-                        vec![]
-                    } else {
-                        Model::from_config(client_name, &local_config.models)
                     }
+                    vec![]
                 }
 
                 pub fn name(config: &$config) -> &str {
