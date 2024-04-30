@@ -40,7 +40,7 @@ impl AzureOpenAIClient {
         self.model.merge_extra_fields(&mut body);
 
         let url = format!(
-            "{}/openai/deployments/{}/chat/completions?api-version=2023-05-15",
+            "{}/openai/deployments/{}/chat/completions?api-version=2024-02-01",
             &api_base, self.model.name
         );
 
