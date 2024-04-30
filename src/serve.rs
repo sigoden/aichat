@@ -164,7 +164,7 @@ impl Server {
 
         let mut client = init_client(&config)?;
         if max_tokens.is_some() {
-            client.set_model(client.model().clone().set_max_output_tokens(max_tokens));
+            client.model_mut().set_max_output_tokens(max_tokens);
         }
         let abort = create_abort_signal();
         let http_client = client.build_client()?;
