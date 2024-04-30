@@ -1,21 +1,19 @@
 use super::claude::{claude_build_body, claude_extract_completion};
 use super::{
     catch_error, generate_prompt, BedrockClient, Client, CompletionDetails, ExtraConfig, Model,
-    ModelConfig, PromptFormat, PromptType, SendData, SseHandler, LLAMA2_PROMPT_FORMAT,
+    ModelConfig, PromptFormat, PromptKind, PromptType, SendData, SseHandler, LLAMA2_PROMPT_FORMAT,
     LLAMA3_PROMPT_FORMAT,
 };
 
-use crate::utils::PromptKind;
+use crate::utils::{base64_decode, encode_uri, hex_encode, hmac_sha256, sha256};
 
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
 use aws_smithy_eventstream::frame::{DecodedFrame, MessageFrameDecoder};
 use aws_smithy_eventstream::smithy::parse_response_headers;
-use base64::{engine::general_purpose::STANDARD, Engine};
 use bytes::BytesMut;
 use chrono::{DateTime, Utc};
 use futures_util::StreamExt;
-use hmac::{Hmac, Mac};
 use indexmap::IndexMap;
 use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue},
@@ -23,7 +21,6 @@ use reqwest::{
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
-use sha2::{Digest, Sha256};
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -199,7 +196,7 @@ async fn send_message_streaming(
                     }
                 }
                 ("exception", _) => {
-                    let payload = STANDARD.decode(message.payload())?;
+                    let payload = base64_decode(message.payload())?;
                     let data = String::from_utf8_lossy(&payload);
 
                     bail!("Invalid response data: {data} (smithy_type: {smithy_type})")
@@ -402,7 +399,7 @@ fn aws_fetch(
         region,
         &service,
     );
-    let signature = sign(&signing_key, &string_to_sign);
+    let signature = hmac_sha256(&signing_key, &string_to_sign);
     let signature = hex_encode(&signature);
 
     let authorization_header = format!(
@@ -426,41 +423,16 @@ fn aws_fetch(
     Ok(request_builder)
 }
 
-fn sha256(data: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(data.as_bytes());
-    format!("{:x}", hasher.finalize())
-}
-
-fn sign(key: &[u8], msg: &str) -> Vec<u8> {
-    let mut mac = Hmac::<Sha256>::new_from_slice(key).expect("HMAC can take key of any size");
-    mac.update(msg.as_bytes());
-    mac.finalize().into_bytes().to_vec()
-}
-
 fn gen_signing_key(key: &str, date_stamp: &str, region: &str, service: &str) -> Vec<u8> {
-    let k_date = sign(format!("AWS4{}", key).as_bytes(), date_stamp);
-    let k_region = sign(&k_date, region);
-    let k_service = sign(&k_region, service);
-    sign(&k_service, "aws4_request")
-}
-
-fn hex_encode(bytes: &[u8]) -> String {
-    bytes
-        .iter()
-        .fold(String::new(), |acc, b| acc + &format!("{:02x}", b))
-}
-
-fn encode_uri(uri: &str) -> String {
-    uri.split('/')
-        .map(|v| urlencoding::encode(v))
-        .collect::<Vec<_>>()
-        .join("/")
+    let k_date = hmac_sha256(format!("AWS4{}", key).as_bytes(), date_stamp);
+    let k_region = hmac_sha256(&k_date, region);
+    let k_service = hmac_sha256(&k_region, service);
+    hmac_sha256(&k_service, "aws4_request")
 }
 
 fn decode_chunk(data: &[u8]) -> Option<Value> {
     let data = serde_json::from_slice::<Value>(data).ok()?;
     let data = data["bytes"].as_str()?;
-    let data = STANDARD.decode(data).ok()?;
+    let data = base64_decode(data).ok()?;
     serde_json::from_slice(&data).ok()
 }

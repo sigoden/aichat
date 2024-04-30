@@ -1,9 +1,7 @@
 use super::{
     catch_error, sse_stream, CompletionDetails, ExtraConfig, Model, ModelConfig, OpenAIClient,
-    PromptType, SendData, SsMmessage, SseHandler,
+    PromptKind, PromptType, SendData, SsMmessage, SseHandler,
 };
-
-use crate::utils::PromptKind;
 
 use anyhow::{anyhow, Result};
 use reqwest::{Client as ReqwestClient, RequestBuilder};

@@ -1,13 +1,12 @@
 use super::{
     maybe_catch_error, message::*, sse_stream, Client, CompletionDetails, ExtraConfig, Model,
-    ModelConfig, PromptType, QianwenClient, SendData, SsMmessage, SseHandler,
+    ModelConfig, PromptKind, PromptType, QianwenClient, SendData, SsMmessage, SseHandler,
 };
 
-use crate::utils::{sha256sum, PromptKind};
+use crate::utils::{base64_decode, sha256};
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
-use base64::{engine::general_purpose::STANDARD, Engine};
 use reqwest::{
     multipart::{Form, Part},
     Client as ReqwestClient, RequestBuilder,
@@ -254,12 +253,12 @@ async fn upload(model: &str, api_key: &str, url: &str) -> Result<String> {
         .strip_prefix("data:")
         .and_then(|v| v.split_once(";base64,"))
         .ok_or_else(|| anyhow!("Invalid image url"))?;
-    let mut name = sha256sum(data);
+    let mut name = sha256(data);
     if let Some(ext) = mime_type.strip_prefix("image/") {
         name.push('.');
         name.push_str(ext);
     }
-    let data = STANDARD.decode(data)?;
+    let data = base64_decode(data)?;
 
     let client = reqwest::Client::new();
     let policy: Policy = client

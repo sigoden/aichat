@@ -1,9 +1,7 @@
 use super::{
     catch_error, sse_stream, CloudflareClient, CompletionDetails, ExtraConfig, Model, ModelConfig,
-    PromptType, SendData, SsMmessage, SseHandler,
+    PromptKind, PromptType, SendData, SsMmessage, SseHandler,
 };
-
-use crate::utils::PromptKind;
 
 use anyhow::{anyhow, Result};
 use reqwest::{Client as ReqwestClient, RequestBuilder};

@@ -1,10 +1,8 @@
 use super::{
     catch_error, extract_system_message, sse_stream, ClaudeClient, CompletionDetails, ExtraConfig,
-    ImageUrl, MessageContent, MessageContentPart, Model, ModelConfig, PromptType, SendData,
-    SsMmessage, SseHandler,
+    ImageUrl, MessageContent, MessageContentPart, Model, ModelConfig, PromptKind, PromptType,
+    SendData, SsMmessage, SseHandler,
 };
-
-use crate::utils::PromptKind;
 
 use anyhow::{anyhow, bail, Result};
 use reqwest::{Client as ReqwestClient, RequestBuilder};

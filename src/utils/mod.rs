@@ -1,5 +1,6 @@
 mod abort_signal;
 mod clipboard;
+mod crypto;
 mod prompt_input;
 mod render_prompt;
 mod spinner;
@@ -7,6 +8,7 @@ mod tiktoken;
 
 pub use self::abort_signal::{create_abort_signal, AbortSignal};
 pub use self::clipboard::set_text;
+pub use self::crypto::*;
 pub use self::prompt_input::*;
 pub use self::render_prompt::render_prompt;
 pub use self::spinner::run_spinner;
@@ -14,7 +16,6 @@ pub use self::tiktoken::cl100k_base_singleton;
 
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
-use sha2::{Digest, Sha256};
 use std::env;
 use std::process::Command;
 
@@ -80,13 +81,6 @@ pub fn light_theme_from_colorfgbg(colorfgbg: &str) -> Option<bool> {
 
     let light = v > 128.0;
     Some(light)
-}
-
-pub fn sha256sum(input: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(input);
-    let result = hasher.finalize();
-    format!("{:x}", result)
 }
 
 pub fn detect_os() -> String {

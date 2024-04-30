@@ -1,9 +1,7 @@
 use super::{
     catch_error, message::*, CompletionDetails, ExtraConfig, Model, ModelConfig, OllamaClient,
-    PromptType, SendData, SseHandler,
+    PromptKind, PromptType, SendData, SseHandler,
 };
-
-use crate::utils::PromptKind;
 
 use anyhow::{anyhow, bail, Result};
 use futures_util::StreamExt;

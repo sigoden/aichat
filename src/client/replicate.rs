@@ -2,10 +2,9 @@ use std::time::Duration;
 
 use super::{
     catch_error, generate_prompt, smart_prompt_format, sse_stream, Client, CompletionDetails,
-    ExtraConfig, Model, ModelConfig, PromptType, ReplicateClient, SendData, SsMmessage, SseHandler,
+    ExtraConfig, Model, ModelConfig, PromptKind, PromptType, ReplicateClient, SendData, SsMmessage,
+    SseHandler,
 };
-
-use crate::utils::PromptKind;
 
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;

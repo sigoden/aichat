@@ -1,7 +1,7 @@
 use super::openai::openai_build_body;
-use super::{ExtraConfig, Model, ModelConfig, OpenAICompatibleClient, PromptType, SendData};
-
-use crate::utils::PromptKind;
+use super::{
+    ExtraConfig, Model, ModelConfig, OpenAICompatibleClient, PromptKind, PromptType, SendData,
+};
 
 use anyhow::Result;
 use reqwest::{Client as ReqwestClient, RequestBuilder};

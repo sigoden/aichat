@@ -1,9 +1,7 @@
 use super::{
     catch_error, extract_system_message, json_stream, message::*, CohereClient, CompletionDetails,
-    ExtraConfig, Model, ModelConfig, PromptType, SendData, SseHandler,
+    ExtraConfig, Model, ModelConfig, PromptKind, PromptType, SendData, SseHandler,
 };
-
-use crate::utils::PromptKind;
 
 use anyhow::{anyhow, bail, Result};
 use reqwest::{Client as ReqwestClient, RequestBuilder};

@@ -1,7 +1,5 @@
 use super::vertexai::gemini_build_body;
-use super::{ExtraConfig, GeminiClient, Model, ModelConfig, PromptType, SendData};
-
-use crate::utils::PromptKind;
+use super::{ExtraConfig, GeminiClient, Model, ModelConfig, PromptKind, PromptType, SendData};
 
 use anyhow::Result;
 use reqwest::{Client as ReqwestClient, RequestBuilder};

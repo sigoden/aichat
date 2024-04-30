@@ -1,9 +1,7 @@
 use super::{
     maybe_catch_error, patch_system_message, sse_stream, Client, CompletionDetails, ErnieClient,
-    ExtraConfig, Model, ModelConfig, PromptType, SendData, SsMmessage, SseHandler,
+    ExtraConfig, Model, ModelConfig, PromptKind, PromptType, SendData, SsMmessage, SseHandler,
 };
-
-use crate::utils::PromptKind;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
