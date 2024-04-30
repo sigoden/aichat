@@ -242,6 +242,12 @@ pub struct ModelConfig {
     pub extra_fields: Option<serde_json::Map<String, serde_json::Value>>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct BuiltinModels {
+    pub platform: String,
+    pub models: Vec<ModelConfig>,
+}
+
 bitflags::bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq)]
     pub struct ModelCapabilities: u32 {

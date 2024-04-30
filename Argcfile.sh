@@ -17,10 +17,10 @@ test-init-config() {
     cargo run -- "$@"
 }
 
-# @cmd Test running without the config file
-# @env AICHAT_CLIENT_TYPE!
+# @cmd Test running with AICHAT_PLATFORM environment varialbe
+# @env AICHAT_PLATFORM!
 # @arg args~
-test-without-config() {
+test-platform-env() {
     cargo run -- "$@"
 }
 
@@ -50,44 +50,85 @@ test-server() {
     "$@"
 }
 
+OPEIA_COMPATIBLE_CLIENTS=( \
+  openai,gpt-3.5-turbo,https://api.openai.com/v1 \
+  anyscale,meta-llama/Meta-Llama-3-8B-Instruct,https://api.endpoints.anyscale.com/v1 \
+  deepinfra,meta-llama/Meta-Llama-3-8B-Instruct,https://api.deepinfra.com/v1/openai \
+  fireworks,accounts/fireworks/models/llama-v3-8b-instruct,https://api.fireworks.ai/inference/v1 \
+  groq,llama3-8b-8192,https://api.groq.com/openai/v1 \
+  mistral,mistral-small-latest,https://api.mistral.ai/v1 \
+  moonshot,moonshot-v1-8k,https://api.moonshot.cn/v1 \
+  openrouter,meta-llama/llama-3-8b-instruct,https://openrouter.ai/api/v1 \
+  octoai,meta-llama-3-8b-instruct,https://text.octoai.run/v1 \
+  perplexity,llama-3-8b-instruct,https://api.perplexity.ai \
+  together,meta-llama/Llama-3-8b-chat-hf,https://api.together.xyz/v1 \
+)
+
+# @cmd Chat with openai-comptabile api
+# @flag -S --no-stream
+# @arg platform![`_choice_platform`]
+# @arg text~
+chat() {
+    for client_config in "${OPEIA_COMPATIBLE_CLIENTS[@]}"; do
+        if [[ "$argc_platform" == "${client_config%%,*}" ]]; then
+            api_base="${client_config##*,}"
+            break
+        fi
+    done
+    if [[ -n "$api_base" ]]; then
+        env_prefix="$(echo "$argc_platform" | tr '[:lower:]' '[:upper:]')"
+        api_key_env="${env_prefix}_API_KEY"
+        api_key="${!api_key_env}" 
+        if [[ -z "$model" ]]; then
+            model="$(echo "$client_config" | cut -d, -f2)"
+        fi
+        if [[ -z "$model" ]]; then
+            model_env="${env_prefix}_MODEL"
+            model="${!model_env}"
+        fi
+        argc chat-openai-comptabile \
+            --api-base "$api_base" \
+            --api-key "$api_key" \
+            --model "$model" \
+            "${argc_text[@]}"
+    else
+        argc chat-$argc_platform "${argc_text[@]}"
+    fi
+}
+
+# @cmd List models by openai-comptabile api
+# @arg platform![`_choice_platform`]
+models() {
+    for client_config in "${OPEIA_COMPATIBLE_CLIENTS[@]}"; do
+        if [[ "$argc_platform" == "${client_config%%,*}" ]]; then
+            api_base="${client_config##*,}"
+            break
+        fi
+    done
+    if [[ -n "$api_base" ]]; then
+        env_prefix="$(echo "$argc_platform" | tr '[:lower:]' '[:upper:]')"
+        api_key_env="${env_prefix}_API_KEY"
+        api_key="${!api_key_env}" 
+        _openai_models
+    else
+        argc models-$argc_platform
+    fi
+}
+
 # @cmd Chat with openai-comptabile api
 # @option --api-base! $$ 
 # @option --api-key! $$
 # @option -m --model! $$
 # @flag -S --no-stream
 # @arg text~
-chat-llm() {
-    curl_args="$CURL_ARGS"
+chat-openai-comptabile() {
     _openai_chat "$@"
 }
 
 # @cmd List models by openai-comptabile api
 # @option --api-base! $$
 # @option --api-key! $$
-models-llm() {
-    curl_args="$CURL_ARGS"
-    _openai_models
-}
-
-
-# @cmd Chat with openai api
-# @env OPENAI_API_KEY!
-# @option -m --model=gpt-3.5-turbo $OPENAI_MODEL
-# @flag -S --no-stream
-# @arg text~
-chat-openai() {
-    api_base=https://api.openai.com/v1
-    api_key=$OPENAI_API_KEY
-    curl_args="-i $OPENAI_CURL_ARGS"
-    _openai_chat "$@"
-}
-
-# @cmd List openai models
-# @env OPENAI_API_KEY!
-models-openai() {
-    api_base=https://api.openai.com/v1
-    api_key=$OPENAI_API_KEY
-    curl_args="$OPENAI_CURL_ARGS"
+models-openai-comptabile() {
     _openai_models
 }
 
@@ -101,7 +142,7 @@ chat-gemini() {
     if [[ -n "$argc_no_stream" ]]; then
         method="generateContent"
     fi
-    _wrapper curl -i $GEMINI_CURL_ARGS "https://generativelanguage.googleapis.com/v1beta/models/${argc_model}:${method}?key=${GEMINI_API_KEY}" \
+    _wrapper curl -i "https://generativelanguage.googleapis.com/v1beta/models/${argc_model}:${method}?key=${GEMINI_API_KEY}" \
 -i -X POST \
 -H 'Content-Type: application/json' \
 -d '{ 
@@ -113,7 +154,7 @@ chat-gemini() {
 # @cmd List gemini models
 # @env GEMINI_API_KEY!
 models-gemini() {
-    _wrapper curl $GEMINI_CURL_ARGS "https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}" \
+    _wrapper curl "https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}" \
 -H 'Content-Type: application/json' \
 
 }
@@ -124,7 +165,7 @@ models-gemini() {
 # @flag -S --no-stream
 # @arg text~
 chat-claude() {
-    _wrapper curl -i $CLAUDE_CURL_ARGS https://api.anthropic.com/v1/messages \
+    _wrapper curl -i https://api.anthropic.com/v1/messages \
 -X POST \
 -H 'content-type: application/json' \
 -H 'anthropic-version: 2023-06-01' \
@@ -138,34 +179,13 @@ chat-claude() {
 '
 }
 
-# @cmd Chat with mistral api
-# @env MISTRAL_API_KEY!
-# @option -m --model=mistral-small-latest $MISTRAL_MODEL
-# @flag -S --no-stream
-# @arg text~
-chat-mistral() {
-    api_base=https://api.mistral.ai/v1
-    api_key=$MISTRAL_API_KEY
-    curl_args="$MISTRAL_CURL_ARGS"
-    _openai_chat "$@"
-}
-
-# @cmd List mistral models
-# @env MISTRAL_API_KEY!
-models-mistral() {
-    api_base=https://api.mistral.ai/v1
-    api_key=$MISTRAL_API_KEY
-    curl_args="$MISTRAL_CURL_ARGS"
-    _openai_models
-}
-
 # @cmd Chat with cohere api
 # @env COHERE_API_KEY!
 # @option -m --model=command-r $COHERE_MODEL
 # @flag -S --no-stream
 # @arg text~
 chat-cohere() {
-    _wrapper curl -i $COHERE_CURL_ARGS https://api.cohere.ai/v1/chat \
+    _wrapper curl -i https://api.cohere.ai/v1/chat \
 -X POST \
 -H 'Content-Type: application/json' \
 -H "Authorization: Bearer $COHERE_API_KEY" \
@@ -180,42 +200,9 @@ chat-cohere() {
 # @cmd List cohere models
 # @env COHERE_API_KEY!
 models-cohere() {
-    _wrapper curl $COHERE_CURL_ARGS https://api.cohere.ai/v1/models \
+    _wrapper curl https://api.cohere.ai/v1/models \
 -H "Authorization: Bearer $COHERE_API_KEY" \
 
-}
-
-# @cmd Chat with perplexity api
-# @env PERPLEXITY_API_KEY!
-# @option -m --model=sonar-small-chat $PERPLEXITY_MODEL
-# @flag -S --no-stream
-# @arg text~
-chat-perplexity() {
-    api_base=https://api.perplexity.ai
-    api_key=$PERPLEXITY_API_KEY
-    curl_args="$PERPLEXITY_CURL_ARGS"
-    _openai_chat "$@"
-}
-
-# @cmd Chat with groq api
-# @env GROQ_API_KEY!
-# @option -m --model=llama3-70b-8192 $GROQ_MODEL
-# @flag -S --no-stream
-# @arg text~
-chat-groq() {
-    api_base=https://api.groq.com/openai/v1
-    api_key=$GROQ_API_KEY
-    curl_args="$GROQ_CURL_ARGS"
-    _openai_chat "$@"
-}
-
-# @cmd List groq models
-# @env GROQ_API_KEY!
-models-groq() {
-    api_base=https://api.groq.com/openai/v1
-    api_key=$GROQ_API_KEY
-    curl_args="$GROQ_CURL_ARGS"
-    _openai_models
 }
 
 # @cmd Chat with ollama api
@@ -223,7 +210,7 @@ models-groq() {
 # @flag -S --no-stream
 # @arg text~
 chat-ollama() {
-    _wrapper curl -i $OLLAMA_CURL_ARGS http://localhost:11434/api/chat \
+    _wrapper curl -i http://localhost:11434/api/chat \
 -X POST \
 -H 'Content-Type: application/json' \
 -d '{
@@ -247,7 +234,7 @@ chat-vertexai-gemini() {
         func="generateContent"
     fi
     url=https://$VERTEXAI_LOCATION-aiplatform.googleapis.com/v1/projects/$VERTEXAI_PROJECT_ID/locations/$VERTEXAI_LOCATION/publishers/google/models/$argc_model:$func
-    _wrapper curl -i $VERTEXAI_CURL_ARGS $url \
+    _wrapper curl -i $url \
 -X POST \
 -H "Authorization: Bearer $api_key" \
 -H 'Content-Type: application/json' \
@@ -267,7 +254,7 @@ chat-vertexai-gemini() {
 chat-vertexai-claude() {
     api_key="$(gcloud auth print-access-token)"
     url=https://$VERTEXAI_LOCATION-aiplatform.googleapis.com/v1/projects/$VERTEXAI_PROJECT_ID/locations/$VERTEXAI_LOCATION/publishers/anthropic/models/$argc_model:streamRawPredict
-    _wrapper curl -i $VERTEXAI_CURL_ARGS $url \
+    _wrapper curl -i $url \
 -X POST \
 -H "Authorization: Bearer $api_key" \
 -H 'Content-Type: application/json' \
@@ -316,7 +303,7 @@ chat-bedrock() {
 # @arg text~
 chat-cloudflare() {
     url="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/ai/run/$argc_model"
-    _wrapper curl -i $CLOUDFLARE_CURL_ARGS "$url" \
+    _wrapper curl -i "$url" \
 -X POST \
 -H "Authorization: Bearer $CLOUDFLARE_API_KEY" \
 -d '{
@@ -332,7 +319,7 @@ chat-cloudflare() {
 # @arg text~
 chat-replicate() {
     url="https://api.replicate.com/v1/models/$argc_model/predictions"
-    res="$(_wrapper curl -s $DEEPINFRA_CURL_ARGS "$url" \
+    res="$(_wrapper curl -s "$url" \
 -X POST \
 -H "Authorization: Bearer $REPLICATE_API_KEY" \
 -H "Content-Type: application/json" \
@@ -346,7 +333,7 @@ chat-replicate() {
     if [[ -n "$argc_no_stream" ]]; then
         prediction_url="$(echo "$res" | jq -r '.urls.get')"
         while true; do
-            output="$(_wrapper curl $DEEPINFRA_CURL_ARGS -s -H "Authorization: Bearer $REPLICATE_API_KEY" "$prediction_url")"
+            output="$(_wrapper curl -s -H "Authorization: Bearer $REPLICATE_API_KEY" "$prediction_url")"
             prediction_status=$(printf "%s" "$output" | jq -r .status)
             if [ "$prediction_status"=="succeeded" ]; then
                 echo "$output"
@@ -359,7 +346,7 @@ chat-replicate() {
         done
     else
         stream_url="$(echo "$res" | jq -r '.urls.stream')"
-    _wrapper curl -i $DEEPINFRA_CURL_ARGS --no-buffer "$stream_url" \
+    _wrapper curl -i --no-buffer "$stream_url" \
 -H "Accept: text/event-stream" \
 
     fi
@@ -376,7 +363,7 @@ chat-ernie() {
     auth_url="https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=$ERNIE_API_KEY&client_secret=$ERNIE_SECRET_KEY"
     ACCESS_TOKEN="$(curl -fsSL "$auth_url" | jq -r '.access_token')"
     url="https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/$argc_model?access_token=$ACCESS_TOKEN"
-    _wrapper curl -i $ERNIE_CURL_ARGS "$url" \
+    _wrapper curl -i "$url" \
 -X POST \
 -d '{
     "messages": '"$(_build_msg $*)"',
@@ -398,7 +385,7 @@ chat-qianwen() {
         parameters_args='{}'
     fi
     url=https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation
-    _wrapper curl -i $QIANWEN_CURL_ARGS "$url" \
+    _wrapper curl -i "$url" \
 -X POST \
 -H "Authorization: Bearer $QIANWEN_API_KEY" \
 -H 'Content-Type: application/json' $stream_args  \
@@ -409,31 +396,6 @@ chat-qianwen() {
         "messages": '"$(_build_msg $*)"'
     }
 }'
-}
-
-# @cmd Chat with moonshot api
-# @env MOONSHOT_API_KEY!
-# @option -m --model=moonshot-v1-8k @MOONSHOT_MODEL
-# @flag -S --no-stream
-# @arg text~
-chat-moonshot() {
-    api_base=https://api.moonshot.cn/v1
-    api_key=$MOONSHOT_API_KEY
-    curl_args="$MOONSHOT_CURL_ARGS"
-    _openai_chat "$@"
-}
-
-# @cmd List moonshot models
-# @env MOONSHOT_API_KEY!
-models-moonshot() {
-    api_base=https://api.moonshot.cn/v1
-    api_key=$MOONSHOT_API_KEY
-    curl_args="$MOONSHOT_CURL_ARGS"
-    _openai_models
-}
-
-_choice_model() {
-    aichat --list-models
 }
 
 _argc_before() {
@@ -466,8 +428,23 @@ _openai_models() {
 
 }
 
+_choice_model() {
+    aichat --list-models
+}
+
+_choice_platform() {
+    _choice_client
+    _choice_openai_compatible_platform
+}
+
 _choice_client() {
-    printf "%s\n" openai gemini claude mistral cohere ollama vertexai bedrock ernie qianwen moonshot
+    printf "%s\n" openai gemini claude cohere ollama azure-openai vertexai bedrock cloudflare replicate ernie qianwen moonshot
+}
+
+_choice_openai_compatible_platform() {
+    for v in "${OPEIA_COMPATIBLE_CLIENTS[@]}"; do
+        echo "${v%%,*}"
+    done
 }
 
 _build_msg() {

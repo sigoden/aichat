@@ -1,6 +1,6 @@
 use super::{
     maybe_catch_error, message::*, sse_stream, Client, CompletionDetails, ExtraConfig, Model,
-    ModelConfig, PromptKind, PromptType, QianwenClient, SendData, SsMmessage, SseHandler,
+    ModelConfig, PromptAction, PromptKind, QianwenClient, SendData, SsMmessage, SseHandler,
 };
 
 use crate::utils::{base64_decode, sha256};
@@ -33,7 +33,7 @@ pub struct QianwenConfig {
 impl QianwenClient {
     config_get_fn!(api_key, get_api_key);
 
-    pub const PROMPTS: [PromptType<'static>; 1] =
+    pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {

@@ -2,7 +2,7 @@
 #   - This model list is scheduled to be updated with each new aichat release. Please do not submit PR to add new models.
 #   - This model list does not include models officially marked as legacy or beta.
 
-- type: openai
+- platform: openai
   # docs:
   #   - https://platform.openai.com/docs/models
   #   - https://openai.com/pricing
@@ -53,7 +53,7 @@
       input_price: 60
       output_price: 120
 
-- type: gemini 
+- platform: gemini 
   # docs:
   #   - https://ai.google.dev/models/gemini
   #   - https://ai.google.dev/pricing
@@ -79,7 +79,7 @@
       output_price: 21
       supports_vision: true
 
-- type: claude
+- platform: claude
   # docs:
   #   - https://docs.anthropic.com/claude/docs/models-overview
   #   - https://docs.anthropic.com/claude/reference/messages-streaming
@@ -105,7 +105,7 @@
       output_price: 1.25
       supports_vision: true
 
-- type: mistral
+- platform: mistral
   # docs:
   #   - https://docs.mistral.ai/getting-started/models/
   #   - https://mistral.ai/technology/#pricing
@@ -138,7 +138,7 @@
       input_price: 8
       output_price: 24
 
-- type: cohere
+- platform: cohere
   # docs:
   #   - https://docs.cohere.com/docs/command-r
   #   - https://cohere.com/pricing
@@ -157,7 +157,7 @@
       input_price: 3
       output_price: 15
 
-- type: perplexity
+- platform: perplexity
   # docs:
   #   - https://docs.perplexity.ai/docs/model-cards
   #   - https://docs.perplexity.ai/docs/pricing
@@ -209,7 +209,7 @@
       input_price: 1
       output_price: 1
 
-- type: groq
+- platform: groq
   # docs:
   #   - https://console.groq.com/docs/models
   #   - https://wow.groq.com
@@ -239,7 +239,7 @@
       input_price: 0.10
       output_price: 0.10
 
-- type: vertexai
+- platform: vertexai
   # docs:
   #   - https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
   #   - https://cloud.google.com/vertex-ai/generative-ai/pricing
@@ -284,7 +284,7 @@
       output_price: 1.25
       supports_vision: true
 
-- type: bedrock
+- platform: bedrock
   # docs:
   #   - https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html#model-ids-arns
   #   - https://aws.amazon.com/bedrock/pricing/
@@ -346,7 +346,7 @@
       input_price: 8
       output_price: 2.4
 
-- type: cloudflare
+- platform: cloudflare
   # docs:
   #   - https://developers.cloudflare.com/workers-ai/models/
   #   - https://developers.cloudflare.com/workers-ai/platform/pricing/
@@ -367,7 +367,7 @@
       input_price: 0.11
       output_price: 0.19
 
-- type: replicate
+- platform: replicate
   # docs:
   #   - https://replicate.com/docs
   #   - https://replicate.com/pricing
@@ -395,7 +395,7 @@
       input_price: 0.3
       output_price: 1
 
-- type: ernie
+- platform: ernie
   # docs:
   #   - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu
   #   - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7
@@ -428,7 +428,7 @@
       input_price: 0.14
       output_price: 0.14
 
-- type: qianwen
+- platform: qianwen
   # docs:
   #   - https://help.aliyun.com/zh/dashscope/developer-reference/tongyiqianwen-large-language-models/
   #   - https://help.aliyun.com/zh/dashscope/developer-reference/qwen-vl-plus/
@@ -462,7 +462,7 @@
       output_price: 2.8
       supports_vision: true
 
-- type: moonshot
+- platform: moonshot
   # docs:
   #   - https://platform.moonshot.cn/docs/intro
   #   - https://platform.moonshot.cn/docs/pricing

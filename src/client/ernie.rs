@@ -1,6 +1,6 @@
 use super::{
     maybe_catch_error, patch_system_message, sse_stream, Client, CompletionDetails, ErnieClient,
-    ExtraConfig, Model, ModelConfig, PromptKind, PromptType, SendData, SsMmessage, SseHandler,
+    ExtraConfig, Model, ModelConfig, PromptAction, PromptKind, SendData, SsMmessage, SseHandler,
 };
 
 use anyhow::{anyhow, Context, Result};
@@ -27,7 +27,7 @@ pub struct ErnieConfig {
 }
 
 impl ErnieClient {
-    pub const PROMPTS: [PromptType<'static>; 2] = [
+    pub const PROMPTS: [PromptAction<'static>; 2] = [
         ("api_key", "API Key:", true, PromptKind::String),
         ("secret_key", "Secret Key:", true, PromptKind::String),
     ];

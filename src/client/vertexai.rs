@@ -1,7 +1,8 @@
 use super::claude::{claude_build_body, claude_send_message, claude_send_message_streaming};
 use super::{
     catch_error, json_stream, message::*, patch_system_message, Client, CompletionDetails,
-    ExtraConfig, Model, ModelConfig, PromptKind, PromptType, SendData, SseHandler, VertexAIClient,
+    ExtraConfig, Model, ModelConfig, PromptAction, PromptKind, SendData, SseHandler,
+    VertexAIClient,
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -30,7 +31,7 @@ impl VertexAIClient {
     config_get_fn!(project_id, get_project_id);
     config_get_fn!(location, get_location);
 
-    pub const PROMPTS: [PromptType<'static>; 2] = [
+    pub const PROMPTS: [PromptAction<'static>; 2] = [
         ("project_id", "Project ID", true, PromptKind::String),
         ("location", "Location", true, PromptKind::String),
     ];

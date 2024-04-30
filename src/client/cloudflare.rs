@@ -1,6 +1,6 @@
 use super::{
     catch_error, sse_stream, CloudflareClient, CompletionDetails, ExtraConfig, Model, ModelConfig,
-    PromptKind, PromptType, SendData, SsMmessage, SseHandler,
+    PromptAction, PromptKind, SendData, SsMmessage, SseHandler,
 };
 
 use anyhow::{anyhow, Result};
@@ -24,7 +24,7 @@ impl CloudflareClient {
     config_get_fn!(account_id, get_account_id);
     config_get_fn!(api_key, get_api_key);
 
-    pub const PROMPTS: [PromptType<'static>; 2] = [
+    pub const PROMPTS: [PromptAction<'static>; 2] = [
         ("account_id", "Account ID:", true, PromptKind::String),
         ("api_key", "API Key:", true, PromptKind::String),
     ];

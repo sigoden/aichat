@@ -1,8 +1,8 @@
 use super::claude::{claude_build_body, claude_extract_completion};
 use super::{
     catch_error, generate_prompt, BedrockClient, Client, CompletionDetails, ExtraConfig, Model,
-    ModelConfig, PromptFormat, PromptKind, PromptType, SendData, SseHandler, LLAMA2_PROMPT_FORMAT,
-    LLAMA3_PROMPT_FORMAT,
+    ModelConfig, PromptAction, PromptFormat, PromptKind, SendData, SseHandler,
+    LLAMA2_PROMPT_FORMAT, LLAMA3_PROMPT_FORMAT,
 };
 
 use crate::utils::{base64_decode, encode_uri, hex_encode, hmac_sha256, sha256};
@@ -65,7 +65,7 @@ impl BedrockClient {
     config_get_fn!(secret_access_key, get_secret_access_key);
     config_get_fn!(region, get_region);
 
-    pub const PROMPTS: [PromptType<'static>; 3] = [
+    pub const PROMPTS: [PromptAction<'static>; 3] = [
         (
             "access_key_id",
             "AWS Access Key ID",

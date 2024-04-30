@@ -1,5 +1,7 @@
 use super::openai::openai_build_body;
-use super::{AzureOpenAIClient, ExtraConfig, Model, ModelConfig, PromptKind, PromptType, SendData};
+use super::{
+    AzureOpenAIClient, ExtraConfig, Model, ModelConfig, PromptAction, PromptKind, SendData,
+};
 
 use anyhow::Result;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
@@ -18,7 +20,7 @@ impl AzureOpenAIClient {
     config_get_fn!(api_base, get_api_base);
     config_get_fn!(api_key, get_api_key);
 
-    pub const PROMPTS: [PromptType<'static>; 4] = [
+    pub const PROMPTS: [PromptAction<'static>; 4] = [
         ("api_base", "API Base:", true, PromptKind::String),
         ("api_key", "API Key:", true, PromptKind::String),
         ("models[].name", "Model Name:", true, PromptKind::String),

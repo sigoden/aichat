@@ -1,6 +1,6 @@
 use super::{
     catch_error, sse_stream, CompletionDetails, ExtraConfig, Model, ModelConfig, OpenAIClient,
-    PromptKind, PromptType, SendData, SsMmessage, SseHandler,
+    PromptAction, PromptKind, SendData, SsMmessage, SseHandler,
 };
 
 use anyhow::{anyhow, Result};
@@ -25,7 +25,7 @@ impl OpenAIClient {
     config_get_fn!(api_key, get_api_key);
     config_get_fn!(api_base, get_api_base);
 
-    pub const PROMPTS: [PromptType<'static>; 1] =
+    pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {

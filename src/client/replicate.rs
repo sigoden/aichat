@@ -2,8 +2,8 @@ use std::time::Duration;
 
 use super::{
     catch_error, generate_prompt, smart_prompt_format, sse_stream, Client, CompletionDetails,
-    ExtraConfig, Model, ModelConfig, PromptKind, PromptType, ReplicateClient, SendData, SsMmessage,
-    SseHandler,
+    ExtraConfig, Model, ModelConfig, PromptAction, PromptKind, ReplicateClient, SendData,
+    SsMmessage, SseHandler,
 };
 
 use anyhow::{anyhow, Result};
@@ -26,7 +26,7 @@ pub struct ReplicateConfig {
 impl ReplicateClient {
     config_get_fn!(api_key, get_api_key);
 
-    pub const PROMPTS: [PromptType<'static>; 1] =
+    pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
     fn request_builder(

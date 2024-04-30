@@ -1,6 +1,8 @@
+use crate::client::OPENAI_COMPATIBLE_PLATFORMS;
+
 use super::openai::openai_build_body;
 use super::{
-    ExtraConfig, Model, ModelConfig, OpenAICompatibleClient, PromptKind, PromptType, SendData,
+    ExtraConfig, Model, ModelConfig, OpenAICompatibleClient, PromptAction, PromptKind, SendData,
 };
 
 use anyhow::Result;
@@ -13,6 +15,7 @@ pub struct OpenAICompatibleConfig {
     pub api_base: Option<String>,
     pub api_key: Option<String>,
     pub chat_endpoint: Option<String>,
+    #[serde(default)]
     pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
 }
@@ -21,7 +24,7 @@ impl OpenAICompatibleClient {
     config_get_fn!(api_base, get_api_base);
     config_get_fn!(api_key, get_api_key);
 
-    pub const PROMPTS: [PromptType<'static>; 5] = [
+    pub const PROMPTS: [PromptAction<'static>; 5] = [
         ("name", "Platform Name:", true, PromptKind::String),
         ("api_base", "API Base:", true, PromptKind::String),
         ("api_key", "API Key:", false, PromptKind::String),
@@ -35,7 +38,23 @@ impl OpenAICompatibleClient {
     ];
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
-        let api_base = self.get_api_base()?;
+        let api_base = match self.get_api_base() {
+            Ok(v) => v,
+            Err(err) => {
+                match OPENAI_COMPATIBLE_PLATFORMS
+                    .into_iter()
+                    .find_map(|(name, api_base)| {
+                        if name == self.model.client_name {
+                            Some(api_base.to_string())
+                        } else {
+                            None
+                        }
+                    }) {
+                    Some(v) => v,
+                    None => return Err(err),
+                }
+            }
+        };
         let api_key = self.get_api_key().ok();
 
         let mut body = openai_build_body(data, &self.model);
