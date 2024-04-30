@@ -1,7 +1,3 @@
-# NOTES:
-#   - This model list is scheduled to be updated with each new aichat release. Please do not submit PR to add new models.
-#   - This model list does not include models officially marked as legacy or beta.
-
 - platform: openai
   # docs:
   #   - https://platform.openai.com/docs/models
@@ -129,10 +125,6 @@
       max_input_tokens: 32000
       input_price: 2
       output_price: 6
-    - name: mistral-medium-latest
-      max_input_tokens: 32000
-      input_price: 2.7
-      output_price: 8.1
     - name: mistral-large-latest
       max_input_tokens: 32000
       input_price: 8
@@ -310,16 +302,6 @@
       input_price: 0.25
       output_price: 1.25
       supports_vision: true
-    - name: meta.llama2-13b-chat-v1
-      max_input_tokens: 4096
-      max_output_tokens: 2048
-      input_price: 0.75
-      output_price: 1
-    - name: meta.llama2-70b-chat-v1
-      max_input_tokens: 4096
-      max_output_tokens: 2048
-      input_price: 1.95
-      output_price: 2.56
     - name: meta.llama3-8b-instruct-v1:0
       max_input_tokens: 8192
       max_output_tokens: 4096
@@ -351,21 +333,23 @@
   #   - https://developers.cloudflare.com/workers-ai/models/
   #   - https://developers.cloudflare.com/workers-ai/platform/pricing/
   # notes:
-  #   - get max_output_tokens info from models doc
+  #   - unable to get max_output_tokens info
   models:
-    - name: '@cf/meta/llama-2-7b-chat-fp16'
-      max_input_tokens: 3072
-      max_output_tokens: 2500
-      input_price: 0.56
-      output_price: 6.6
-    - name: '@cf/meta/llama-2-7b-chat-int8'
-      max_input_tokens: 2048
-      max_output_tokens: 1800
-      input_price: 0.16
-      output_price: 0.24
-    - name: '@cf/mistral/mistral-7b-instruct-v0.1'
-      input_price: 0.11
-      output_price: 0.19
+    - name: '@cf/meta/llama-3-8b-instruct'
+      max_input_tokens: 4096
+      max_output_tokens: 4096
+    - name: '@cf/mistral/mistral-7b-instruct-v0.2-lora'
+      max_input_tokens: 4096
+      max_output_tokens: 4096
+    - name: '@cf/google/gemma-7b-it-lora'
+      max_input_tokens: 4096
+      max_output_tokens: 4096
+    - name: '@cf/qwen/qwen1.5-14b-chat-awq'
+      max_input_tokens: 4096
+      max_output_tokens: 4096
+    - name: '@hf/nexusflow/starling-lm-7b-beta'
+      max_input_tokens: 4096
+      max_output_tokens: 4096
 
 - platform: replicate
   # docs:
@@ -482,3 +466,310 @@
       max_input_tokens: 128000
       input_price: 8.4
       output_price: 8.4
+
+- platform: anyscale
+  # docs:
+  #   - https://docs.endpoints.anyscale.com/text-generation/query-a-model/#select-a-model
+  #   - https://docs.endpoints.anyscale.com/pricing
+  models:
+    - name: meta-llama/Meta-Llama-3-8B-Instruct
+      max_input_tokens: 8192
+      input_price: 0.15
+      output_price: 0.15
+    - name: meta-llama/Meta-Llama-3-70B-Instruct
+      max_input_tokens: 8192
+      input_price: 1.0
+      output_price: 1.0
+    - name: codellama/CodeLlama-70b-Instruct-hf
+      max_input_tokens: 4096
+      input_price: 1.0
+      output_price: 1.0
+    - name: mistralai/Mistral-7B-Instruct-v0.1
+      max_input_tokens: 16384
+      input_price: 0.15
+      output_price: 0.15
+    - name: mistralai/Mixtral-8x7B-Instruct-v0.1
+      max_input_tokens: 32768
+      input_price: 0.50
+      output_price: 0.50
+    - name: mistralai/Mixtral-8x22B-Instruct-v0.1
+      max_input_tokens: 65536
+      input_price: 0.90
+      output_price: 0.90
+    - name: google/gemma-7b-it
+      max_input_tokens: 8192
+      input_price: 0.15
+      output_price: 0.15
+
+- platform: deepinfra
+  # docs:
+  #   - https://deepinfra.com/models
+  #   - https://deepinfra.com/pricing
+  models:
+    - name: meta-llama/Meta-Llama-3-8B-Instruct
+      max_input_tokens: 8192
+      input_price: 0.08
+      output_price: 0.08
+    - name: meta-llama/Meta-Llama-3-70B-Instruct
+      max_input_tokens: 8192
+      input_price: 0.59
+      output_price: 0.79
+    - name: mistralai/Mistral-7B-Instruct-v0.2
+      max_input_tokens: 32768
+      input_price: 0.07
+      output_price: 0.07
+    - name: mistralai/Mixtral-8x7B-Instruct-v0.1
+      max_input_tokens: 32768
+      input_price: 0.24
+      output_price: 0.24
+    - name: mistralai/Mixtral-8x22B-Instruct-v0.1
+      max_input_tokens: 65536
+      input_price: 0.65
+      output_price: 0.65
+    - name: google/gemma-1.1-7b-it
+      max_input_tokens: 8192
+      input_price: 0.07
+      output_price: 0.07
+    - name: databricks/dbrx-instruct
+      max_input_tokens: 32768
+      input_price: 0.6
+      output_price: 0.6
+    - name: 01-ai/Yi-34B-Chat
+      max_input_tokens: 4096
+      input_price: 0.6
+      output_price: 0.6
+
+- platform: fireworks
+  # docs:
+  #   - https://fireworks.ai/models
+  #   - https://fireworks.ai/pricing
+  models:
+    - name: accounts/fireworks/models/llama-v3-8b-instruct
+      max_input_tokens: 8192
+      input_price: 0.2
+      output_price: 0.2
+    - name: accounts/fireworks/models/llama-v3-70b-instruct
+      max_input_tokens: 8192
+      input_price: 0.9
+      output_price: 0.9
+    - name: accounts/fireworks/models/mistral-7b-instruct-v0p2
+      max_input_tokens: 32768
+      input_price: 0.2
+      output_price: 0.2
+    - name: accounts/fireworks/models/mixtral-8x7b-instruct
+      max_input_tokens: 32768
+      input_price: 0.5
+      output_price: 0.5
+    - name: accounts/fireworks/models/mixtral-8x22b-instruct
+      max_input_tokens: 65536
+      input_price: 0.9
+      output_price: 0.9
+    - name: accounts/fireworks/models/qwen-72b-chat
+      max_input_tokens: 4096
+      input_price: 0.9
+      output_price: 0.9
+    - name: accounts/fireworks/models/gemma-7b-it
+      max_input_tokens: 8192
+      input_price: 0.2
+      output_price: 0.2
+    - name: accounts/fireworks/models/dbrx-instruct
+      max_input_tokens: 32768
+      input_price: 1.6
+      output_price: 1.6
+
+- platform: openrouter
+  # docs:
+  #   - https://openrouter.ai/docs#models
+  models:
+    - name: meta-llama/llama-3-8b-instruct
+      max_input_tokens: 8192
+      input_price: 0.1
+      output_price: 0.1
+    - name: meta-llama/llama-3-8b-instruct:nitro
+      max_input_tokens: 8192
+      input_price: 0.2
+      output_price: 0.2
+    - name: meta-llama/llama-3-8b-instruct:extended
+      max_input_tokens: 16384
+      input_price: 0.275
+      output_price: 0.283
+    - name: meta-llama/llama-3-70b-instruct
+      max_input_tokens: 8192
+      input_price: 0.81
+      output_price: 0.81
+    - name: meta-llama/llama-3-70b-instruct:nitro
+      max_input_tokens: 8192
+      input_price: 0.9
+      output_price: 0.9
+    - name: mistralai/mistral-7b-instruct:free
+      max_input_tokens: 32768
+      input_price: 0.0
+      output_price: 0.0
+    - name: codellama/codellama-70b-instruct
+      max_input_tokens: 2048
+      input_price: 0.81
+      output_price: 0.81
+    - name: google/gemma-7b-it:free
+      max_input_tokens: 8192
+      input_price: 0.0
+      output_price: 0.0
+    - name: 01-ai/yi-34b-chat
+      max_input_tokens: 4096
+      input_price: 0.72
+      output_price: 0.72
+    - name: openai/gpt-3.5-turbo
+      max_input_tokens: 16385
+      input_price: 0.5
+      output_price: 1.5
+    - name: openai/gpt-4-turbo
+      max_input_tokens: 128000
+      input_price: 10
+      output_price: 30
+      supports_vision: true
+    - name: openai/gpt-4-turbo-preview
+      max_input_tokens: 128000
+      input_price: 10
+      output_price: 30
+    - name: gpt-4-vision-preview
+      max_input_tokens: 128000
+      max_output_tokens: 4096
+      input_price: 10
+      output_price: 30
+      supports_vision: true
+    - name: openai/gpt-4
+      max_input_tokens: 8192
+      input_price: 30
+      output_price: 60
+    - name: openai/gpt-4-32k
+      max_input_tokens: 32768
+      input_price: 60
+      output_price: 120
+    - name: google/gemini-pro
+      max_input_tokens: 91728
+      input_price: 0.125
+      output_price: 0.375
+    - name: google/gemini-pro-vision
+      max_input_tokens: 45875
+      input_price: 0.125
+      output_price: 0.375
+      supports_vision: true
+    - name: google/gemini-pro-1.5
+      max_input_tokens: 2800000
+      input_price: 2.5
+      output_price: 7.5
+      supports_vision: true
+    - name: anthropic/claude-3-opus
+      max_input_tokens: 200000
+      input_price: 15
+      output_price: 75
+      supports_vision: true
+    - name: anthropic/claude-3-sonnet
+      max_input_tokens: 200000
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+    - name: anthropic/claude-3-haiku
+      max_input_tokens: 200000
+      input_price: 0.25
+      output_price: 1.25
+      supports_vision: true
+    - name: mistralai/mixtral-8x7b-instruct
+      max_input_tokens: 32768
+      input_price: 0.24
+      output_price: 0.24
+    - name: mistralai/mixtral-8x22b-instruct
+      max_input_tokens: 65536
+      input_price: 0.65
+      output_price: 0.65
+    - name: mistralai/mistral-small
+      max_input_tokens: 32000
+      input_price: 2
+      output_price: 6
+    - name: mistralai/mistral-large
+      max_input_tokens: 32000
+      input_price: 8
+      output_price: 24
+    - name: databricks/dbrx-instruct
+      max_input_tokens: 32768
+      input_price: 0.6
+      output_price: 0.6
+    - name: cohere/command-r
+      max_input_tokens: 128000
+      input_price: 0.5
+      output_price: 1.5
+    - name: cohere/command-r-plus
+      max_input_tokens: 128000
+      input_price: 3
+      output_price: 15
+
+- platform: octoai
+  # docs:
+  #   - https://octo.ai/docs/getting-started/inference-models
+  #   - https://octo.ai/pricing/text-gen-solution/
+  models:
+    - name: meta-llama-3-8b-instruct
+      max_input_tokens: 8192
+      input_price: 0.13
+      output_price: 0.13
+    - name: meta-llama-3-70b-instruct
+      max_input_tokens: 8192
+      input_price: 0.86
+      output_price: 0.86
+    - name: mistral-7b-instruct
+      max_input_tokens: 32768
+      input_price: 0.13
+      output_price: 0.13
+    - name: mixtral-8x7b-instruct
+      max_input_tokens: 32768
+      input_price: 0.34
+      output_price: 0.34
+    - name: mixtral-8x22b-instruct
+      max_input_tokens: 65536
+      input_price: 0.86
+      output_price: 0.86
+
+- platform: together
+  # docs:
+  #   - https://docs.together.ai/docs/inference-models
+  #   - https://www.together.ai/pricing
+  models:
+    - name: meta-llama/Llama-3-8b-chat-hf
+      max_input_tokens: 8000
+      input_price: 0.2
+      output_price: 0.2
+    - name: meta-llama/Llama-3-70b-chat-hf
+      max_input_tokens: 8000
+      input_price: 0.9
+      output_price: 0.9
+    - name: mistralai/Mistral-7B-Instruct-v0.2
+      max_input_tokens: 32768
+      input_price: 0.2
+      output_price: 0.2
+    - name: mistralai/Mixtral-8x7B-Instruct-v0.1
+      max_input_tokens: 32768
+      input_price: 0.9
+      output_price: 0.9
+    - name: mistralai/Mixtral-8x22B-Instruct-v0.1
+      max_input_tokens: 65536
+      input_price: 1.2
+      output_price: 1.2
+    - name: google/gemma-7b-it
+      max_input_tokens: 8192
+      input_price: 0.2
+      output_price: 0.2
+    - name: Qwen/Qwen1.5-72B-Chat
+      max_input_tokens: 32768
+      input_price: 0.9
+      output_price: 0.9
+    - name: databricks/dbrx-instruct
+      max_input_tokens: 32768
+      input_price: 1.2
+      output_price: 1.2
+    - name: zero-one-ai/Yi-34B-Chat
+      max_input_tokens: 4096
+      input_price: 0.8
+      output_price: 0.8
+    - name: allenai/OLMo-7B-Instruct
+      max_input_tokens: 2048
+      input_price: 0.2
+      output_price: 0.2

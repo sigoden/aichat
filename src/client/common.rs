@@ -390,10 +390,11 @@ pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(St
         .find(|(name, _)| client == *name)
     {
         None => Ok(None),
-        Some((name, _)) => {
+        Some((name, api_base)) => {
             let mut config = json!({
                 "type": "openai-compatible",
                 "name": name,
+                "api_base": api_base,
             });
             let prompts = if ALL_CLIENT_MODELS.iter().any(|v| &v.platform == name) {
                 vec![("api_key", "API Key:", false, PromptKind::String)]

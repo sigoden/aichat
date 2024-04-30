@@ -70,6 +70,7 @@ clients:
   # See https://docs.mistral.ai/
   - type: openai-compatible
     name: mistral
+    api_base: https://api.mistral.ai/v1
     api_key: xxx                                      # ENV: {client}_API_KEY
 
   # See https://docs.cohere.com/docs/the-cohere-platform
@@ -77,11 +78,15 @@ clients:
     api_key: xxx                                      # ENV: {client}_API_KEY
 
   # See https://docs.perplexity.ai/docs/getting-started
-  - type: perplexity
+  - type: openai-compatible
+    name: perplexity
+    api_base: https://api.perplexity.ai
     api_key: pplx-xxx                                 # ENV: {client}_API_KEY
 
   # See https://console.groq.com/docs/quickstart
-  - type: groq
+  - type: openai-compatible
+    name: groq
+    api_base: https://api.groq.com/openai/v1
     api_key: gsk_xxx                                  # ENV: {client}_API_KEY
 
   # See https://github.com/jmorganca/ollama
@@ -137,71 +142,43 @@ clients:
     api_key: sk-xxx                                  # ENV: {client}_API_KEY
 
   # See https://platform.moonshot.cn/docs/intro
-  - type: moonshot
+  - type: openai-compatible
+    name: moonshot
+    api_base: https://api.moonshot.cn/v1
     api_key: sk-xxx                                  # ENV: {client}_API_KEY
 
   # See https://docs.endpoints.anyscale.com/
   - type: openai-compatible
     name: anyscale
+    api_base: https://api.endpoints.anyscale.com/v1
     api_key: xxx                                      # ENV: {client}_API_KEY
-    models:
-      # https://docs.endpoints.anyscale.com/text-generation/query-a-model#select-a-model
-      - name: meta-llama/Meta-Llama-3-70B-Instruct
-        max_input_tokens: 8192
-        input_price: 1
-        output_price: 1
 
   # See https://deepinfra.com/docs
   - type: openai-compatible
     name: deepinfra
+    api_base: https://api.deepinfra.com/v1/openai
     api_key: xxx                                      # ENV: {client}_API_KEY
-    models:
-      # https://deepinfra.com/models
-      - name: meta-llama/Meta-Llama-3-70B-Instruct
-        max_input_tokens: 8192
-        input_price: 0.59
-        output_price: 0.79
 
   # See https://readme.fireworks.ai/docs/quickstart
   - type: openai-compatible
     name: fireworks
+    api_base: https://api.fireworks.ai/inference/v1
     api_key: xxx                                      # ENV: {client}_API_KEY
-    models:
-      # https://fireworks.ai/models
-      - name: accounts/fireworks/models/llama-v3-70b-instruct
-        max_input_tokens: 8192
-        input_price: 0.9
-        output_price: 0.9
 
   # See https://openrouter.ai/docs#quick-start
   - type: openai-compatible
     name: openrouter
+    api_base: https://openrouter.ai/api/v1
     api_key: xxx                                      # ENV: {client}_API_KEY
-    models:
-      # https://openrouter.ai/docs#models
-      - name: meta-llama/llama-3-70b-instruct
-        max_input_tokens: 8192
-        input_price: 0.81
-        output_price: 0.81
 
   # See https://octo.ai/docs/getting-started/quickstart
   - type: openai-compatible
     name: octoai
+    api_base: https://text.octoai.run/v1
     api_key: xxx                                      # ENV: {client}_API_KEY
-    models:
-      # https://octo.ai/docs/getting-started/inference-models
-      - name: meta-llama-3-70b-instruct
-        max_input_tokens: 8192
-        input_price: 0.86
-        output_price: 0.86
 
   # See https://docs.together.ai/docs/quickstart
   - type: openai-compatible
     name: together
+    api_base: https://api.together.xyz/v1
     api_key: xxx                                      # ENV: {client}_API_KEY
-    models:
-      # https://docs.together.ai/docs/inference-models
-      - name: meta-llama/Llama-3-70b-chat-hf
-        max_input_tokens: 8192
-        input_price: 0.9
-        output_price: 0.9
