@@ -115,8 +115,7 @@ macro_rules! register_client {
             None
             $(.or_else(|| $client::init(config)))+
             .ok_or_else(|| {
-                let model = config.read().model.clone();
-                anyhow::anyhow!("Unknown client '{}'", &model.client_name)
+                anyhow::anyhow!("Unknown client '{}'", &config.read().model.client_name)
             })
         }
 
@@ -254,6 +253,10 @@ macro_rules! client_common_fns {
             &self.model
         }
 
+        fn model_mut(&mut self) -> &mut Model {
+            &mut self.model
+        }
+
         fn set_model(&mut self, model: Model) {
             self.model = model;
         }
@@ -322,6 +325,8 @@ pub trait Client: Sync + Send {
     fn list_models(&self) -> Vec<Model>;
 
     fn model(&self) -> &Model;
+
+    fn model_mut(&mut self) -> &mut Model;
 
     fn set_model(&mut self, model: Model);
 

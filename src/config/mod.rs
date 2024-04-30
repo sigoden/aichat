@@ -418,6 +418,13 @@ impl Config {
             .map_or_else(|| String::from("no"), |v| v.to_string());
         let items = vec![
             ("model", self.model.id()),
+            (
+                "max_output_tokens",
+                self.model
+                    .max_output_tokens
+                    .map(|v| format!("{v} (current model)"))
+                    .unwrap_or_else(|| "-".into()),
+            ),
             ("temperature", format_option_value(&self.temperature)),
             ("top_p", format_option_value(&self.top_p)),
             ("dry_run", self.dry_run.to_string()),
@@ -497,23 +504,28 @@ impl Config {
                     .map(|v| (v.clone(), String::new()))
                     .collect(),
                 ".set" => vec![
-                    "temperature ",
-                    "top_p ",
+                    "max_output_tokens",
+                    "temperature",
+                    "top_p",
                     "compress_threshold",
-                    "save ",
-                    "save_session ",
-                    "highlight ",
-                    "dry_run ",
-                    "auto_copy ",
+                    "save",
+                    "save_session",
+                    "highlight",
+                    "dry_run",
+                    "auto_copy",
                 ]
                 .into_iter()
-                .map(|v| (v.to_string(), String::new()))
+                .map(|v| (format!("{v} "), String::new()))
                 .collect(),
                 _ => vec![],
             };
             (values, args[0])
         } else if args.len() == 2 {
             let values = match args[0] {
+                "max_output_tokens" => match self.model.show_max_output_tokens() {
+                    Some(v) => vec![v.to_string()],
+                    None => vec![],
+                },
                 "save" => complete_bool(self.save),
                 "save_session" => {
                     let save_session = if let Some(session) = &self.session {
@@ -549,6 +561,10 @@ impl Config {
         let key = parts[0];
         let value = parts[1];
         match key {
+            "max_output_tokens" => {
+                let value = parse_value(value)?;
+                self.model.set_max_output_tokens(value);
+            }
             "temperature" => {
                 let value = parse_value(value)?;
                 self.set_temperature(value);

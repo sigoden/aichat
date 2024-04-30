@@ -46,14 +46,16 @@ impl Model {
         models
             .iter()
             .map(|v| {
-                Model::new(client_name, &v.name)
+                let mut model = Model::new(client_name, &v.name);
+                model
                     .set_max_input_tokens(v.max_input_tokens)
                     .set_max_output_tokens(v.max_output_tokens)
                     .set_ref_max_output_tokens(v.ref_max_output_tokens)
                     .set_input_price(v.input_price)
                     .set_output_price(v.output_price)
                     .set_supports_vision(v.supports_vision)
-                    .set_extra_fields(&v.extra_fields)
+                    .set_extra_fields(&v.extra_fields);
+                model
             })
             .collect()
     }
@@ -95,8 +97,7 @@ impl Model {
 
     pub fn description(&self) -> String {
         let max_input_tokens = format_option_value(&self.max_input_tokens);
-        let max_output_tokens =
-            format_option_value(&self.max_output_tokens.or(self.ref_max_output_tokens));
+        let max_output_tokens = format_option_value(&self.show_max_output_tokens());
         let input_price = format_option_value(&self.input_price);
         let output_price = format_option_value(&self.output_price);
         let vision = if self.capabilities.contains(ModelCapabilities::Vision) {
@@ -110,7 +111,11 @@ impl Model {
         )
     }
 
-    pub fn set_max_input_tokens(mut self, max_input_tokens: Option<usize>) -> Self {
+    pub fn show_max_output_tokens(&self) -> Option<isize> {
+        self.max_output_tokens.or(self.ref_max_output_tokens)
+    }
+
+    pub fn set_max_input_tokens(&mut self, max_input_tokens: Option<usize>) -> &mut Self {
         match max_input_tokens {
             None | Some(0) => self.max_input_tokens = None,
             _ => self.max_input_tokens = max_input_tokens,
@@ -118,7 +123,7 @@ impl Model {
         self
     }
 
-    pub fn set_max_output_tokens(mut self, max_output_tokens: Option<isize>) -> Self {
+    pub fn set_max_output_tokens(&mut self, max_output_tokens: Option<isize>) -> &mut Self {
         match max_output_tokens {
             None | Some(0) => self.max_output_tokens = None,
             _ => self.max_output_tokens = max_output_tokens,
@@ -126,7 +131,7 @@ impl Model {
         self
     }
 
-    pub fn set_ref_max_output_tokens(mut self, ref_max_output_tokens: Option<isize>) -> Self {
+    pub fn set_ref_max_output_tokens(&mut self, ref_max_output_tokens: Option<isize>) -> &mut Self {
         match ref_max_output_tokens {
             None | Some(0) => self.ref_max_output_tokens = None,
             _ => self.ref_max_output_tokens = ref_max_output_tokens,
@@ -134,7 +139,7 @@ impl Model {
         self
     }
 
-    pub fn set_input_price(mut self, input_price: Option<f64>) -> Self {
+    pub fn set_input_price(&mut self, input_price: Option<f64>) -> &mut Self {
         match input_price {
             None => self.input_price = None,
             _ => self.input_price = input_price,
@@ -142,7 +147,7 @@ impl Model {
         self
     }
 
-    pub fn set_output_price(mut self, output_price: Option<f64>) -> Self {
+    pub fn set_output_price(&mut self, output_price: Option<f64>) -> &mut Self {
         match output_price {
             None => self.output_price = None,
             _ => self.output_price = output_price,
@@ -150,7 +155,7 @@ impl Model {
         self
     }
 
-    pub fn set_supports_vision(mut self, supports_vision: bool) -> Self {
+    pub fn set_supports_vision(&mut self, supports_vision: bool) -> &mut Self {
         if supports_vision {
             self.capabilities |= ModelCapabilities::Vision;
         } else {
@@ -160,9 +165,9 @@ impl Model {
     }
 
     pub fn set_extra_fields(
-        mut self,
+        &mut self,
         extra_fields: &Option<serde_json::Map<String, serde_json::Value>>,
-    ) -> Self {
+    ) -> &mut Self {
         self.extra_fields = extra_fields.clone();
         self
     }
