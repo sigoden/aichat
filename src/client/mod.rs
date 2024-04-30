@@ -5,6 +5,7 @@ mod model;
 mod prompt_format;
 mod sse_handler;
 
+pub use crate::utils::PromptKind;
 pub use common::*;
 pub use message::*;
 pub use model::*;
@@ -40,3 +41,22 @@ register_client!(
         OpenAICompatibleClient
     ),
 );
+
+pub const KNOWN_OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 5] = [
+    ("anyscale", "https://api.endpoints.anyscale.com/v1"),
+    ("deepinfra", "https://api.deepinfra.com/v1/openai"),
+    ("fireworks", "https://api.fireworks.ai/inference/v1"),
+    ("octoai", "https://text.octoai.run/v1"),
+    ("together", "https://api.together.xyz/v1"),
+];
+
+pub const KNOWN_OPENAI_COMPATIBLE_PROMPTS: [PromptType<'static>; 3] = [
+    ("api_key", "API Key:", false, PromptKind::String),
+    ("models[].name", "Model Name:", true, PromptKind::String),
+    (
+        "models[].max_input_tokens",
+        "Max Input Tokens:",
+        false,
+        PromptKind::Integer,
+    ),
+];
