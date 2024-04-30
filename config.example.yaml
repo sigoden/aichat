@@ -43,15 +43,15 @@ clients:
 
   # See https://platform.openai.com/docs/quickstart
   - type: openai
-    api_key: sk-xxx                                   # ENV: {client_name}_API_KEY
-    api_base: https://api.openai.com/v1               # ENV: {client_name}_API_BASE
+    api_key: sk-xxx                                   # ENV: {client}_API_KEY
+    api_base: https://api.openai.com/v1               # ENV: {client}_API_BASE
     organization_id: org-xxx                          # Optional
 
   # For any platform compatible with OpenAI's API
   - type: openai-compatible
     name: localai
-    api_base: http://localhost:8080/v1                # ENV: {client_name}_API_BASE
-    api_key: xxx                                      # ENV: {client_name}_API_KEY
+    api_base: http://localhost:8080/v1                # ENV: {client}_API_BASE
+    api_key: xxx                                      # ENV: {client}_API_KEY
     chat_endpoint: /chat/completions                  # Optional
     models:
       - name: llama3
@@ -59,35 +59,35 @@ clients:
 
   # See https://ai.google.dev/docs
   - type: gemini
-    api_key: xxx                                      # ENV: {client_name}_API_KEY
+    api_key: xxx                                      # ENV: {client}_API_KEY
     # possible values: BLOCK_NONE, BLOCK_ONLY_HIGH, BLOCK_MEDIUM_AND_ABOVE, BLOCK_LOW_AND_ABOVE
     block_threshold: BLOCK_NONE                       # Optional
 
   # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
   - type: claude
-    api_key: sk-ant-xxx                               # ENV: {client_name}_API_KEY
+    api_key: sk-ant-xxx                               # ENV: {client}_API_KEY
 
   # See https://docs.mistral.ai/
   - type: openai-compatible
     name: mistral
-    api_key: xxx                                      # ENV: {client_name}_API_KEY
+    api_key: xxx                                      # ENV: {client}_API_KEY
 
   # See https://docs.cohere.com/docs/the-cohere-platform
   - type: cohere
-    api_key: xxx                                      # ENV: {client_name}_API_KEY
+    api_key: xxx                                      # ENV: {client}_API_KEY
 
   # See https://docs.perplexity.ai/docs/getting-started
   - type: perplexity
-    api_key: pplx-xxx                                 # ENV: {client_name}_API_KEY
+    api_key: pplx-xxx                                 # ENV: {client}_API_KEY
 
   # See https://console.groq.com/docs/quickstart
   - type: groq
-    api_key: gsk_xxx                                  # ENV: {client_name}_API_KEY
+    api_key: gsk_xxx                                  # ENV: {client}_API_KEY
 
   # See https://github.com/jmorganca/ollama
   - type: ollama
-    api_base: http://localhost:11434                  # ENV: {client_name}_API_BASE
-    api_auth: Basic xxx                               # ENV: {client_name}_API_AUTH
+    api_base: http://localhost:11434                  # ENV: {client}_API_BASE
+    api_auth: Basic xxx                               # ENV: {client}_API_AUTH
     chat_endpoint: /api/chat                          # Optional
     models:                                           # Required
       - name: llama3
@@ -95,16 +95,16 @@ clients:
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
   - type: azure-openai
-    api_base: https://{RESOURCE}.openai.azure.com     # ENV: {client_name}_API_BASE
-    api_key: xxx                                      # ENV: {client_name}_API_KEY
+    api_base: https://{RESOURCE}.openai.azure.com     # ENV: {client}_API_BASE
+    api_key: xxx                                      # ENV: {client}_API_KEY
     models:                                           # Required
       - name: gpt-35-turbo                            # Model deployment name
         max_input_tokens: 8192
 
   # See https://cloud.google.com/vertex-ai
   - type: vertexai
-    project_id: xxx                                  # ENV: {client_name}_PROJECT_ID
-    location: xxx                                    # ENV: {client_name}_LOCATION
+    project_id: xxx                                  # ENV: {client}_PROJECT_ID
+    location: xxx                                    # ENV: {client}_LOCATION
     # Specifies a application-default-credentials (adc) file, Optional field
     # Run `gcloud auth application-default login` to init the adc file
     # see https://cloud.google.com/docs/authentication/external/set-up-adc
@@ -114,36 +114,36 @@ clients:
 
   # See https://docs.aws.amazon.com/bedrock/latest/userguide/
   - type: bedrock
-    access_key_id: xxx                               # ENV: {client_name}_ACCESS_KEY_ID
-    secret_access_key: xxx                           # ENV: {client_name}_SECRET_ACCESS_KEY
-    region: xxx                                      # ENV: {client_name}_REGION
+    access_key_id: xxx                               # ENV: {client}_ACCESS_KEY_ID
+    secret_access_key: xxx                           # ENV: {client}_SECRET_ACCESS_KEY
+    region: xxx                                      # ENV: {client}_REGION
 
   # See https://developers.cloudflare.com/workers-ai/
   - type: cloudflare
-    account_id: xxx                                   # ENV: {client_name}_ACCOUNT_ID
-    api_key: xxx                                      # ENV: {client_name}_API_KEY
+    account_id: xxx                                   # ENV: {client}_ACCOUNT_ID
+    api_key: xxx                                      # ENV: {client}_API_KEY
 
   # See https://replicate.com/docs
   - type: replicate
-    api_key: xxx                                      # ENV: {client_name}_API_KEY
+    api_key: xxx                                      # ENV: {client}_API_KEY
 
   # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
   - type: ernie
-    api_key: xxx                                     # ENV: {client_name}_API_KEY
-    secret_key: xxxx                                 # ENV: {client_name}_SECRET_KEY
+    api_key: xxx                                     # ENV: {client}_API_KEY
+    secret_key: xxxx                                 # ENV: {client}_SECRET_KEY
 
   # See https://help.aliyun.com/zh/dashscope/
   - type: qianwen
-    api_key: sk-xxx                                  # ENV: {client_name}_API_KEY
+    api_key: sk-xxx                                  # ENV: {client}_API_KEY
 
   # See https://platform.moonshot.cn/docs/intro
   - type: moonshot
-    api_key: sk-xxx                                  # ENV: {client_name}_API_KEY
+    api_key: sk-xxx                                  # ENV: {client}_API_KEY
 
   # See https://docs.endpoints.anyscale.com/
   - type: openai-compatible
     name: anyscale
-    api_key: xxx
+    api_key: xxx                                      # ENV: {client}_API_KEY
     models:
       # https://docs.endpoints.anyscale.com/text-generation/query-a-model#select-a-model
       - name: meta-llama/Meta-Llama-3-70B-Instruct
@@ -154,7 +154,7 @@ clients:
   # See https://deepinfra.com/docs
   - type: openai-compatible
     name: deepinfra
-    api_key: xxx
+    api_key: xxx                                      # ENV: {client}_API_KEY
     models:
       # https://deepinfra.com/models
       - name: meta-llama/Meta-Llama-3-70B-Instruct
@@ -165,7 +165,7 @@ clients:
   # See https://readme.fireworks.ai/docs/quickstart
   - type: openai-compatible
     name: fireworks
-    api_key: xxx
+    api_key: xxx                                      # ENV: {client}_API_KEY
     models:
       # https://fireworks.ai/models
       - name: accounts/fireworks/models/llama-v3-70b-instruct
@@ -176,7 +176,7 @@ clients:
   # See https://openrouter.ai/docs#quick-start
   - type: openai-compatible
     name: openrouter
-    api_key: xxx                                      # ENV: {client_name}_API_KEY
+    api_key: xxx                                      # ENV: {client}_API_KEY
     models:
       # https://openrouter.ai/docs#models
       - name: meta-llama/llama-3-70b-instruct
@@ -187,7 +187,7 @@ clients:
   # See https://octo.ai/docs/getting-started/quickstart
   - type: openai-compatible
     name: octoai
-    api_key: xxx                                      # ENV: {client_name}_API_KEY
+    api_key: xxx                                      # ENV: {client}_API_KEY
     models:
       # https://octo.ai/docs/getting-started/inference-models
       - name: meta-llama-3-70b-instruct
@@ -198,7 +198,7 @@ clients:
   # See https://docs.together.ai/docs/quickstart
   - type: openai-compatible
     name: together
-    api_key: xxx                                      # ENV: {client_name}_API_KEY
+    api_key: xxx                                      # ENV: {client}_API_KEY
     models:
       # https://docs.together.ai/docs/inference-models
       - name: meta-llama/Llama-3-70b-chat-hf

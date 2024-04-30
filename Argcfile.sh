@@ -17,7 +17,7 @@ test-init-config() {
     cargo run -- "$@"
 }
 
-# @cmd Test running with AICHAT_PLATFORM environment varialbe
+# @cmd Test running with AICHAT_PLATFORM environment variable
 # @env AICHAT_PLATFORM!
 # @arg args~
 test-platform-env() {
@@ -50,7 +50,7 @@ test-server() {
     "$@"
 }
 
-OPEIA_COMPATIBLE_CLIENTS=( \
+OPENAI_COMPATIBLE_PLATFORMS=( \
   openai,gpt-3.5-turbo,https://api.openai.com/v1 \
   anyscale,meta-llama/Meta-Llama-3-8B-Instruct,https://api.endpoints.anyscale.com/v1 \
   deepinfra,meta-llama/Meta-Llama-3-8B-Instruct,https://api.deepinfra.com/v1/openai \
@@ -64,14 +64,20 @@ OPEIA_COMPATIBLE_CLIENTS=( \
   together,meta-llama/Llama-3-8b-chat-hf,https://api.together.xyz/v1 \
 )
 
-# @cmd Chat with openai-comptabile api
+# @cmd Chat with any LLM api 
 # @flag -S --no-stream
-# @arg platform![`_choice_platform`]
+# @arg platform_model![?`_choice_platform_model`]
 # @arg text~
 chat() {
-    for client_config in "${OPEIA_COMPATIBLE_CLIENTS[@]}"; do
-        if [[ "$argc_platform" == "${client_config%%,*}" ]]; then
-            api_base="${client_config##*,}"
+    if [[ "$argc_platform_model" == *':'* ]]; then
+        model="${argc_platform_model##*:}"
+        argc_platform="${argc_platform_model%:*}"
+    else
+        argc_platform="${argc_platform_model}"
+    fi
+    for platform_config in "${OPENAI_COMPATIBLE_PLATFORMS[@]}"; do
+        if [[ "$argc_platform" == "${platform_config%%,*}" ]]; then
+            api_base="${platform_config##*,}"
             break
         fi
     done
@@ -80,7 +86,7 @@ chat() {
         api_key_env="${env_prefix}_API_KEY"
         api_key="${!api_key_env}" 
         if [[ -z "$model" ]]; then
-            model="$(echo "$client_config" | cut -d, -f2)"
+            model="$(echo "$platform_config" | cut -d, -f2)"
         fi
         if [[ -z "$model" ]]; then
             model_env="${env_prefix}_MODEL"
@@ -99,9 +105,9 @@ chat() {
 # @cmd List models by openai-comptabile api
 # @arg platform![`_choice_platform`]
 models() {
-    for client_config in "${OPEIA_COMPATIBLE_CLIENTS[@]}"; do
-        if [[ "$argc_platform" == "${client_config%%,*}" ]]; then
-            api_base="${client_config##*,}"
+    for platform_config in "${OPENAI_COMPATIBLE_PLATFORMS[@]}"; do
+        if [[ "$argc_platform" == "${platform_config%%,*}" ]]; then
+            api_base="${platform_config##*,}"
             break
         fi
     done
@@ -432,6 +438,11 @@ _choice_model() {
     aichat --list-models
 }
 
+_choice_platform_model() {
+    _choice_platform
+    _choice_model
+}
+
 _choice_platform() {
     _choice_client
     _choice_openai_compatible_platform
@@ -442,8 +453,8 @@ _choice_client() {
 }
 
 _choice_openai_compatible_platform() {
-    for v in "${OPEIA_COMPATIBLE_CLIENTS[@]}"; do
-        echo "${v%%,*}"
+    for platform_config in "${OPENAI_COMPATIBLE_PLATFORMS[@]}"; do
+        echo "${platform_config%%,*}"
     done
 }
 
