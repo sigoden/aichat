@@ -22,7 +22,7 @@ pub const GENERIC_PROMPT_FORMAT: PromptFormat<'static> = PromptFormat {
     end: "### Assistant\n",
 };
 
-pub const LLAMA2_PROMPT_FORMAT: PromptFormat<'static> = PromptFormat {
+pub const MISTRAL_PROMPT_FORMAT: PromptFormat<'static> = PromptFormat {
     begin: "",
     system_pre_message: "[INST] <<SYS>>",
     system_post_message: "<</SYS>> [/INST]",
@@ -136,7 +136,7 @@ pub fn smart_prompt_format(model_name: &str) -> PromptFormat<'static> {
         || model_name.contains("mistral")
         || model_name.contains("mixtral")
     {
-        LLAMA2_PROMPT_FORMAT
+        MISTRAL_PROMPT_FORMAT
     } else if model_name.contains("phi3") || model_name.contains("phi-3") {
         PHI3_PROMPT_FORMAT
     } else if model_name.contains("command-r") {
