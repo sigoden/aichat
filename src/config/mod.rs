@@ -9,6 +9,7 @@ use self::session::{Session, TEMP_SESSION_NAME};
 
 use crate::client::{
     create_client_config, list_client_types, list_models, ClientConfig, Message, Model, SendData,
+    OPENAI_COMPATIBLE_PLATFORMS,
 };
 use crate::render::{MarkdownRender, RenderOptions};
 use crate::utils::{
@@ -21,6 +22,7 @@ use inquire::{Confirm, Select, Text};
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use serde::Deserialize;
+use serde_json::json;
 use std::collections::{HashMap, HashSet};
 use std::{
     env,
@@ -126,12 +128,12 @@ impl Config {
     pub fn init(working_mode: WorkingMode) -> Result<Self> {
         let config_path = Self::config_file()?;
 
-        let client_type = env::var(get_env_name("client_type")).ok();
-        if working_mode != WorkingMode::Command && client_type.is_none() && !config_path.exists() {
+        let platform = env::var(get_env_name("platform")).ok();
+        if working_mode != WorkingMode::Command && platform.is_none() && !config_path.exists() {
             create_config_file(&config_path)?;
         }
-        let mut config = if client_type.is_some() {
-            Self::load_config_env(&client_type.unwrap())?
+        let mut config = if platform.is_some() {
+            Self::load_config_env(&platform.unwrap())?
         } else {
             Self::load_config_file(&config_path)?
         };
@@ -926,37 +928,45 @@ impl Config {
     fn load_config_file(config_path: &Path) -> Result<Self> {
         let ctx = || format!("Failed to load config at {}", config_path.display());
         let content = read_to_string(config_path).with_context(ctx)?;
-        let config = Self::load_config(&content).with_context(ctx)?;
-        Ok(config)
-    }
-
-    fn load_config_env(client_type: &str) -> Result<Self> {
-        let model_id = match env::var(get_env_name("model_name")) {
-            Ok(model_name) => format!("{client_type}:{model_name}"),
-            Err(_) => client_type.to_string(),
-        };
-        let content = format!(
-            r#"
-model: {model_id}
-save: false
-clients:
-  - type: {client_type}
-"#
-        );
-        let config = Self::load_config(&content).with_context(|| "Failed to load config")?;
-        Ok(config)
-    }
-
-    fn load_config(content: &str) -> Result<Self> {
-        let config: Self = serde_yaml::from_str(content).map_err(|err| {
+        let config: Self = serde_yaml::from_str(&content).map_err(|err| {
             let err_msg = err.to_string();
-            if err_msg.starts_with(&format!("{}: ", CLIENTS_FIELD)) {
-                anyhow!("clients: invalid value")
+            let err_msg = if err_msg.starts_with(&format!("{}: ", CLIENTS_FIELD)) {
+                // location is incorrect, get rid of it
+                err_msg
+                    .split_once(" at line")
+                    .map(|(v, _)| {
+                        format!("{v} (Sorry for being unable to provide an exact location)")
+                    })
+                    .unwrap_or_else(|| "clients: invalid value".into())
             } else {
-                anyhow!("{err_msg}")
-            }
+                err_msg
+            };
+            anyhow!("{err_msg}")
         })?;
 
+        Ok(config)
+    }
+
+    fn load_config_env(platform: &str) -> Result<Self> {
+        let model_id = match env::var(get_env_name("model_name")) {
+            Ok(model_name) => format!("{platform}:{model_name}"),
+            Err(_) => platform.to_string(),
+        };
+        let is_openai_compatible = OPENAI_COMPATIBLE_PLATFORMS
+            .into_iter()
+            .any(|(name, _)| platform == name);
+        let client = if is_openai_compatible {
+            json!({ "type": "openai-compatible", "name": platform })
+        } else {
+            json!({ "type": platform })
+        };
+        let config = json!({
+            "model": model_id,
+            "save": false,
+            "clients": vec![client],
+        });
+        let config =
+            serde_json::from_value(config).with_context(|| "Failed to load config from env")?;
         Ok(config)
     }
 

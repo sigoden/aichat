@@ -1,6 +1,6 @@
 use super::{
     catch_error, extract_system_message, json_stream, message::*, CohereClient, CompletionDetails,
-    ExtraConfig, Model, ModelConfig, PromptKind, PromptType, SendData, SseHandler,
+    ExtraConfig, Model, ModelConfig, PromptAction, PromptKind, SendData, SseHandler,
 };
 
 use anyhow::{anyhow, bail, Result};
@@ -22,7 +22,7 @@ pub struct CohereConfig {
 impl CohereClient {
     config_get_fn!(api_key, get_api_key);
 
-    pub const PROMPTS: [PromptType<'static>; 1] =
+    pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {

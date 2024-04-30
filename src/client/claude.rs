@@ -1,6 +1,6 @@
 use super::{
     catch_error, extract_system_message, sse_stream, ClaudeClient, CompletionDetails, ExtraConfig,
-    ImageUrl, MessageContent, MessageContentPart, Model, ModelConfig, PromptKind, PromptType,
+    ImageUrl, MessageContent, MessageContentPart, Model, ModelConfig, PromptAction, PromptKind,
     SendData, SsMmessage, SseHandler,
 };
 
@@ -23,7 +23,7 @@ pub struct ClaudeConfig {
 impl ClaudeClient {
     config_get_fn!(api_key, get_api_key);
 
-    pub const PROMPTS: [PromptType<'static>; 1] =
+    pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {

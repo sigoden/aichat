@@ -1,6 +1,6 @@
 use super::{
     catch_error, message::*, CompletionDetails, ExtraConfig, Model, ModelConfig, OllamaClient,
-    PromptKind, PromptType, SendData, SseHandler,
+    PromptAction, PromptKind, SendData, SseHandler,
 };
 
 use anyhow::{anyhow, bail, Result};
@@ -23,7 +23,7 @@ impl OllamaClient {
     config_get_fn!(api_base, get_api_base);
     config_get_fn!(api_auth, get_api_auth);
 
-    pub const PROMPTS: [PromptType<'static>; 4] = [
+    pub const PROMPTS: [PromptAction<'static>; 4] = [
         ("api_base", "API Base:", true, PromptKind::String),
         ("api_auth", "API Auth:", false, PromptKind::String),
         ("models[].name", "Model Name:", true, PromptKind::String),
