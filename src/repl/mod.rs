@@ -212,10 +212,11 @@ impl Repl {
                 }
                 ".file" => match args {
                     Some(args) => {
-                        let (files, text) = match args.split_once(" -- ") {
-                            Some((files, text)) => (files.trim(), text.trim()),
-                            None => (args, ""),
-                        };
+                        let (files, text) =
+                            match args.split_once(" -- ").or_else(|| args.split_once(" --\n")) {
+                                Some((files, text)) => (files.trim(), text.trim()),
+                                None => (args, ""),
+                            };
                         let files = shell_words::split(files).with_context(|| "Invalid args")?;
                         let input = Input::new(text, files, self.config.read().input_context())?;
                         self.ask(input).await?;
