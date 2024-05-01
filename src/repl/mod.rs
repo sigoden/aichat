@@ -23,6 +23,11 @@ use reedline::{
 use reedline::{MenuBuilder, Signal};
 use std::{env, process};
 
+lazy_static! {
+    static ref SPLIT_FILES_TEXT_ARGS_RE: Regex =
+        Regex::new(r"(?m) (-- |--\n|--\r\n|--\r|--$)").unwrap();
+}
+
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
@@ -212,11 +217,7 @@ impl Repl {
                 }
                 ".file" => match args {
                     Some(args) => {
-                        let (files, text) =
-                            match args.split_once(" -- ").or_else(|| args.split_once(" --\n")) {
-                                Some((files, text)) => (files.trim(), text.trim()),
-                                None => (args, ""),
-                            };
+                        let (files, text) = split_files_text(args);
                         let files = shell_words::split(files).with_context(|| "Invalid args")?;
                         let input = Input::new(text, files, self.config.read().input_context())?;
                         self.ask(input).await?;
@@ -453,6 +454,21 @@ async fn compress_session(config: &GlobalConfig) -> Result<()> {
     Ok(())
 }
 
+fn split_files_text(args: &str) -> (&str, &str) {
+    match SPLIT_FILES_TEXT_ARGS_RE.find(args).ok().flatten() {
+        Some(mat) => {
+            let files = &args[0..mat.start()];
+            let text = if mat.end() < args.len() {
+                &args[mat.end()..]
+            } else {
+                ""
+            };
+            (files, text)
+        }
+        None => (args, ""),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -473,6 +489,25 @@ mod tests {
         assert_eq!(
             parse_command(".prompt \nabc\n"),
             Some((".prompt", Some("abc")))
+        );
+    }
+
+    #[test]
+    fn test_split_files_text() {
+        assert_eq!(split_files_text("file.txt"), ("file.txt", ""));
+        assert_eq!(split_files_text("file.txt --"), ("file.txt", ""));
+        assert_eq!(split_files_text("file.txt -- hello"), ("file.txt", "hello"));
+        assert_eq!(
+            split_files_text("file.txt --\nhello"),
+            ("file.txt", "hello")
+        );
+        assert_eq!(
+            split_files_text("file.txt --\r\nhello"),
+            ("file.txt", "hello")
+        );
+        assert_eq!(
+            split_files_text("file.txt --\rhello"),
+            ("file.txt", "hello")
         );
     }
 }
