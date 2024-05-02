@@ -168,7 +168,7 @@ impl Model {
         &mut self,
         extra_fields: &Option<serde_json::Map<String, serde_json::Value>>,
     ) -> &mut Self {
-        self.extra_fields = extra_fields.clone();
+        self.extra_fields.clone_from(extra_fields);
         self
     }
 
