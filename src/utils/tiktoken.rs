@@ -128,7 +128,7 @@ pub fn byte_pair_split<'a>(piece: &'a [u8], ranks: &HashMap<Vec<u8>, usize>) -> 
 // Originally, we had one too! Without it, we were only vaguely faster than Python.
 // I used an RWLock to protect the cache. This didn't seem to hurt single threaded performance
 // noticeably, but it did affect multi-threaded performance. Weirdly, it seemed to affect
-// multi-threaded performance even when I only had readers (maybed I messed something up?).
+// multi-threaded performance even when I only had readers (maybe I messed something up?).
 // Anyway, I realised that we could get rid of the cache, if we treat the set of tokens as a cache!
 // These are exactly the set or merges that are likely to be hot. And now we don't have to think
 // about interior mutability, memory use, or cloning.
