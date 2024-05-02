@@ -21,7 +21,7 @@ use hyper_util::rt::{TokioExecutor, TokioIo};
 use parking_lot::RwLock;
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::{convert::Infallible, sync::Arc};
+use std::{convert::Infallible, net::IpAddr, sync::Arc};
 use tokio::{
     net::TcpListener,
     sync::{
@@ -42,6 +42,8 @@ pub async fn run(config: GlobalConfig, addr: Option<String>) -> Result<()> {
         Some(addr) => {
             if let Ok(port) = addr.parse::<u16>() {
                 format!("127.0.0.1:{port}")
+            } else if let Ok(ip) = addr.parse::<IpAddr>() {
+                format!("{ip}:8000")
             } else {
                 addr
             }
@@ -120,6 +122,7 @@ impl Server {
                 res
             }
             Err(err) => {
+                status = StatusCode::BAD_REQUEST;
                 error!("{method} {uri} {} {err}", status.as_u16());
                 ret_err(err)
             }
@@ -396,7 +399,6 @@ fn ret_err<T: std::fmt::Display>(err: T) -> AppResponse {
         },
     });
     Response::builder()
-        .status(StatusCode::OK)
         .header("Content-Type", "application/json")
         .body(Full::new(Bytes::from(data.to_string())).boxed())
         .unwrap()
