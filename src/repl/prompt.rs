@@ -30,7 +30,7 @@ impl Prompt for ReplPrompt {
     }
 
     fn render_prompt_multiline_indicator(&self) -> Cow<str> {
-        Cow::Borrowed("")
+        Cow::Borrowed("... ")
     }
 
     fn render_prompt_history_search_indicator(
