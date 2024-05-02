@@ -140,11 +140,11 @@ impl MarkdownRender {
 
     fn highlight_line(&self, line: &str, syntax: &SyntaxReference, is_code: bool) -> String {
         let ws: String = line.chars().take_while(|c| c.is_whitespace()).collect();
-        let trimed_line: &str = &line[ws.len()..];
+        let trimmed_line: &str = &line[ws.len()..];
         let mut line_highlighted = None;
         if let Some(theme) = &self.options.theme {
             let mut highlighter = HighlightLines::new(syntax, theme);
-            if let Ok(ranges) = highlighter.highlight_line(trimed_line, &self.syntax_set) {
+            if let Ok(ranges) = highlighter.highlight_line(trimmed_line, &self.syntax_set) {
                 line_highlighted = Some(format!(
                     "{ws}{}",
                     as_terminal_escaped(&ranges, self.options.truecolor)

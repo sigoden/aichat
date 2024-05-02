@@ -124,8 +124,8 @@ impl Session {
             data["save_session"] = save_session.into();
         }
         data["total_tokens"] = tokens.into();
-        if let Some(conext_window) = self.model.max_input_tokens {
-            data["max_input_tokens"] = conext_window.into();
+        if let Some(context_window) = self.model.max_input_tokens {
+            data["max_input_tokens"] = context_window.into();
         }
         if percent != 0.0 {
             data["total/max"] = format!("{}%", percent).into();

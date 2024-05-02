@@ -92,7 +92,7 @@ chat() {
             model_env="${env_prefix}_MODEL"
             model="${!model_env}"
         fi
-        argc chat-openai-comptabile \
+        argc chat-openai-compatible \
             --api-base "$api_base" \
             --api-key "$api_key" \
             --model "$model" \
@@ -102,7 +102,7 @@ chat() {
     fi
 }
 
-# @cmd List models by openai-comptabile api
+# @cmd List models by openai-compatible api
 # @arg platform![`_choice_platform`]
 models() {
     for platform_config in "${OPENAI_COMPATIBLE_PLATFORMS[@]}"; do
@@ -121,20 +121,20 @@ models() {
     fi
 }
 
-# @cmd Chat with openai-comptabile api
+# @cmd Chat with openai-compatible api
 # @option --api-base! $$ 
 # @option --api-key! $$
 # @option -m --model! $$
 # @flag -S --no-stream
 # @arg text~
-chat-openai-comptabile() {
+chat-openai-compatible() {
     _openai_chat "$@"
 }
 
-# @cmd List models by openai-comptabile api
+# @cmd List models by openai-compatible api
 # @option --api-base! $$
 # @option --api-key! $$
-models-openai-comptabile() {
+models-openai-compatible() {
     _openai_models
 }
 

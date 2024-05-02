@@ -141,7 +141,7 @@ async fn send_message(
     match model_category {
         ModelCategory::Anthropic => claude_extract_completion(&data),
         ModelCategory::MetaLlama3 => llama_extract_completion(&data),
-        ModelCategory::Mistral => mistral_extrat_completion(&data),
+        ModelCategory::Mistral => mistral_extract_completion(&data),
     }
 }
 
@@ -283,7 +283,7 @@ fn llama_extract_completion(data: &Value) -> Result<(String, CompletionDetails)>
     Ok((text.to_string(), details))
 }
 
-fn mistral_extrat_completion(data: &Value) -> Result<(String, CompletionDetails)> {
+fn mistral_extract_completion(data: &Value) -> Result<(String, CompletionDetails)> {
     let text = data["outputs"][0]["text"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;

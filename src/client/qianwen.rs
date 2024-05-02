@@ -210,7 +210,7 @@ fn extract_completion_text(data: &Value, is_vl: bool) -> Result<(String, Complet
     Ok((text.to_string(), details))
 }
 
-/// Patch messsages, upload embedded images to oss
+/// Patch messages, upload embedded images to oss
 async fn patch_messages(model: &str, api_key: &str, messages: &mut Vec<Message>) -> Result<()> {
     for message in messages {
         if let MessageContent::Array(list) = message.content.borrow_mut() {
