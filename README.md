@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
-[![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/dSHTvH6S)
+[![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/mr3ZZUB9hG)
 
 Aichat is a AI-powered CLI chat and copilot tool that seamlessly integrates with over 10 leading AI platforms, providing a powerful combination of chat-based interaction, context-aware conversations, and AI-assisted shell capabilities, all within a customizable and user-friendly environment.
 
