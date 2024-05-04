@@ -38,8 +38,8 @@ clients:
   #       extra_fields:                               # Set custom parameters, will merge with the body json
   #          key: value                               
   #   extra:
-  #     proxy: socks5://127.0.0.1:1080                # Specify https/socks5 proxy server. ENV: HTTPS_PROXY/ALL_PROXY
-  #     connect_timeout: 10                           # Set a timeout in seconds for connect to server
+  #     proxy: socks5://127.0.0.1:1080                # Set https/socks5 proxy. ENV: HTTPS_PROXY/https_proxy/ALL_PROXY/all_proxy
+  #     connect_timeout: 10                           # Set timeout in seconds for connect to api
 
   # See https://platform.openai.com/docs/quickstart
   - type: openai
