@@ -177,10 +177,16 @@ async fn start_interactive(config: &GlobalConfig) -> Result<()> {
 async fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
     let client = init_client(config)?;
     config.read().maybe_print_send_tokens(&input);
-    let (spinner_tx, spinner_rx) = oneshot::channel();
-    tokio::spawn(run_spinner(" Generating", spinner_rx));
-    let ret = client.send_message(input.clone()).await;
-    let _ = spinner_tx.send(());
+    let is_terminal_stdout = stdout().is_terminal();
+    let ret = if is_terminal_stdout {
+        let (spinner_tx, spinner_rx) = oneshot::channel();
+        tokio::spawn(run_spinner(" Generating", spinner_rx));
+        let ret = client.send_message(input.clone()).await;
+        let _ = spinner_tx.send(());
+        ret
+    } else {
+        client.send_message(input.clone()).await
+    };
     let (mut eval_str, _) = ret?;
     if let Ok(true) = CODE_BLOCK_RE.is_match(&eval_str) {
         eval_str = extract_block(&eval_str);
@@ -193,7 +199,7 @@ async fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
         println!("{}", markdown_render.render(&eval_str).trim());
         return Ok(());
     }
-    if stdout().is_terminal() {
+    if is_terminal_stdout {
         let mut explain = false;
         loop {
             let answer = Select::new(
