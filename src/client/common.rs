@@ -693,11 +693,14 @@ fn to_json(kind: &PromptKind, value: &str) -> Value {
 
 fn set_proxy(builder: ClientBuilder, proxy: &Option<String>) -> Result<ClientBuilder> {
     let proxy = if let Some(proxy) = proxy {
-        if proxy.is_empty() || proxy == "false" || proxy == "-" {
+        if proxy.is_empty() || proxy == "-" {
             return Ok(builder);
         }
         proxy.clone()
-    } else if let Ok(proxy) = env::var("HTTPS_PROXY").or_else(|_| env::var("ALL_PROXY")) {
+    } else if let Some(proxy) = ["HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"]
+        .into_iter()
+        .find_map(|v| env::var(v).ok())
+    {
         proxy
     } else {
         return Ok(builder);
