@@ -238,7 +238,6 @@
   #   - https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/gemini
   # notes:
   #   - get max_output_tokens info from models doc
-  #   - claude models have not been tested
   models:
     - name: gemini-1.0-pro
       max_input_tokens: 24568
@@ -257,6 +256,14 @@
       input_price: 2.5
       output_price: 7.5
       supports_vision: true
+
+- platform: vertexai-claude
+  # docs:
+  #   - https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-claude
+  # notes:
+  #   - get max_output_tokens info from models doc
+  #   - claude models have not been tested
+  models:
     - name: claude-3-opus@20240229
       max_input_tokens: 200000
       max_output_tokens: 4096
