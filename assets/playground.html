@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+  <title>AIChat LLM Playground</title>
+  <link rel="stylesheet" href="//unpkg.com/github-markdown-css@5.5.1/github-markdown.css">
+  <link rel="stylesheet" href="//unpkg.com/highlight.js@11.9.0/styles/github.min.css">
+  <script src="//unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
+  <script src="//unpkg.com/marked@12.0.2/lib/marked.umd.js" defer></script>
+  <script src="//unpkg.com/alpinejs@3.13.10/dist/cdn.min.js" defer></script>
+  <style>
+    :root {
+      --fg-primary: #1652f1;
+      --bg-primary: white;
+      --border-primary: #c3c3c3;
+    }
+
+    [x-cloak] {
+      display: none !important;
+    }
+
+    html {
+      font-family: Noto Sans, SF Pro SC, SF Pro Text, SF Pro Icons, PingFang SC, Helvetica Neue, Helvetica, Arial, sans-serif
+    }
+
+    body,
+    div {
+      padding: 0;
+      margin: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 1rem;
+      display: flex;
+      height: 100vh;
+      background-color: #f9f9f9;
+    }
+
+    .container {
+      width: 100%;
+      padding: 1.25rem;
+      box-sizing: border-box;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 360px;
+      flex-shrink: 0;
+      margin-right: 1.25rem;
+      background-color: var(--bg-primary);
+      box-shadow: 0 0 0.3rem rgba(0, 0, 0, 0.1);
+      border-radius: 0.3rem;
+    }
+
+    .sidebar-header {
+      padding: 1.25rem;
+    }
+
+    .sidebar-header .title {
+      font-size: 1.25rem;
+      font-weight: bold;
+    }
+
+    .sidebar-header .subtitle {
+      font-size: 0.8rem;
+      padding-top: 0.3rem;
+    }
+
+    .hide-sidebar-btn {
+      display: none;
+      width: 1.5rem;
+      height: 1.5rem;
+      position: absolute;
+      right: 1.5rem;
+      top: 1.5rem;
+    }
+
+    .settings {
+      padding: 1.25rem;
+    }
+
+    .settings label {
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .settings select,
+    .settings input[type="number"] {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 0.625rem;
+      border: 1px solid var(--border-primary);
+      border-radius: 0.25rem;
+      box-sizing: border-box;
+    }
+
+    .settings textarea {
+      width: 100%;
+      height: 150px;
+      padding: 0.5rem;
+      border: 1px solid var(--border-primary);
+      border-radius: 0.25rem;
+      box-sizing: border-box;
+      margin-bottom: 0.625rem;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      margin-left: auto;
+    }
+
+    .main-panel {
+      display: flex;
+      flex-direction: column;
+      width: calc(100vw - 360px - 2.5rem);
+      background-color: var(--bg-primary);
+      box-shadow: 0 0 0.3rem rgba(0, 0, 0, 0.1);
+      border-radius: 0.3rem;
+    }
+
+    .chat-header {
+      display: flex;
+      flex-direction: row;
+      padding: 1.25rem;
+      border-bottom: 1px solid var(--border-primary);
+    }
+
+    .chat-header select {
+      width: 100%;
+      outline: none;
+      font-size: 1.25rem;
+      border: none;
+    }
+
+    .show-sidebar-btn {
+      display: none;
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .chat-header .toolbar {
+      margin-left: auto;
+    }
+
+    .chat-body {
+      display: flex;
+      flex-direction: column;
+      padding: 1.25rem;
+      flex-grow: 1;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    .chat-message {
+      display: flex;
+      padding: 0.7rem;
+    }
+
+    .chat-avatar svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 50%;
+    }
+
+    .chat-message-content {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      padding-left: 0.625rem;
+      flex-grow: 1;
+    }
+
+    .chat-message-content .error {
+      color: red;
+    }
+
+    .chat-message-content .message-text {
+      white-space: pre-wrap;
+      padding-top: 0.2rem;
+    }
+
+    .message-image-bar {
+      display: flex;
+      flex-direction: row;
+      overflow-x: auto;
+    }
+
+    .message-image {
+      margin: 0.25rem;
+    }
+
+    .message-image img {
+      width: 10rem;
+      height: 10rem;
+      object-fit: cover;
+    }
+
+    .markdown-body {
+      display: flex;
+      width: 100%;
+      padding: 0;
+      flex-direction: column;
+    }
+
+    .markdown-body pre {
+      overflow-x: auto;
+      word-wrap: break-word;
+    }
+
+    .code-block {
+      position: relative;
+      width: 100%;
+    }
+
+    .copy-code-btn {
+      position: absolute;
+      top: 0.7rem;
+      right: 0.7rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .copy-code-btn svg {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    .scroll-to-bottom-btn {
+      position: absolute;
+      text-align: center;
+      cursor: pointer;
+      width: 1.5rem;
+      height: 1.5rem;
+      right: calc(50vw - 180px);
+      bottom: 140px;
+      border-radius: 0.75rem;
+      background-color: var(--bg-primary);
+    }
+
+    .scroll-to-bottom-btn svg {
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+    }
+
+    .input-panel {
+      position: relative;
+      border-top: 1px solid var(--border-primary);
+    }
+
+    .input-panel-inner {
+      margin: 1rem;
+      padding: 0.5rem;
+      border: 1px solid var(--border-primary);
+      border-radius: 1rem;
+    }
+
+    .input-panel-inner textarea {
+      width: 100%;
+      font-size: 1rem;
+      padding: 0.4rem;
+      box-sizing: border-box;
+      border: none;
+      outline: none;
+      resize: none;
+      overflow: hidden;
+    }
+
+    .input-toolbox {
+      position: absolute;
+      display: flex;
+      right: 1.875rem;
+      font-size: 1rem;
+      bottom: 1.875rem;
+      cursor: pointer;
+    }
+
+    .input-toolbox svg {
+      width: 1.875rem;
+      height: 1.875rem;
+      fill: black;
+    }
+
+    .image-btn {
+      position: relative;
+      display: inline-block;
+      margin-right: 0.5rem;
+    }
+
+    .image-btn input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .input-image-bar {
+      display: flex;
+      flex-direction: row;
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .input-image-item {
+      display: flex;
+      margin: 0.25rem;
+      width: 5rem;
+      position: relative;
+    }
+
+    .input-image-item img {
+      width: 5rem;
+      height: 5rem;
+      object-fit: cover;
+    }
+
+    .image-remove-btn {
+      font-size: 1rem;
+      margin-left: -0.8rem;
+      cursor: pointer;
+    }
+
+    .image-remove-btn {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    .input-btn.disabled {
+      opacity: 0.3;
+    }
+
+    .spinner {
+      width: 1.25rem;
+      height: 1.25rem;
+      border: 2px solid #000;
+      border-bottom-color: transparent;
+      border-radius: 50%;
+      display: inline-block;
+      animation: spinner-rotation 1s linear infinite;
+    }
+
+    .toast {
+      display: none;
+      position: fixed;
+      bottom: 1.25rem;
+      left: 1.25rem;
+      min-width: 200px;
+      background-color: #3c4043;
+      color: #fff;
+      padding: 1rem;
+      border-radius: 0.3rem;
+      z-index: 9999;
+    }
+
+    @keyframes spinner-rotation {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media screen and (max-width: 768px) {
+      .container {
+        padding: 3px;
+      }
+
+      .sidebar {
+        display: none;
+        width: 100%;
+        height: 100%;
+        margin-right: 0;
+      }
+
+      .main-panel {
+        width: 100%;
+      }
+
+      .chat-header {
+        padding: 0.6rem;
+      }
+
+      .chat-header select {
+        font-size: 1rem;
+      }
+
+      .chat-body {
+        padding: 0.6rem;
+      }
+
+      .input-panel-inner {
+        margin: 0.5rem;
+      }
+
+      .scroll-to-bottom-btn {
+        right: 50%;
+      }
+
+      .hide-sidebar-btn {
+        display: block;
+      }
+
+      .show-sidebar-btn {
+        display: block;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container" x-data="app">
+    <div class="sidebar" x-ref="sidebar">
+      <div class="sidebar-header">
+        <div class="title">AIChat</div>
+        <div class="subtitle">All-in-one AI-Powered Chat & Copilot</div>
+        <div class="hide-sidebar-btn" @click="handleHideSidebarBtnClick">
+          <svg viewBox="0 0 16 16">
+            <path
+              d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
+          </svg>
+        </div>
+      </div>
+      <div class="settings">
+        <div class="control">
+          <div class="checkbox-group">
+            <label for="compress_threshold">Session Compress Threshold</label>
+            <input type="checkbox" id="enable_session" title="Enable Session?" x-model="settings.enable_session"
+              :disabled="sessionMode">
+          </div>
+          <input type="number" :disabled="!settings.enable_session" id="compress_threshold"
+            x-model="settings.compress_threshold">
+        </div>
+
+        <div class="control">
+          <label for="role">Role</label>
+          <select id="role" x-model="settings.role" :disabled="sessionMode" @change="handleRoleChange">
+            <template x-for="role in roles">
+              <option :value="role.name" :selected="role.name == settings.role" x-text="role.name"></option>
+            </template>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="prompt">System Prompt</label>
+          <textarea id="prompt" x-model="settings.prompt" :disabled="sessionMode"></textarea>
+        </div>
+
+        <div class="control">
+          <label for="max_output_tokens"
+            x-text="'Max Output Tokens' + (currentModel.max_output_token ? ' [1, ' + currentModel.max_output_token + ']' : '')">Max
+            Output Tokens</label>
+          <input type="number" id="max_output_tokens" x-model="settings.max_output_tokens">
+        </div>
+
+        <div class="control">
+          <label for="temperature">Temperature</label>
+          <input type="number" id="temperature" x-model="settings.temperature">
+        </div>
+
+        <div class="control">
+          <label for="top_p">Top P</label>
+          <input type="number" id="top_p" x-model="settings.top_p">
+        </div>
+
+      </div>
+    </div>
+    <div class="main-panel" x-ref="main-panel">
+      <div class="chat-header">
+        <select id="model" x-model="settings.model_id">
+          <template x-for="model in models" :key="model.id">
+            <option :value="model.id" :selected="model.id == settings.model_id" x-text="model.id"></option>
+          </template>
+        </select>
+        <div class="toolbar">
+          <div class="show-sidebar-btn" @click="handleShowSidebarBtnClick">
+            <svg viewBox="0 0 16 16">
+              <path
+                d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="chat-body" x-ref="chat-body" @scroll="handleScrollChatBody">
+        <template x-for="message in messages" :key="message.id">
+          <div class="chat-message">
+            <div class="chat-avatar" :class="message.role == 'user' ? 'chat-avatar user' : 'chat-avatar assistant'">
+              <template x-if="message.role == 'user'">
+                <svg viewBox="0 0 16 16">
+                  <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
+                  <path fill-rule="evenodd"
+                    d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1" />
+                </svg>
+              </template>
+              <template x-if="message.role == 'assistant'">
+                <svg viewBox="0 0 16 16">
+                  <path
+                    d="M6 12.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5M3 8.062C3 6.76 4.235 5.765 5.53 5.886a26.6 26.6 0 0 0 4.94 0C11.765 5.765 13 6.76 13 8.062v1.157a.93.93 0 0 1-.765.935c-.845.147-2.34.346-4.235.346s-3.39-.2-4.235-.346A.93.93 0 0 1 3 9.219zm4.542-.827a.25.25 0 0 0-.217.068l-.92.9a25 25 0 0 1-1.871-.183.25.25 0 0 0-.068.495c.55.076 1.232.149 2.02.193a.25.25 0 0 0 .189-.071l.754-.736.847 1.71a.25.25 0 0 0 .404.062l.932-.97a25 25 0 0 0 1.922-.188.25.25 0 0 0-.068-.495c-.538.074-1.207.145-1.98.189a.25.25 0 0 0-.166.076l-.754.785-.842-1.7a.25.25 0 0 0-.182-.135" />
+                  <path
+                    d="M8.5 1.866a1 1 0 1 0-1 0V3h-2A4.5 4.5 0 0 0 1 7.5V8a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1v-.5A4.5 4.5 0 0 0 10.5 3h-2zM14 7.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.5A3.5 3.5 0 0 1 5.5 4h5A3.5 3.5 0 0 1 14 7.5" />
+                </svg>
+              </template>
+            </div>
+            <div class="chat-message-content">
+              <template x-if="message.role == 'assistant' && message.html">
+                <div class="markdown-body" x-html="message.html"></div>
+              </template>
+              <template x-if="message.role == 'assistant' && message.state == 'loading'">
+                <div class="spinner"></div>
+              </template>
+              <template x-if="message.role == 'user' && Array.isArray(message.content)">
+                <div class="message-text-images">
+                  <template x-if="message.content[0].text">
+                    <div class="message-text" x-text="message.content[0].text"></div>
+                  </template>
+                  <div class="message-image-bar">
+                    <template x-for="part in message.content">
+                      <template x-if="part.type == 'image_url'">
+                        <div class="message-image">
+                          <img :src="part.image_url.url" alt="Image Message Part">
+                        </div>
+                      </template>
+                    </template>
+                  </div>
+                </div>
+              </template>
+              <template
+                x-if="message.role == 'user' && Object.prototype.toString.call(message.content) == '[object String]'">
+                <div class="message-text" x-text="message.content"></div>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+      <div class="scroll-to-bottom-btn" x-cloak x-show="isShowScrollToBottomBtn" @click="handleScrollToBottom">
+        <svg viewBox="0 0 16 16">
+          <path fill-rule="evenodd"
+            d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8m15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v5.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293z" />
+        </svg>
+      </div>
+      <div class="input-panel">
+        <div class="input-panel-inner">
+          <textarea id="chat-input" rows="2" x-model="input" x-ref="input"
+            @keydown.enter.prevent="!$event.shiftKey && handleAsk()"
+            @keydown.enter.shift="$event.preventDefault(); $data.input += '\n';"
+            placeholder="Enter to send, Shift + Enter to wrap"></textarea>
+          <div class="input-image-bar" x-show="images.length > 0">
+            <template x-for="(image, index) in images">
+              <div class="input-image-item">
+                <img :src="image" alt="Preview image">
+                <div class="image-remove-btn" @click="images.splice(index, 1);">
+                  <svg class="bi bi-trash" viewBox="0 0 16 16">
+                    <path
+                      d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z" />
+                    <path
+                      d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z" />
+                  </svg>
+                </div>
+              </div>
+            </template>
+          </div>
+          <template x-if="asking">
+            <div class="input-toolbox">
+              <div class="input-btn" @click="handleCancelAsk">
+                <svg viewBox="0 0 16 16">
+                  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                  <path
+                    d="M5 6.5A1.5 1.5 0 0 1 6.5 5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5z" />
+                </svg>
+              </div>
+            </div>
+          </template>
+          <template x-if="!asking">
+            <div class="input-toolbox">
+              <div class="image-btn" x-show="currentModel.supports_vision">
+                <input type="file" multiple accept=".jpg,.jpeg,.png,.webp" @change="handleImageUpload">
+                <svg viewBox="0 0 16 16">
+                  <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                  <path
+                    d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1z" />
+                </svg>
+              </div>
+              <div class="input-btn" :class="(input.trim() || images.length > 0) ? 'input-btn' : 'input-btn disabled'"
+                @click="handleAsk">
+                <svg viewBox="0 0 16 16">
+                  <path
+                    d="M2 16a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2zm6.5-4.5V5.707l2.146 2.147a.5.5 0 0 0 .708-.708l-3-3a.5.5 0 0 0-.708 0l-3 3a.5.5 0 1 0 .708.708L7.5 5.707V11.5a.5.5 0 0 0 1 0" />
+                </svg>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+    <div id="toast" class="toast"></div>
+  </div>
+  <script>
+    const QUERY = parseQueryString(location.search);
+    const API_BASE = QUERY.api_base || ".";
+    const DATAJSON_API = API_BASE + "/data.json";
+    const CHAT_COMPLETIONS_URL = API_BASE + "/v1/chat/completions";
+    const SETTINGS_STORAGE_KEY = "__settings__";
+
+    document.addEventListener("alpine:init", () => {
+      setupMarked();
+      setupApp();
+    });
+
+    function setupApp() {
+      let msgIdx = 0;
+      let defaultSettings = {
+        model_id: "default",
+        role: "",
+        prompt: "",
+        max_output_tokens: null,
+        temperature: null,
+        top_p: null,
+        enable_session: true,
+        compress_threshold: 2000,
+      };
+      try {
+        const persistSettings = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY)) || {};
+        const sanitizedPersistSettings = Object.keys(defaultSettings).reduce((acc, cur) => {
+          if (persistSettings.hasOwnProperty(cur)) {
+            acc[cur] = persistSettings[cur];
+          }
+          return acc;
+        }, {});
+        defaultSettings = { ...defaultSettings, ...sanitizedPersistSettings };
+      } catch { }
+
+      Alpine.data("app", () => ({
+        models: [],
+        roles: [{ name: "", prompt: "" }],
+        currentModel: {},
+        messages: [],
+        skipMessageId: -1,
+        input: "",
+        images: [],
+        asking: false,
+        sessionMode: false,
+        askAbortController: null,
+        shouldScrollChatBodyToBottom: true,
+        isShowScrollToBottomBtn: false,
+        summary: "",
+        settings: defaultSettings,
+
+        async init() {
+          try {
+            const { models, roles } = await fetchDataJSON(DATAJSON_API);
+            this.models = models;
+            this.roles.push(...roles);
+          } catch (err) {
+            console.error(err);
+          }
+          this.$watch("input", () => this.autoExpandHeight(this.$refs.input));
+          this.$watch("settings", () => {
+            localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(this.settings));
+          });
+          this.$watch("settings.model_id", () => this.handleModelIdChange());
+          this.handleModelIdChange();
+        },
+
+        handleRoleChange(event) {
+          this.settings.prompt = this.roles.find(role => role.name === event.target.value).prompt;
+        },
+
+
+        handleAsk() {
+          const isEmptyInput = this.input.trim() === "";
+          const isEmptyImage = this.images.length === 0;
+          if (this.asking || (isEmptyImage && isEmptyInput)) {
+            return;
+          }
+          if (isEmptyImage) {
+            this.messages.push({
+              id: msgIdx++,
+              role: "user",
+              content: this.input,
+            });
+          } else {
+            const parts = [];
+            if (!isEmptyInput) {
+              parts.push({ type: "text", text: this.input });
+            }
+            for (const image of this.images) {
+              parts.push({ type: "image_url", image_url: { url: image } });
+            }
+            this.messages.push({
+              id: msgIdx++,
+              role: "user",
+              content: parts,
+            })
+          }
+          this.messages.push({
+            id: msgIdx++,
+            role: "assistant",
+            content: "",
+            state: "loading", // streaming, succeed, failed
+            error: "",
+            html: "",
+          });
+          this.input = "";
+          this.asking = true;
+          this.images = [];
+          this.ask();
+        },
+
+        handleCancelAsk() {
+          this.askAbortController?.abort();
+        },
+
+        handleModelIdChange() {
+          this.currentModel = retrieveModel(this.models, this.settings.model_id);
+        },
+
+        handleScrollChatBody(event) {
+          const { scrollTop, clientHeight, scrollHeight } = event.target;
+          if ((event.target._prevScrollTop || 0) > scrollTop) {
+            this.shouldScrollChatBodyToBottom = false;
+            this.isShowScrollToBottomBtn = true;
+          } else if (this.isShowScrollToBottomBtn && scrollTop + clientHeight >= scrollHeight - 10) {
+            this.isShowScrollToBottomBtn = false;
+          }
+        },
+
+        handleScrollToBottom() {
+          const $chatBody = this.$refs["chat-body"];
+          $chatBody.scrollTop = $chatBody.scrollHeight;
+          $chatBody._prevScrollTop = $chatBody.scrollTop;
+          this.isShowScrollToBottomBtn = false;
+        },
+
+        handleShowSidebarBtnClick() {
+          this.$refs.sidebar.style.display = 'block';
+          this.$refs["main-panel"]._display = this.$refs["main-panel"].style.display;
+          this.$refs["main-panel"].style.display = "none";
+        },
+
+        handleHideSidebarBtnClick() {
+          this.$refs.sidebar.style.display = 'none';
+          this.$refs["main-panel"].style.display = this.$refs["main-panel"]._display;
+        },
+
+        handleCopyCode(event) {
+          const $btn = event.target;
+          const $code = $btn.closest('.code-block').querySelector("code");
+          if ($code) {
+            const range = document.createRange();
+            range.selectNodeContents($code);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand('copy');
+            window.getSelection().removeAllRanges();
+            toast("Copied to clipboard");
+          }
+        },
+
+        async handleImageUpload(event) {
+          const files = event.target.files;
+          if (!files || files.length === 0) {
+            return;
+          }
+          const urls = await Promise.all(Array.from(files).map(file => convertImageToDataURL(file)));
+          this.images.push(...urls);
+          event.target.value = "";
+        },
+
+        autoScrollChatBodyToBottom() {
+          if (this.shouldScrollChatBodyToBottom) {
+            const $chatBody = this.$refs["chat-body"];
+            if ($chatBody) {
+              const { scrollTop, scrollHeight, clientHeight } = $chatBody;
+              if (scrollTop + clientHeight < scrollHeight - 10) {
+                $chatBody.scrollTop = scrollHeight;
+                $chatBody._prevScrollTop = $chatBody.scrollTop;
+              }
+            }
+          }
+        },
+
+        autoExpandHeight($node) {
+          $node.style.height = "auto";
+          $node.style.height = $node.scrollHeight + "px";
+        },
+
+        async ask() {
+          this.askAbortController = new AbortController();
+          this.$nextTick(() => {
+            this.shouldScrollChatBodyToBottom = true;
+            this.autoScrollChatBodyToBottom();
+          });
+          const lastMessage = this.messages[this.messages.length - 1];
+          const body = this.buildBody();
+          let succeed = false;
+          try {
+            const stream = await fetchChatCompletions(CHAT_COMPLETIONS_URL, body, this.askAbortController.signal)
+            for await (const chunk of stream) {
+              lastMessage.state = "streaming";
+              lastMessage.content += chunk?.choices[0]?.delta?.content || "";
+              lastMessage.html = renderMarkdown(lastMessage.content, lastMessage.error);
+              this.$nextTick(() => {
+                this.autoScrollChatBodyToBottom();
+              });
+            }
+            lastMessage.state = "succeed";
+            succeed = true;
+          } catch (err) {
+            lastMessage.state = "failed";
+            if (this.askAbortController?.signal?.aborted) {
+              lastMessage.error = "";
+            } else {
+              lastMessage.error = err?.message || err;
+            }
+            lastMessage.html = renderMarkdown(lastMessage.content, lastMessage.error);
+          }
+          if (succeed) {
+            if (this.settings.enable_session) {
+              this.sessionMode = true;
+            }
+            const countTokens = [...body.messages.map(v => v.content), lastMessage.content].reduce((acc, cur) => acc + estimateTokenLength(cur), 0);
+            if (countTokens > this.settings.compress_threshold) {
+              const { messages } = body;
+              messages.push({ role: "assistant", content: lastMessage.content });
+              messages.push({ role: "user", content: "Summarize the discussion briefly in 200 words or less to use as a prompt for future context." });
+              try {
+                toast("Compressing session...", 30000);
+                const iter = await fetchChatCompletions(CHAT_COMPLETIONS_URL, { model: this.settings.model_id, messages, stream: false });
+                const summarizedData = await iter.next();
+                const summarizedText = summarizedData?.value?.choices[0]?.message?.content;
+                this.summary = "This is a summary of the chat history as a recap: " + summarizedText;
+                this.skipMessageId = lastMessage.id;
+                toast("Session compressed!");
+              } catch (err) {
+                toast("❌ Failed to compress session.");
+                console.error("Failed to compress session", err);
+              }
+            }
+          }
+          this.asking = false;
+        },
+
+        buildBody() {
+          const messages = [];
+          for ([userMessage, assistantMessage] of chunkArray(this.messages.filter(v => v.id > this.skipMessageId), 2)) {
+            if (assistantMessage.state == "failed") {
+              continue;
+            } else if (assistantMessage.state == "loading") {
+              messages.push({
+                role: userMessage.role,
+                content: userMessage.content,
+              });
+            } else if (this.settings.enable_session) {
+              messages.push({
+                role: userMessage.role,
+                content: userMessage.content,
+              });
+              messages.push({
+                role: assistantMessage.role,
+                content: assistantMessage.content,
+              });
+            }
+          }
+          const systemPrompt = (this.summary || this.settings.prompt).trim();
+          if (systemPrompt) {
+            if (messages[0]?.content?.indexOf("__INPUT__") > -1) {
+              messages[0].content = systemPrompt.replace("__INPUT__", messages[0].content);
+            } else {
+              messages.unshift({
+                role: "system",
+                content: systemPrompt,
+              });
+            }
+          }
+          const body = {
+            model: this.settings.model_id,
+            messages: messages,
+            stream: true,
+          };
+          [["max_output_tokens", "max_tokens"], ["temperature"], ["top_p"]].forEach(([setting_key, body_key]) => {
+            if (typeof this.settings[setting_key] === "number") {
+              body[body_key || setting_key] = this.settings[setting_key];
+            }
+          });
+          const { max_output_token, need_max_tokens } = this.currentModel;
+          if (!body["max_tokens"] && need_max_tokens) {
+            body["max_tokens"] = max_output_token;
+          };
+          return body;
+        },
+      }));
+
+    }
+
+    async function fetchDataJSON(url) {
+      const res = await fetch(url);
+      const data = await res.json()
+      return data;
+    }
+
+    async function* fetchChatCompletions(url, body, signal) {
+      const stream = body.stream;
+      const response = await fetch(url, {
+        method: "POST",
+        signal,
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw error?.error || error;
+      }
+
+      if (!stream) {
+        const data = await response.json();
+        return data;
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let reamingChunkValue = "";
+
+      while (!done) {
+        if (signal?.aborted) {
+          reader.cancel();
+          break;
+        }
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunkValue = decoder.decode(value);
+        const lines = (reamingChunkValue + chunkValue).split("\n").filter(line => line.trim().length > 0);
+        reamingChunkValue = "";
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          const message = line.replace(/^data: /, "");
+          if (message === "[DONE]") {
+            continue
+          }
+          try {
+            const parsed = JSON.parse(message);
+            yield parsed;
+          } catch {
+            if (i == lines.length - 1) {
+              reamingChunkValue += line;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    function retrieveModel(models, id) {
+      const model = models.find(model => model.id === id);
+      if (!model) return {};
+      const max_output_token = model.max_output_tokens || model["max_output_tokens?"] || null;
+      const need_max_tokens = !!model.max_output_tokens;
+      const supports_vision = !!model.supports_vision;
+      return {
+        id,
+        max_output_token,
+        need_max_tokens,
+        supports_vision,
+      }
+    }
+
+    function toast(text, duration = 2500) {
+      const $toast = document.getElementById("toast");
+      clearTimeout($toast._timer);
+      $toast.textContent = text;
+      $toast.style.display = "block";
+      $toast._timer = setTimeout(function () {
+        $toast.style.display = "none";
+      }, duration);
+    }
+
+    function convertImageToDataURL(imageFile) {
+      return new Promise((resolve, reject) => {
+        if (!imageFile) {
+          reject(new Error("Please select an image file."));
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.readAsDataURL(imageFile);
+        reader.onload = (event) => resolve(event.target.result);
+        reader.onerror = (error) => reject(error);
+      });
+    }
+
+    function estimateTokenLength(input) {
+      let tokenLength = 0;
+
+      for (let i = 0; i < input.length; i++) {
+        const charCode = input.charCodeAt(i);
+
+        if (charCode < 128) {
+          if (charCode <= 122 && charCode >= 65) {
+            tokenLength += 0.25;
+          } else {
+            tokenLength += 0.5;
+          }
+        } else {
+          tokenLength += 1.5;
+        }
+      }
+
+      return tokenLength;
+    }
+
+    function setupMarked() {
+      const renderer = new marked.Renderer();
+      renderer.code = (code, language) => {
+        const validLang = !!(language && hljs.getLanguage(language));
+
+        const highlighted = validLang
+          ? hljs.highlight(code, { language }).value
+          : escapeForHTML(code);
+
+        return `<div class="code-block">
+        <pre><code class="hljs ${language}">${highlighted}</code></pre>
+  <div class="copy-code-btn" @click="handleCopyCode" title="Copy code">
+    <svg viewBox="0 0 16 16">
+      <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
+    </svg>
+  </div>
+</div>`;
+      };
+      marked.setOptions({ renderer });
+    }
+
+    function escapeForHTML(input) {
+      const escapeMap = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      };
+
+      return input.replace(/([&<>'"])/g, char => escapeMap[char]);
+    }
+
+    function parseQueryString(queryString) {
+      const params = {};
+      if (!queryString) {
+        return params;
+      }
+      const queries = queryString[0] === '?' ? queryString.substring(1) : queryString;
+      const pairs = queries.split('&');
+
+      pairs.forEach(pair => {
+        const [key, value] = pair.split('=');
+        params[decodeURIComponent(key)] = decodeURIComponent(value ? value.replace(/\+/g, ' ') : '');
+      });
+
+      return params;
+    }
+
+    function chunkArray(array, chunkSize) {
+      const chunks = [];
+      for (let i = 0; i < array.length; i += chunkSize) {
+        chunks.push(array.slice(i, i + chunkSize));
+      }
+      return chunks;
+    }
+
+    function renderMarkdown(text, error = '') {
+      return marked.marked(text) + (error ? `<p class="error">${error}</p>` : '');
+    }
+  </script>
+</body>
+
+</html>
