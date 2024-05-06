@@ -226,14 +226,14 @@ chat-ollama() {
 }'
 }
 
-# @cmd Chat with vertexai-gemini api
+# @cmd Chat with vertexai api
 # @env require-tools gcloud
 # @env VERTEXAI_PROJECT_ID!
 # @env VERTEXAI_LOCATION!
 # @option -m --model=gemini-1.0-pro $VERTEXAI_GEMINI_MODEL
 # @flag -S --no-stream
 # @arg text~
-chat-vertexai-gemini() {
+chat-vertexai() {
     api_key="$(gcloud auth print-access-token)"
     func="streamGenerateContent"
     if [[ -n "$argc_no_stream" ]]; then

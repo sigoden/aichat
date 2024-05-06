@@ -11,7 +11,8 @@ const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta/models/
 pub struct GeminiConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
-    pub block_threshold: Option<String>,
+    #[serde(rename = "safetySettings")]
+    pub safety_settings: Option<serde_json::Value>,
     #[serde(default)]
     pub models: Vec<ModelConfig>,
     pub extra: Option<ExtraConfig>,
@@ -31,9 +32,7 @@ impl GeminiClient {
             false => "generateContent",
         };
 
-        let block_threshold = self.config.block_threshold.clone();
-
-        let body = gemini_build_body(data, &self.model, block_threshold)?;
+        let body = gemini_build_body(data, &self.model, self.config.safety_settings.clone())?;
 
         let model = &self.model.name;
 
