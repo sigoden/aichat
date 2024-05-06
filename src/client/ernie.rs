@@ -1,3 +1,4 @@
+use super::access_token::*;
 use super::{
     maybe_catch_error, patch_system_message, sse_stream, Client, CompletionDetails, ErnieClient,
     ExtraConfig, Model, ModelConfig, PromptAction, PromptKind, SendData, SsMmessage, SseHandler,
@@ -5,7 +6,6 @@ use super::{
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
-use chrono::Utc;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -13,8 +13,6 @@ use std::env;
 
 const API_BASE: &str = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1";
 const ACCESS_TOKEN_URL: &str = "https://aip.baidubce.com/oauth/2.0/token";
-
-static mut ACCESS_TOKEN: (String, i64) = (String::new(), 0);
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct ErnieConfig {
@@ -34,11 +32,11 @@ impl ErnieClient {
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let body = build_body(data, &self.model);
+        let access_token = get_access_token(self.name())?;
 
         let url = format!(
-            "{API_BASE}/wenxinworkshop/chat/{}?access_token={}",
+            "{API_BASE}/wenxinworkshop/chat/{}?access_token={access_token}",
             &self.model.name,
-            unsafe { &ACCESS_TOKEN.0 }
         );
 
         debug!("Ernie Request: {url} {body}");
@@ -49,7 +47,8 @@ impl ErnieClient {
     }
 
     async fn prepare_access_token(&self) -> Result<()> {
-        if unsafe { ACCESS_TOKEN.0.is_empty() || Utc::now().timestamp() > ACCESS_TOKEN.1 } {
+        let client_name = self.name();
+        if !is_valid_access_token(client_name) {
             let env_prefix = Self::name(&self.config).to_uppercase();
             let api_key = self.config.api_key.clone();
             let api_key = api_key
@@ -65,7 +64,7 @@ impl ErnieClient {
             let token = fetch_access_token(&client, &api_key, &secret_key)
                 .await
                 .with_context(|| "Failed to fetch access token")?;
-            unsafe { ACCESS_TOKEN = (token, 86400) };
+            set_access_token(client_name, token, 86400);
         }
         Ok(())
     }

@@ -1,17 +1,15 @@
+use super::access_token::*;
 use super::claude::{claude_build_body, claude_send_message, claude_send_message_streaming};
-use super::vertexai::fetch_gcloud_access_token;
+use super::vertexai::prepare_gcloud_access_token;
 use super::{
     Client, CompletionDetails, ExtraConfig, Model, ModelConfig, PromptAction, PromptKind, SendData,
     SseHandler, VertexAIClaudeClient,
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::Result;
 use async_trait::async_trait;
-use chrono::{Duration, Utc};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
-
-static mut ACCESS_TOKEN: (String, i64) = (String::new(), 0); // safe under linear operation
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct VertexAIClaudeConfig {
@@ -36,6 +34,7 @@ impl VertexAIClaudeClient {
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let project_id = self.get_project_id()?;
         let location = self.get_location()?;
+        let access_token = get_access_token(self.name())?;
 
         let base_url = format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers");
         let url = format!(
@@ -51,10 +50,7 @@ impl VertexAIClaudeClient {
 
         debug!("VertexAIClaude Request: {url} {body}");
 
-        let builder = client
-            .post(url)
-            .bearer_auth(unsafe { &ACCESS_TOKEN.0 })
-            .json(&body);
+        let builder = client.post(url).bearer_auth(access_token).json(&body);
 
         Ok(builder)
     }
@@ -69,7 +65,7 @@ impl Client for VertexAIClaudeClient {
         client: &ReqwestClient,
         data: SendData,
     ) -> Result<(String, CompletionDetails)> {
-        prepare_access_token(client, &self.config.adc_file).await?;
+        prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let builder = self.request_builder(client, data)?;
         claude_send_message(builder).await
     }
@@ -80,21 +76,8 @@ impl Client for VertexAIClaudeClient {
         handler: &mut SseHandler,
         data: SendData,
     ) -> Result<()> {
-        prepare_access_token(client, &self.config.adc_file).await?;
+        prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let builder = self.request_builder(client, data)?;
         claude_send_message_streaming(builder, handler).await
     }
-}
-
-async fn prepare_access_token(client: &reqwest::Client, adc_file: &Option<String>) -> Result<()> {
-    if unsafe { ACCESS_TOKEN.0.is_empty() || Utc::now().timestamp() > ACCESS_TOKEN.1 } {
-        let (token, expires_in) = fetch_gcloud_access_token(client, adc_file)
-            .await
-            .with_context(|| "Failed to fetch access token")?;
-        let expires_at = Utc::now()
-            + Duration::try_seconds(expires_in)
-                .ok_or_else(|| anyhow!("Failed to parse expires_in of access_token"))?;
-        unsafe { ACCESS_TOKEN = (token, expires_at.timestamp()) };
-    }
-    Ok(())
 }

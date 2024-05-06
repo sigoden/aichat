@@ -102,8 +102,8 @@ macro_rules! register_client {
                     }
                 }
 
-                pub fn name(config: &$config) -> &str {
-                    config.name.as_deref().unwrap_or(Self::NAME)
+                pub fn name(local_config: &$config) -> &str {
+                    local_config.name.as_deref().unwrap_or(Self::NAME)
                 }
             }
 
@@ -184,6 +184,10 @@ macro_rules! client_common_fns {
             Self::list_models(&self.config)
         }
 
+        fn name(&self) -> &str {
+            Self::name(&self.config)
+        }
+
         fn model(&self) -> &Model {
             &self.model
         }
@@ -258,6 +262,8 @@ pub trait Client: Sync + Send {
     fn config(&self) -> (&GlobalConfig, &Option<ExtraConfig>);
 
     fn list_models(&self) -> Vec<Model>;
+
+    fn name(&self) -> &str;
 
     fn model(&self) -> &Model;
 
