@@ -1,14 +1,17 @@
 use super::claude::{claude_build_body, claude_send_message, claude_send_message_streaming};
-use super::vertexai::{prepare_access_token, VERTEXAI_ACCESS_TOKEN};
+use super::vertexai::fetch_gcloud_access_token;
 use super::{
     Client, CompletionDetails, ExtraConfig, Model, ModelConfig, PromptAction, PromptKind, SendData,
     SseHandler, VertexAIClaudeClient,
 };
 
-use anyhow::Result;
+use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
+use chrono::{Duration, Utc};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
+
+static mut ACCESS_TOKEN: (String, i64) = (String::new(), 0); // safe under linear operation
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct VertexAIClaudeConfig {
@@ -50,7 +53,7 @@ impl VertexAIClaudeClient {
 
         let builder = client
             .post(url)
-            .bearer_auth(unsafe { &VERTEXAI_ACCESS_TOKEN.0 })
+            .bearer_auth(unsafe { &ACCESS_TOKEN.0 })
             .json(&body);
 
         Ok(builder)
@@ -81,4 +84,17 @@ impl Client for VertexAIClaudeClient {
         let builder = self.request_builder(client, data)?;
         claude_send_message_streaming(builder, handler).await
     }
+}
+
+async fn prepare_access_token(client: &reqwest::Client, adc_file: &Option<String>) -> Result<()> {
+    if unsafe { ACCESS_TOKEN.0.is_empty() || Utc::now().timestamp() > ACCESS_TOKEN.1 } {
+        let (token, expires_in) = fetch_gcloud_access_token(client, adc_file)
+            .await
+            .with_context(|| "Failed to fetch access token")?;
+        let expires_at = Utc::now()
+            + Duration::try_seconds(expires_in)
+                .ok_or_else(|| anyhow!("Failed to parse expires_in of access_token"))?;
+        unsafe { ACCESS_TOKEN = (token, expires_at.timestamp()) };
+    }
+    Ok(())
 }
