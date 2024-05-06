@@ -616,8 +616,8 @@
         autoHeightChatPanel() {
           const height = $inputPanel.offsetHeight;
           for (let i = 0; i < this.chats.length; i++) {
-            $chatPanels[i].style.height = `calc(100vh - ${height}px - 5)`
-            $scrollToBottomBtns[i].style.bottom = (height + 20) + 'px';
+            $chatPanels[i].style.height = (window.innerHeight - height - 5) + "px";
+            $scrollToBottomBtns[i].style.bottom = (height + 20) + "px";
           }
         },
 
