@@ -146,6 +146,7 @@ impl Server {
     ) -> std::result::Result<AppResponse, hyper::Error> {
         let method = req.method().clone();
         let uri = req.uri().clone();
+        let path = uri.path();
 
         if method == Method::OPTIONS {
             let mut res = Response::default();
@@ -155,13 +156,13 @@ impl Server {
         }
 
         let mut status = StatusCode::OK;
-        let res = if uri == "/v1/chat/completions" {
+        let res = if path == "/v1/chat/completions" {
             self.chat_completion(req).await
-        } else if uri == "/playground" || uri == "/playground.html" {
+        } else if path == "/playground" || path == "/playground.html" {
             self.playground_page()
-        } else if uri == "/arena" || uri == "/arena.html" {
+        } else if path == "/arena" || path == "/arena.html" {
             self.arena_page()
-        } else if uri == "/data.json" {
+        } else if path == "/data.json" {
             self.data_json()
         } else {
             status = StatusCode::NOT_FOUND;
