@@ -32,7 +32,7 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             [CompletionResult]::new('-w', '-w', [CompletionResultType]::ParameterName, 'Control text wrapping (no, auto, <max-width>)')
             [CompletionResult]::new('--wrap', '--wrap', [CompletionResultType]::ParameterName, 'Control text wrapping (no, auto, <max-width>)')
             [CompletionResult]::new('--save-session', '--save-session', [CompletionResultType]::ParameterName, 'Forces the session to be saved')
-            [CompletionResult]::new('--serve', '--serve', [CompletionResultType]::ParameterName, 'Serve all LLMs via an OpenAI-compatible API')
+            [CompletionResult]::new('--serve', '--serve', [CompletionResultType]::ParameterName, 'Serve the LLM API and WebAPP')
             [CompletionResult]::new('-e', '-e', [CompletionResultType]::ParameterName, 'Execute commands in natural language')
             [CompletionResult]::new('--execute', '--execute', [CompletionResultType]::ParameterName, 'Execute commands in natural language')
             [CompletionResult]::new('-c', '-c', [CompletionResultType]::ParameterName, 'Output code only')

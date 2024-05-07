@@ -29,7 +29,7 @@ module completions {
     --role(-r): string@"nu-complete aichat role"      # Select a role
     --session(-s): string@"nu-complete aichat role"   # Start or join a session
     --save-session                                    # Forces the session to be saved
-    --serve                                           # Serve all LLMs via an OpenAI-compatible API
+    --serve                                           # Serve the LLM API and WebAPP
     --execute(-e)                                     # Execute commands in natural language
     --code(-c)                                        # Output code only
     --file(-f): string                                # Include files with the message
