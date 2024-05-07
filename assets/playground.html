@@ -7,14 +7,19 @@
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <title>AIChat LLM Playground</title>
   <link rel="stylesheet" href="//unpkg.com/github-markdown-css@5.5.1/github-markdown.css">
-  <link rel="stylesheet" href="//unpkg.com/highlight.js@11.9.0/styles/github.min.css">
+  <link rel="stylesheet" href="//unpkg.com/highlight.js@11.9.0/styles/github-dark.min.css"
+    media="screen and (prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="//unpkg.com/highlight.js@11.9.0/styles/github.min.css"
+    media="screen and (prefers-color-scheme: light)">
   <script src="//unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
   <script src="//unpkg.com/marked@12.0.2/lib/marked.umd.js" defer></script>
   <script src="//unpkg.com/alpinejs@3.13.10/dist/cdn.min.js" defer></script>
   <style>
     :root {
       --fg-primary: #1652f1;
+      --fg-default: black;
       --bg-primary: white;
+      --bg-default: #f9f9f9;
       --border-primary: #c3c3c3;
     }
 
@@ -33,12 +38,21 @@
       box-sizing: border-box;
     }
 
+    textarea,
+    input,
+    select,
+    option {
+      color: var(--fg-default);
+      background-color: var(--bg-primary);
+    }
+
     body {
       font-family: Arial, sans-serif;
       font-size: 1rem;
       display: flex;
       height: 100vh;
-      background-color: #f9f9f9;
+      color: var(--fg-default);
+      background-color: var(--bg-default);
     }
 
     .container {
@@ -209,6 +223,12 @@
       width: 100%;
       padding: 0;
       flex-direction: column;
+      background-color: var(--bg-primary);
+    }
+
+    .markdown-body:first-child {
+      margin-top: 0;
+      padding-top: 0;
     }
 
     .markdown-body pre {
@@ -287,7 +307,7 @@
     .input-toolbox svg {
       width: 1.875rem;
       height: 1.875rem;
-      fill: black;
+      fill: var(--fg-default);
     }
 
     .image-btn {
@@ -354,11 +374,13 @@
     .toast {
       display: none;
       position: fixed;
-      bottom: 1.25rem;
-      left: 1.25rem;
+      top: 0;
+      left: 50%;
+      text-align: center;
+      transform: translate(-50%, 0);
       min-width: 200px;
-      background-color: #3c4043;
-      color: #fff;
+      background-color: var(--fg-default);
+      color: var(--bg-primary);
       padding: 1rem;
       border-radius: 0.3rem;
       z-index: 9999;
@@ -371,6 +393,16 @@
 
       100% {
         transform: rotate(360deg);
+      }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fg-primary: #1652f1;
+        --fg-default: white;
+        --bg-primary: black;
+        --bg-default: #121212;
+        --border-primary: #3c3c3c;
       }
     }
 
@@ -428,7 +460,7 @@
         <div class="title">AIChat</div>
         <div class="subtitle">All-in-one AI-Powered Chat & Copilot</div>
         <div class="hide-sidebar-btn" @click="handleHideSidebarBtnClick">
-          <svg viewBox="0 0 16 16">
+          <svg fill="currentColor" viewBox="0 0 16 16">
             <path
               d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
           </svg>
@@ -487,7 +519,7 @@
         </select>
         <div class="toolbar">
           <div class="show-sidebar-btn" @click="handleShowSidebarBtnClick">
-            <svg viewBox="0 0 16 16">
+            <svg fill="currentColor" viewBox="0 0 16 16">
               <path
                 d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3" />
             </svg>
@@ -499,14 +531,14 @@
           <div class="chat-message">
             <div class="chat-avatar" :class="message.role == 'user' ? 'chat-avatar user' : 'chat-avatar assistant'">
               <template x-if="message.role == 'user'">
-                <svg viewBox="0 0 16 16">
+                <svg fill="currentColor" viewBox="0 0 16 16">
                   <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
                   <path fill-rule="evenodd"
                     d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1" />
                 </svg>
               </template>
               <template x-if="message.role == 'assistant'">
-                <svg viewBox="0 0 16 16">
+                <svg fill="currentColor" viewBox="0 0 16 16">
                   <path
                     d="M6 12.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5M3 8.062C3 6.76 4.235 5.765 5.53 5.886a26.6 26.6 0 0 0 4.94 0C11.765 5.765 13 6.76 13 8.062v1.157a.93.93 0 0 1-.765.935c-.845.147-2.34.346-4.235.346s-3.39-.2-4.235-.346A.93.93 0 0 1 3 9.219zm4.542-.827a.25.25 0 0 0-.217.068l-.92.9a25 25 0 0 1-1.871-.183.25.25 0 0 0-.068.495c.55.076 1.232.149 2.02.193a.25.25 0 0 0 .189-.071l.754-.736.847 1.71a.25.25 0 0 0 .404.062l.932-.97a25 25 0 0 0 1.922-.188.25.25 0 0 0-.068-.495c-.538.074-1.207.145-1.98.189a.25.25 0 0 0-.166.076l-.754.785-.842-1.7a.25.25 0 0 0-.182-.135" />
                   <path
@@ -546,7 +578,7 @@
         </template>
       </div>
       <div class="scroll-to-bottom-btn" x-cloak x-show="isShowScrollToBottomBtn" @click="handleScrollToBottom">
-        <svg viewBox="0 0 16 16">
+        <svg fill="currentColor" viewBox="0 0 16 16">
           <path fill-rule="evenodd"
             d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8m15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v5.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293z" />
         </svg>
@@ -554,15 +586,14 @@
       <div class="input-panel">
         <div class="input-panel-inner">
           <textarea id="chat-input" rows="2" x-model="input" x-ref="input"
-            @keydown.enter.prevent="!$event.shiftKey && handleAsk()"
-            @keydown.enter.shift="$event.preventDefault(); $data.input += '\n';"
+            @keydown.enter.prevent="!$event.shiftKey && handleAsk()" @keydown.enter.shift="handleNewlineInput"
             placeholder="Enter to send, Shift + Enter to wrap"></textarea>
           <div class="input-image-bar" x-show="images.length > 0">
             <template x-for="(image, index) in images">
               <div class="input-image-item">
                 <img :src="image" alt="Preview image">
                 <div class="image-remove-btn" @click="images.splice(index, 1);">
-                  <svg class="bi bi-trash" viewBox="0 0 16 16">
+                  <svg fill="currentColor" viewBox="0 0 16 16">
                     <path
                       d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z" />
                     <path
@@ -575,7 +606,7 @@
           <template x-if="asking">
             <div class="input-toolbox">
               <div class="input-btn" @click="handleCancelAsk">
-                <svg viewBox="0 0 16 16">
+                <svg fill="currentColor" viewBox="0 0 16 16">
                   <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
                   <path
                     d="M5 6.5A1.5 1.5 0 0 1 6.5 5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5z" />
@@ -587,7 +618,7 @@
             <div class="input-toolbox">
               <div class="image-btn" x-show="currentModel.supports_vision">
                 <input type="file" multiple accept=".jpg,.jpeg,.png,.webp" @change="handleImageUpload">
-                <svg viewBox="0 0 16 16">
+                <svg fill="currentColor" viewBox="0 0 16 16">
                   <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
                   <path
                     d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1z" />
@@ -595,7 +626,7 @@
               </div>
               <div class="input-btn" :class="(input.trim() || images.length > 0) ? 'input-btn' : 'input-btn disabled'"
                 @click="handleAsk">
-                <svg viewBox="0 0 16 16">
+                <svg fill="currentColor" viewBox="0 0 16 16">
                   <path
                     d="M2 16a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2zm6.5-4.5V5.707l2.146 2.147a.5.5 0 0 0 .708-.708l-3-3a.5.5 0 0 0-.708 0l-3 3a.5.5 0 1 0 .708.708L7.5 5.707V11.5a.5.5 0 0 0 1 0" />
                 </svg>
@@ -678,7 +709,6 @@
           this.settings.prompt = this.roles.find(role => role.name === event.target.value).prompt;
         },
 
-
         handleAsk() {
           const isEmptyInput = this.input.trim() === "";
           const isEmptyImage = this.images.length === 0;
@@ -755,6 +785,20 @@
           this.$refs["main-panel"].style.display = this.$refs["main-panel"]._display;
         },
 
+        handleNewlineInput(event) {
+          event.preventDefault();
+          const textarea = event.target;
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          const text = textarea.value;
+          const before = text.substring(0, start);
+          const after = text.substring(end);
+
+          textarea.value = before + '\n' + after;
+          textarea.selectionStart = textarea.selectionEnd = start + 1;
+          this.input = textarea.value;
+        },
+
         handleCopyCode(event) {
           const $btn = event.target;
           const $code = $btn.closest('.code-block').querySelector("code");
@@ -765,7 +809,7 @@
             window.getSelection().addRange(range);
             document.execCommand('copy');
             window.getSelection().removeAllRanges();
-            toast("Copied to clipboard");
+            toast("Copied code to clipboard");
           }
         },
 
@@ -1036,7 +1080,7 @@
         return `<div class="code-block">
         <pre><code class="hljs ${language}">${highlighted}</code></pre>
   <div class="copy-code-btn" @click="handleCopyCode" title="Copy code">
-    <svg viewBox="0 0 16 16">
+    <svg fill="currentColor" viewBox="0 0 16 16">
       <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
     </svg>
   </div>
