@@ -1,9 +1,9 @@
 use crate::{
     client::{
-        init_client, ClientConfig, CompletionDetails, Message, Model, SendData, SseEvent,
-        SseHandler,
+        init_client, list_models, ClientConfig, CompletionDetails, Message, Model, SendData,
+        SseEvent, SseHandler,
     },
-    config::{Config, GlobalConfig},
+    config::{Config, GlobalConfig, Role},
     utils::create_abort_signal,
 };
 
@@ -34,6 +34,8 @@ use tokio_stream::wrappers::UnboundedReceiverStream;
 
 const DEFAULT_ADDRESS: &str = "127.0.0.1:8000";
 const DEFAULT_MODEL_NAME: &str = "default";
+const PLAYGROUND_HTML: &[u8] = include_bytes!("../assets/playground.html");
+const ARENA_HTML: &[u8] = include_bytes!("../assets/arena.html");
 
 type AppResponse = Response<BoxBody<Bytes, Infallible>>;
 
@@ -50,12 +52,12 @@ pub async fn run(config: GlobalConfig, addr: Option<String>) -> Result<()> {
         }
         None => DEFAULT_ADDRESS.to_string(),
     };
-    let clients = config.read().clients.clone();
-    let model = config.read().model.clone();
+    let server = Arc::new(Server::new(&config));
     let listener = TcpListener::bind(&addr).await?;
-    let server = Arc::new(Server { clients, model });
     let stop_server = server.run(listener).await?;
-    println!("Access the chat completion API at: http://{addr}/v1/chat/completions");
+    println!("Chat Completions API: http://{addr}/v1/chat/completions");
+    println!("LLM Playground:       http://{addr}/playground");
+    println!("LLM ARENA:            http://{addr}/arena");
     shutdown_signal().await;
     let _ = stop_server.send(());
     Ok(())
@@ -64,9 +66,47 @@ pub async fn run(config: GlobalConfig, addr: Option<String>) -> Result<()> {
 struct Server {
     clients: Vec<ClientConfig>,
     model: Model,
+    models: Vec<Value>,
+    roles: Vec<Role>,
 }
 
 impl Server {
+    fn new(config: &GlobalConfig) -> Self {
+        let config = config.read();
+        let clients = config.clients.clone();
+        let model = config.model.clone();
+        let roles = config.roles.clone();
+        let mut models = list_models(&config);
+        let mut default_model = model.clone();
+        default_model.name = DEFAULT_MODEL_NAME.into();
+        models.insert(0, &default_model);
+        let models: Vec<Value> = models
+            .into_iter()
+            .enumerate()
+            .map(|(i, model)| {
+                let id = if i == 0 {
+                    DEFAULT_MODEL_NAME.into()
+                } else {
+                    model.id()
+                };
+                json!({
+                    "id": id,
+                    "max_input_tokens": model.max_input_tokens,
+                    "max_output_tokens": model.max_output_tokens,
+                    "max_output_tokens?": model.ref_max_output_tokens,
+                    "input_price": model.input_price,
+                    "output_price": model.output_price,
+                    "supports_vision": model.supports_vision(),
+                })
+            })
+            .collect();
+        Self {
+            clients,
+            model,
+            roles,
+            models,
+        }
+    }
     async fn run(self: Arc<Self>, listener: TcpListener) -> Result<oneshot::Sender<()>> {
         let (tx, rx) = oneshot::channel();
         tokio::spawn(async move {
@@ -106,12 +146,24 @@ impl Server {
     ) -> std::result::Result<AppResponse, hyper::Error> {
         let method = req.method().clone();
         let uri = req.uri().clone();
+        let path = uri.path();
+
+        if method == Method::OPTIONS {
+            let mut res = Response::default();
+            *res.status_mut() = StatusCode::NO_CONTENT;
+            set_cors_header(&mut res);
+            return Ok(res);
+        }
+
         let mut status = StatusCode::OK;
-        let res = if method == Method::POST && uri == "/v1/chat/completions" {
+        let res = if path == "/v1/chat/completions" {
             self.chat_completion(req).await
-        } else if method == Method::OPTIONS && uri == "/v1/chat/completions" {
-            status = StatusCode::NO_CONTENT;
-            Ok(Response::default())
+        } else if path == "/playground" || path == "/playground.html" {
+            self.playground_page()
+        } else if path == "/arena" || path == "/arena.html" {
+            self.arena_page()
+        } else if path == "/data.json" {
+            self.data_json()
         } else {
             status = StatusCode::NOT_FOUND;
             Err(anyhow!("The requested endpoint was not found."))
@@ -129,6 +181,31 @@ impl Server {
         };
         *res.status_mut() = status;
         set_cors_header(&mut res);
+        Ok(res)
+    }
+
+    fn playground_page(&self) -> Result<AppResponse> {
+        let res = Response::builder()
+            .header("Content-Type", "text/html; charset=utf-8")
+            .body(Full::new(Bytes::from(PLAYGROUND_HTML)).boxed())?;
+        Ok(res)
+    }
+
+    fn arena_page(&self) -> Result<AppResponse> {
+        let res = Response::builder()
+            .header("Content-Type", "text/html; charset=utf-8")
+            .body(Full::new(Bytes::from(ARENA_HTML)).boxed())?;
+        Ok(res)
+    }
+
+    fn data_json(&self) -> Result<AppResponse> {
+        let data = json!({
+            "models": self.models,
+            "roles": self.roles,
+        });
+        let res = Response::builder()
+            .header("Content-Type", "application/json; charset=utf-8")
+            .body(Full::new(Bytes::from(data.to_string())).boxed())?;
         Ok(res)
     }
 

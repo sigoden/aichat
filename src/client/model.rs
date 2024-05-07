@@ -111,6 +111,10 @@ impl Model {
         )
     }
 
+    pub fn supports_vision(&self) -> bool {
+        self.capabilities.contains(ModelCapabilities::Vision)
+    }
+
     pub fn show_max_output_tokens(&self) -> Option<isize> {
         self.max_output_tokens.or(self.ref_max_output_tokens)
     }
