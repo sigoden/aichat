@@ -487,6 +487,7 @@
       max_input_tokens: 2048
       input_price: 14
       output_price: 14
+      supports_vision: true
     - name: glm-3-turbo
       max_input_tokens: 128000
       input_price: 0.7
@@ -494,7 +495,7 @@
 
 - platform: anyscale
   # docs:
-  #   - https://docs.endpoints.anyscale.com/text-generation/query-a-model/#select-a-model
+  #   - https://docs.endpoints.anyscale.com/text-generation/query-a-model/
   #   - https://docs.endpoints.anyscale.com/pricing
   models:
     - name: meta-llama/Meta-Llama-3-8B-Instruct
@@ -792,6 +793,14 @@
       output_price: 1.2
     - name: zero-one-ai/Yi-34B-Chat
       max_input_tokens: 4096
+      input_price: 0.8
+      output_price: 0.8
+    - name: deepseek-ai/deepseek-llm-67b-chat
+      max_input_tokens: 4096
+      input_price: 0.9
+      output_price: 0.9
+    - name: deepseek-ai/deepseek-coder-33b-instruct
+      max_input_tokens: 16384
       input_price: 0.8
       output_price: 0.8
     - name: allenai/OLMo-7B-Instruct
