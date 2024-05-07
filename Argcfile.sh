@@ -63,6 +63,7 @@ OPENAI_COMPATIBLE_PLATFORMS=( \
   octoai,meta-llama-3-8b-instruct,https://text.octoai.run/v1 \
   perplexity,llama-3-8b-instruct,https://api.perplexity.ai \
   together,meta-llama/Llama-3-8b-chat-hf,https://api.together.xyz/v1 \
+  zhipuai,glm-4,https://open.bigmodel.cn/api/paas/v4 \
 )
 
 # @cmd Chat with any LLM api 

@@ -115,8 +115,8 @@ clients:
 
   # See https://cloud.google.com/vertex-ai
   - type: vertexai
-    project_id: xxx                                  # ENV: {client}_PROJECT_ID
-    location: xxx                                    # ENV: {client}_LOCATION
+    project_id: xxx                                   # ENV: {client}_PROJECT_ID
+    location: xxx                                     # ENV: {client}_LOCATION
     # Specifies a application-default-credentials (adc) file, Optional field
     # Run `gcloud auth application-default login` to init the adc file
     # see https://cloud.google.com/docs/authentication/external/set-up-adc
@@ -133,8 +133,8 @@ clients:
 
   # See https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-claude
   - type: vertexai-claude
-    project_id: xxx                                  # ENV: {client}_PROJECT_ID
-    location: xxx                                    # ENV: {client}_LOCATION
+    project_id: xxx                                   # ENV: {client}_PROJECT_ID
+    location: xxx                                     # ENV: {client}_LOCATION
     # Specifies a application-default-credentials (adc) file, Optional field
     # Run `gcloud auth application-default login` to init the adc file
     # see https://cloud.google.com/docs/authentication/external/set-up-adc
@@ -142,9 +142,9 @@ clients:
 
   # See https://docs.aws.amazon.com/bedrock/latest/userguide/
   - type: bedrock
-    access_key_id: xxx                               # ENV: {client}_ACCESS_KEY_ID
-    secret_access_key: xxx                           # ENV: {client}_SECRET_ACCESS_KEY
-    region: xxx                                      # ENV: {client}_REGION
+    access_key_id: xxx                                # ENV: {client}_ACCESS_KEY_ID
+    secret_access_key: xxx                            # ENV: {client}_SECRET_ACCESS_KEY
+    region: xxx                                       # ENV: {client}_REGION
 
   # See https://developers.cloudflare.com/workers-ai/
   - type: cloudflare
@@ -157,23 +157,28 @@ clients:
 
   # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
   - type: ernie
-    api_key: xxx                                     # ENV: {client}_API_KEY
-    secret_key: xxxx                                 # ENV: {client}_SECRET_KEY
+    api_key: xxx                                      # ENV: {client}_API_KEY
+    secret_key: xxxx                                  # ENV: {client}_SECRET_KEY
 
   # See https://help.aliyun.com/zh/dashscope/
   - type: qianwen
-    api_key: sk-xxx                                  # ENV: {client}_API_KEY
+    api_key: sk-xxx                                   # ENV: {client}_API_KEY
 
   # See https://platform.moonshot.cn/docs/intro
   - type: openai-compatible
     name: moonshot
     api_base: https://api.moonshot.cn/v1
-    api_key: sk-xxx                                  # ENV: {client}_API_KEY
+    api_key: sk-xxx                                   # ENV: {client}_API_KEY
 
   # See https://platform.deepseek.com/api-docs/
   - type: openai-compatible
     name: deepseek
-    api_key: sk-xxx                                  # ENV: {client}_API_KEY
+    api_key: sk-xxx                                   # ENV: {client}_API_KEY
+
+  # See https://open.bigmodel.cn/dev/howuse/introduction
+  - type: openai-compatible
+    name: zhipuai
+    api_key: xxx                                      # ENV: {client}_API_KEY
 
   # See https://docs.endpoints.anyscale.com/
   - type: openai-compatible
