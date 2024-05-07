@@ -461,9 +461,9 @@
       output_price: 8.4
 
 - platform: deepseek
-  docs:
-    - https://platform.deepseek.com/api-docs/
-    - https://platform.deepseek.com/api-docs/pricing
+  # docs:
+  #   - https://platform.deepseek.com/api-docs/
+  #   - https://platform.deepseek.com/api-docs/pricing
   models:
     - name: deepseek-chat 
       max_input_tokens: 32768 
@@ -473,6 +473,24 @@
       max_input_tokens: 16384
       input_price: 0.14
       output_price: 0.28
+
+- platform: zhipuai
+  # docs:
+  #   - https://open.bigmodel.cn/dev/howuse/model
+  #   - https://open.bigmodel.cn/pricing
+  models:
+    - name: glm-4
+      max_input_tokens: 128000
+      input_price: 14
+      output_price: 14
+    - name: glm-4v
+      max_input_tokens: 2048
+      input_price: 14
+      output_price: 14
+    - name: glm-3-turbo
+      max_input_tokens: 128000
+      input_price: 0.7
+      output_price: 0.7
 
 - platform: anyscale
   # docs:
