@@ -395,8 +395,7 @@
     <div class="input-panel">
       <div class="input-panel-inner">
         <textarea id="chat-input" rows="2" x-model="input" x-ref="input"
-          @keydown.enter.prevent="!$event.shiftKey && handleAsk()"
-          @keydown.enter.shift="$event.preventDefault(); $data.input += '\n';"
+          @keydown.enter.prevent="!$event.shiftKey && handleAsk()" @keydown.enter.shift="handleNewlineInput"
           placeholder="Enter to send, Shift + Enter to wrap"></textarea>
         <div class="input-image-bar" x-show="images.length > 0">
           <template x-for="(image, index) in images">
@@ -587,6 +586,20 @@
           $chatBody.scrollTop = $chatBody.scrollHeight;
           $chatBody._prevScrollTop = $chatBody.scrollTop;
           chat.isShowScrollToBottomBtn = false;
+        },
+
+        handleNewlineInput(event) {
+          event.preventDefault();
+          const textarea = event.target;
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          const text = textarea.value;
+          const before = text.substring(0, start);
+          const after = text.substring(end);
+
+          textarea.value = before + '\n' + after;
+          textarea.selectionStart = textarea.selectionEnd = start + 1;
+          this.input = textarea.value;
         },
 
         handleCopyCode(event) {
