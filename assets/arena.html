@@ -7,8 +7,10 @@
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <title>AIChat LLM Arena</title>
   <link rel="stylesheet" href="//unpkg.com/github-markdown-css@5.5.1/github-markdown.css">
-  <link rel="stylesheet" href="//unpkg.com/highlight.js@11.9.0/styles/github.min.css" media="screen and (prefers-color-scheme: light)">
-  <link rel="stylesheet" href="//unpkg.com/highlight.js@11.9.0/styles/github-dark.min.css" media="screen and (prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="//unpkg.com/highlight.js@11.9.0/styles/github-dark.min.css"
+    media="screen and (prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="//unpkg.com/highlight.js@11.9.0/styles/github.min.css"
+    media="screen and (prefers-color-scheme: light)">
   <script src="//unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
   <script src="//unpkg.com/marked@12.0.2/lib/marked.umd.js" defer></script>
   <script src="//unpkg.com/alpinejs@3.13.10/dist/cdn.min.js" defer></script>
@@ -293,11 +295,13 @@
     .toast {
       display: none;
       position: fixed;
-      bottom: 1.25rem;
-      left: 1.25rem;
+      top: 0;
+      left: 50%;
+      text-align: center;
+      transform: translate(-50%, 0);
       min-width: 200px;
-      background-color: #3c4043;
-      color: #fff;
+      background-color: var(--fg-default);
+      color: var(--bg-primary);
       padding: 1rem;
       border-radius: 0.3rem;
       z-index: 9999;
@@ -640,7 +644,7 @@
             window.getSelection().addRange(range);
             document.execCommand('copy');
             window.getSelection().removeAllRanges();
-            toast("Copied to clipboard");
+            toast("Copied code to clipboard");
           }
         },
 
