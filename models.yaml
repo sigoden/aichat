@@ -157,18 +157,16 @@
   # notes
   #   - get max_output_tokens info from api error
   models:
-    - name: sonar-small-chat
-      max_input_tokens: 16384
-      max_output_tokens?: 16384
-    - name: sonar-small-online
-      max_input_tokens: 12000
-      max_output_tokens?: 12288
-    - name: sonar-medium-chat
-      max_input_tokens: 16384
-      max_output_tokens?: 16384
-    - name: sonar-medium-online
-      max_input_tokens: 12000
-      max_output_tokens?: 12288
+    - name: llama-3-sonar-small-32k-chat
+      max_input_tokens: 32768
+      max_output_tokens?: 32768
+      input_price: 0.2
+      output_price: 0.2
+    - name: llama-3-sonar-large-32k-chat	
+      max_input_tokens: 32768
+      max_output_tokens?: 32768
+      input_price: 0.6
+      output_price: 0.6
 
     - name: llama-3-8b-instruct
       max_input_tokens: 8192
@@ -180,26 +178,11 @@
       max_output_tokens?: 8192
       input_price: 1
       output_price: 1
-    - name: codellama-70b-instruct
-      max_input_tokens: 16384
-      max_output_tokens?: 16384
-      input_price: 1
-      output_price: 1
-    - name: mistral-7b-instruct
-      max_input_tokens: 16384
-      max_output_tokens?: 16384
-      input_price: 0.2
-      output_price: 0.2
     - name: mixtral-8x7b-instruct
       max_input_tokens: 16384
       max_output_tokens?: 16384
       input_price: 0.6
       output_price: 0.6
-    - name: mixtral-8x22b-instruct
-      max_input_tokens: 16384
-      max_output_tokens?: 16384
-      input_price: 1
-      output_price: 1
 
 - platform: groq
   # docs:
@@ -354,6 +337,9 @@
     - name: '@cf/qwen/qwen1.5-14b-chat-awq'
       max_input_tokens: 4096
       max_output_tokens: 4096
+    - name: '@hf/thebloke/deepseek-coder-6.7b-instruct-awq'
+      max_input_tokens: 4096
+      max_output_tokens: 4096
     - name: '@hf/nexusflow/starling-lm-7b-beta'
       max_input_tokens: 4096
       max_output_tokens: 4096
@@ -473,6 +459,20 @@
       max_input_tokens: 128000
       input_price: 8.4
       output_price: 8.4
+
+- platform: deepseek
+  docs:
+    - https://platform.deepseek.com/api-docs/
+    - https://platform.deepseek.com/api-docs/pricing
+  models:
+    - name: deepseek-chat 
+      max_input_tokens: 32768 
+      input_price: 0.14
+      output_price: 0.28
+    - name: deepseek-coder 
+      max_input_tokens: 16384
+      input_price: 0.14
+      output_price: 0.28
 
 - platform: anyscale
   # docs:
