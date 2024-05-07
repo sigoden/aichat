@@ -170,6 +170,11 @@ clients:
     api_base: https://api.moonshot.cn/v1
     api_key: sk-xxx                                  # ENV: {client}_API_KEY
 
+  # See https://platform.deepseek.com/api-docs/
+  - type: openai-compatible
+    name: deepseek
+    api_key: sk-xxx                                  # ENV: {client}_API_KEY
+
   # See https://docs.endpoints.anyscale.com/
   - type: openai-compatible
     name: anyscale
