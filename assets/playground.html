@@ -641,8 +641,9 @@
   <script>
     const QUERY = parseQueryString(location.search);
     const API_BASE = QUERY.api_base || ".";
-    const DATAJSON_API = API_BASE + "/data.json";
     const CHAT_COMPLETIONS_URL = API_BASE + "/v1/chat/completions";
+    const MODELS_API = API_BASE + "/v1/models";
+    const ROLES_API = API_BASE + "/v1/roles";
     const SETTINGS_STORAGE_KEY = "__settings__";
 
     document.addEventListener("alpine:init", () => {
@@ -691,7 +692,7 @@
 
         async init() {
           try {
-            const { models, roles } = await fetchDataJSON(DATAJSON_API);
+            const [models, roles] = await Promise.all([MODELS_API, ROLES_API].map(url => fetchJSON(url)));
             this.models = models;
             this.roles.push(...roles);
           } catch (err) {
@@ -949,10 +950,10 @@
 
     }
 
-    async function fetchDataJSON(url) {
+    async function fetchJSON(url) {
       const res = await fetch(url);
       const data = await res.json()
-      return data;
+      return data.data;
     }
 
     async function* fetchChatCompletions(url, body, signal) {

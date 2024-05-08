@@ -158,12 +158,14 @@ impl Server {
         let mut status = StatusCode::OK;
         let res = if path == "/v1/chat/completions" {
             self.chat_completion(req).await
+        } else if path == "/v1/models" {
+            self.list_models()
+        } else if path == "/v1/roles" {
+            self.list_roles()
         } else if path == "/playground" || path == "/playground.html" {
             self.playground_page()
         } else if path == "/arena" || path == "/arena.html" {
             self.arena_page()
-        } else if path == "/data.json" {
-            self.data_json()
         } else {
             status = StatusCode::NOT_FOUND;
             Err(anyhow!("The requested endpoint was not found."))
@@ -198,11 +200,16 @@ impl Server {
         Ok(res)
     }
 
-    fn data_json(&self) -> Result<AppResponse> {
-        let data = json!({
-            "models": self.models,
-            "roles": self.roles,
-        });
+    fn list_models(&self) -> Result<AppResponse> {
+        let data = json!({ "data": self.models });
+        let res = Response::builder()
+            .header("Content-Type", "application/json; charset=utf-8")
+            .body(Full::new(Bytes::from(data.to_string())).boxed())?;
+        Ok(res)
+    }
+
+    fn list_roles(&self) -> Result<AppResponse> {
+        let data = json!({ "data": self.roles });
         let res = Response::builder()
             .header("Content-Type", "application/json; charset=utf-8")
             .body(Full::new(Bytes::from(data.to_string())).boxed())?;
