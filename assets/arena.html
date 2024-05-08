@@ -604,10 +604,10 @@
         handleScrollChatBody(event, index) {
           const chat = this.chats[index];
           const { scrollTop, clientHeight, scrollHeight } = event.target;
-          if ((event.target._prevScrollTop || 0) > scrollTop) {
+          if ((event.target._prevScrollTop || 0) > scrollTop + 1) {
             chat.shouldScrollChatBodyToBottom = false;
             chat.isShowScrollToBottomBtn = true;
-          } else if (chat.isShowScrollToBottomBtn && scrollTop + clientHeight >= scrollHeight - 10) {
+          } else if (chat.isShowScrollToBottomBtn && scrollTop + clientHeight > scrollHeight - 5) {
             chat.isShowScrollToBottomBtn = false;
           }
         },
@@ -672,7 +672,7 @@
             const $chatBody = document.querySelector('#chat-body-' + index);
             if ($chatBody) {
               const { scrollTop, scrollHeight, clientHeight } = $chatBody;
-              if (scrollTop + clientHeight < scrollHeight - 10) {
+              if (scrollTop + clientHeight < scrollHeight - 5) {
                 $chatBody.scrollTop = scrollHeight;
                 $chatBody._prevScrollTop = $chatBody.scrollTop;
               }

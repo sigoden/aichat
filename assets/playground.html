@@ -760,10 +760,10 @@
 
         handleScrollChatBody(event) {
           const { scrollTop, clientHeight, scrollHeight } = event.target;
-          if ((event.target._prevScrollTop || 0) > scrollTop) {
+          if ((event.target._prevScrollTop || 0) > scrollTop + 1) {
             this.shouldScrollChatBodyToBottom = false;
             this.isShowScrollToBottomBtn = true;
-          } else if (this.isShowScrollToBottomBtn && scrollTop + clientHeight >= scrollHeight - 10) {
+          } else if (this.isShowScrollToBottomBtn && scrollTop + clientHeight > scrollHeight - 5) {
             this.isShowScrollToBottomBtn = false;
           }
         },
@@ -829,7 +829,7 @@
             const $chatBody = this.$refs["chat-body"];
             if ($chatBody) {
               const { scrollTop, scrollHeight, clientHeight } = $chatBody;
-              if (scrollTop + clientHeight < scrollHeight - 10) {
+              if (scrollTop + clientHeight < scrollHeight - 5) {
                 $chatBody.scrollTop = scrollHeight;
                 $chatBody._prevScrollTop = $chatBody.scrollTop;
               }
