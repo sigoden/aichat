@@ -33,7 +33,6 @@ clients:
   #   models:
   #     - name: xxxx                                  # The model name
   #       max_input_tokens: 100000
-  #       max_output_tokens: 4096
   #       supports_vision: true
   #       extra_fields:                               # Set custom parameters, will merge with the body json
   #          key: value                               

@@ -422,7 +422,7 @@ impl Config {
             (
                 "max_output_tokens",
                 self.model
-                    .max_output_tokens
+                    .max_tokens_param()
                     .map(|v| format!("{v} (current model)"))
                     .unwrap_or_else(|| "-".into()),
             ),
@@ -523,7 +523,7 @@ impl Config {
             (values, args[0])
         } else if args.len() == 2 {
             let values = match args[0] {
-                "max_output_tokens" => match self.model.show_max_output_tokens() {
+                "max_output_tokens" => match self.model.max_output_tokens {
                     Some(v) => vec![v.to_string()],
                     None => vec![],
                 },
@@ -564,7 +564,7 @@ impl Config {
         match key {
             "max_output_tokens" => {
                 let value = parse_value(value)?;
-                self.model.set_max_output_tokens(value);
+                self.model.set_max_tokens(value, true);
             }
             "temperature" => {
                 let value = parse_value(value)?;

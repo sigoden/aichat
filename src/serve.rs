@@ -93,7 +93,7 @@ impl Server {
                     "id": id,
                     "max_input_tokens": model.max_input_tokens,
                     "max_output_tokens": model.max_output_tokens,
-                    "max_output_tokens?": model.ref_max_output_tokens,
+                    "pass_max_tokens": model.pass_max_tokens,
                     "input_price": model.input_price,
                     "output_price": model.output_price,
                     "supports_vision": model.supports_vision(),
@@ -244,7 +244,7 @@ impl Server {
 
         let mut client = init_client(&config)?;
         if max_tokens.is_some() {
-            client.model_mut().set_max_output_tokens(max_tokens);
+            client.model_mut().set_max_tokens(max_tokens, true);
         }
         let abort = create_abort_signal();
         let http_client = client.build_client()?;

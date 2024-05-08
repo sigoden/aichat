@@ -201,7 +201,7 @@ pub(crate) fn gemini_build_body(
         body["safetySettings"] = safety_settings;
     }
 
-    if let Some(v) = model.max_output_tokens {
+    if let Some(v) = model.max_tokens_param() {
         body["generationConfig"]["maxOutputTokens"] = v.into();
     }
     if let Some(v) = temperature {
