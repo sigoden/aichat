@@ -14,11 +14,11 @@ pub struct Model {
     pub name: String,
     pub max_input_tokens: Option<usize>,
     pub max_output_tokens: Option<isize>,
-    pub ref_max_output_tokens: Option<isize>,
+    pub pass_max_tokens: bool,
     pub input_price: Option<f64>,
     pub output_price: Option<f64>,
-    pub extra_fields: Option<serde_json::Map<String, serde_json::Value>>,
     pub capabilities: ModelCapabilities,
+    pub extra_fields: Option<serde_json::Map<String, serde_json::Value>>,
 }
 
 impl Default for Model {
@@ -32,13 +32,13 @@ impl Model {
         Self {
             client_name: client_name.into(),
             name: name.into(),
-            extra_fields: None,
             max_input_tokens: None,
             max_output_tokens: None,
-            ref_max_output_tokens: None,
+            pass_max_tokens: false,
             input_price: None,
             output_price: None,
             capabilities: ModelCapabilities::Text,
+            extra_fields: None,
         }
     }
 
@@ -49,8 +49,7 @@ impl Model {
                 let mut model = Model::new(client_name, &v.name);
                 model
                     .set_max_input_tokens(v.max_input_tokens)
-                    .set_max_output_tokens(v.max_output_tokens)
-                    .set_ref_max_output_tokens(v.ref_max_output_tokens)
+                    .set_max_tokens(v.max_output_tokens, v.pass_max_tokens)
                     .set_input_price(v.input_price)
                     .set_output_price(v.output_price)
                     .set_supports_vision(v.supports_vision)
@@ -97,7 +96,7 @@ impl Model {
 
     pub fn description(&self) -> String {
         let max_input_tokens = format_option_value(&self.max_input_tokens);
-        let max_output_tokens = format_option_value(&self.show_max_output_tokens());
+        let max_output_tokens = format_option_value(&self.max_output_tokens);
         let input_price = format_option_value(&self.input_price);
         let output_price = format_option_value(&self.output_price);
         let vision = if self.capabilities.contains(ModelCapabilities::Vision) {
@@ -115,8 +114,12 @@ impl Model {
         self.capabilities.contains(ModelCapabilities::Vision)
     }
 
-    pub fn show_max_output_tokens(&self) -> Option<isize> {
-        self.max_output_tokens.or(self.ref_max_output_tokens)
+    pub fn max_tokens_param(&self) -> Option<isize> {
+        if self.pass_max_tokens {
+            self.max_output_tokens
+        } else {
+            None
+        }
     }
 
     pub fn set_max_input_tokens(&mut self, max_input_tokens: Option<usize>) -> &mut Self {
@@ -127,19 +130,16 @@ impl Model {
         self
     }
 
-    pub fn set_max_output_tokens(&mut self, max_output_tokens: Option<isize>) -> &mut Self {
+    pub fn set_max_tokens(
+        &mut self,
+        max_output_tokens: Option<isize>,
+        pass_max_tokens: bool,
+    ) -> &mut Self {
         match max_output_tokens {
             None | Some(0) => self.max_output_tokens = None,
             _ => self.max_output_tokens = max_output_tokens,
         }
-        self
-    }
-
-    pub fn set_ref_max_output_tokens(&mut self, ref_max_output_tokens: Option<isize>) -> &mut Self {
-        match ref_max_output_tokens {
-            None | Some(0) => self.ref_max_output_tokens = None,
-            _ => self.ref_max_output_tokens = ref_max_output_tokens,
-        }
+        self.pass_max_tokens = pass_max_tokens;
         self
     }
 
@@ -237,12 +237,12 @@ pub struct ModelConfig {
     pub name: String,
     pub max_input_tokens: Option<usize>,
     pub max_output_tokens: Option<isize>,
-    #[serde(rename = "max_output_tokens?")]
-    pub ref_max_output_tokens: Option<isize>,
     pub input_price: Option<f64>,
     pub output_price: Option<f64>,
     #[serde(default)]
     pub supports_vision: bool,
+    #[serde(default)]
+    pub pass_max_tokens: bool,
     pub extra_fields: Option<serde_json::Map<String, serde_json::Value>>,
 }
 

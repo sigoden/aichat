@@ -148,7 +148,7 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
         "prompt_template": "{prompt}"
     });
 
-    if let Some(v) = model.max_output_tokens {
+    if let Some(v) = model.max_tokens_param() {
         input["max_tokens"] = v.into();
         input["max_new_tokens"] = v.into();
     }

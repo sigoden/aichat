@@ -172,7 +172,7 @@ async fn send_message_streaming(
                     let data: Value = decode_chunk(message.payload()).ok_or_else(|| {
                         anyhow!("Invalid chunk data: {}", hex_encode(message.payload()))
                     })?;
-                    debug!("bedrock chunk: {data}");
+                    // debug!("bedrock chunk: {data}");
                     match model_category {
                         ModelCategory::Anthropic => {
                             if let Some(typ) = data["type"].as_str() {
@@ -235,7 +235,7 @@ fn meta_llama_build_body(data: SendData, model: &Model, pt: PromptFormat) -> Res
     let prompt = generate_prompt(&messages, pt)?;
     let mut body = json!({ "prompt": prompt });
 
-    if let Some(v) = model.max_output_tokens {
+    if let Some(v) = model.max_tokens_param() {
         body["max_gen_len"] = v.into();
     }
     if let Some(v) = temperature {
@@ -258,7 +258,7 @@ fn mistral_build_body(data: SendData, model: &Model) -> Result<Value> {
     let prompt = generate_prompt(&messages, MISTRAL_PROMPT_FORMAT)?;
     let mut body = json!({ "prompt": prompt });
 
-    if let Some(v) = model.max_output_tokens {
+    if let Some(v) = model.max_tokens_param() {
         body["max_tokens"] = v.into();
     }
     if let Some(v) = temperature {

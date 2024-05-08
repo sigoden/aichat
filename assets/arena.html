@@ -746,8 +746,8 @@
             messages: messages,
             stream: true,
           };
-          const { max_output_token, need_max_tokens } = retrieveModel(this.models, chat.model_id);
-          if (!body["max_tokens"] && need_max_tokens) {
+          const { max_output_token, pass_max_tokens } = retrieveModel(this.models, chat.model_id);
+          if (!body["max_tokens"] && pass_max_tokens) {
             body["max_tokens"] = max_output_token;
           };
           return body;
@@ -819,14 +819,14 @@
     function retrieveModel(models, id) {
       const model = models.find(model => model.id === id);
       if (!model) return {};
-      const max_output_token = model.max_output_tokens || model["max_output_tokens?"] || null;
-      const need_max_tokens = !!model.max_output_tokens;
+      const max_output_token = model.max_output_tokens;
       const supports_vision = !!model.supports_vision;
+      const pass_max_tokens = !!model.pass_max_tokens;
       return {
         id,
         max_output_token,
-        need_max_tokens,
         supports_vision,
+        pass_max_tokens,
       }
     }
 

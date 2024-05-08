@@ -90,7 +90,7 @@ pub fn openai_build_body(data: SendData, model: &Model) -> Value {
         "messages": messages,
     });
 
-    if let Some(v) = model.max_output_tokens {
+    if let Some(v) = model.max_tokens_param() {
         body["max_tokens"] = v.into();
     }
     if let Some(v) = temperature {

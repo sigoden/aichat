@@ -173,7 +173,7 @@ fn build_body(data: SendData, model: &Model, is_vl: bool) -> Result<(Value, bool
         parameters["incremental_output"] = true.into();
     }
 
-    if let Some(v) = model.max_output_tokens {
+    if let Some(v) = model.max_tokens_param() {
         parameters["max_tokens"] = v.into();
     }
     if let Some(v) = temperature {
