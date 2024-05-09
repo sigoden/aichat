@@ -90,9 +90,11 @@ APPLY MARKDOWN formatting when possible."#
 ### INPUT:
 async sleep in js
 ### OUTPUT:
+```javascript
 async function timeout(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+```
 "#
             .into(),
             temperature: None,
