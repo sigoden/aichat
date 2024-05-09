@@ -217,9 +217,7 @@ async fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
                 }
                 "🤔 Revise" => {
                     let revision = Text::new("Enter your revision:").prompt()?;
-                    let text = input.text();
-                    let text =
-                        format!("[INST] {text} [/INST]\n{eval_str}\n[INST] {revision} [/INST]\n");
+                    let text = format!("{}\n{revision}", input.text());
                     input.set_text(text);
                     return execute(config, input).await;
                 }
