@@ -899,7 +899,7 @@
         },
 
         buildBody() {
-          const messages = [];
+          let messages = [];
           for ([userMessage, assistantMessage] of chunkArray(this.messages.filter(v => v.id > this.skipMessageId), 2)) {
             if (assistantMessage.state == "failed") {
               continue;
@@ -924,10 +924,25 @@
             if (messages[0]?.content?.indexOf("__INPUT__") > -1) {
               messages[0].content = systemPrompt.replace("__INPUT__", messages[0].content);
             } else {
-              messages.unshift({
-                role: "system",
-                content: systemPrompt,
-              });
+              const { system, cases } = parseStructurePrompt(systemPrompt);
+              const promptMessages = [];
+              if (system) {
+                promptMessages.push({
+                  role: "system",
+                  content: system,
+                });
+              }
+              for (const item of cases) {
+                promptMessages.push({
+                  role: "user",
+                  content: item.input,
+                });
+                promptMessages.push({
+                  role: "assistant",
+                  content: item.output,
+                });
+              }
+              messages = [...promptMessages, ...messages];
             }
           }
           const body = {
@@ -1033,6 +1048,53 @@
       $toast._timer = setTimeout(function () {
         $toast.style.display = "none";
       }, duration);
+    }
+
+    function parseStructurePrompt(prompt) {
+      let text = prompt;
+      let searchInput = true;
+      let system = null;
+      let parts = [];
+
+      while (text) {
+        const search = searchInput ? "### INPUT:" : "### OUTPUT:";
+        const index = text.indexOf(search);
+
+        if (index !== -1) {
+          if (system == null) {
+            system = text.slice(0, index);
+          } else {
+            parts.push(text.slice(0, index));
+          }
+          searchInput = !searchInput;
+          text = text.slice(index + search.length);
+        } else {
+          if (text.trim()) {
+            if (system == null) {
+              system = text;
+            } else {
+              parts.push(text);
+            }
+          }
+          break;
+        }
+      }
+
+      const partsLength = parts.length;
+      if (partsLength > 0 && partsLength % 2 === 0) {
+        const cases = parts.reduce((acc, val, idx) => {
+          if (idx % 2 === 0) {
+            acc.push({ input: val.trim() })
+          } else {
+            acc[acc.length - 1].output = val.trim();
+          }
+          return acc;
+        }, []);
+        system = system ? system.trim() : "";
+        return { system, cases }
+      }
+
+      return { system: prompt, cases: [] }
     }
 
     function convertImageToDataURL(imageFile) {
