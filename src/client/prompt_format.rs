@@ -13,13 +13,13 @@ pub struct PromptFormat<'a> {
 
 pub const GENERIC_PROMPT_FORMAT: PromptFormat<'static> = PromptFormat {
     begin: "",
-    system_pre_message: "### System\n",
+    system_pre_message: "",
     system_post_message: "\n",
-    user_pre_message: "### User\n",
+    user_pre_message: "### Instruction:\n",
     user_post_message: "\n",
-    assistant_pre_message: "### Assistant\n",
+    assistant_pre_message: "### Response:\n",
     assistant_post_message: "\n",
-    end: "### Assistant\n",
+    end: "### Response:\n",
 };
 
 pub const MISTRAL_PROMPT_FORMAT: PromptFormat<'static> = PromptFormat {

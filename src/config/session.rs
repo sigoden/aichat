@@ -323,11 +323,11 @@ impl Session {
     }
 
     pub fn echo_messages(&self, input: &Input) -> String {
-        let messages = self.build_emssages(input);
+        let messages = self.build_messages(input);
         serde_yaml::to_string(&messages).unwrap_or_else(|_| "Unable to echo message".into())
     }
 
-    pub fn build_emssages(&self, input: &Input) -> Vec<Message> {
+    pub fn build_messages(&self, input: &Input) -> Vec<Message> {
         let mut messages = self.messages.clone();
         let mut need_add_msg = true;
         let len = messages.len();
