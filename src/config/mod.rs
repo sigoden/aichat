@@ -372,7 +372,7 @@ impl Config {
 
     pub fn build_messages(&self, input: &Input) -> Result<Vec<Message>> {
         let messages = if let Some(session) = input.session(&self.session) {
-            session.build_emssages(input)
+            session.build_messages(input)
         } else if let Some(role) = input.role() {
             role.build_messages(input)
         } else {
