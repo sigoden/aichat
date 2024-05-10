@@ -21,7 +21,7 @@ AIChat is a cutting-edge CLI chat and copilot tool that seamlessly integrates wi
 - [Shell integration](#shell-integration): AI-based shell auto-completion
 - Support extensive configuration and theme customization
 - Support stream/non-stream
-- Provice access to all LLMs using OpenAI format API
+- Provide access to all LLMs using OpenAI format API
 - Host LLM playground/area web apps
 
 ## Supported AI Platforms
