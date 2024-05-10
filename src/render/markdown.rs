@@ -280,13 +280,14 @@ fn blend_fg_color(fg: SyntectColor, bg: SyntectColor) -> SyntectColor {
 }
 
 fn detect_code_block(line: &str) -> Option<String> {
+    let line = line.trim_start();
     if !line.starts_with("```") {
         return None;
     }
     let lang = line
         .chars()
         .skip(3)
-        .take_while(|v| v.is_alphanumeric())
+        .take_while(|v| !v.is_whitespace())
         .collect();
     Some(lang)
 }
@@ -379,5 +380,14 @@ std::error::Error>> {
         render.wrap_width = Some(80);
         let output = render.render(TEXT);
         assert_eq!(TEXT_WRAP_ALL, output);
+    }
+
+    #[test]
+    fn test_detect_code_block() {
+        assert_eq!(detect_code_block("```rust"), Some("rust".into()));
+        assert_eq!(detect_code_block("```c++"), Some("c++".into()));
+        assert_eq!(detect_code_block("  ```rust"), Some("rust".into()));
+        assert_eq!(detect_code_block("```"), Some("".into()));
+        assert_eq!(detect_code_block("``rust"), None);
     }
 }
