@@ -3,7 +3,7 @@ mod role;
 mod session;
 
 pub use self::input::{Input, InputContext};
-pub use self::role::{Role, CODE_ROLE, EXPLAIN_ROLE, SHELL_ROLE};
+pub use self::role::{Role, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE};
 use self::session::{Session, TEMP_SESSION_NAME};
 
 use crate::client::{
@@ -190,7 +190,6 @@ impl Config {
                 role.complete_prompt_args(name);
                 role
             })
-            .or_else(|| Role::find_system_role(name))
             .ok_or_else(|| anyhow!("Unknown role `{name}`"))
     }
 
@@ -682,10 +681,6 @@ impl Config {
         Ok(())
     }
 
-    pub fn has_session(&self) -> bool {
-        self.session.is_some()
-    }
-
     pub fn clear_session_messages(&mut self) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
             session.clear_messages();
@@ -818,7 +813,7 @@ impl Config {
     }
 
     pub fn input_context(&self) -> InputContext {
-        InputContext::new(self.role.clone(), self.has_session())
+        InputContext::new(self.role.clone(), self.session.is_some())
     }
 
     pub fn maybe_print_send_tokens(&self, input: &Input) {
@@ -978,7 +973,15 @@ impl Config {
             .with_context(|| format!("Failed to load roles at {}", path.display()))?;
         let roles: Vec<Role> =
             serde_yaml::from_str(&content).with_context(|| "Invalid roles config")?;
+
+        let exist_roles: HashSet<_> = roles.iter().map(|v| v.name.clone()).collect();
         self.roles = roles;
+        let builtin_roles = Role::builtin();
+        for role in builtin_roles {
+            if !exist_roles.contains(&role.name) {
+                self.roles.push(role);
+            }
+        }
         Ok(())
     }
 

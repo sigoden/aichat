@@ -106,7 +106,7 @@ impl Input {
     }
 
     pub fn session<'a>(&self, session: &'a Option<Session>) -> Option<&'a Session> {
-        if self.context.in_session {
+        if self.context.session {
             session.as_ref()
         } else {
             None
@@ -114,7 +114,7 @@ impl Input {
     }
 
     pub fn session_mut<'a>(&self, session: &'a mut Option<Session>) -> Option<&'a mut Session> {
-        if self.context.in_session {
+        if self.context.session {
             session.as_mut()
         } else {
             None
@@ -199,12 +199,19 @@ impl Input {
 #[derive(Debug, Clone, Default)]
 pub struct InputContext {
     role: Option<Role>,
-    in_session: bool,
+    session: bool,
 }
 
 impl InputContext {
-    pub fn new(role: Option<Role>, in_session: bool) -> Self {
-        Self { role, in_session }
+    pub fn new(role: Option<Role>, session: bool) -> Self {
+        Self { role, session }
+    }
+
+    pub fn role(role: Role) -> Self {
+        Self {
+            role: Some(role),
+            session: false,
+        }
     }
 }
 

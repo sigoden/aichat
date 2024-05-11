@@ -176,8 +176,7 @@ impl Repl {
                     Some(args) => match args.split_once(|c| c == '\n' || c == ' ') {
                         Some((name, text)) => {
                             let role = self.config.read().retrieve_role(name.trim())?;
-                            let input =
-                                Input::from_str(text.trim(), InputContext::new(Some(role), false));
+                            let input = Input::from_str(text.trim(), InputContext::role(role));
                             self.ask(input).await?;
                         }
                         None => {
