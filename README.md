@@ -305,11 +305,12 @@ emoji> .exit role
 Hello there! How can I assist you today?
 ```
 
-Temporarily use a role to send a message.
+Temporarily use a role without switching to it:
 ```
-temp) .role emoji hello world
-🌍👋
+> .role emoji hello
+👋
 
+>
 ```
 
 ### `.session` - Begin a chat session
@@ -416,21 +417,20 @@ The `roles.yaml` file allows you to define a variety of roles, each with its own
 We can define a role like this:
 
 ```yaml
-- name: shell
+- name: emoji
   prompt: >
-    I want you to act as a Linux shell expert.
-    I want you to answer only with bash code.
-    Do not provide explanations.
+    I want you to translate the sentences I write into emojis.
+    I will write the sentence, and you will express it with emojis.
+    I don't want you to reply with anything but emoji.
 ```
 
 This enables the LLM to respond as a Linux shell expert.
 
 ```
-> .role shell
+> .role emoji
 
-shell> extract encrypted zipfile app.zip to /tmp/app
-mkdir /tmp/app
-unzip -P PASSWORD app.zip -d /tmp/app
+emoji> fire
+🔥
 ```
 
 ## Wikis
