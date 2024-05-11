@@ -6,9 +6,9 @@
 
 AIChat is a cutting-edge CLI chat and copilot tool that seamlessly integrates with over 10 leading AI platforms, providing a powerful combination of chat-based interaction, context-aware conversations, and AI-assisted shell capabilities, all within a customizable and user-friendly environment.
 
-![command mode](https://github.com/sigoden/aichat/assets/4012553/2ab27e1b-4078-4ea3-a98f-591b36491685)
+![AIChat command](https://github.com/sigoden/aichat/assets/4012553/84ae8382-62be-41d0-a0f1-101b113c5bc7)
 
-![chat-repl mode](https://github.com/sigoden/aichat/assets/4012553/13427d54-efd5-4f4c-b17b-409edd30dfa3)
+![AIChat Chat-REPL](https://github.com/sigoden/aichat/assets/4012553/13470451-9502-4b3e-b49a-e66aa7760208)
 
 ## Key Features
 
@@ -428,17 +428,17 @@ This enables the LLM to respond as a Linux shell expert.
 ```
 > .role shell
 
-shell>  extract encrypted zipfile app.zip to /tmp/app
+shell> extract encrypted zipfile app.zip to /tmp/app
 mkdir /tmp/app
 unzip -P PASSWORD app.zip -d /tmp/app
 ```
 
 ## Wikis
 
+- [Role Guide](https://github.com/sigoden/aichat/wiki/Role-Guide)
 - [Environment Variables](https://github.com/sigoden/aichat/wiki/Environment-Variables)
 - [Custom REPL Prompt](https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt)
 - [Custom Theme](https://github.com/sigoden/aichat/wiki/Custom-Theme)
-- [Role Guide](https://github.com/sigoden/aichat/wiki/Role-Guide)
 
 ## License
 
