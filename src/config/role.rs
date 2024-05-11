@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 pub const TEMP_ROLE: &str = "%%";
 pub const SHELL_ROLE: &str = "%shell%";
-pub const EXPLAIN_ROLE: &str = "%explain%";
+pub const EXPLAIN_SHELL_ROLE: &str = "%explain-shell%";
 pub const CODE_ROLE: &str = "%code%";
 
 pub const INPUT_PLACEHOLDER: &str = "__INPUT__";
@@ -32,61 +32,20 @@ impl Role {
         }
     }
 
-    pub fn find_system_role(name: &str) -> Option<Self> {
-        match name {
-            SHELL_ROLE => Some(Self::shell()),
-            EXPLAIN_ROLE => Some(Self::explain()),
-            CODE_ROLE => Some(Self::code()),
-            _ => None,
-        }
-    }
-
-    pub fn shell() -> Self {
-        let os = detect_os();
-        let (detected_shell, _, _) = detect_shell();
-        let (shell, use_semicolon) = match (detected_shell.as_str(), os.as_str()) {
-            // GPT doesn’t know much about nushell
-            ("nushell", "windows") => ("cmd", true),
-            ("nushell", _) => ("bash", true),
-            ("powershell", _) => ("powershell", true),
-            ("pwsh", _) => ("powershell", false),
-            _ => (detected_shell.as_str(), false),
-        };
-        let combine = if use_semicolon {
-            "\nIf multiple steps required try to combine them together using ';'.\nIf it already combined with '&&' try to replace it with ';'.".to_string()
-        } else {
-            "\nIf multiple steps required try to combine them together using &&.".to_string()
-        };
-        Self {
-            name: SHELL_ROLE.into(),
-            prompt: format!(
-                r#"Provide only {shell} commands for {os} without any description.
-Ensure the output is a valid {shell} command. {combine}
-If there is a lack of details, provide most logical solution.
-Output plain text only, without any markdown formatting."#
-            ),
-            temperature: None,
-            top_p: None,
-        }
-    }
-
-    pub fn explain() -> Self {
-        Self {
-            name: EXPLAIN_ROLE.into(),
-            prompt: r#"Provide a terse, single sentence description of the given shell command.
+    pub fn builtin() -> Vec<Role> {
+        [
+            (SHELL_ROLE, shell_prompt()),
+            (
+                EXPLAIN_SHELL_ROLE,
+                r#"Provide a terse, single sentence description of the given shell command.
 Describe each argument and option of the command.
 Provide short responses in about 80 words.
 APPLY MARKDOWN formatting when possible."#
-                .into(),
-            temperature: None,
-            top_p: None,
-        }
-    }
-
-    pub fn code() -> Self {
-        Self {
-            name: CODE_ROLE.into(),
-            prompt: r#"Provide only code without comments or explanations.
+                    .into(),
+            ),
+            (
+                CODE_ROLE,
+                r#"Provide only code without comments or explanations.
 ### INPUT:
 async sleep in js
 ### OUTPUT:
@@ -96,10 +55,17 @@ async function timeout(ms) {
 }
 ```
 "#
-            .into(),
+                .into(),
+            ),
+        ]
+        .into_iter()
+        .map(|(name, prompt)| Self {
+            name: name.into(),
+            prompt,
             temperature: None,
             top_p: None,
-        }
+        })
+        .collect()
     }
 
     pub fn export(&self) -> Result<String> {
@@ -239,6 +205,30 @@ fn parse_structure_prompt(prompt: &str) -> (&str, Vec<(&str, &str)>) {
     }
 
     (prompt, vec![])
+}
+
+fn shell_prompt() -> String {
+    let os = detect_os();
+    let (detected_shell, _, _) = detect_shell();
+    let (shell, use_semicolon) = match (detected_shell.as_str(), os.as_str()) {
+        // GPT doesn’t know much about nushell
+        ("nushell", "windows") => ("cmd", true),
+        ("nushell", _) => ("bash", true),
+        ("powershell", _) => ("powershell", true),
+        ("pwsh", _) => ("powershell", false),
+        _ => (detected_shell.as_str(), false),
+    };
+    let combine = if use_semicolon {
+        "\nIf multiple steps required try to combine them together using ';'.\nIf it already combined with '&&' try to replace it with ';'.".to_string()
+    } else {
+        "\nIf multiple steps required try to combine them together using '&&'.".to_string()
+    };
+    format!(
+        r#"Provide only {shell} commands for {os} without any description.
+Ensure the output is a valid {shell} command. {combine}
+If there is a lack of details, provide most logical solution.
+Output plain text only, without any markdown formatting."#
+    )
 }
 
 #[cfg(test)]

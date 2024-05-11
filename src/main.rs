@@ -14,7 +14,8 @@ extern crate log;
 use crate::cli::Cli;
 use crate::client::{ensure_model_capabilities, init_client, list_models, send_stream};
 use crate::config::{
-    Config, GlobalConfig, Input, WorkingMode, CODE_ROLE, EXPLAIN_ROLE, SHELL_ROLE,
+    Config, GlobalConfig, Input, InputContext, WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE,
+    SHELL_ROLE,
 };
 use crate::render::{render_error, MarkdownRender};
 use crate::repl::Repl;
@@ -200,7 +201,6 @@ async fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
         return Ok(());
     }
     if is_terminal_stdout {
-        let mut explain = false;
         loop {
             let answer = Select::new(
                 markdown_render.render(&eval_str).trim(),
@@ -222,13 +222,10 @@ async fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
                     return execute(config, input).await;
                 }
                 "📙 Explain" => {
-                    if !explain {
-                        config.write().set_role(EXPLAIN_ROLE)?;
-                    }
-                    let input = Input::from_str(&eval_str, config.read().input_context());
+                    let role = config.read().retrieve_role(EXPLAIN_SHELL_ROLE)?;
+                    let input = Input::from_str(&eval_str, InputContext::role(role));
                     let abort = create_abort_signal();
                     send_stream(&input, client.as_ref(), config, abort).await?;
-                    explain = true;
                     continue;
                 }
                 _ => {}
