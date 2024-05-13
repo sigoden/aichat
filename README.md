@@ -6,7 +6,7 @@
 
 AIChat is a cutting-edge CLI chat and copilot tool that seamlessly integrates with over 10 leading AI platforms, providing a powerful combination of chat-based interaction, context-aware conversations, and AI-assisted shell capabilities, all within a customizable and user-friendly environment.
 
-![AIChat command](https://github.com/sigoden/aichat/assets/4012553/84ae8382-62be-41d0-a0f1-101b113c5bc7)
+![AIChat Command](https://github.com/sigoden/aichat/assets/4012553/84ae8382-62be-41d0-a0f1-101b113c5bc7)
 
 ![AIChat Chat-REPL](https://github.com/sigoden/aichat/assets/4012553/13470451-9502-4b3e-b49a-e66aa7760208)
 
@@ -22,7 +22,7 @@ AIChat is a cutting-edge CLI chat and copilot tool that seamlessly integrates wi
 - Support extensive configuration and theme customization
 - Support stream/non-stream
 - Provide access to all LLMs using OpenAI format API
-- Host LLM playground/area web apps
+- Host LLM playground/arena web applications
 
 ## Supported AI Platforms
 
@@ -31,19 +31,19 @@ AIChat is a cutting-edge CLI chat and copilot tool that seamlessly integrates wi
 - Claude: Claude-3 (vision, paid)
 - Mistral (paid)
 - Cohere: Command-R/Command-R+ (paid)
-- Perplexity: Sonar/LLama3/Mistral (paid)
-- Groq: LLama2/LLama3/Mistral/Gemma (free)
+- Perplexity: Llama-3/Mixtral (paid)
+- Groq: Llama-3/Mixtral/Gemma (free)
 - Ollama (free, local)
 - Azure OpenAI (paid)
 - VertexAI: Gemini-1.0/Gemini-1.5 (paid, vision)
 - VertexAI-Claude: Claude-3 (paid, vision)
-- Bedrock: LLama2/Llama3/Claude-3/Mistral (paid, vision)
+- Bedrock: Llama-3/Claude-3/Mistral (paid, vision)
 - Cloudflare (free, paid, vision)
 - Replicate (paid)
 - Ernie (paid)
 - Qianwen (paid, vision)
 - Moonshot (paid)
-- ZhipuAI: GLM-4/GLM-4V (paid, vision)
+- ZhipuAI: GLM-3.5/GLM-4 (paid, vision)
 - Deepseek (paid)
 - Other openAI-compatible platforms
 
@@ -69,7 +69,7 @@ Upon first launch, AIChat will guide you through the configuration process. An e
 > No config file, create a new one? Yes
 > AI Platform: openai
 > API Key: <your_api_key_here>
-✨ Saved config file to <config-dir>/aichat/config.yaml
+✨ Saved config file to <user-config-dir>/aichat/config.yaml
 ```
 
 Feel free to adjust the configuration according to your needs.
@@ -411,8 +411,6 @@ The LLM Arena is a web-based platform where you can compare different LLMs side-
 ## Defining Roles
 
 The `roles.yaml` file allows you to define a variety of roles, each with its own unique prompt and behavior. This enables the LLM to adapt to specific tasks and provide tailored responses.
-
-> 💡 Obtain the path to `roles.yaml` by running the command `aichat --info` or using the `.info` command within the REPL environment.
 
 We can define a role like this:
 
