@@ -1,3 +1,7 @@
+# notes:
+#   - do not submit pull requests to add new models; this list will be updated in batches with new releases.
+#   - do not add any open-source LLMs except for the following: Mixtral, LLama-3, Gemma, Qwen, Phi-3, DeepSeek, Command-R, dbrx, Yi.
+
 - platform: openai
   # docs:
   #   - https://platform.openai.com/docs/models
@@ -16,6 +20,12 @@
       max_output_tokens: 4096
       input_price: 1
       output_price: 2
+    - name: gpt-4o
+      max_input_tokens: 128000
+      max_output_tokens: 4096
+      input_price: 5
+      output_price: 15
+      supports_vision: true
     - name: gpt-4-turbo
       max_input_tokens: 128000
       max_output_tokens: 4096
@@ -360,10 +370,6 @@
       max_input_tokens: 4096
       max_output_tokens: 4096
       pass_max_tokens: true
-    - name: '@hf/nexusflow/starling-lm-7b-beta'
-      max_input_tokens: 4096
-      max_output_tokens: 4096
-      pass_max_tokens: true
 
 - platform: replicate
   # docs:
@@ -677,6 +683,11 @@
       max_input_tokens: 16385
       input_price: 0.5
       output_price: 1.5
+    - name: openai/gpt-4o
+      max_input_tokens: 128000
+      input_price: 5
+      output_price: 15
+      supports_vision: true
     - name: openai/gpt-4-turbo
       max_input_tokens: 128000
       input_price: 10
@@ -839,7 +850,3 @@
       max_input_tokens: 16384
       input_price: 0.8
       output_price: 0.8
-    - name: allenai/OLMo-7B-Instruct
-      max_input_tokens: 2048
-      input_price: 0.2
-      output_price: 0.2
