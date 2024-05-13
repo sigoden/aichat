@@ -291,6 +291,9 @@ impl Config {
     }
 
     pub fn set_role_obj(&mut self, role: Role) -> Result<()> {
+        if let Some(model_id) = &role.model_id {
+            self.set_model(model_id)?;
+        }
         if let Some(session) = self.session.as_mut() {
             session.guard_empty()?;
             session.set_temperature(role.temperature);

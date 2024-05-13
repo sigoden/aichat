@@ -20,6 +20,9 @@ pub struct Role {
     pub prompt: String,
     pub temperature: Option<f64>,
     pub top_p: Option<f64>,
+
+    #[serde(rename(serialize = "model", deserialize = "model"))]
+    pub model_id: Option<String>,
 }
 
 impl Role {
@@ -29,6 +32,7 @@ impl Role {
             prompt: prompt.into(),
             temperature: None,
             top_p: None,
+            model_id: None,
         }
     }
 
@@ -64,6 +68,7 @@ async function timeout(ms) {
             prompt,
             temperature: None,
             top_p: None,
+            model_id: None,
         })
         .collect()
     }
