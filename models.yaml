@@ -27,6 +27,18 @@
       max_output_tokens: 4096
       input_price: 10
       output_price: 30
+    - name: gpt-4o
+      max_input_tokens: 128000
+      max_output_tokens: 4096
+      input_price: 5
+      output_price: 5
+      supports_vision: true
+    - name: gpt-4o-2024-05-13
+      max_input_tokens: 128000
+      max_output_tokens: 4096
+      input_price: 5
+      output_price: 5
+      supports_vision: true
     - name: gpt-4-1106-preview
       max_input_tokens: 128000
       max_output_tokens: 4096
