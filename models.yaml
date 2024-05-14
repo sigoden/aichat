@@ -697,7 +697,7 @@
       max_input_tokens: 128000
       input_price: 10
       output_price: 30
-    - name: gpt-4-vision-preview
+    - name: openai/gpt-4-vision-preview
       max_input_tokens: 128000
       max_output_tokens: 4096
       input_price: 10
