@@ -7,7 +7,7 @@ pub use self::role::{Role, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE};
 use self::session::{Session, TEMP_SESSION_NAME};
 
 use crate::client::{
-    create_client_config, list_client_types, list_models, ClientConfig, Message, Model, SendData,
+    create_client_config, list_client_types, list_models, ClientConfig, Model,
     OPENAI_COMPATIBLE_PLATFORMS,
 };
 use crate::render::{MarkdownRender, RenderOptions};
@@ -305,7 +305,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn get_state(&self) -> State {
+    pub fn state(&self) -> State {
         if let Some(session) = &self.session {
             if session.is_empty() {
                 if self.role.is_some() {
@@ -359,28 +359,6 @@ impl Config {
         }
     }
 
-    pub fn echo_messages(&self, input: &Input) -> String {
-        if let Some(session) = input.session(&self.session) {
-            session.echo_messages(input)
-        } else if let Some(role) = input.role() {
-            role.echo_messages(input)
-        } else {
-            input.render()
-        }
-    }
-
-    pub fn build_messages(&self, input: &Input) -> Result<Vec<Message>> {
-        let messages = if let Some(session) = input.session(&self.session) {
-            session.build_messages(input)
-        } else if let Some(role) = input.role() {
-            role.build_messages(input)
-        } else {
-            let message = Message::new(input);
-            vec![message]
-        };
-        Ok(messages)
-    }
-
     pub fn set_wrap(&mut self, value: &str) -> Result<()> {
         if value == "no" {
             self.wrap = None;
@@ -402,7 +380,7 @@ impl Config {
             None => bail!("No model '{}'", value),
             Some(model) => {
                 if let Some(session) = self.session.as_mut() {
-                    session.set_model(model.clone())?;
+                    session.set_model(&model);
                 }
                 self.model = model;
                 Ok(())
@@ -625,7 +603,7 @@ impl Config {
                     self.session = Some(Session::new(self, name));
                 } else {
                     let session = Session::load(name, &session_path)?;
-                    let model_id = session.model().to_string();
+                    let model_id = session.model_id().to_string();
                     self.session = Some(session);
                     self.set_model(&model_id)?;
                 }
@@ -785,44 +763,6 @@ impl Config {
         let variables = self.generate_prompt_context();
         let right_prompt = self.right_prompt.as_deref().unwrap_or(RIGHT_PROMPT);
         render_prompt(right_prompt, &variables)
-    }
-
-    pub fn prepare_send_data(&self, input: &Input, stream: bool) -> Result<SendData> {
-        let messages = self.build_messages(input)?;
-        let temperature = if let Some(session) = input.session(&self.session) {
-            session.temperature()
-        } else if let Some(role) = input.role() {
-            role.temperature
-        } else {
-            self.temperature
-        };
-        let top_p = if let Some(session) = input.session(&self.session) {
-            session.top_p()
-        } else if let Some(role) = input.role() {
-            role.top_p
-        } else {
-            self.top_p
-        };
-        self.model.max_input_tokens_limit(&messages)?;
-        Ok(SendData {
-            messages,
-            temperature,
-            top_p,
-            stream,
-        })
-    }
-
-    pub fn input_context(&self) -> InputContext {
-        InputContext::new(self.role.clone(), self.session.is_some())
-    }
-
-    pub fn maybe_print_send_tokens(&self, input: &Input) {
-        if self.dry_run {
-            if let Ok(messages) = self.build_messages(input) {
-                let tokens = self.model.total_tokens(&messages);
-                println!(">>> This message consumes {tokens} tokens. <<<");
-            }
-        }
     }
 
     fn generate_prompt_context(&self) -> HashMap<&str, String> {
