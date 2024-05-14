@@ -1,6 +1,6 @@
 use super::Input;
 use crate::{
-    client::{Message, MessageContent, MessageRole},
+    client::{Message, MessageContent, MessageRole, Model},
     utils::{detect_os, detect_shell},
 };
 
@@ -18,6 +18,8 @@ pub const INPUT_PLACEHOLDER: &str = "__INPUT__";
 pub struct Role {
     pub name: String,
     pub prompt: String,
+    #[serde(rename(serialize = "model", deserialize = "model"))]
+    pub model_id: Option<String>,
     pub temperature: Option<f64>,
     pub top_p: Option<f64>,
 }
@@ -28,6 +30,7 @@ impl Role {
             name: TEMP_ROLE.into(),
             prompt: prompt.into(),
             temperature: None,
+            model_id: None,
             top_p: None,
         }
     }
@@ -62,6 +65,7 @@ async function timeout(ms) {
         .map(|(name, prompt)| Self {
             name: name.into(),
             prompt,
+            model_id: None,
             temperature: None,
             top_p: None,
         })
@@ -76,6 +80,10 @@ async function timeout(ms) {
 
     pub fn embedded(&self) -> bool {
         self.prompt.contains(INPUT_PLACEHOLDER)
+    }
+
+    pub fn set_model(&mut self, model: &Model) {
+        self.model_id = Some(model.id());
     }
 
     pub fn set_temperature(&mut self, value: Option<f64>) {
