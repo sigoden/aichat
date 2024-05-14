@@ -804,10 +804,12 @@ impl Config {
         if let Some(session) = &self.session {
             output.insert("session", session.name().to_string());
             output.insert("dirty", session.dirty.to_string());
-            let (tokens, percent) = session.tokens_and_percent();
+            let (tokens, percent, cost) = session.context_info();
             output.insert("consume_tokens", tokens.to_string());
+            output.insert("context_cost", format!("${:.2}", cost).to_string());
             output.insert("consume_percent", percent.to_string());
             output.insert("user_messages_len", session.user_messages_len().to_string());
+            output.insert("running_cost", format!("${:.2}", session.cost.running_cost()));
         }
 
         if self.highlight {

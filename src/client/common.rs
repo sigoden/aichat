@@ -289,15 +289,22 @@ pub trait Client: Sync + Send {
 
     async fn send_message(&self, input: Input) -> Result<(String, CompletionDetails)> {
         let global_config = self.config().0;
+        let content = input.echo_messages();
         if global_config.read().dry_run {
-            let content = input.echo_messages();
             return Ok((content, CompletionDetails::default()));
         }
         let client = self.build_client()?;
         let data = input.prepare_send_data(false)?;
-        self.send_message_inner(&client, data)
+        if let Some(session) = &mut global_config.write().session {
+            session.cost.update_input_running_cost(content.as_str(), self.model());
+        }
+        let output = self.send_message_inner(&client, data)
             .await
-            .with_context(|| "Failed to get answer")
+            .with_context(|| "Failed to get answer")?;
+        if let Some(session) = &mut global_config.write().session {
+            session.cost.update_output_running_cost(output.0.as_str(), self.model());
+        }
+        Ok(output)
     }
 
     async fn send_message_streaming(&self, input: &Input, handler: &mut SseHandler) -> Result<()> {
@@ -314,8 +321,8 @@ pub trait Client: Sync + Send {
         tokio::select! {
             ret = async {
                 let global_config = self.config().0;
+                let content = input.echo_messages();
                 if global_config.read().dry_run {
-                    let content = input.echo_messages();
                     let tokens = tokenize(&content);
                     for token in tokens {
                         tokio::time::sleep(Duration::from_millis(10)).await;
@@ -323,6 +330,10 @@ pub trait Client: Sync + Send {
                     }
                     return Ok(());
                 }
+                if let Some(session) = &mut global_config.write().session {
+                    session.cost.update_input_running_cost(content.as_str(), self.model());
+                }
+                // output cost is handled in send_stream()
                 let client = self.build_client()?;
                 let data = input.prepare_send_data(true)?;
                 self.send_message_streaming_inner(&client, handler, data).await
@@ -441,6 +452,10 @@ pub async fn send_stream(
         render_error(err, config.read().highlight);
     }
     let output = stream_handler.get_buffer().to_string();
+    // Input cost is handled in send_message_streaming, as that has access to context messages
+    if let Some(session) = &mut config.write().session {
+        session.cost.update_output_running_cost(output.as_str(), client.model());
+    }
     match send_ret {
         Ok(_) => {
             println!();

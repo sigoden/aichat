@@ -138,6 +138,7 @@ async fn start_directive(
     no_stream: bool,
     code_mode: bool,
 ) -> Result<()> {
+    cl100k_base_singleton();
     let mut client = input.create_client()?;
     ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
     input.maybe_print_input_tokens();

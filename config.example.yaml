@@ -24,7 +24,7 @@ summary_prompt: 'This is a summary of the chat history as a recap: '
 
 # Custom REPL prompt, see https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt
 left_prompt: '{color.green}{?session {session}{?role /}}{role}{color.cyan}{?session )}{!session >}{color.reset} '
-right_prompt: '{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}'
+right_prompt: '{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{?running_cost , ~{running_cost} so far}{?context_cost , ~{context_cost} per message} {color.reset}'
 
 clients:
   # All clients have the following configuration:

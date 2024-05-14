@@ -3,6 +3,7 @@ use super::{Config, Input, Model};
 
 use crate::client::{Message, MessageContent, MessageRole};
 use crate::render::MarkdownRender;
+use crate::utils::count_tokens;
 
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -12,6 +13,34 @@ use std::fs::{self, read_to_string};
 use std::path::Path;
 
 pub const TEMP_SESSION_NAME: &str = "temp";
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SessionCost
+{
+    pub input_cost: f64,
+    pub output_cost: f64,
+}
+
+impl SessionCost{
+    pub fn running_cost(&self) -> f64 {
+        self.input_cost + self.output_cost
+    }
+
+    pub fn update_input_running_cost(&mut self, input: &str, model: &Model) {
+        // TODO: Per-model tokenizer for more accurate price estimation
+        let input_tokens = count_tokens(input);
+        if let Some(price) = model.input_price {
+            self.input_cost += (input_tokens as f64 / 1_000_000_f64) * price;
+        }
+    }
+
+    pub fn update_output_running_cost(&mut self, output: &str, model: &Model) {
+        let output_tokens = count_tokens(output);
+        if let Some(price) = model.output_price {
+            self.output_cost += (output_tokens as f64 / 1_000_000_f64) * price;
+        }
+    }
+}
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct Session {
@@ -27,6 +56,8 @@ pub struct Session {
     #[serde(default)]
     compressed_messages: Vec<Message>,
     compress_threshold: Option<usize>,
+    #[serde(default)]
+    pub cost: SessionCost,
     #[serde(skip)]
     pub name: String,
     #[serde(skip)]
@@ -49,6 +80,7 @@ impl Session {
             messages: vec![],
             compressed_messages: vec![],
             compress_threshold: None,
+            cost: Default::default(),
             data_urls: Default::default(),
             name: name.to_string(),
             path: None,
@@ -109,7 +141,7 @@ impl Session {
         if self.path.is_none() {
             bail!("Not found session '{}'", self.name)
         }
-        let (tokens, percent) = self.tokens_and_percent();
+        let (tokens, percent, context_cost) = self.context_info();
         let mut data = json!({
             "path": self.path,
             "model": self.model_id(),
@@ -130,8 +162,14 @@ impl Session {
         if percent != 0.0 {
             data["total/max"] = format!("{}%", percent).into();
         }
+        if context_cost != 0.0 {
+            data["context_cost"] = format!("${:.2}", context_cost).into();
+        }
+        if self.cost.running_cost() != 0.0
+        {
+            data["running_cost"] = format!("${:.2}", self.cost.running_cost()).into();
+        }
         data["messages"] = json!(self.messages);
-
         let output = serde_yaml::to_string(&data)
             .with_context(|| format!("Unable to show info about session {}", &self.name))?;
         Ok(output)
@@ -163,6 +201,10 @@ impl Session {
 
         if let Some(max_input_tokens) = self.model.max_input_tokens {
             items.push(("max_input_tokens", max_input_tokens.to_string()));
+        }
+
+        if self.cost.running_cost() != 0.0 {
+            items.push(("running_cost", format!("${:.2}", self.cost.running_cost())));
         }
 
         let mut lines: Vec<String> = items
@@ -200,7 +242,7 @@ impl Session {
         Ok(output)
     }
 
-    pub fn tokens_and_percent(&self) -> (usize, f32) {
+    pub fn context_info(&self) -> (usize, f32, f64) {
         let tokens = self.tokens();
         let max_input_tokens = self.model.max_input_tokens.unwrap_or_default();
         let percent = if max_input_tokens == 0 {
@@ -209,7 +251,10 @@ impl Session {
             let percent = tokens as f32 / max_input_tokens as f32 * 100.0;
             (percent * 100.0).round() / 100.0
         };
-        (tokens, percent)
+        match self.model.input_price {
+            Some(input_price) => (tokens, percent, (tokens as f64 / 1_000_000_f64) * input_price),
+            None => (tokens, percent, 0.0),
+        }
     }
 
     pub fn set_temperature(&mut self, value: Option<f64>) {
