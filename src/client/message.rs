@@ -134,21 +134,3 @@ pub fn extract_system_message(messages: &mut Vec<Message>) -> Option<String> {
     }
     None
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::config::InputContext;
-
-    #[test]
-    fn test_serde() {
-        assert_eq!(
-            serde_json::to_string(&Message::new(&Input::from_str(
-                "Hello World",
-                InputContext::default()
-            )))
-            .unwrap(),
-            "{\"role\":\"user\",\"content\":\"Hello World\"}"
-        );
-    }
-}

@@ -290,11 +290,11 @@ pub trait Client: Sync + Send {
     async fn send_message(&self, input: Input) -> Result<(String, CompletionDetails)> {
         let global_config = self.config().0;
         if global_config.read().dry_run {
-            let content = global_config.read().echo_messages(&input);
+            let content = input.echo_messages();
             return Ok((content, CompletionDetails::default()));
         }
         let client = self.build_client()?;
-        let data = global_config.read().prepare_send_data(&input, false)?;
+        let data = input.prepare_send_data(false)?;
         self.send_message_inner(&client, data)
             .await
             .with_context(|| "Failed to get answer")
@@ -315,7 +315,7 @@ pub trait Client: Sync + Send {
             ret = async {
                 let global_config = self.config().0;
                 if global_config.read().dry_run {
-                    let content = global_config.read().echo_messages(&input);
+                    let content = input.echo_messages();
                     let tokens = tokenize(&content);
                     for token in tokens {
                         tokio::time::sleep(Duration::from_millis(10)).await;
@@ -324,7 +324,7 @@ pub trait Client: Sync + Send {
                     return Ok(());
                 }
                 let client = self.build_client()?;
-                let data = global_config.read().prepare_send_data(&input, true)?;
+                let data = input.prepare_send_data(true)?;
                 self.send_message_streaming_inner(&client, handler, data).await
             } => {
                 handler.done()?;

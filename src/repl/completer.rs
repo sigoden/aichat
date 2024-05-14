@@ -27,7 +27,7 @@ impl Completer for ReplCompleter {
             return suggestions;
         }
 
-        let state = self.config.read().get_state();
+        let state = self.config.read().state();
 
         let commands: Vec<_> = self
             .commands

@@ -6,7 +6,7 @@ use self::completer::ReplCompleter;
 use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
-use crate::client::{ensure_model_capabilities, init_client, send_stream};
+use crate::client::{ensure_model_capabilities, send_stream};
 use crate::config::{GlobalConfig, Input, InputContext, State};
 use crate::render::render_error;
 use crate::utils::{create_abort_signal, set_text, AbortSignal};
@@ -176,7 +176,11 @@ impl Repl {
                     Some(args) => match args.split_once(|c| c == '\n' || c == ' ') {
                         Some((name, text)) => {
                             let role = self.config.read().retrieve_role(name.trim())?;
-                            let input = Input::from_str(text.trim(), InputContext::role(role));
+                            let input = Input::from_str(
+                                &self.config,
+                                text.trim(),
+                                Some(InputContext::role(role)),
+                            );
                             self.ask(input).await?;
                         }
                         None => {
@@ -218,7 +222,7 @@ impl Repl {
                     Some(args) => {
                         let (files, text) = split_files_text(args);
                         let files = shell_words::split(files).with_context(|| "Invalid args")?;
-                        let input = Input::new(text, files, self.config.read().input_context())?;
+                        let input = Input::new(&self.config, text, files, None)?;
                         self.ask(input).await?;
                     }
                     None => println!("Usage: .file <files>... [-- <text>...]"),
@@ -244,7 +248,7 @@ impl Repl {
                 _ => unknown_command()?,
             },
             None => {
-                let input = Input::from_str(line, self.config.read().input_context());
+                let input = Input::from_str(&self.config, line, None);
                 self.ask(input).await?;
             }
         }
@@ -261,8 +265,8 @@ impl Repl {
         while self.config.read().is_compressing_session() {
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
-        self.config.read().maybe_print_send_tokens(&input);
-        let mut client = init_client(&self.config)?;
+        input.maybe_print_input_tokens();
+        let mut client = input.create_client()?;
         ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
         let output = send_stream(&input, client.as_ref(), &self.config, self.abort.clone()).await?;
         self.config.write().save_message(input, &output)?;
@@ -442,11 +446,8 @@ fn parse_command(line: &str) -> Option<(&str, Option<&str>)> {
 }
 
 async fn compress_session(config: &GlobalConfig) -> Result<()> {
-    let input = Input::from_str(
-        config.read().summarize_prompt(),
-        config.read().input_context(),
-    );
-    let mut client = init_client(config)?;
+    let input = Input::from_str(config, config.read().summarize_prompt(), None);
+    let mut client = input.create_client()?;
     ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
     let (summary, _) = client.send_message(input).await?;
     config.write().compress_session(&summary);

@@ -74,7 +74,7 @@ impl Session {
         &self.name
     }
 
-    pub fn model(&self) -> &str {
+    pub fn model_id(&self) -> &str {
         &self.model_id
     }
 
@@ -112,7 +112,7 @@ impl Session {
         let (tokens, percent) = self.tokens_and_percent();
         let mut data = json!({
             "path": self.path,
-            "model": self.model(),
+            "model": self.model_id(),
         });
         if let Some(temperature) = self.temperature() {
             data["temperature"] = temperature.into();
@@ -240,14 +240,13 @@ impl Session {
         }
     }
 
-    pub fn set_model(&mut self, model: Model) -> Result<()> {
+    pub fn set_model(&mut self, model: &Model) {
         let model_id = model.id();
         if self.model_id != model_id {
             self.model_id = model_id;
             self.dirty = true;
         }
-        self.model = model;
-        Ok(())
+        self.model = model.clone();
     }
 
     pub fn compress(&mut self, prompt: String) {
