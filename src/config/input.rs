@@ -150,15 +150,6 @@ impl Input {
         })
     }
 
-    pub fn maybe_print_input_tokens(&self) {
-        if self.config.read().dry_run {
-            if let Ok(messages) = self.build_messages() {
-                let tokens = self.config.read().model.total_tokens(&messages);
-                println!(">>> This message consumes {tokens} tokens. <<<");
-            }
-        }
-    }
-
     pub fn build_messages(&self) -> Result<Vec<Message>> {
         let messages = if let Some(session) = self.session(&self.config.read().session) {
             session.build_messages(self)

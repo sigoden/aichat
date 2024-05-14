@@ -1,6 +1,6 @@
 use super::message::{Message, MessageContent};
 
-use crate::utils::{count_tokens, format_option_value};
+use crate::utils::{estimate_token_length, format_option_value};
 
 use anyhow::{bail, Result};
 use serde::Deserialize;
@@ -181,7 +181,7 @@ impl Model {
             .iter()
             .map(|v| {
                 match &v.content {
-                    MessageContent::Text(text) => count_tokens(text),
+                    MessageContent::Text(text) => estimate_token_length(text),
                     MessageContent::Array(_) => 0, // TODO
                 }
             })

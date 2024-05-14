@@ -19,10 +19,7 @@ use crate::config::{
 };
 use crate::render::{render_error, MarkdownRender};
 use crate::repl::Repl;
-use crate::utils::{
-    cl100k_base_singleton, create_abort_signal, extract_block, run_command, run_spinner,
-    CODE_BLOCK_RE,
-};
+use crate::utils::{create_abort_signal, extract_block, run_command, run_spinner, CODE_BLOCK_RE};
 
 use anyhow::{bail, Result};
 use clap::Parser;
@@ -141,7 +138,6 @@ async fn start_directive(
 ) -> Result<()> {
     let mut client = input.create_client()?;
     ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
-    input.maybe_print_input_tokens();
     let is_terminal_stdout = stdout().is_terminal();
     let extract_code = !is_terminal_stdout && code_mode;
     let output = if no_stream || extract_code {
@@ -170,7 +166,6 @@ async fn start_directive(
 }
 
 async fn start_interactive(config: &GlobalConfig) -> Result<()> {
-    cl100k_base_singleton();
     let mut repl: Repl = Repl::init(config)?;
     repl.run().await
 }
@@ -178,7 +173,6 @@ async fn start_interactive(config: &GlobalConfig) -> Result<()> {
 #[async_recursion::async_recursion]
 async fn execute(config: &GlobalConfig, mut input: Input) -> Result<()> {
     let client = input.create_client()?;
-    input.maybe_print_input_tokens();
     let is_terminal_stdout = stdout().is_terminal();
     let ret = if is_terminal_stdout {
         let (spinner_tx, spinner_rx) = oneshot::channel();
