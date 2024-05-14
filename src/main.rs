@@ -97,6 +97,7 @@ async fn main() -> Result<()> {
     }
     if let Some(model) = &cli.model {
         config.write().set_model(model)?;
+        config.write().set_model_id();
     }
     if cli.save_session {
         config.write().set_save_session(Some(true));

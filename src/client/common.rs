@@ -70,8 +70,7 @@ macro_rules! register_client {
             impl $client {
                 pub const NAME: &'static str = $name;
 
-                pub fn init(global_config: &$crate::config::GlobalConfig) -> Option<Box<dyn Client>> {
-                    let model = global_config.read().model.clone();
+                pub fn init(global_config: &$crate::config::GlobalConfig, model: &$crate::client::Model) -> Option<Box<dyn Client>> {
                     let config = global_config.read().clients.iter().find_map(|client_config| {
                         if let ClientConfig::$config(c) = client_config {
                             if Self::name(c) == &model.client_name {
@@ -84,7 +83,7 @@ macro_rules! register_client {
                     Some(Box::new(Self {
                         global_config: global_config.clone(),
                         config,
-                        model,
+                        model: model.clone(),
                     }))
                 }
 
@@ -109,11 +108,12 @@ macro_rules! register_client {
 
         )+
 
-        pub fn init_client(config: &$crate::config::GlobalConfig) -> anyhow::Result<Box<dyn Client>> {
+        pub fn init_client(config: &$crate::config::GlobalConfig, model: Option<$crate::client::Model>) -> anyhow::Result<Box<dyn Client>> {
+            let model = model.unwrap_or_else(|| config.read().model.clone());
             None
-            $(.or_else(|| $client::init(config)))+
+            $(.or_else(|| $client::init(config, &model)))+
             .ok_or_else(|| {
-                anyhow::anyhow!("Unknown client '{}'", &config.read().model.client_name)
+                anyhow::anyhow!("Unknown client '{}'", model.client_name)
             })
         }
 

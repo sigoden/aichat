@@ -54,7 +54,8 @@ const RIGHT_PROMPT: &str = "{color.purple}{?session {?consume_tokens {consume_to
 #[serde(default)]
 pub struct Config {
     #[serde(rename(serialize = "model", deserialize = "model"))]
-    pub model_id: Option<String>,
+    #[serde(default)]
+    pub model_id: String,
     pub temperature: Option<f64>,
     pub top_p: Option<f64>,
     pub dry_run: bool,
@@ -91,7 +92,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            model_id: None,
+            model_id: Default::default(),
             temperature: None,
             top_p: None,
             save: false,
@@ -296,12 +297,16 @@ impl Config {
             session.set_temperature(role.temperature);
             session.set_top_p(role.top_p);
         }
+        if let Some(model_id) = &role.model_id {
+            self.set_model(model_id)?;
+        }
         self.role = Some(role);
         Ok(())
     }
 
     pub fn clear_role(&mut self) -> Result<()> {
         self.role = None;
+        self.restore_model()?;
         Ok(())
     }
 
@@ -381,11 +386,22 @@ impl Config {
             Some(model) => {
                 if let Some(session) = self.session.as_mut() {
                     session.set_model(&model);
+                } else if let Some(role) = self.role.as_mut() {
+                    role.set_model(&model);
                 }
                 self.model = model;
                 Ok(())
             }
         }
+    }
+
+    pub fn set_model_id(&mut self) {
+        self.model_id = self.model.id()
+    }
+
+    pub fn restore_model(&mut self) -> Result<()> {
+        let origin_model_id = self.model_id.clone();
+        self.set_model(&origin_model_id)
     }
 
     pub fn system_info(&self) -> Result<String> {
@@ -394,6 +410,13 @@ impl Config {
             .wrap
             .clone()
             .map_or_else(|| String::from("no"), |v| v.to_string());
+        let (temperature, top_p) = if let Some(session) = &self.session {
+            (session.temperature(), session.top_p())
+        } else if let Some(role) = &self.role {
+            (role.temperature, role.top_p)
+        } else {
+            (self.temperature, self.top_p)
+        };
         let items = vec![
             ("model", self.model.id()),
             (
@@ -403,8 +426,8 @@ impl Config {
                     .map(|v| format!("{v} (current model)"))
                     .unwrap_or_else(|| "-".into()),
             ),
-            ("temperature", format_option_value(&self.temperature)),
-            ("top_p", format_option_value(&self.top_p)),
+            ("temperature", format_option_value(&temperature)),
+            ("top_p", format_option_value(&top_p)),
             ("dry_run", self.dry_run.to_string()),
             ("save", self.save.to_string()),
             ("save_session", format_option_value(&self.save_session)),
@@ -645,6 +668,7 @@ impl Config {
                 }
                 Self::save_session_to_file(&mut session)?;
             }
+            self.restore_model()?;
         }
         Ok(())
     }
@@ -926,18 +950,19 @@ impl Config {
     }
 
     fn setup_model(&mut self) -> Result<()> {
-        let model = match &self.model_id {
-            Some(v) => v.clone(),
-            None => {
-                let models = list_models(self);
-                if models.is_empty() {
-                    bail!("No available model");
-                }
-
-                models[0].id()
+        let model_id = if self.model_id.is_empty() {
+            let models = list_models(self);
+            if models.is_empty() {
+                bail!("No available model");
             }
+
+            let model_id = models[0].id();
+            self.model_id.clone_from(&model_id);
+            model_id
+        } else {
+            self.model_id.clone()
         };
-        self.set_model(&model)?;
+        self.set_model(&model_id)?;
         Ok(())
     }
 
@@ -1045,6 +1070,10 @@ impl State {
 
     pub fn in_role() -> Vec<Self> {
         vec![Self::Role, Self::EmptySessionWithRole]
+    }
+
+    pub fn is_normal(&self) -> bool {
+        self == &Self::Normal
     }
 }
 

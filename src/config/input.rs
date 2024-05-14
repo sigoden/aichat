@@ -1,8 +1,8 @@
 use super::{role::Role, session::Session, GlobalConfig};
 
 use crate::client::{
-    init_client, Client, ImageUrl, Message, MessageContent, MessageContentPart, ModelCapabilities,
-    SendData,
+    init_client, list_models, Client, ImageUrl, Message, MessageContent, MessageContentPart, Model,
+    ModelCapabilities, SendData,
 };
 use crate::utils::{base64_encode, sha256};
 
@@ -111,8 +111,23 @@ impl Input {
         self.text = text;
     }
 
+    pub fn model(&self) -> Model {
+        let model = self.config.read().model.clone();
+        if let Some(model_id) = self.role().and_then(|v| v.model_id.clone()) {
+            if model.id() != model_id {
+                if let Some(model) = list_models(&self.config.read())
+                    .into_iter()
+                    .find(|v| v.id() == model_id)
+                {
+                    return model.clone();
+                }
+            }
+        };
+        model
+    }
+
     pub fn create_client(&self) -> Result<Box<dyn Client>> {
-        init_client(&self.config)
+        init_client(&self.config, Some(self.model()))
     }
 
     pub fn prepare_send_data(&self, stream: bool) -> Result<SendData> {

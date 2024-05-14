@@ -163,6 +163,9 @@ impl Repl {
                 ".model" => match args {
                     Some(name) => {
                         self.config.write().set_model(name)?;
+                        if self.config.read().state().is_normal() {
+                            self.config.write().set_model_id();
+                        }
                     }
                     None => println!("Usage: .model <name>"),
                 },

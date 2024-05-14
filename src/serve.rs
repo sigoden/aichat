@@ -249,7 +249,7 @@ impl Server {
             config.write().set_model(&model_name)?;
         }
 
-        let mut client = init_client(&config)?;
+        let mut client = init_client(&config, None)?;
         if max_tokens.is_some() {
             client.model_mut().set_max_tokens(max_tokens, true);
         }
