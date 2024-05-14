@@ -79,11 +79,17 @@
       input_price: 0.5
       output_price: 1.5
       supports_vision: true
+    - name: gemini-1.5-flash-latest
+      max_input_tokens: 1048576
+      max_output_tokens: 8192
+      input_price: 0.35
+      output_price: 0.53
+      supports_vision: true
     - name: gemini-1.5-pro-latest
       max_input_tokens: 1048576
       max_output_tokens: 8192
-      input_price: 7
-      output_price: 21
+      input_price: 3.5
+      output_price: 10.5
       supports_vision: true
 
 - platform: claude
@@ -247,11 +253,17 @@
       input_price: 0.125
       output_price: 0.375
       supports_vision: true
-    - name: gemini-1.5-pro-preview-0409
+    - name: gemini-1.5-flash-preview-0514
       max_input_tokens: 1000000
       max_output_tokens: 8192
-      input_price: 2.5
-      output_price: 7.5
+      input_price: 0.125
+      output_price: 0.375
+      supports_vision: true
+    - name: gemini-1.5-pro-preview-0514
+      max_input_tokens: 1000000
+      max_output_tokens: 8192
+      input_price: 1.25
+      output_price: 3.75
       supports_vision: true
 
 - platform: vertexai-claude
