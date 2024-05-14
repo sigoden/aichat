@@ -268,7 +268,6 @@ impl Repl {
         while self.config.read().is_compressing_session() {
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
-        input.maybe_print_input_tokens();
         let mut client = input.create_client()?;
         ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
         let output = send_stream(&input, client.as_ref(), &self.config, self.abort.clone()).await?;

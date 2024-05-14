@@ -319,7 +319,7 @@ pub trait Client: Sync + Send {
                     let tokens = tokenize(&content);
                     for token in tokens {
                         tokio::time::sleep(Duration::from_millis(10)).await;
-                        handler.text(&token)?;
+                        handler.text(token)?;
                     }
                     return Ok(());
                 }

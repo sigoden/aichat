@@ -76,6 +76,7 @@ dependencies = [
  "tokio",
  "tokio-graceful",
  "tokio-stream",
+ "unicode-segmentation",
  "unicode-width",
  "urlencoding",
 ]

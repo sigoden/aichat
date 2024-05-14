@@ -4,7 +4,6 @@ mod crypto;
 mod prompt_input;
 mod render_prompt;
 mod spinner;
-mod tiktoken;
 
 pub use self::abort_signal::{create_abort_signal, AbortSignal};
 pub use self::clipboard::set_text;
@@ -12,7 +11,6 @@ pub use self::crypto::*;
 pub use self::prompt_input::*;
 pub use self::render_prompt::render_prompt;
 pub use self::spinner::run_spinner;
-pub use self::tiktoken::cl100k_base_singleton;
 
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
@@ -36,33 +34,30 @@ pub fn get_env_name(key: &str) -> String {
     )
 }
 
-/// Split text to tokens
-pub fn tokenize(text: &str) -> Vec<String> {
-    let tokens = cl100k_base_singleton()
-        .lock()
-        .encode_with_special_tokens(text);
-    let token_bytes: Vec<Vec<u8>> = tokens
-        .into_iter()
-        .map(|v| cl100k_base_singleton().lock().decode_bytes(vec![v]))
-        .collect();
-    let mut output = vec![];
-    let mut current_bytes = vec![];
-    for bytes in token_bytes {
-        current_bytes.extend(bytes);
-        if let Ok(v) = std::str::from_utf8(&current_bytes) {
-            output.push(v.to_string());
-            current_bytes.clear();
-        }
+pub fn tokenize(text: &str) -> Vec<&str> {
+    if text.is_ascii() {
+        text.split_whitespace().collect()
+    } else {
+        unicode_segmentation::UnicodeSegmentation::graphemes(text, true).collect()
     }
-    output
 }
 
-/// Count how many tokens a piece of text needs to consume
-pub fn count_tokens(text: &str) -> usize {
-    cl100k_base_singleton()
-        .lock()
-        .encode_with_special_tokens(text)
-        .len()
+pub fn estimate_token_length(text: &str) -> usize {
+    let mut token_length: f32 = 0.0;
+
+    for char in text.chars() {
+        if char.is_ascii() {
+            if char.is_ascii_alphabetic() {
+                token_length += 0.25;
+            } else {
+                token_length += 0.5;
+            }
+        } else {
+            token_length += 1.5;
+        }
+    }
+
+    token_length.ceil() as usize
 }
 
 pub fn light_theme_from_colorfgbg(colorfgbg: &str) -> Option<bool> {
@@ -190,17 +185,6 @@ pub fn fuzzy_match(text: &str, pattern: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_tokenize() {
-        assert_eq!(tokenize("😊 hello world"), ["😊", " hello", " world"]);
-        assert_eq!(tokenize("世界"), ["世", "界"]);
-    }
-
-    #[test]
-    fn test_count_tokens() {
-        assert_eq!(count_tokens("😊 hello world"), 4);
-    }
 
     #[test]
     fn test_fuzzy_match() {
