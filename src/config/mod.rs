@@ -765,10 +765,6 @@ impl Config {
         render_prompt(right_prompt, &variables)
     }
 
-    pub fn input_context(&self) -> InputContext {
-        InputContext::new(self.role.clone(), self.session.is_some())
-    }
-
     fn generate_prompt_context(&self) -> HashMap<&str, String> {
         let mut output = HashMap::new();
         output.insert("model", self.model.id());

@@ -1,5 +1,4 @@
-use super::GlobalConfig;
-use super::{role::Role, session::Session};
+use super::{role::Role, session::Session, GlobalConfig};
 
 use crate::client::{
     init_client, Client, ImageUrl, Message, MessageContent, MessageContentPart, ModelCapabilities,
@@ -41,7 +40,7 @@ impl Input {
             text: text.to_string(),
             medias: Default::default(),
             data_urls: Default::default(),
-            context: context.unwrap_or_else(|| config.read().input_context()),
+            context: context.unwrap_or_else(|| InputContext::from_config(config)),
         }
     }
 
@@ -92,7 +91,7 @@ impl Input {
             text: texts.join("\n"),
             medias,
             data_urls,
-            context: context.unwrap_or_else(|| config.read().input_context()),
+            context: context.unwrap_or_else(|| InputContext::from_config(config)),
         })
     }
 
@@ -271,6 +270,11 @@ pub struct InputContext {
 impl InputContext {
     pub fn new(role: Option<Role>, session: bool) -> Self {
         Self { role, session }
+    }
+
+    pub fn from_config(config: &GlobalConfig) -> Self {
+        let config = config.read();
+        InputContext::new(config.role.clone(), config.session.is_some())
     }
 
     pub fn role(role: Role) -> Self {
