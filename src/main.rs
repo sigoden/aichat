@@ -35,6 +35,7 @@ use tokio::sync::oneshot;
 async fn main() -> Result<()> {
     let cli = Cli::parse();
     let text = cli.text();
+    let text = aggregate_text(text)?;
     let file = &cli.file;
     let no_input = text.is_none() && file.is_empty();
     let working_mode = if cli.serve.is_some() {
@@ -107,7 +108,6 @@ async fn main() -> Result<()> {
         println!("{}", info);
         return Ok(());
     }
-    let text = aggregate_text(text)?;
     if cli.execute {
         if no_input {
             bail!("No input");
