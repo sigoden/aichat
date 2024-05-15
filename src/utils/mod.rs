@@ -36,7 +36,8 @@ pub fn get_env_name(key: &str) -> String {
 
 pub fn tokenize(text: &str) -> Vec<&str> {
     if text.is_ascii() {
-        text.split_whitespace().collect()
+        text.split_inclusive(|c: char| c.is_ascii_whitespace())
+            .collect()
     } else {
         unicode_segmentation::UnicodeSegmentation::graphemes(text, true).collect()
     }
