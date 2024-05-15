@@ -1,4 +1,5 @@
 use super::Input;
+
 use crate::{
     client::{Message, MessageContent, MessageRole, Model},
     utils::{detect_os, detect_shell},
@@ -22,6 +23,8 @@ pub struct Role {
     pub model_id: Option<String>,
     pub temperature: Option<f64>,
     pub top_p: Option<f64>,
+    #[serde(default)]
+    pub functions: Vec<String>,
 }
 
 impl Role {
@@ -32,12 +35,13 @@ impl Role {
             temperature: None,
             model_id: None,
             top_p: None,
+            functions: Vec::new(),
         }
     }
 
     pub fn builtin() -> Vec<Role> {
         [
-            (SHELL_ROLE, shell_prompt()),
+            (SHELL_ROLE, shell_prompt(), vec![]),
             (
                 EXPLAIN_SHELL_ROLE,
                 r#"Provide a terse, single sentence description of the given shell command.
@@ -45,6 +49,7 @@ Describe each argument and option of the command.
 Provide short responses in about 80 words.
 APPLY MARKDOWN formatting when possible."#
                     .into(),
+                vec![],
             ),
             (
                 CODE_ROLE,
@@ -59,15 +64,18 @@ async function timeout(ms) {
 ```
 "#
                 .into(),
+                vec![],
             ),
+            ("%functions%", String::new(), vec!["*".into()]),
         ]
         .into_iter()
-        .map(|(name, prompt)| Self {
+        .map(|(name, prompt, functions)| Self {
             name: name.into(),
             prompt,
             model_id: None,
             temperature: None,
             top_p: None,
+            functions,
         })
         .collect()
     }
@@ -78,7 +86,11 @@ async function timeout(ms) {
         Ok(output.trim_end().to_string())
     }
 
-    pub fn embedded(&self) -> bool {
+    pub fn empty_prompt(&self) -> bool {
+        self.prompt.is_empty()
+    }
+
+    pub fn embedded_prompt(&self) -> bool {
         self.prompt.contains(INPUT_PLACEHOLDER)
     }
 
@@ -111,7 +123,9 @@ async function timeout(ms) {
 
     pub fn echo_messages(&self, input: &Input) -> String {
         let input_markdown = input.render();
-        if self.embedded() {
+        if self.empty_prompt() {
+            input_markdown
+        } else if self.embedded_prompt() {
             self.prompt.replace(INPUT_PLACEHOLDER, &input_markdown)
         } else {
             format!("{}\n\n{}", self.prompt, input.render())
@@ -121,7 +135,12 @@ async function timeout(ms) {
     pub fn build_messages(&self, input: &Input) -> Vec<Message> {
         let mut content = input.to_message_content();
 
-        if self.embedded() {
+        if self.empty_prompt() {
+            vec![Message {
+                role: MessageRole::User,
+                content,
+            }]
+        } else if self.embedded_prompt() {
             content.merge_prompt(|v: &str| self.prompt.replace(INPUT_PLACEHOLDER, v));
             vec![Message {
                 role: MessageRole::User,

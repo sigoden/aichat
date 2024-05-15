@@ -1,6 +1,6 @@
 use super::{
-    catch_error, extract_system_message, sse_stream, ClaudeClient, CompletionDetails, ExtraConfig,
-    ImageUrl, MessageContent, MessageContentPart, Model, ModelConfig, PromptAction, PromptKind,
+    catch_error, extract_system_message, sse_stream, ClaudeClient, CompletionOutput, ExtraConfig,
+    ImageUrl, MessageContent, MessageContentPart, Model, ModelData, PromptAction, PromptKind,
     SendData, SsMmessage, SseHandler,
 };
 
@@ -16,7 +16,7 @@ pub struct ClaudeConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
     #[serde(default)]
-    pub models: Vec<ModelConfig>,
+    pub models: Vec<ModelData>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -51,13 +51,14 @@ impl_client_trait!(
     claude_send_message_streaming
 );
 
-pub async fn claude_send_message(builder: RequestBuilder) -> Result<(String, CompletionDetails)> {
+pub async fn claude_send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
     if !status.is_success() {
         catch_error(&data, status.as_u16())?;
     }
+    debug!("non-stream-data: {data}");
     claude_extract_completion(&data)
 }
 
@@ -67,6 +68,7 @@ pub async fn claude_send_message_streaming(
 ) -> Result<()> {
     let handle = |message: SsMmessage| -> Result<bool> {
         let data: Value = serde_json::from_str(&message.data)?;
+        debug!("stream-data: {data}");
         if let Some(typ) = data["type"].as_str() {
             if typ == "content_block_delta" {
                 if let Some(text) = data["delta"]["text"].as_str() {
@@ -85,6 +87,7 @@ pub fn claude_build_body(data: SendData, model: &Model) -> Result<Value> {
         mut messages,
         temperature,
         top_p,
+        functions: _,
         stream,
     } = data;
 
@@ -136,7 +139,7 @@ pub fn claude_build_body(data: SendData, model: &Model) -> Result<Value> {
     }
 
     let mut body = json!({
-        "model": &model.name,
+        "model": model.name(),
         "messages": messages,
     });
     if let Some(v) = system_message {
@@ -157,15 +160,17 @@ pub fn claude_build_body(data: SendData, model: &Model) -> Result<Value> {
     Ok(body)
 }
 
-pub fn claude_extract_completion(data: &Value) -> Result<(String, CompletionDetails)> {
+pub fn claude_extract_completion(data: &Value) -> Result<CompletionOutput> {
     let text = data["content"][0]["text"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
 
-    let details = CompletionDetails {
+    let output = CompletionOutput {
+        text: text.to_string(),
+        tool_calls: vec![],
         id: data["id"].as_str().map(|v| v.to_string()),
         input_tokens: data["usage"]["input_tokens"].as_u64(),
         output_tokens: data["usage"]["output_tokens"].as_u64(),
     };
-    Ok((text.to_string(), details))
+    Ok(output)
 }

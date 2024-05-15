@@ -2,7 +2,7 @@ use super::{role::Role, session::Session, GlobalConfig};
 
 use crate::client::{
     init_client, list_models, Client, ImageUrl, Message, MessageContent, MessageContentPart, Model,
-    ModelCapabilities, SendData,
+    SendData,
 };
 use crate::utils::{base64_encode, sha256};
 
@@ -130,7 +130,10 @@ impl Input {
         init_client(&self.config, Some(self.model()))
     }
 
-    pub fn prepare_send_data(&self, stream: bool) -> Result<SendData> {
+    pub fn prepare_send_data(&self, model: &Model, stream: bool) -> Result<SendData> {
+        if !self.medias.is_empty() && !model.supports_vision() {
+            bail!("The current model does not support vision.");
+        }
         let messages = self.build_messages()?;
         self.config.read().model.max_input_tokens_limit(&messages)?;
         let (temperature, top_p) = if let Some(session) = self.session(&self.config.read().session)
@@ -142,10 +145,24 @@ impl Input {
             let config = self.config.read();
             (config.temperature, config.top_p)
         };
+        let mut functions = None;
+        if self.config.read().function_calling && model.supports_function_calling() {
+            if let Some(role) = self.role() {
+                let declarations = self
+                    .config
+                    .read()
+                    .function
+                    .filtered_declarations(&role.functions);
+                if !declarations.is_empty() {
+                    functions = Some(declarations);
+                }
+            }
+        };
         Ok(SendData {
             messages,
             temperature,
             top_p,
+            functions,
             stream,
         })
     }
@@ -255,14 +272,6 @@ impl Input {
                 );
             }
             MessageContent::Array(list)
-        }
-    }
-
-    pub fn required_capabilities(&self) -> ModelCapabilities {
-        if !self.medias.is_empty() {
-            ModelCapabilities::Vision
-        } else {
-            ModelCapabilities::Text
         }
     }
 }

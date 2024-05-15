@@ -124,7 +124,7 @@ impl Session {
             data["save_session"] = save_session.into();
         }
         data["total_tokens"] = tokens.into();
-        if let Some(context_window) = self.model.max_input_tokens {
+        if let Some(context_window) = self.model.max_input_tokens() {
             data["max_input_tokens"] = context_window.into();
         }
         if percent != 0.0 {
@@ -161,7 +161,7 @@ impl Session {
             items.push(("compress_threshold", compress_threshold.to_string()));
         }
 
-        if let Some(max_input_tokens) = self.model.max_input_tokens {
+        if let Some(max_input_tokens) = self.model.max_input_tokens() {
             items.push(("max_input_tokens", max_input_tokens.to_string()));
         }
 
@@ -202,7 +202,7 @@ impl Session {
 
     pub fn tokens_and_percent(&self) -> (usize, f32) {
         let tokens = self.tokens();
-        let max_input_tokens = self.model.max_input_tokens.unwrap_or_default();
+        let max_input_tokens = self.model.max_input_tokens().unwrap_or_default();
         let percent = if max_input_tokens == 0 {
             0.0
         } else {

@@ -1,7 +1,5 @@
 use super::openai::openai_build_body;
-use super::{
-    AzureOpenAIClient, ExtraConfig, Model, ModelConfig, PromptAction, PromptKind, SendData,
-};
+use super::{AzureOpenAIClient, ExtraConfig, Model, ModelData, PromptAction, PromptKind, SendData};
 
 use anyhow::Result;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
@@ -12,7 +10,7 @@ pub struct AzureOpenAIConfig {
     pub name: Option<String>,
     pub api_base: Option<String>,
     pub api_key: Option<String>,
-    pub models: Vec<ModelConfig>,
+    pub models: Vec<ModelData>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -41,7 +39,8 @@ impl AzureOpenAIClient {
 
         let url = format!(
             "{}/openai/deployments/{}/chat/completions?api-version=2024-02-01",
-            &api_base, self.model.name
+            &api_base,
+            self.model.name()
         );
 
         debug!("AzureOpenAI Request: {url} {body}");

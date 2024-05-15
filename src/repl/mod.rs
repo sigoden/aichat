@@ -6,7 +6,7 @@ use self::completer::ReplCompleter;
 use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
-use crate::client::{ensure_model_capabilities, send_stream};
+use crate::client::send_stream;
 use crate::config::{GlobalConfig, Input, InputContext, State};
 use crate::render::render_error;
 use crate::utils::{create_abort_signal, set_text, AbortSignal};
@@ -268,8 +268,7 @@ impl Repl {
         while self.config.read().is_compressing_session() {
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
-        let mut client = input.create_client()?;
-        ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
+        let client = input.create_client()?;
         let output = send_stream(&input, client.as_ref(), &self.config, self.abort.clone()).await?;
         self.config.write().save_message(input, &output)?;
         self.config.read().maybe_copy(&output);
@@ -449,9 +448,8 @@ fn parse_command(line: &str) -> Option<(&str, Option<&str>)> {
 
 async fn compress_session(config: &GlobalConfig) -> Result<()> {
     let input = Input::from_str(config, config.read().summarize_prompt(), None);
-    let mut client = input.create_client()?;
-    ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
-    let (summary, _) = client.send_message(input).await?;
+    let client = input.create_client()?;
+    let summary = client.send_message(input).await?.text;
     config.write().compress_session(&summary);
     Ok(())
 }

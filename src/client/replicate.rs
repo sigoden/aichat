@@ -1,9 +1,9 @@
 use std::time::Duration;
 
 use super::{
-    catch_error, generate_prompt, smart_prompt_format, sse_stream, Client, CompletionDetails,
-    ExtraConfig, Model, ModelConfig, PromptAction, PromptKind, ReplicateClient, SendData,
-    SsMmessage, SseHandler,
+    catch_error, generate_prompt, smart_prompt_format, sse_stream, Client, CompletionOutput,
+    ExtraConfig, Model, ModelData, PromptAction, PromptKind, ReplicateClient, SendData, SsMmessage,
+    SseHandler,
 };
 
 use anyhow::{anyhow, Result};
@@ -19,7 +19,7 @@ pub struct ReplicateConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
     #[serde(default)]
-    pub models: Vec<ModelConfig>,
+    pub models: Vec<ModelData>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -37,7 +37,7 @@ impl ReplicateClient {
     ) -> Result<RequestBuilder> {
         let body = build_body(data, &self.model)?;
 
-        let url = format!("{API_BASE}/models/{}/predictions", self.model.name);
+        let url = format!("{API_BASE}/models/{}/predictions", self.model.name());
 
         debug!("Replicate Request: {url} {body}");
 
@@ -55,7 +55,7 @@ impl Client for ReplicateClient {
         &self,
         client: &ReqwestClient,
         data: SendData,
-    ) -> Result<(String, CompletionDetails)> {
+    ) -> Result<CompletionOutput> {
         let api_key = self.get_api_key()?;
         let builder = self.request_builder(client, data, &api_key)?;
         send_message(client, builder, &api_key).await
@@ -77,7 +77,7 @@ async fn send_message(
     client: &ReqwestClient,
     builder: RequestBuilder,
     api_key: &str,
-) -> Result<(String, CompletionDetails)> {
+) -> Result<CompletionOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -96,6 +96,7 @@ async fn send_message(
             .await?
             .json()
             .await?;
+        debug!("non-stream-data: {prediction_data}");
         let err = || anyhow!("Invalid response data: {prediction_data}");
         let status = prediction_data["status"].as_str().ok_or_else(err)?;
         if status == "succeeded" {
@@ -138,10 +139,11 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
         messages,
         temperature,
         top_p,
+        functions: _,
         stream,
     } = data;
 
-    let prompt = generate_prompt(&messages, smart_prompt_format(&model.name))?;
+    let prompt = generate_prompt(&messages, smart_prompt_format(model.name()))?;
 
     let mut input = json!({
         "prompt": prompt,
@@ -170,7 +172,7 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
     Ok(body)
 }
 
-fn extract_completion(data: &Value) -> Result<(String, CompletionDetails)> {
+fn extract_completion(data: &Value) -> Result<CompletionOutput> {
     let text = data["output"]
         .as_array()
         .map(|parts| {
@@ -182,11 +184,13 @@ fn extract_completion(data: &Value) -> Result<(String, CompletionDetails)> {
         })
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
 
-    let details = CompletionDetails {
+    let output = CompletionOutput {
+        text: text.to_string(),
+        tool_calls: vec![],
         id: data["id"].as_str().map(|v| v.to_string()),
         input_tokens: data["metrics"]["input_token_count"].as_u64(),
         output_tokens: data["metrics"]["output_token_count"].as_u64(),
     };
 
-    Ok((text.to_string(), details))
+    Ok(output)
 }
