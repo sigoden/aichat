@@ -930,16 +930,14 @@ impl Config {
 
     fn load_roles(&mut self) -> Result<()> {
         let path = Self::roles_file()?;
-        if !path.exists() {
-            return Ok(());
-        }
-        let content = read_to_string(&path)
-            .with_context(|| format!("Failed to load roles at {}", path.display()))?;
-        let roles: Vec<Role> =
-            serde_yaml::from_str(&content).with_context(|| "Invalid roles config")?;
-
-        let exist_roles: HashSet<_> = roles.iter().map(|v| v.name.clone()).collect();
-        self.roles = roles;
+        self.roles = if !path.exists() {
+            vec![]
+        } else {
+            let content = read_to_string(&path)
+                .with_context(|| format!("Failed to load roles at {}", path.display()))?;
+            serde_yaml::from_str(&content).with_context(|| "Invalid roles config")?
+        };
+        let exist_roles: HashSet<_> = self.roles.iter().map(|v| v.name.clone()).collect();
         let builtin_roles = Role::builtin();
         for role in builtin_roles {
             if !exist_roles.contains(&role.name) {
