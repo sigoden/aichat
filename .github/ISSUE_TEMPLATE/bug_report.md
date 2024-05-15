@@ -22,6 +22,9 @@ If the problem is related to dynamic response data, you should see if it can be 
 **Screenshots/Logs**
 <!-- If applicable, add screenshots to help explain your problem. -->
 
+**Configuration**
+<!-- Please run `aichat --info` and paste the output -->
+
 **Environment (please complete the following information):**
 - os version: [e.g. Ubuntu 20.04]
 - aichat version: [e.g. 0.9.0]
