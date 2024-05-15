@@ -10,17 +10,17 @@ assignees: ''
 <!-- Your issue may already be reported!  Please search for it before creating one. -->
 
 **Describe the bug**
-A clear and concise description of what the bug is. 
-If the problem is related to dynamic response data, you should see if it can be reproduced through `--dry-run`.
+<!-- A clear and concise description of what the bug is. 
+If the problem is related to dynamic response data, you should see if it can be reproduced through `--dry-run`. -->
 
 **To Reproduce**
-Steps to reproduce the behavior, including any relevant code snippets.
+<!-- Steps to reproduce the behavior, including any relevant code snippets. -->
 
 **Expected behavior**
-A clear and concise description of what you expected to happen.
+<!-- A clear and concise description of what you expected to happen. -->
 
 **Screenshots/Logs**
-If applicable, add screenshots to help explain your problem.
+<!-- If applicable, add screenshots to help explain your problem. -->
 
 **Environment (please complete the following information):**
 - os version: [e.g. Ubuntu 20.04]
@@ -28,4 +28,4 @@ If applicable, add screenshots to help explain your problem.
 - terminal version: [e.g. GNOME Terminal 3.44.0]
 
 **Additional context**
-Add any other context about the problem here.
+<!-- Add any other context about the problem here. -->

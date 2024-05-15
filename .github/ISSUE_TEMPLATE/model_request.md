@@ -13,7 +13,7 @@ assignees: ''
 - [ ] Must be publicly accessible. It cannot require application review or have regional restrictions. A beta version is acceptable.
 - [ ] Must not act as an agent or proxy for other platforms.
 
-> Tip: If the API is compatible with OpenAI's API, you can access it using the `openai-compatible` client.
+<!-- If the API is compatible with OpenAI's API, you can access it using the `openai-compatible` client. -->
 
 ### Please provide the following documents or links:
 
