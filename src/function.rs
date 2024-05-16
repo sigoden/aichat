@@ -22,6 +22,8 @@ pub fn run_tool_calls(config: &GlobalConfig, calls: &[ToolCall]) -> Result<()> {
 pub struct Function {
     names: IndexSet<String>,
     declarations: Vec<FunctionDeclaration>,
+    #[cfg(windows)]
+    bin_dir: std::path::PathBuf,
     env_path: Option<String>,
 }
 
@@ -54,6 +56,8 @@ impl Function {
         Ok(Self {
             names: func_names,
             declarations,
+            #[cfg(windows)]
+            bin_dir,
             env_path,
         })
     }
@@ -115,8 +119,8 @@ impl ToolCall {
     }
 
     pub fn run(&self, config: &GlobalConfig) -> Result<()> {
-        let name = &self.name;
-        if !config.read().function.names.contains(name) {
+        let name = self.name.clone();
+        if !config.read().function.names.contains(&name) {
             bail!("Invalid call: {name} {}", self.args);
         }
         let args = if self.args.is_object() {
@@ -149,7 +153,22 @@ impl ToolCall {
 
         let ans = Confirm::new(&prompt_text).with_default(true).prompt()?;
         if ans {
-            exec_command(name, &args, envs)?;
+            #[cfg(windows)]
+            let name = {
+                let mut name = name;
+                let bin_dir = config.read().function.bin_dir.clone();
+                if let Ok(exts) = std::env::var("PATHEXT") {
+                    if let Some(cmd_path) = exts
+                        .split(';')
+                        .map(|ext| bin_dir.join(format!("{}{}", self.name, ext)))
+                        .find(|path| path.exists())
+                    {
+                        name = cmd_path.display().to_string();
+                    }
+                }
+                name
+            };
+            exec_command(&name, &args, envs)?;
         }
 
         Ok(())
