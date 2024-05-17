@@ -121,11 +121,11 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
                     MessageRole::User => "USER",
                     _ => "CHATBOT",
                 };
-                let new_message = match message.content {
-                    MessageContent::Text(text) => json!({
+                match message.content {
+                    MessageContent::Text(text) => Some(json!({
                         "role": role,
                         "message": text,
-                    }),
+                    })),
                     MessageContent::Array(list) => {
                         let list: Vec<String> = list
                             .into_iter()
@@ -139,11 +139,10 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
                                 }
                             })
                             .collect();
-                        json!({ "role": role, "message": list.join("\n\n") })
+                        Some(json!({ "role": role, "message": list.join("\n\n") }))
                     }
-                    MessageContent::ToolCall(_) => json!({}),
-                };
-                Some(new_message)
+                    MessageContent::ToolCall(_) => None,
+                }
             }
         })
         .collect();

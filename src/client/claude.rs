@@ -93,7 +93,9 @@ pub fn claude_build_body(data: SendData, model: &Model) -> Result<Value> {
 
     let system_message = extract_system_message(&mut messages);
 
+    let mut is_tool_call = false;
     let mut network_image_urls = vec![];
+
     let messages: Vec<Value> = messages
         .into_iter()
         .map(|message| {
@@ -126,11 +128,19 @@ pub fn claude_build_body(data: SendData, model: &Model) -> Result<Value> {
                         }
                     })
                     .collect(),
-                MessageContent::ToolCall(_) => vec![],
+                MessageContent::ToolCall(_) => {
+                    is_tool_call = true;
+                    vec![]
+                },
             };
             json!({ "role": role, "content": content })
         })
         .collect();
+
+    
+    if is_tool_call {
+        bail!("The client does not support function calling",);
+    }
 
     if !network_image_urls.is_empty() {
         bail!(

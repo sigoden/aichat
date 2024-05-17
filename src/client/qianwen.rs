@@ -136,6 +136,7 @@ fn build_body(data: SendData, model: &Model, is_vl: bool) -> Result<(Value, bool
     } = data;
 
     let mut has_upload = false;
+    let mut is_tool_call = false;
     let input = if is_vl {
         let messages: Vec<Value> = messages
             .into_iter()
@@ -157,7 +158,10 @@ fn build_body(data: SendData, model: &Model, is_vl: bool) -> Result<(Value, bool
                             }
                         })
                         .collect(),
-                    MessageContent::ToolCall(_) => vec![],
+                    MessageContent::ToolCall(_) => {
+                        is_tool_call = true;
+                        vec![]
+                    }
                 };
                 json!({ "role": role, "content": content })
             })
@@ -171,6 +175,9 @@ fn build_body(data: SendData, model: &Model, is_vl: bool) -> Result<(Value, bool
             "messages": messages,
         })
     };
+    if is_tool_call {
+        bail!("The client does not support function calling",);
+    }
 
     let mut parameters = json!({});
     if stream {

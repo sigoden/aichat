@@ -109,7 +109,9 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
         stream,
     } = data;
 
+    let mut is_tool_call = false;
     let mut network_image_urls = vec![];
+
     let messages: Vec<Value> = messages
         .into_iter()
         .map(|message| {
@@ -144,10 +146,17 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
                     let content = content.join("\n\n");
                     json!({ "role": role, "content": content, "images": images })
                 },
-                MessageContent::ToolCall(_) => json!({}),
+                MessageContent::ToolCall(_) => {
+                    is_tool_call = true;
+                    json!({ "role": role })
+                }
             }
         })
         .collect();
+
+    if is_tool_call {
+        bail!("The client does not support function calling",);
+    }
 
     if !network_image_urls.is_empty() {
         bail!(
