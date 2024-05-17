@@ -228,14 +228,14 @@ impl ToolCall {
             };
             if proceed {
                 #[cfg(windows)]
-                let name = polyfill_cmd_name(name, &config.read().function.bin_dir);
+                let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
                 spawn_command(&name, &arguments, envs)?;
             }
             None
         } else {
             println!("{}", dimmed_text(&prompt_text));
             #[cfg(windows)]
-            let name = polyfill_cmd_name(name, &config.read().function.bin_dir);
+            let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
             let (success, stdout, stderr) = exec_command(&name, &arguments, envs)?;
             if stderr.is_empty() {
                 eprintln!("{}", error_text(&stderr));
