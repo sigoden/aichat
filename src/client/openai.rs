@@ -1,5 +1,5 @@
 use super::{
-    catch_error, sse_stream, CompletionOutput, ExtraConfig, Model, ModelData, OpenAIClient,
+    catch_error, sse_stream, CompletionOutput, message::*, ExtraConfig, Model, ModelData, OpenAIClient,
     PromptAction, PromptKind, SendData, SsMmessage, SseHandler, ToolCall,
 };
 
@@ -66,11 +66,16 @@ pub async fn openai_send_message_streaming(
 ) -> Result<()> {
     let mut function_index = 0;
     let mut function_name = String::new();
-    let mut function_args = String::new();
+    let mut function_arguments = String::new();
+    let mut function_id = String::new();
     let handle = |message: SsMmessage| -> Result<bool> {
         if message.data == "[DONE]" {
             if !function_name.is_empty() {
-                handler.tool_call(ToolCall::new(function_name.clone(), json!(function_args)))?;
+                handler.tool_call(ToolCall::new(
+                    function_name.clone(),
+                    json!(function_arguments),
+                    Some(function_id.clone()),
+                ))?;
             }
             return Ok(true);
         }
@@ -78,24 +83,33 @@ pub async fn openai_send_message_streaming(
         debug!("stream-data: {data}");
         if let Some(text) = data["choices"][0]["delta"]["content"].as_str() {
             handler.text(text)?;
-        } else if let (Some(index), Some(function_data)) = (
-            data["choices"][0]["delta"]["tool_calls"][0]["index"].as_u64(),
+        } else if let (Some(function), index, id) = (
             data["choices"][0]["delta"]["tool_calls"][0]["function"].as_object(),
+            data["choices"][0]["delta"]["tool_calls"][0]["index"].as_u64(),
+            data["choices"][0]["delta"]["tool_calls"][0]["id"].as_str(),
         ) {
+            let index = index.unwrap_or_default();
             if index != function_index {
                 if !function_name.is_empty() {
-                    handler
-                        .tool_call(ToolCall::new(function_name.clone(), json!(function_args)))?;
+                    handler.tool_call(ToolCall::new(
+                        function_name.clone(),
+                        json!(function_arguments),
+                        Some(function_id.clone()),
+                    ))?;
                 }
                 function_name.clear();
-                function_args.clear();
+                function_arguments.clear();
+                function_id.clear();
                 function_index = index;
             }
-            if let Some(name) = function_data.get("name").and_then(|v| v.as_str()) {
+            if let Some(name) = function.get("name").and_then(|v| v.as_str()) {
                 function_name = name.to_string();
             }
-            if let Some(arguments) = function_data.get("arguments").and_then(|v| v.as_str()) {
-                function_args.push_str(arguments);
+            if let Some(arguments) = function.get("arguments").and_then(|v| v.as_str()) {
+                function_arguments.push_str(arguments);
+            }
+            if let Some(id) = id {
+                function_id = id.to_string();
             }
         }
         Ok(false)
@@ -112,6 +126,22 @@ pub fn openai_build_body(data: SendData, model: &Model) -> Value {
         functions,
         stream,
     } = data;
+
+
+    let messages: Vec<Value> = messages
+        .into_iter()
+        .map(|message| {
+            let mut new_message = json!(&message);
+            let content = match message.content {
+                MessageContent::ToolCall(result) => {
+                    MessageContent::Text(json!(result.output).to_string())
+                },
+                _ => message.content,
+            };
+            new_message["content"] = json!(content);
+            new_message
+        })
+        .collect();
 
     let mut body = json!({
         "model": &model.name(),
@@ -155,11 +185,16 @@ pub fn openai_extract_completion(data: &Value) -> Result<CompletionOutput> {
             tools_call
                 .iter()
                 .filter_map(|call| {
-                    if let (Some(name), Some(args)) = (
+                    if let (Some(name), Some(arguments), Some(id)) = (
                         call["function"]["name"].as_str(),
                         call["function"]["arguments"].as_str(),
+                        call["id"].as_str(),
                     ) {
-                        Some(ToolCall::new(name.to_string(), json!(args)))
+                        Some(ToolCall::new(
+                            name.to_string(),
+                            json!(arguments),
+                            Some(id.to_string()),
+                        ))
                     } else {
                         None
                     }

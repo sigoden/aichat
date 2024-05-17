@@ -108,6 +108,7 @@ pub fn generate_prompt(messages: &[Message], format: PromptFormat) -> anyhow::Re
                 }
                 parts.join("\n\n")
             }
+            MessageContent::ToolCall(_) => String::new(),
         };
         match role {
             MessageRole::System => prompt.push_str(&format!(
@@ -119,6 +120,7 @@ pub fn generate_prompt(messages: &[Message], format: PromptFormat) -> anyhow::Re
             MessageRole::User => {
                 prompt.push_str(&format!("{user_pre_message}{content}{user_post_message}"))
             }
+            MessageRole::Tool => {}
         }
     }
     if !image_urls.is_empty() {

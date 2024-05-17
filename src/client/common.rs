@@ -2,7 +2,7 @@ use super::{openai::OpenAIConfig, BuiltinModels, ClientConfig, Message, Model, S
 
 use crate::{
     config::{GlobalConfig, Input},
-    function::{run_tool_calls, FunctionDeclaration, ToolCall},
+    function::{run_tool_calls, FunctionDeclaration, ToolCall, ToolCallResult},
     render::{render_error, render_stream},
     utils::{prompt_input_integer, prompt_input_string, tokenize, AbortSignal, PromptKind},
 };
@@ -431,7 +431,7 @@ pub async fn send_stream(
     client: &dyn Client,
     config: &GlobalConfig,
     abort: AbortSignal,
-) -> Result<String> {
+) -> Result<(String, Vec<ToolCallResult>)> {
     let (tx, rx) = unbounded_channel();
     let mut handler = SseHandler::new(tx, abort.clone());
 
@@ -442,17 +442,15 @@ pub async fn send_stream(
     if let Err(err) = rend_ret {
         render_error(err, config.read().highlight);
     }
-    let calls = handler.get_tool_calls();
-    let output = handler.get_buffer().to_string();
+    let (output, calls) = handler.take();
     match send_ret {
         Ok(_) => {
-            if !calls.is_empty() {
-                run_tool_calls(config, calls)?;
-            }
-            if calls.is_empty() && !output.ends_with('\n') {
+            let not_tool_call = calls.is_empty();
+            let tool_call_results = run_tool_calls(config, calls)?;
+            if not_tool_call && !output.ends_with('\n') {
                 println!();
             }
-            Ok(output)
+            Ok((output, tool_call_results))
         }
         Err(err) => {
             if !output.is_empty() {

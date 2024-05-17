@@ -161,11 +161,10 @@ impl Model {
     pub fn messages_tokens(&self, messages: &[Message]) -> usize {
         messages
             .iter()
-            .map(|v| {
-                match &v.content {
-                    MessageContent::Text(text) => estimate_token_length(text),
-                    MessageContent::Array(_) => 0, // TODO
-                }
+            .map(|v| match &v.content {
+                MessageContent::Text(text) => estimate_token_length(text),
+                MessageContent::Array(_) => 0,
+                MessageContent::ToolCall(_) => 0,
             })
             .sum()
     }

@@ -123,6 +123,17 @@ pub fn fuzzy_match(text: &str, pattern: &str) -> bool {
     pattern_index == pattern_chars.len()
 }
 
+pub fn error_text(input: &str) -> String {
+    nu_ansi_term::Style::new()
+        .fg(nu_ansi_term::Color::Red)
+        .paint(input)
+        .to_string()
+}
+
+pub fn dimmed_text(input: &str) -> String {
+    nu_ansi_term::Style::new().dimmed().paint(input).to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

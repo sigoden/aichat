@@ -13,18 +13,19 @@ mod utils;
 extern crate log;
 
 use crate::cli::Cli;
-use crate::client::{list_models, send_stream};
+use crate::client::{list_models, send_stream, CompletionOutput};
 use crate::config::{
     Config, GlobalConfig, Input, InputContext, WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE,
     SHELL_ROLE,
 };
+use crate::function::run_tool_calls;
 use crate::render::{render_error, MarkdownRender};
 use crate::repl::Repl;
-use crate::utils::{create_abort_signal, exec_command, extract_block, run_spinner, CODE_BLOCK_RE};
+use crate::utils::{create_abort_signal, extract_block, run_spinner, spawn_command, CODE_BLOCK_RE};
 
 use anyhow::{bail, Result};
+use async_recursion::async_recursion;
 use clap::Parser;
-use function::run_tool_calls;
 use inquire::{Select, Text};
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
@@ -134,6 +135,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+#[async_recursion]
 async fn start_directive(
     config: &GlobalConfig,
     input: Input,
@@ -143,13 +145,13 @@ async fn start_directive(
     let client = input.create_client()?;
     let is_terminal_stdout = stdout().is_terminal();
     let extract_code = !is_terminal_stdout && code_mode;
-    let output = if no_stream || extract_code {
-        let output = client.send_message(input.clone()).await?;
-        if !output.tool_calls.is_empty() {
-            run_tool_calls(config, &output.tool_calls)?;
-            String::new()
+    let (output, tool_call_results) = if no_stream || extract_code {
+        let CompletionOutput {
+            text, tool_calls, ..
+        } = client.send_message(input.clone()).await?;
+        if !tool_calls.is_empty() {
+            (String::new(), run_tool_calls(config, tool_calls)?)
         } else {
-            let text = output.text;
             let text = if extract_code && text.trim_start().starts_with("```") {
                 extract_block(&text)
             } else {
@@ -162,15 +164,27 @@ async fn start_directive(
             } else {
                 println!("{}", text);
             }
-            text
+            (text, vec![])
         }
     } else {
         let abort = create_abort_signal();
         send_stream(&input, client.as_ref(), config, abort).await?
     };
-    config.write().save_message(input, &output)?;
+    config
+        .write()
+        .save_message(&input, &output, &tool_call_results)?;
     config.write().end_session()?;
-    Ok(())
+    if !tool_call_results.is_empty() {
+        start_directive(
+            config,
+            Input::tool_call(input, tool_call_results),
+            no_stream,
+            code_mode,
+        )
+        .await
+    } else {
+        Ok(())
+    }
 }
 
 async fn start_interactive(config: &GlobalConfig) -> Result<()> {
@@ -200,7 +214,7 @@ async fn shell_execute(
     if let Ok(true) = CODE_BLOCK_RE.is_match(&eval_str) {
         eval_str = extract_block(&eval_str);
     }
-    config.write().save_message(input.clone(), &eval_str)?;
+    config.write().save_message(&input, &eval_str, &[])?;
     config.read().maybe_copy(&eval_str);
     let render_options = config.read().get_render_options()?;
     let mut markdown_render = MarkdownRender::init(render_options)?;
@@ -219,7 +233,7 @@ async fn shell_execute(
             match answer {
                 "✅ Execute" => {
                     debug!("{} {:?}", shell, &[shell_arg, &eval_str]);
-                    let code = exec_command(shell, &[shell_arg, &eval_str], None)?;
+                    let code = spawn_command(shell, &[shell_arg, &eval_str], None)?;
                     if code != 0 {
                         process::exit(code);
                     }

@@ -10,7 +10,7 @@ use crate::client::{
     create_client_config, list_client_types, list_models, ClientConfig, Model,
     OPENAI_COMPATIBLE_PLATFORMS,
 };
-use crate::function::Function;
+use crate::function::{Function, ToolCallResult};
 use crate::render::{MarkdownRender, RenderOptions};
 use crate::utils::{
     format_option_value, fuzzy_match, get_env_name, light_theme_from_colorfgbg, now, render_prompt,
@@ -221,15 +221,20 @@ impl Config {
         Ok(path)
     }
 
-    pub fn save_message(&mut self, input: Input, output: &str) -> Result<()> {
+    pub fn save_message(
+        &mut self,
+        input: &Input,
+        output: &str,
+        tool_call_results: &[ToolCallResult],
+    ) -> Result<()> {
         self.last_message = Some((input.clone(), output.to_string()));
 
-        if self.dry_run || output.is_empty() {
+        if self.dry_run || output.is_empty() || !tool_call_results.is_empty() {
             return Ok(());
         }
 
         if let Some(session) = input.session_mut(&mut self.session) {
-            session.add_message(&input, output)?;
+            session.add_message(input, output)?;
             return Ok(());
         }
 
@@ -307,8 +312,7 @@ impl Config {
     pub fn set_role_obj(&mut self, role: Role) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
             session.guard_empty()?;
-            session.set_temperature(role.temperature);
-            session.set_top_p(role.top_p);
+            session.set_role_properties(&role);
         }
         if let Some(model_id) = &role.model_id {
             self.set_model(model_id)?;

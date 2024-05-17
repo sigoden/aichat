@@ -19,12 +19,17 @@ pub const INPUT_PLACEHOLDER: &str = "__INPUT__";
 pub struct Role {
     pub name: String,
     pub prompt: String,
-    #[serde(rename(serialize = "model", deserialize = "model"))]
+    #[serde(
+        rename(serialize = "model", deserialize = "model"),
+        skip_serializing_if = "Option::is_none"
+    )]
     pub model_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
-    #[serde(default)]
-    pub functions: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub function_filter: Option<String>,
 }
 
 impl Role {
@@ -35,13 +40,13 @@ impl Role {
             temperature: None,
             model_id: None,
             top_p: None,
-            functions: Vec::new(),
+            function_filter: None,
         }
     }
 
     pub fn builtin() -> Vec<Role> {
         [
-            (SHELL_ROLE, shell_prompt(), vec![]),
+            (SHELL_ROLE, shell_prompt(), None),
             (
                 EXPLAIN_SHELL_ROLE,
                 r#"Provide a terse, single sentence description of the given shell command.
@@ -49,7 +54,7 @@ Describe each argument and option of the command.
 Provide short responses in about 80 words.
 APPLY MARKDOWN formatting when possible."#
                     .into(),
-                vec![],
+                None,
             ),
             (
                 CODE_ROLE,
@@ -64,18 +69,18 @@ async function timeout(ms) {
 ```
 "#
                 .into(),
-                vec![],
+                None,
             ),
-            ("%functions%", String::new(), vec!["*".into()]),
+            ("%functions%", String::new(), Some(".*".into())),
         ]
         .into_iter()
-        .map(|(name, prompt, functions)| Self {
+        .map(|(name, prompt, function_filter)| Self {
             name: name.into(),
             prompt,
             model_id: None,
             temperature: None,
             top_p: None,
-            functions,
+            function_filter,
         })
         .collect()
     }
@@ -133,46 +138,30 @@ async function timeout(ms) {
     }
 
     pub fn build_messages(&self, input: &Input) -> Vec<Message> {
-        let mut content = input.to_message_content();
-
+        let mut content = input.message_content();
         if self.empty_prompt() {
-            vec![Message {
-                role: MessageRole::User,
-                content,
-            }]
+            vec![Message::new(MessageRole::User, content)]
         } else if self.embedded_prompt() {
             content.merge_prompt(|v: &str| self.prompt.replace(INPUT_PLACEHOLDER, v));
-            vec![Message {
-                role: MessageRole::User,
-                content,
-            }]
+            vec![Message::new(MessageRole::User, content)]
         } else {
             let mut messages = vec![];
             let (system, cases) = parse_structure_prompt(&self.prompt);
             if !system.is_empty() {
-                messages.push(Message {
-                    role: MessageRole::System,
-                    content: MessageContent::Text(system.to_string()),
-                })
+                messages.push(Message::new(
+                    MessageRole::System,
+                    MessageContent::Text(system.to_string()),
+                ));
             }
             if !cases.is_empty() {
                 messages.extend(cases.into_iter().flat_map(|(i, o)| {
                     vec![
-                        Message {
-                            role: MessageRole::User,
-                            content: MessageContent::Text(i.to_string()),
-                        },
-                        Message {
-                            role: MessageRole::Assistant,
-                            content: MessageContent::Text(o.to_string()),
-                        },
+                        Message::new(MessageRole::User, MessageContent::Text(i.to_string())),
+                        Message::new(MessageRole::Assistant, MessageContent::Text(o.to_string())),
                     ]
                 }));
             }
-            messages.push(Message {
-                role: MessageRole::User,
-                content,
-            });
+            messages.push(Message::new(MessageRole::User, content));
             messages
         }
     }

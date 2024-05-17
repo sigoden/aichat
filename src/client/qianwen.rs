@@ -157,6 +157,7 @@ fn build_body(data: SendData, model: &Model, is_vl: bool) -> Result<(Value, bool
                             }
                         })
                         .collect(),
+                    MessageContent::ToolCall(_) => vec![],
                 };
                 json!({ "role": role, "content": content })
             })

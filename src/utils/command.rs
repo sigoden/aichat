@@ -1,5 +1,7 @@
 use std::{collections::HashMap, env, ffi::OsStr, process::Command};
 
+use anyhow::{Context, Result};
+
 pub fn detect_os() -> String {
     let os = env::consts::OS;
     if os == "linux" {
@@ -52,14 +54,29 @@ pub fn detect_shell() -> (String, String, &'static str) {
     }
 }
 
-pub fn exec_command<T: AsRef<OsStr>>(
+pub fn spawn_command<T: AsRef<OsStr>>(
     cmd: &str,
     args: &[T],
     envs: Option<HashMap<String, String>>,
-) -> anyhow::Result<i32> {
+) -> Result<i32> {
     let status = Command::new(cmd)
         .args(args.iter())
         .envs(envs.unwrap_or_default())
         .status()?;
     Ok(status.code().unwrap_or_default())
+}
+
+pub fn exec_command<T: AsRef<OsStr>>(
+    cmd: &str,
+    args: &[T],
+    envs: Option<HashMap<String, String>>,
+) -> Result<(bool, String, String)> {
+    let output = Command::new(cmd)
+        .args(args.iter())
+        .envs(envs.unwrap_or_default())
+        .output()?;
+    let status = output.status;
+    let stdout = std::str::from_utf8(&output.stdout).context("Invalid UTF-8 in stdout")?;
+    let stderr = std::str::from_utf8(&output.stderr).context("Invalid UTF-8 in stderr")?;
+    Ok((status.success(), stdout.to_string(), stderr.to_string()))
 }

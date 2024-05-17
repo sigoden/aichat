@@ -1,9 +1,10 @@
 use super::{role::Role, session::Session, GlobalConfig};
 
 use crate::client::{
-    init_client, list_models, Client, ImageUrl, Message, MessageContent, MessageContentPart, Model,
-    SendData,
+    init_client, list_models, Client, ImageUrl, Message, MessageContent, MessageContentPart,
+    MessageRole, Model, SendData,
 };
+use crate::function::ToolCallResult;
 use crate::utils::{base64_encode, sha256};
 
 use anyhow::{bail, Context, Result};
@@ -30,6 +31,7 @@ pub struct Input {
     text: String,
     medias: Vec<String>,
     data_urls: HashMap<String, String>,
+    tool_call_results: Vec<ToolCallResult>,
     context: InputContext,
 }
 
@@ -40,6 +42,7 @@ impl Input {
             text: text.to_string(),
             medias: Default::default(),
             data_urls: Default::default(),
+            tool_call_results: Default::default(),
             context: context.unwrap_or_else(|| InputContext::from_config(config)),
         }
     }
@@ -91,6 +94,7 @@ impl Input {
             text: texts.join("\n"),
             medias,
             data_urls,
+            tool_call_results: Default::default(),
             context: context.unwrap_or_else(|| InputContext::from_config(config)),
         })
     }
@@ -109,6 +113,15 @@ impl Input {
 
     pub fn set_text(&mut self, text: String) {
         self.text = text;
+    }
+
+    pub fn tool_call(mut self, tool_call_results: Vec<ToolCallResult>) -> Self {
+        self.tool_call_results = tool_call_results;
+        self
+    }
+
+    pub fn is_tool_call(&self) -> bool {
+        !self.tool_call_results.is_empty()
     }
 
     pub fn model(&self) -> Model {
@@ -147,16 +160,15 @@ impl Input {
         };
         let mut functions = None;
         if self.config.read().function_calling && model.supports_function_calling() {
-            if let Some(role) = self.role() {
-                let declarations = self
-                    .config
-                    .read()
-                    .function
-                    .filtered_declarations(&role.functions);
-                if !declarations.is_empty() {
-                    functions = Some(declarations);
-                }
-            }
+            let config = self.config.read();
+            let function_filter = if let Some(session) = self.session(&config.session) {
+                session.function_filter()
+            } else if let Some(role) = self.role() {
+                role.function_filter.as_deref()
+            } else {
+                None
+            };
+            functions = config.function.filtered_declarations(function_filter);
         };
         Ok(SendData {
             messages,
@@ -168,14 +180,19 @@ impl Input {
     }
 
     pub fn build_messages(&self) -> Result<Vec<Message>> {
-        let messages = if let Some(session) = self.session(&self.config.read().session) {
+        let mut messages = if let Some(session) = self.session(&self.config.read().session) {
             session.build_messages(self)
         } else if let Some(role) = self.role() {
             role.build_messages(self)
         } else {
-            let message = Message::new(self);
+            let message = Message {
+                role: MessageRole::User,
+                content: self.message_content(),
+                ..Default::default()
+            };
             vec![message]
         };
+        messages.extend(self.tool_messages());
         Ok(messages)
     }
 
@@ -251,7 +268,7 @@ impl Input {
         format!(".file {}{}", files.join(" "), text)
     }
 
-    pub fn to_message_content(&self) -> MessageContent {
+    pub fn message_content(&self) -> MessageContent {
         if self.medias.is_empty() {
             MessageContent::Text(self.text.clone())
         } else {
@@ -273,6 +290,30 @@ impl Input {
             }
             MessageContent::Array(list)
         }
+    }
+
+    pub fn tool_messages(&self) -> Vec<Message> {
+        if !self.is_tool_call() {
+            return vec![];
+        }
+        let mut messages = vec![Message {
+            role: MessageRole::Assistant,
+            content: MessageContent::Text(String::new()),
+            tool_calls: self
+                .tool_call_results
+                .iter()
+                .map(|v| v.build_message())
+                .collect(),
+            ..Default::default()
+        }];
+        messages.extend(self.tool_call_results.iter().map(|tool_call| Message {
+            role: MessageRole::Tool,
+            content: MessageContent::ToolCall(tool_call.clone()),
+            name: Some(tool_call.call.name.clone()),
+            tool_calls: Default::default(),
+            tool_call_id: tool_call.call.id.clone(),
+        }));
+        messages
     }
 }
 

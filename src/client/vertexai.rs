@@ -1,7 +1,7 @@
-use super::{access_token::*, ToolCall};
 use super::{
-    catch_error, json_stream, message::*, patch_system_message, Client, CompletionOutput,
-    ExtraConfig, Model, ModelData, PromptAction, PromptKind, SendData, SseHandler, VertexAIClient,
+    access_token::*, catch_error, json_stream, message::*, patch_system_message, Client,
+    CompletionOutput, ExtraConfig, Model, ModelData, PromptAction, PromptKind, SendData,
+    SseHandler, ToolCall, VertexAIClient,
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -122,7 +122,7 @@ pub async fn gemini_send_message_streaming(
                         part["functionCall"]["name"].as_str(),
                         part["functionCall"]["args"].as_object(),
                     ) {
-                        handler.tool_call(ToolCall::new(name.to_string(), json!(args)))?;
+                        handler.tool_call(ToolCall::new(name.to_string(), json!(args), None))?;
                     }
                 }
             }
@@ -147,7 +147,7 @@ fn gemini_extract_completion_text(data: &Value) -> Result<CompletionOutput> {
                     part["functionCall"]["name"].as_str(),
                     part["functionCall"]["args"].as_object(),
                 ) {
-                    Some(ToolCall::new(name.to_string(), json!(args)))
+                    Some(ToolCall::new(name.to_string(), json!(args), None))
                 } else {
                     None
                 }
@@ -199,27 +199,53 @@ pub(crate) fn gemini_build_body(
                 MessageRole::User => "user",
                 _ => "model",
             };
-            match message.content {
-                MessageContent::Text(text) => json!({
-                    "role": role,
-                    "parts": [{ "text": text }]
-                }),
-                MessageContent::Array(list) => {
-                    let list: Vec<Value> = list
-                        .into_iter()
-                        .map(|item| match item {
-                            MessageContentPart::Text { text } => json!({"text": text}),
-                            MessageContentPart::ImageUrl { image_url: ImageUrl { url } } => {
-                                if let Some((mime_type, data)) = url.strip_prefix("data:").and_then(|v| v.split_once(";base64,")) {
-                                    json!({ "inline_data": { "mime_type": mime_type, "data": data } })
-                                } else {
-                                    network_image_urls.push(url.clone());
-                                    json!({ "url": url })
+            if !message.tool_calls.is_empty() {
+                let parts: Vec<Value> = message.tool_calls.iter().map(|tool_call| {
+                    json!({
+                        "functionCall": {
+                            "name": tool_call.function.name,
+                            "args": tool_call.function.arguments,
+                        }
+                    })
+                }).collect();
+                json!({ "role": role, "parts": parts })
+            } else {
+                match message.content {
+                    MessageContent::Text(text) => json!({
+                        "role": role,
+                        "parts": [{ "text": text }]
+                    }),
+                    MessageContent::Array(list) => {
+                        let parts: Vec<Value> = list
+                            .into_iter()
+                            .map(|item| match item {
+                                MessageContentPart::Text { text } => json!({"text": text}),
+                                MessageContentPart::ImageUrl { image_url: ImageUrl { url } } => {
+                                    if let Some((mime_type, data)) = url.strip_prefix("data:").and_then(|v| v.split_once(";base64,")) {
+                                        json!({ "inline_data": { "mime_type": mime_type, "data": data } })
+                                    } else {
+                                        network_image_urls.push(url.clone());
+                                        json!({ "url": url })
+                                    }
+                                },
+                            })
+                            .collect();
+                        json!({ "role": role, "parts": parts })
+                    },
+                    MessageContent::ToolCall(result) => {
+                        let parts = vec![
+                            json!({
+                                "functionResponse": {
+                                    "name": result.call.name,
+                                    "response": {
+                                        "name": result.call.name,
+                                        "content": result.output,
+                                    }
                                 }
-                            },
-                        })
-                        .collect();
-                    json!({ "role": role, "parts": list })
+                            })
+                        ];
+                        json!({ "role": role, "parts": parts })
+                    }
                 }
             }
         })

@@ -126,6 +126,7 @@ pub fn claude_build_body(data: SendData, model: &Model) -> Result<Value> {
                         }
                     })
                     .collect(),
+                MessageContent::ToolCall(_) => vec![],
             };
             json!({ "role": role, "content": content })
         })
