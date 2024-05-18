@@ -177,7 +177,7 @@ async fn start_directive(
     if !tool_call_results.is_empty() {
         start_directive(
             config,
-            Input::tool_call(input, tool_call_results),
+            input.merge_tool_call(output, tool_call_results),
             no_stream,
             code_mode,
         )

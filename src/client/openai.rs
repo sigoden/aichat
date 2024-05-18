@@ -1,6 +1,6 @@
 use super::{
-    catch_error, sse_stream, CompletionOutput, message::*, ExtraConfig, Model, ModelData, OpenAIClient,
-    PromptAction, PromptKind, SendData, SsMmessage, SseHandler, ToolCall,
+    catch_error, message::*, sse_stream, CompletionOutput, ExtraConfig, Model, ModelData,
+    OpenAIClient, PromptAction, PromptKind, SendData, SsMmessage, SseHandler, ToolCall,
 };
 
 use anyhow::{bail, Result};
@@ -127,19 +127,38 @@ pub fn openai_build_body(data: SendData, model: &Model) -> Value {
         stream,
     } = data;
 
-
     let messages: Vec<Value> = messages
         .into_iter()
-        .map(|message| {
-            let mut new_message = json!(&message);
-            let content = match message.content {
-                MessageContent::ToolCall(result) => {
-                    MessageContent::Text(json!(result.output).to_string())
+        .flat_map(|message| {
+            let Message { role, content } = message;
+            match content {
+                MessageContent::ToolResults((tool_call_results, text)) => {
+                    let tool_calls: Vec<_> = tool_call_results.iter().map(|tool_call_result| {
+                        json!({
+                            "id": tool_call_result.call.id,
+                            "type": "function",
+                            "function": {
+                                "name": tool_call_result.call.name,
+                                "arguments": tool_call_result.call.arguments,
+                            },
+                        })
+                    }).collect();
+                    let mut messages = vec![
+                        json!({ "role": MessageRole::Assistant, "content": text, "tool_calls": tool_calls })
+                    ];
+                    for tool_call_result in tool_call_results {
+                        messages.push(
+                            json!({
+                                "role": "tool",
+                                "content": tool_call_result.output.to_string(),
+                                "tool_call_id": tool_call_result.call.id,
+                            })
+                        );
+                    }
+                    messages
                 },
-                _ => message.content,
-            };
-            new_message["content"] = json!(content);
-            new_message
+                _ => vec![json!({ "role": role, "content": content })]
+            }
         })
         .collect();
 
@@ -180,29 +199,28 @@ pub fn openai_extract_completion(data: &Value) -> Result<CompletionOutput> {
         .as_str()
         .unwrap_or_default();
 
-    let tool_calls =
-        if let Some(tools_call) = data["choices"][0]["message"]["tool_calls"].as_array() {
-            tools_call
-                .iter()
-                .filter_map(|call| {
-                    if let (Some(name), Some(arguments), Some(id)) = (
-                        call["function"]["name"].as_str(),
-                        call["function"]["arguments"].as_str(),
-                        call["id"].as_str(),
-                    ) {
-                        Some(ToolCall::new(
-                            name.to_string(),
-                            json!(arguments),
-                            Some(id.to_string()),
-                        ))
-                    } else {
-                        None
-                    }
-                })
-                .collect()
-        } else {
-            vec![]
-        };
+    let mut tool_calls = vec![];
+    if let Some(tools_call) = data["choices"][0]["message"]["tool_calls"].as_array() {
+        tool_calls = tools_call
+            .iter()
+            .filter_map(|call| {
+                if let (Some(name), Some(arguments), Some(id)) = (
+                    call["function"]["name"].as_str(),
+                    call["function"]["arguments"].as_str(),
+                    call["id"].as_str(),
+                ) {
+                    Some(ToolCall::new(
+                        name.to_string(),
+                        json!(arguments),
+                        Some(id.to_string()),
+                    ))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    };
+
     if text.is_empty() && tool_calls.is_empty() {
         bail!("Invalid response data: {data}");
     }

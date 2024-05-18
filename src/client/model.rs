@@ -164,7 +164,7 @@ impl Model {
             .map(|v| match &v.content {
                 MessageContent::Text(text) => estimate_token_length(text),
                 MessageContent::Array(_) => 0,
-                MessageContent::ToolCall(_) => 0,
+                MessageContent::ToolResults(_) => 0,
             })
             .sum()
     }

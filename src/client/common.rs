@@ -445,12 +445,10 @@ pub async fn send_stream(
     let (output, calls) = handler.take();
     match send_ret {
         Ok(_) => {
-            let not_tool_call = calls.is_empty();
-            let tool_call_results = run_tool_calls(config, calls)?;
-            if not_tool_call && !output.ends_with('\n') {
+            if !output.is_empty() && !output.ends_with('\n') {
                 println!();
             }
-            Ok((output, tool_call_results))
+            Ok((output, run_tool_calls(config, calls)?))
         }
         Err(err) => {
             if !output.is_empty() {

@@ -145,8 +145,8 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
                     }
                     let content = content.join("\n\n");
                     json!({ "role": role, "content": content, "images": images })
-                },
-                MessageContent::ToolCall(_) => {
+                }
+                MessageContent::ToolResults(_) => {
                     is_tool_call = true;
                     json!({ "role": role })
                 }

@@ -1,4 +1,4 @@
-use crate::function::ToolCallResult;
+use super::ToolResults;
 
 use serde::{Deserialize, Serialize};
 
@@ -6,12 +6,6 @@ use serde::{Deserialize, Serialize};
 pub struct Message {
     pub role: MessageRole,
     pub content: MessageContent,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub tool_calls: Vec<MessageToolCall>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tool_call_id: Option<String>,
 }
 
 impl Default for Message {
@@ -19,20 +13,13 @@ impl Default for Message {
         Self {
             role: MessageRole::User,
             content: MessageContent::Text(String::new()),
-            name: None,
-            tool_calls: Default::default(),
-            tool_call_id: None,
         }
     }
 }
 
 impl Message {
     pub fn new(role: MessageRole, content: MessageContent) -> Self {
-        Self {
-            role,
-            content,
-            ..Default::default()
-        }
+        Self { role, content }
     }
 }
 
@@ -42,7 +29,6 @@ pub enum MessageRole {
     System,
     Assistant,
     User,
-    Tool,
 }
 
 #[allow(dead_code)]
@@ -62,7 +48,7 @@ pub enum MessageContent {
     Text(String),
     Array(Vec<MessageContentPart>),
     // Note: This type is primarily for convenience and does not exist in OpenAI's API.
-    ToolCall(ToolCallResult),
+    ToolResults(ToolResults),
 }
 
 impl MessageContent {
@@ -86,7 +72,7 @@ impl MessageContent {
                 }
                 format!(".file {}{}", files.join(" "), concated_text)
             }
-            MessageContent::ToolCall(_) => String::new(),
+            MessageContent::ToolResults(_) => String::new(),
         }
     }
 
@@ -102,7 +88,7 @@ impl MessageContent {
                     *text = replace_fn(text)
                 }
             }
-            MessageContent::ToolCall(_) => {}
+            MessageContent::ToolResults(_) => {}
         }
     }
 
@@ -118,7 +104,7 @@ impl MessageContent {
                 }
                 parts.join("\n\n")
             }
-            MessageContent::ToolCall(_) => String::new(),
+            MessageContent::ToolResults(_) => String::new(),
         }
     }
 }
@@ -133,20 +119,6 @@ pub enum MessageContentPart {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ImageUrl {
     pub url: String,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct MessageToolCall {
-    pub id: Option<String>,
-    #[serde(rename = "type")]
-    pub typ: String,
-    pub function: MessageToolCallFunction,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct MessageToolCallFunction {
-    pub name: String,
-    pub arguments: serde_json::Value,
 }
 
 pub fn patch_system_message(messages: &mut Vec<Message>) {

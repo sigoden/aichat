@@ -6,7 +6,7 @@ mod model;
 mod prompt_format;
 mod sse_handler;
 
-pub use crate::function::{ToolCall, ToolCallResult};
+pub use crate::function::{ToolCall, ToolResults};
 pub use crate::utils::PromptKind;
 pub use common::*;
 pub use message::*;

@@ -1,5 +1,4 @@
 use crate::{
-    client::{MessageToolCall, MessageToolCallFunction},
     config::GlobalConfig,
     utils::{dimmed_text, error_text, exec_command, spawn_command},
 };
@@ -21,6 +20,8 @@ const DECLARATIONS_FILE_PATH: &str = "functions.json";
 lazy_static! {
     static ref THREAD_POOL: ThreadPool = ThreadPool::new(num_cpus::get());
 }
+
+pub type ToolResults = (Vec<ToolCallResult>, String);
 
 pub fn run_tool_calls(config: &GlobalConfig, calls: Vec<ToolCall>) -> Result<Vec<ToolCallResult>> {
     let mut output = vec![];
@@ -67,17 +68,6 @@ pub struct ToolCallResult {
 impl ToolCallResult {
     pub fn new(call: ToolCall, output: Value) -> Self {
         Self { call, output }
-    }
-
-    pub fn build_message(&self) -> MessageToolCall {
-        MessageToolCall {
-            id: self.call.id.clone(),
-            typ: "function".into(),
-            function: MessageToolCallFunction {
-                name: self.call.name.clone(),
-                arguments: self.call.arguments.clone(),
-            },
-        }
     }
 }
 

@@ -213,7 +213,6 @@ impl Session {
                             message.content.render_input(resolve_url_fn)
                         ));
                     }
-                    MessageRole::Tool => {}
                 }
             }
         }

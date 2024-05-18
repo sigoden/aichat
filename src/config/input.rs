@@ -4,7 +4,7 @@ use crate::client::{
     init_client, list_models, Client, ImageUrl, Message, MessageContent, MessageContentPart,
     MessageRole, Model, SendData,
 };
-use crate::function::ToolCallResult;
+use crate::function::{ToolCallResult, ToolResults};
 use crate::utils::{base64_encode, sha256};
 
 use anyhow::{bail, Context, Result};
@@ -31,7 +31,7 @@ pub struct Input {
     text: String,
     medias: Vec<String>,
     data_urls: HashMap<String, String>,
-    tool_call_results: Vec<ToolCallResult>,
+    tool_call: Option<ToolResults>,
     context: InputContext,
 }
 
@@ -42,7 +42,7 @@ impl Input {
             text: text.to_string(),
             medias: Default::default(),
             data_urls: Default::default(),
-            tool_call_results: Default::default(),
+            tool_call: None,
             context: context.unwrap_or_else(|| InputContext::from_config(config)),
         }
     }
@@ -94,7 +94,7 @@ impl Input {
             text: texts.join("\n"),
             medias,
             data_urls,
-            tool_call_results: Default::default(),
+            tool_call: Default::default(),
             context: context.unwrap_or_else(|| InputContext::from_config(config)),
         })
     }
@@ -115,13 +115,13 @@ impl Input {
         self.text = text;
     }
 
-    pub fn tool_call(mut self, tool_call_results: Vec<ToolCallResult>) -> Self {
-        self.tool_call_results = tool_call_results;
+    pub fn merge_tool_call(
+        mut self,
+        output: String,
+        tool_call_results: Vec<ToolCallResult>,
+    ) -> Self {
+        self.tool_call = Some((tool_call_results, output));
         self
-    }
-
-    pub fn is_tool_call(&self) -> bool {
-        !self.tool_call_results.is_empty()
     }
 
     pub fn model(&self) -> Model {
@@ -185,14 +185,14 @@ impl Input {
         } else if let Some(role) = self.role() {
             role.build_messages(self)
         } else {
-            let message = Message {
-                role: MessageRole::User,
-                content: self.message_content(),
-                ..Default::default()
-            };
-            vec![message]
+            vec![Message::new(MessageRole::User, self.message_content())]
         };
-        messages.extend(self.tool_messages());
+        if let Some(tool_results) = &self.tool_call {
+            messages.push(Message::new(
+                MessageRole::Assistant,
+                MessageContent::ToolResults(tool_results.clone()),
+            ))
+        }
         Ok(messages)
     }
 
@@ -290,30 +290,6 @@ impl Input {
             }
             MessageContent::Array(list)
         }
-    }
-
-    pub fn tool_messages(&self) -> Vec<Message> {
-        if !self.is_tool_call() {
-            return vec![];
-        }
-        let mut messages = vec![Message {
-            role: MessageRole::Assistant,
-            content: MessageContent::Text(String::new()),
-            tool_calls: self
-                .tool_call_results
-                .iter()
-                .map(|v| v.build_message())
-                .collect(),
-            ..Default::default()
-        }];
-        messages.extend(self.tool_call_results.iter().map(|tool_call| Message {
-            role: MessageRole::Tool,
-            content: MessageContent::ToolCall(tool_call.clone()),
-            name: Some(tool_call.call.name.clone()),
-            tool_calls: Default::default(),
-            tool_call_id: tool_call.call.id.clone(),
-        }));
-        messages
     }
 }
 

@@ -158,7 +158,7 @@ fn build_body(data: SendData, model: &Model, is_vl: bool) -> Result<(Value, bool
                             }
                         })
                         .collect(),
-                    MessageContent::ToolCall(_) => {
+                    MessageContent::ToolResults(_) => {
                         is_tool_call = true;
                         vec![]
                     }

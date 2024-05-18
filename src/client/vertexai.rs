@@ -139,8 +139,9 @@ fn gemini_extract_completion_text(data: &Value) -> Result<CompletionOutput> {
         .as_str()
         .unwrap_or_default();
 
-    let tool_calls = if let Some(parts) = data["candidates"][0]["content"]["parts"].as_array() {
-        parts
+    let mut tool_calls = vec![];
+    if let Some(parts) = data["candidates"][0]["content"]["parts"].as_array() {
+        tool_calls = parts
             .iter()
             .filter_map(|part| {
                 if let (Some(name), Some(args)) = (
@@ -153,9 +154,7 @@ fn gemini_extract_completion_text(data: &Value) -> Result<CompletionOutput> {
                 }
             })
             .collect()
-    } else {
-        vec![]
-    };
+    }
     if text.is_empty() && tool_calls.is_empty() {
         if let Some("SAFETY") = data["promptFeedback"]["blockReason"]
             .as_str()
@@ -194,27 +193,17 @@ pub(crate) fn gemini_build_body(
     let mut network_image_urls = vec![];
     let contents: Vec<Value> = messages
         .into_iter()
-        .map(|message| {
-            let role = match message.role {
+        .flat_map(|message| {
+            let Message { role, content } = message;
+            let role = match role {
                 MessageRole::User => "user",
                 _ => "model",
             };
-            if !message.tool_calls.is_empty() {
-                let parts: Vec<Value> = message.tool_calls.iter().map(|tool_call| {
-                    json!({
-                        "functionCall": {
-                            "name": tool_call.function.name,
-                            "args": tool_call.function.arguments,
-                        }
-                    })
-                }).collect();
-                json!({ "role": role, "parts": parts })
-            } else {
-                match message.content {
-                    MessageContent::Text(text) => json!({
+               match content {
+                    MessageContent::Text(text) => vec![json!({
                         "role": role,
                         "parts": [{ "text": text }]
-                    }),
+                    })],
                     MessageContent::Array(list) => {
                         let parts: Vec<Value> = list
                             .into_iter()
@@ -230,24 +219,34 @@ pub(crate) fn gemini_build_body(
                                 },
                             })
                             .collect();
-                        json!({ "role": role, "parts": parts })
+                        vec![json!({ "role": role, "parts": parts })]
                     },
-                    MessageContent::ToolCall(result) => {
-                        let parts = vec![
+                    MessageContent::ToolResults((tool_call_results, _)) => {
+                        let function_call_parts: Vec<Value> = tool_call_results.iter().map(|tool_call_result| {
+                            json!({
+                                "functionCall": {
+                                    "name": tool_call_result.call.name,
+                                    "args": tool_call_result.call.arguments,
+                                }
+                            })
+                        }).collect();
+                        let function_response_parts: Vec<Value> = tool_call_results.into_iter().map(|tool_call_result| {
                             json!({
                                 "functionResponse": {
-                                    "name": result.call.name,
+                                    "name": tool_call_result.call.name,
                                     "response": {
-                                        "name": result.call.name,
-                                        "content": result.output,
+                                        "name": tool_call_result.call.name,
+                                        "content": tool_call_result.output,
                                     }
                                 }
                             })
-                        ];
-                        json!({ "role": role, "parts": parts })
+                        }).collect();
+                        vec![
+                            json!({ "role": "model", "parts": function_call_parts }),
+                            json!({ "role": "function", "parts": function_response_parts }),
+                        ]
                     }
                 }
-            }
         })
         .collect();
 

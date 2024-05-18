@@ -1,7 +1,6 @@
 use super::{
     catch_error, extract_system_message, json_stream, message::*, CohereClient, CompletionOutput,
     ExtraConfig, Model, ModelData, PromptAction, PromptKind, SendData, SseHandler, ToolCall,
-    ToolCallResult,
 };
 
 use anyhow::{bail, Result};
@@ -103,64 +102,41 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
     let system_message = extract_system_message(&mut messages);
 
     let mut image_urls = vec![];
-    let mut tool_calls: Vec<MessageToolCall> = vec![];
-    let mut tool_call_results: Vec<ToolCallResult> = vec![];
+    let mut tool_results = None;
+
     let mut messages: Vec<Value> = messages
         .into_iter()
         .filter_map(|message| {
-            if message.role == MessageRole::Tool {
-                if let MessageContent::ToolCall(result) = message.content {
-                    tool_call_results.push(result);
+            let Message { role, content } = message;
+            let role = match role {
+                MessageRole::User => "USER",
+                _ => "CHATBOT",
+            };
+            match content {
+                MessageContent::Text(text) => Some(json!({
+                    "role": role,
+                    "message": text,
+                })),
+                MessageContent::Array(list) => {
+                    let list: Vec<String> = list
+                        .into_iter()
+                        .filter_map(|item| match item {
+                            MessageContentPart::Text { text } => Some(text),
+                            MessageContentPart::ImageUrl {
+                                image_url: ImageUrl { url },
+                            } => {
+                                image_urls.push(url.clone());
+                                None
+                            }
+                        })
+                        .collect();
+                    Some(json!({ "role": role, "message": list.join("\n\n") }))
                 }
-                None
-            } else if !message.tool_calls.is_empty() {
-                tool_calls = message.tool_calls;
-                None
-            } else {
-                let role = match message.role {
-                    MessageRole::User => "USER",
-                    _ => "CHATBOT",
-                };
-                match message.content {
-                    MessageContent::Text(text) => Some(json!({
-                        "role": role,
-                        "message": text,
-                    })),
-                    MessageContent::Array(list) => {
-                        let list: Vec<String> = list
-                            .into_iter()
-                            .filter_map(|item| match item {
-                                MessageContentPart::Text { text } => Some(text),
-                                MessageContentPart::ImageUrl {
-                                    image_url: ImageUrl { url },
-                                } => {
-                                    image_urls.push(url.clone());
-                                    None
-                                }
-                            })
-                            .collect();
-                        Some(json!({ "role": role, "message": list.join("\n\n") }))
-                    }
-                    MessageContent::ToolCall(_) => None,
+                MessageContent::ToolResults((tool_call_results, _)) => {
+                    tool_results = Some(tool_call_results);
+                    None
                 }
             }
-        })
-        .collect();
-
-    let tool_results: Vec<Value> = tool_calls
-        .into_iter()
-        .zip(tool_call_results)
-        .map(|(tool_call, tool_call_result)| {
-            json!({
-                "call": {
-                    "name": tool_call.function.name,
-                    "parameters": tool_call.function.arguments,
-                },
-                "outputs": [
-                    tool_call_result.output,
-                ]
-
-            })
         })
         .collect();
 
@@ -174,6 +150,25 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
         "model": &model.name(),
         "message": message,
     });
+
+    if let Some(tool_results) = tool_results {
+        let tool_results: Vec<_> = tool_results
+            .into_iter()
+            .map(|tool_call_result| {
+                json!({
+                    "call": {
+                        "name": tool_call_result.call.name,
+                        "parameters": tool_call_result.call.arguments,
+                    },
+                    "outputs": [
+                        tool_call_result.output,
+                    ]
+
+                })
+            })
+            .collect();
+        body["tool_results"] = json!(tool_results);
+    }
 
     if let Some(v) = system_message {
         body["preamble"] = v.into();
@@ -219,17 +214,15 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
             })
             .collect();
     }
-    if !tool_results.is_empty() {
-        body["tool_results"] = json!(tool_results);
-    }
     Ok(body)
 }
 
 fn extract_completion(data: &Value) -> Result<CompletionOutput> {
     let text = data["text"].as_str().unwrap_or_default();
 
-    let tool_calls = if let Some(tool_calls) = data["tool_calls"].as_array() {
-        tool_calls
+    let mut tool_calls = vec![];
+    if let Some(calls) = data["tool_calls"].as_array() {
+        tool_calls = calls
             .iter()
             .filter_map(|call| {
                 if let (Some(name), Some(parameters)) =
@@ -241,9 +234,8 @@ fn extract_completion(data: &Value) -> Result<CompletionOutput> {
                 }
             })
             .collect()
-    } else {
-        vec![]
-    };
+    }
+
     if text.is_empty() && tool_calls.is_empty() {
         bail!("Invalid response data: {data}");
     }

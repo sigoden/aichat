@@ -24,6 +24,34 @@ test-platform-env() {
     cargo run -- "$@"
 }
 
+# @cmd Test function calling
+# @option --model[`_choice_model`]
+# @option --preset[=default|weather|multi-weathers]
+# @flag -S --no-stream
+# @arg text~
+test-function-calling() {
+    args=(--role %functions%)
+    if [[ -n "$argc_model"  ]]; then
+      args+=("--model" "$argc_model")
+    fi
+    if [[ -n "$argc_no_stream" ]]; then
+        args+=("-S")
+    fi
+    if [[ -z "$argc_text" ]]; then
+        case "$argc_preset" in
+        multi-weathers)
+            text="what is the weather in London and Pairs?"
+            ;;
+        weather|*)
+            text="what is the weather in London?"
+            ;;
+        esac
+    else
+        text="${argc_text[*]}"
+    fi
+    cargo run -- "${args[@]}" "$text"
+}
+
 # @cmd Test clients
 # @arg clients+[`_choice_client`]
 test-clients() {
@@ -174,6 +202,7 @@ chat-claude() {
 -X POST \
 -H 'content-type: application/json' \
 -H 'anthropic-version: 2023-06-01' \
+-H 'anthropic-beta: tools-2024-05-16' \
 -H "x-api-key: $CLAUDE_API_KEY" \
 -d "$(_build_body claude "$@")"
 }

@@ -420,7 +420,12 @@ async fn ask(config: &GlobalConfig, abort: AbortSignal, input: Input) -> Result<
     if tool_call_results.is_empty() {
         Ok(())
     } else {
-        ask(config, abort, input.tool_call(tool_call_results)).await
+        ask(
+            config,
+            abort,
+            input.merge_tool_call(output, tool_call_results),
+        )
+        .await
     }
 }
 
