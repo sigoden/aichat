@@ -54,7 +54,7 @@ pub fn detect_shell() -> (String, String, &'static str) {
     }
 }
 
-pub fn spawn_command<T: AsRef<OsStr>>(
+pub fn run_command<T: AsRef<OsStr>>(
     cmd: &str,
     args: &[T],
     envs: Option<HashMap<String, String>>,
@@ -66,7 +66,7 @@ pub fn spawn_command<T: AsRef<OsStr>>(
     Ok(status.code().unwrap_or_default())
 }
 
-pub fn exec_command<T: AsRef<OsStr>>(
+pub fn run_command_with_output<T: AsRef<OsStr>>(
     cmd: &str,
     args: &[T],
     envs: Option<HashMap<String, String>>,

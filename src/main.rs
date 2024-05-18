@@ -21,7 +21,7 @@ use crate::config::{
 use crate::function::eval_tool_calls;
 use crate::render::{render_error, MarkdownRender};
 use crate::repl::Repl;
-use crate::utils::{create_abort_signal, extract_block, run_spinner, spawn_command, CODE_BLOCK_RE};
+use crate::utils::{create_abort_signal, extract_block, run_command, run_spinner, CODE_BLOCK_RE};
 
 use anyhow::{bail, Result};
 use async_recursion::async_recursion;
@@ -234,7 +234,7 @@ async fn shell_execute(
             match answer {
                 "✅ Execute" => {
                     debug!("{} {:?}", shell, &[shell_arg, &eval_str]);
-                    let code = spawn_command(shell, &[shell_arg, &eval_str], None)?;
+                    let code = run_command(shell, &[shell_arg, &eval_str], None)?;
                     if code != 0 {
                         process::exit(code);
                     }

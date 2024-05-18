@@ -1,6 +1,6 @@
 use crate::{
     config::GlobalConfig,
-    utils::{dimmed_text, exec_command, indent_text, spawn_command, warning_text},
+    utils::{dimmed_text, indent_text, run_command, run_command_with_output, warning_text},
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -38,7 +38,7 @@ pub fn eval_tool_calls(
         return Ok(output);
     }
     calls = ToolCall::dedup(calls);
-    let parallel = calls.len() > 1 && calls.iter().all(|v| !v.is_execute());
+    let parallel = calls.len() > 1 && calls.iter().all(|v| !v.is_execute_type());
     if parallel {
         let (tx, rx) = channel();
         let calls_len = calls.len();
@@ -237,7 +237,7 @@ impl ToolCall {
         } else {
             None
         };
-        let output = if self.is_execute() {
+        let output = if self.is_execute_type() {
             let proceed = if stdout().is_terminal() {
                 Confirm::new(&prompt_text).with_default(true).prompt()?
             } else {
@@ -247,14 +247,14 @@ impl ToolCall {
             if proceed {
                 #[cfg(windows)]
                 let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
-                spawn_command(&name, &arguments, envs)?;
+                run_command(&name, &arguments, envs)?;
             }
             Value::Null
         } else {
             println!("{}", dimmed_text(&prompt_text));
             #[cfg(windows)]
             let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
-            let (success, stdout, stderr) = exec_command(&name, &arguments, envs)?;
+            let (success, stdout, stderr) = run_command_with_output(&name, &arguments, envs)?;
 
             if success {
                 if !stderr.is_empty() {
@@ -287,8 +287,8 @@ impl ToolCall {
         Ok(output)
     }
 
-    pub fn is_execute(&self) -> bool {
-        self.name.starts_with("execute_") || self.name.contains("__execute_")
+    pub fn is_execute_type(&self) -> bool {
+        self.name.starts_with("may_") || self.name.contains("__may_")
     }
 }
 
