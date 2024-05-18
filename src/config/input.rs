@@ -1,9 +1,10 @@
 use super::{role::Role, session::Session, GlobalConfig};
 
 use crate::client::{
-    init_client, list_models, Client, ImageUrl, Message, MessageContent, MessageContentPart, Model,
-    ModelCapabilities, SendData,
+    init_client, list_models, Client, ImageUrl, Message, MessageContent, MessageContentPart,
+    MessageRole, Model, SendData,
 };
+use crate::function::{ToolCallResult, ToolResults};
 use crate::utils::{base64_encode, sha256};
 
 use anyhow::{bail, Context, Result};
@@ -30,6 +31,7 @@ pub struct Input {
     text: String,
     medias: Vec<String>,
     data_urls: HashMap<String, String>,
+    tool_call: Option<ToolResults>,
     context: InputContext,
 }
 
@@ -40,6 +42,7 @@ impl Input {
             text: text.to_string(),
             medias: Default::default(),
             data_urls: Default::default(),
+            tool_call: None,
             context: context.unwrap_or_else(|| InputContext::from_config(config)),
         }
     }
@@ -91,6 +94,7 @@ impl Input {
             text: texts.join("\n"),
             medias,
             data_urls,
+            tool_call: Default::default(),
             context: context.unwrap_or_else(|| InputContext::from_config(config)),
         })
     }
@@ -109,6 +113,21 @@ impl Input {
 
     pub fn set_text(&mut self, text: String) {
         self.text = text;
+    }
+
+    pub fn merge_tool_call(
+        mut self,
+        output: String,
+        tool_call_results: Vec<ToolCallResult>,
+    ) -> Self {
+        match self.tool_call.as_mut() {
+            Some(exist_tool_call_results) => {
+                exist_tool_call_results.0.extend(tool_call_results);
+                exist_tool_call_results.1 = output;
+            }
+            None => self.tool_call = Some((tool_call_results, output)),
+        }
+        self
     }
 
     pub fn model(&self) -> Model {
@@ -130,7 +149,10 @@ impl Input {
         init_client(&self.config, Some(self.model()))
     }
 
-    pub fn prepare_send_data(&self, stream: bool) -> Result<SendData> {
+    pub fn prepare_send_data(&self, model: &Model, stream: bool) -> Result<SendData> {
+        if !self.medias.is_empty() && !model.supports_vision() {
+            bail!("The current model does not support vision.");
+        }
         let messages = self.build_messages()?;
         self.config.read().model.max_input_tokens_limit(&messages)?;
         let (temperature, top_p) = if let Some(session) = self.session(&self.config.read().session)
@@ -142,23 +164,41 @@ impl Input {
             let config = self.config.read();
             (config.temperature, config.top_p)
         };
+        let mut functions = None;
+        if self.config.read().function_calling && model.supports_function_calling() {
+            let config = self.config.read();
+            let function_filter = if let Some(session) = self.session(&config.session) {
+                session.function_filter()
+            } else if let Some(role) = self.role() {
+                role.function_filter.as_deref()
+            } else {
+                None
+            };
+            functions = config.function.filtered_declarations(function_filter);
+        };
         Ok(SendData {
             messages,
             temperature,
             top_p,
+            functions,
             stream,
         })
     }
 
     pub fn build_messages(&self) -> Result<Vec<Message>> {
-        let messages = if let Some(session) = self.session(&self.config.read().session) {
+        let mut messages = if let Some(session) = self.session(&self.config.read().session) {
             session.build_messages(self)
         } else if let Some(role) = self.role() {
             role.build_messages(self)
         } else {
-            let message = Message::new(self);
-            vec![message]
+            vec![Message::new(MessageRole::User, self.message_content())]
         };
+        if let Some(tool_results) = &self.tool_call {
+            messages.push(Message::new(
+                MessageRole::Assistant,
+                MessageContent::ToolResults(tool_results.clone()),
+            ))
+        }
         Ok(messages)
     }
 
@@ -234,7 +274,7 @@ impl Input {
         format!(".file {}{}", files.join(" "), text)
     }
 
-    pub fn to_message_content(&self) -> MessageContent {
+    pub fn message_content(&self) -> MessageContent {
         if self.medias.is_empty() {
             MessageContent::Text(self.text.clone())
         } else {
@@ -255,14 +295,6 @@ impl Input {
                 );
             }
             MessageContent::Array(list)
-        }
-    }
-
-    pub fn required_capabilities(&self) -> ModelCapabilities {
-        if !self.medias.is_empty() {
-            ModelCapabilities::Vision
-        } else {
-            ModelCapabilities::Text
         }
     }
 }

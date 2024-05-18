@@ -108,6 +108,7 @@ pub fn generate_prompt(messages: &[Message], format: PromptFormat) -> anyhow::Re
                 }
                 parts.join("\n\n")
             }
+            MessageContent::ToolResults(_) => String::new(),
         };
         match role {
             MessageRole::System => prompt.push_str(&format!(

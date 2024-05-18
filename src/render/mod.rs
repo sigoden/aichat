@@ -4,12 +4,11 @@ mod stream;
 pub use self::markdown::{MarkdownRender, RenderOptions};
 use self::stream::{markdown_stream, raw_stream};
 
-use crate::utils::AbortSignal;
+use crate::utils::{error_text, AbortSignal};
 use crate::{client::SseEvent, config::GlobalConfig};
 
 use anyhow::Result;
 use is_terminal::IsTerminal;
-use nu_ansi_term::{Color, Style};
 use std::io::stdout;
 use tokio::sync::mpsc::UnboundedReceiver;
 
@@ -30,8 +29,7 @@ pub async fn render_stream(
 pub fn render_error(err: anyhow::Error, highlight: bool) {
     let err = format!("{err:?}");
     if highlight {
-        let style = Style::new().fg(Color::Red);
-        eprintln!("{}", style.paint(err));
+        eprintln!("{}", error_text(&err));
     } else {
         eprintln!("{err}");
     }

@@ -38,7 +38,6 @@ dependencies = [
  "aws-smithy-eventstream",
  "base64 0.22.1",
  "bincode",
- "bitflags 2.5.0",
  "bstr",
  "bytes",
  "chrono",
@@ -59,6 +58,7 @@ dependencies = [
  "log",
  "mime_guess",
  "nu-ansi-term 0.50.0",
+ "num_cpus",
  "parking_lot",
  "reedline",
  "reqwest",
@@ -72,6 +72,7 @@ dependencies = [
  "simplelog",
  "syntect",
  "textwrap",
+ "threadpool",
  "time",
  "tokio",
  "tokio-graceful",
@@ -1071,6 +1072,7 @@ checksum = "168fb715dda47215e360912c096649d23d58bf392ac62f73919e831745e40f26"
 dependencies = [
  "equivalent",
  "hashbrown",
+ "serde",
 ]
 
 [[package]]
@@ -2227,6 +2229,15 @@ checksum = "8b9ef9bad013ada3808854ceac7b46812a6465ba368859a37e2100283d2d719c"
 dependencies = [
  "cfg-if",
  "once_cell",
+]
+
+[[package]]
+name = "threadpool"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d050e60b33d41c19108b32cea32164033a9013fe3b46cbd4457559bfbf77afaa"
+dependencies = [
+ "num_cpus",
 ]
 
 [[package]]

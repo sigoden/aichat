@@ -1,5 +1,6 @@
 mod abort_signal;
 mod clipboard;
+mod command;
 mod crypto;
 mod prompt_input;
 mod render_prompt;
@@ -7,6 +8,7 @@ mod spinner;
 
 pub use self::abort_signal::{create_abort_signal, AbortSignal};
 pub use self::clipboard::set_text;
+pub use self::command::*;
 pub use self::crypto::*;
 pub use self::prompt_input::*;
 pub use self::render_prompt::render_prompt;
@@ -15,7 +17,6 @@ pub use self::spinner::run_spinner;
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
 use std::env;
-use std::process::Command;
 
 lazy_static! {
     pub static ref CODE_BLOCK_RE: Regex = Regex::new(r"(?ms)```\w*(.*)```").unwrap();
@@ -79,67 +80,6 @@ pub fn light_theme_from_colorfgbg(colorfgbg: &str) -> Option<bool> {
     Some(light)
 }
 
-pub fn detect_os() -> String {
-    let os = env::consts::OS;
-    if os == "linux" {
-        if let Ok(contents) = std::fs::read_to_string("/etc/os-release") {
-            for line in contents.lines() {
-                if let Some(id) = line.strip_prefix("ID=") {
-                    return format!("{os}/{id}");
-                }
-            }
-        }
-    }
-    os.to_string()
-}
-
-pub fn detect_shell() -> (String, String, &'static str) {
-    let os = env::consts::OS;
-    if os == "windows" {
-        if env::var("NU_VERSION").is_ok() {
-            ("nushell".into(), "nu.exe".into(), "-c")
-        } else if let Some(ret) = env::var("PSModulePath").ok().and_then(|v| {
-            let v = v.to_lowercase();
-            if v.split(';').count() >= 3 {
-                if v.contains("powershell\\7\\") {
-                    Some(("pwsh".into(), "pwsh.exe".into(), "-c"))
-                } else {
-                    Some(("powershell".into(), "powershell.exe".into(), "-Command"))
-                }
-            } else {
-                None
-            }
-        }) {
-            ret
-        } else {
-            ("cmd".into(), "cmd.exe".into(), "/C")
-        }
-    } else if env::var("NU_VERSION").is_ok() {
-        ("nushell".into(), "nu".into(), "-c")
-    } else {
-        let shell_cmd = env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
-        let shell_name = match shell_cmd.rsplit_once('/') {
-            Some((_, name)) => name.to_string(),
-            None => shell_cmd.clone(),
-        };
-        let shell_name = if shell_name == "nu" {
-            "nushell".into()
-        } else {
-            shell_name
-        };
-        (shell_name, shell_cmd, "-c")
-    }
-}
-
-pub fn run_command(eval_str: &str) -> anyhow::Result<i32> {
-    let (_shell_name, shell_cmd, shell_arg) = detect_shell();
-    let status = Command::new(shell_cmd)
-        .arg(shell_arg)
-        .arg(eval_str)
-        .status()?;
-    Ok(status.code().unwrap_or_default())
-}
-
 pub fn extract_block(input: &str) -> String {
     let output: String = CODE_BLOCK_RE
         .captures_iter(input)
@@ -181,6 +121,32 @@ pub fn fuzzy_match(text: &str, pattern: &str) -> bool {
     }
 
     pattern_index == pattern_chars.len()
+}
+
+pub fn error_text(input: &str) -> String {
+    nu_ansi_term::Style::new()
+        .fg(nu_ansi_term::Color::Red)
+        .paint(input)
+        .to_string()
+}
+
+pub fn warning_text(input: &str) -> String {
+    nu_ansi_term::Style::new()
+        .fg(nu_ansi_term::Color::Yellow)
+        .paint(input)
+        .to_string()
+}
+
+pub fn dimmed_text(input: &str) -> String {
+    nu_ansi_term::Style::new().dimmed().paint(input).to_string()
+}
+
+pub fn indent_text(text: &str, spaces: usize) -> String {
+    let indent_size = " ".repeat(spaces);
+    text.lines()
+        .map(|line| format!("{}{}", indent_size, line))
+        .collect::<Vec<String>>()
+        .join("\n")
 }
 
 #[cfg(test)]

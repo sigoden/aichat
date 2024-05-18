@@ -1,10 +1,10 @@
 use super::{
-    catch_error, extract_system_message, sse_stream, ClaudeClient, CompletionDetails, ExtraConfig,
-    ImageUrl, MessageContent, MessageContentPart, Model, ModelConfig, PromptAction, PromptKind,
-    SendData, SsMmessage, SseHandler,
+    catch_error, extract_system_message, message::*, sse_stream, ClaudeClient, CompletionOutput,
+    ExtraConfig, ImageUrl, MessageContent, MessageContentPart, Model, ModelData, PromptAction,
+    PromptKind, SendData, SsMmessage, SseHandler, ToolCall,
 };
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Context, Result};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -16,7 +16,7 @@ pub struct ClaudeConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
     #[serde(default)]
-    pub models: Vec<ModelConfig>,
+    pub models: Vec<ModelData>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -36,7 +36,9 @@ impl ClaudeClient {
         debug!("Claude Request: {url} {body}");
 
         let mut builder = client.post(url).json(&body);
-        builder = builder.header("anthropic-version", "2023-06-01");
+        builder = builder
+            .header("anthropic-version", "2023-06-01")
+            .header("anthropic-beta", "tools-2024-05-16");
         if let Some(api_key) = api_key {
             builder = builder.header("x-api-key", api_key)
         }
@@ -51,13 +53,14 @@ impl_client_trait!(
     claude_send_message_streaming
 );
 
-pub async fn claude_send_message(builder: RequestBuilder) -> Result<(String, CompletionDetails)> {
+pub async fn claude_send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
     if !status.is_success() {
         catch_error(&data, status.as_u16())?;
     }
+    debug!("non-stream-data: {data}");
     claude_extract_completion(&data)
 }
 
@@ -65,13 +68,59 @@ pub async fn claude_send_message_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
 ) -> Result<()> {
+    let mut function_name = String::new();
+    let mut function_arguments = String::new();
+    let mut function_id = String::new();
     let handle = |message: SsMmessage| -> Result<bool> {
         let data: Value = serde_json::from_str(&message.data)?;
+        debug!("stream-data: {data}");
         if let Some(typ) = data["type"].as_str() {
-            if typ == "content_block_delta" {
-                if let Some(text) = data["delta"]["text"].as_str() {
-                    handler.text(text)?;
+            match typ {
+                "content_block_start" => {
+                    if let (Some("tool_use"), Some(name), Some(id)) = (
+                        data["content_block"]["type"].as_str(),
+                        data["content_block"]["name"].as_str(),
+                        data["content_block"]["id"].as_str(),
+                    ) {
+                        if !function_name.is_empty() {
+                            let arguments: Value =
+                                function_arguments.parse().with_context(|| {
+                                    format!("Tool call '{function_name}' is invalid: arguments must be in valid JSON format")
+                                })?;
+                            handler.tool_call(ToolCall::new(
+                                function_name.clone(),
+                                arguments,
+                                Some(function_id.clone()),
+                            ))?;
+                        }
+                        function_name = name.into();
+                        function_arguments.clear();
+                        function_id = id.into();
+                    }
                 }
+                "content_block_delta" => {
+                    if let Some(text) = data["delta"]["text"].as_str() {
+                        handler.text(text)?;
+                    } else if let (true, Some(partial_json)) = (
+                        !function_name.is_empty(),
+                        data["delta"]["partial_json"].as_str(),
+                    ) {
+                        function_arguments.push_str(partial_json);
+                    }
+                }
+                "content_block_stop" => {
+                    if !function_name.is_empty() {
+                        let arguments: Value = function_arguments.parse().with_context(|| {
+                            format!("Tool call '{function_name}' is invalid: arguments must be in valid JSON format")
+                        })?;
+                        handler.tool_call(ToolCall::new(
+                            function_name.clone(),
+                            arguments,
+                            Some(function_id.clone()),
+                        ))?;
+                    }
+                }
+                _ => {}
             }
         }
         Ok(false)
@@ -85,46 +134,91 @@ pub fn claude_build_body(data: SendData, model: &Model) -> Result<Value> {
         mut messages,
         temperature,
         top_p,
+        functions,
         stream,
     } = data;
 
     let system_message = extract_system_message(&mut messages);
 
     let mut network_image_urls = vec![];
+
     let messages: Vec<Value> = messages
         .into_iter()
-        .map(|message| {
-            let role = message.role;
-            let content = match message.content {
-                MessageContent::Text(text) => vec![json!({"type": "text", "text": text})],
-                MessageContent::Array(list) => list
-                    .into_iter()
-                    .map(|item| match item {
-                        MessageContentPart::Text { text } => json!({"type": "text", "text": text}),
-                        MessageContentPart::ImageUrl {
-                            image_url: ImageUrl { url },
-                        } => {
-                            if let Some((mime_type, data)) = url
-                                .strip_prefix("data:")
-                                .and_then(|v| v.split_once(";base64,"))
-                            {
-                                json!({
-                                    "type": "image",
-                                    "source": {
-                                        "type": "base64",
-                                        "media_type": mime_type,
-                                        "data": data,
-                                    }
-                                })
-                            } else {
-                                network_image_urls.push(url.clone());
-                                json!({ "url": url })
+        .flat_map(|message| {
+            let Message { role, content } = message;
+            match content {
+                MessageContent::Text(text) => vec![json!({
+                    "role": role,
+                    "content": text,
+                })],
+                MessageContent::Array(list) => {
+                    let content: Vec<_> = list
+                        .into_iter()
+                        .map(|item| match item {
+                            MessageContentPart::Text { text } => {
+                                json!({"type": "text", "text": text})
                             }
-                        }
-                    })
-                    .collect(),
-            };
-            json!({ "role": role, "content": content })
+                            MessageContentPart::ImageUrl {
+                                image_url: ImageUrl { url },
+                            } => {
+                                if let Some((mime_type, data)) = url
+                                    .strip_prefix("data:")
+                                    .and_then(|v| v.split_once(";base64,"))
+                                {
+                                    json!({
+                                        "type": "image",
+                                        "source": {
+                                            "type": "base64",
+                                            "media_type": mime_type,
+                                            "data": data,
+                                        }
+                                    })
+                                } else {
+                                    network_image_urls.push(url.clone());
+                                    json!({ "url": url })
+                                }
+                            }
+                        })
+                        .collect();
+                    vec![json!({
+                        "role": role,
+                        "content": content,
+                    })]
+                }
+                MessageContent::ToolResults((tool_call_results, text)) => {
+                    let mut tool_call = vec![];
+                    let mut tool_result = vec![];
+                    if !text.is_empty() {
+                        tool_call.push(json!({
+                            "type": "text",
+                            "text": text,
+                        }))
+                    }
+                    for tool_call_result in tool_call_results {
+                        tool_call.push(json!({
+                            "type": "tool_use",
+                            "id": tool_call_result.call.id,
+                            "name": tool_call_result.call.name,
+                            "input": tool_call_result.call.arguments,
+                        }));
+                        tool_result.push(json!({
+                            "type": "tool_result",
+                            "tool_use_id": tool_call_result.call.id,
+                            "content": tool_call_result.output.to_string(),
+                        }));
+                    }
+                    vec![
+                        json!({
+                            "role": "assistant",
+                            "content": tool_call,
+                        }),
+                        json!({
+                            "role": "user",
+                            "content": tool_result,
+                        }),
+                    ]
+                }
+            }
         })
         .collect();
 
@@ -136,7 +230,7 @@ pub fn claude_build_body(data: SendData, model: &Model) -> Result<Value> {
     }
 
     let mut body = json!({
-        "model": &model.name,
+        "model": model.name(),
         "messages": messages,
     });
     if let Some(v) = system_message {
@@ -154,18 +248,61 @@ pub fn claude_build_body(data: SendData, model: &Model) -> Result<Value> {
     if stream {
         body["stream"] = true.into();
     }
+    if let Some(functions) = functions {
+        body["tools"] = functions
+            .iter()
+            .map(|v| {
+                json!({
+                    "name": v.name,
+                    "description": v.description,
+                    "input_schema": v.parameters,
+                })
+            })
+            .collect();
+    }
     Ok(body)
 }
 
-pub fn claude_extract_completion(data: &Value) -> Result<(String, CompletionDetails)> {
-    let text = data["content"][0]["text"]
-        .as_str()
-        .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
+pub fn claude_extract_completion(data: &Value) -> Result<CompletionOutput> {
+    let text = data["content"][0]["text"].as_str().unwrap_or_default();
 
-    let details = CompletionDetails {
+    let mut tool_calls = vec![];
+    if let Some(calls) = data["content"].as_array().map(|content| {
+        content
+            .iter()
+            .filter(|content| matches!(content["type"].as_str(), Some("tool_use")))
+            .collect::<Vec<&Value>>()
+    }) {
+        tool_calls = calls
+            .into_iter()
+            .filter_map(|call| {
+                if let (Some(name), Some(input), Some(id)) = (
+                    call["name"].as_str(),
+                    call.get("input"),
+                    call["id"].as_str(),
+                ) {
+                    Some(ToolCall::new(
+                        name.to_string(),
+                        input.clone(),
+                        Some(id.to_string()),
+                    ))
+                } else {
+                    None
+                }
+            })
+            .collect();
+    };
+
+    if text.is_empty() && tool_calls.is_empty() {
+        bail!("Invalid response data: {data}");
+    }
+
+    let output = CompletionOutput {
+        text: text.to_string(),
+        tool_calls,
         id: data["id"].as_str().map(|v| v.to_string()),
         input_tokens: data["usage"]["input_tokens"].as_u64(),
         output_tokens: data["usage"]["output_tokens"].as_u64(),
     };
-    Ok((text.to_string(), details))
+    Ok(output)
 }

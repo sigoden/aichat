@@ -15,6 +15,9 @@ prelude: null                    # Set a default role or session to start with (
 # if unset fallback to $EDITOR and $VISUAL
 buffer_editor: null
 
+# Controls the function calling feature. For setup instructions, visit https://github.com/sigoden/llm-functions.
+function_calling: false
+
 # Compress session when token count reaches or exceeds this threshold (must be at least 1000)
 compress_threshold: 1000
 # Text prompt used for creating a concise summary of session message

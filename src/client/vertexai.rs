@@ -1,8 +1,7 @@
-use super::access_token::*;
 use super::{
-    catch_error, json_stream, message::*, patch_system_message, Client, CompletionDetails,
-    ExtraConfig, Model, ModelConfig, PromptAction, PromptKind, SendData, SseHandler,
-    VertexAIClient,
+    access_token::*, catch_error, json_stream, message::*, patch_system_message, Client,
+    CompletionOutput, ExtraConfig, Model, ModelData, PromptAction, PromptKind, SendData,
+    SseHandler, ToolCall, VertexAIClient,
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -22,7 +21,7 @@ pub struct VertexAIConfig {
     #[serde(rename = "safetySettings")]
     pub safety_settings: Option<Value>,
     #[serde(default)]
-    pub models: Vec<ModelConfig>,
+    pub models: Vec<ModelData>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -46,7 +45,7 @@ impl VertexAIClient {
             true => "streamGenerateContent",
             false => "generateContent",
         };
-        let url = format!("{base_url}/google/models/{}:{func}", self.model.name);
+        let url = format!("{base_url}/google/models/{}:{func}", self.model.name());
 
         let body = gemini_build_body(data, &self.model, self.config.safety_settings.clone())?;
 
@@ -66,7 +65,7 @@ impl Client for VertexAIClient {
         &self,
         client: &ReqwestClient,
         data: SendData,
-    ) -> Result<(String, CompletionDetails)> {
+    ) -> Result<CompletionOutput> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let builder = self.request_builder(client, data)?;
         gemini_send_message(builder).await
@@ -84,13 +83,14 @@ impl Client for VertexAIClient {
     }
 }
 
-pub async fn gemini_send_message(builder: RequestBuilder) -> Result<(String, CompletionDetails)> {
+pub async fn gemini_send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
     if !status.is_success() {
         catch_error(&data, status.as_u16())?;
     }
+    debug!("non-stream-data: {data}");
     gemini_extract_completion_text(&data)
 }
 
@@ -105,8 +105,28 @@ pub async fn gemini_send_message_streaming(
         catch_error(&data, status.as_u16())?;
     } else {
         let handle = |value: &str| -> Result<()> {
-            let value: Value = serde_json::from_str(value)?;
-            handler.text(gemini_extract_text(&value)?)?;
+            let data: Value = serde_json::from_str(value)?;
+            debug!("stream-data: {data}");
+            if let Some(text) = data["candidates"][0]["content"]["parts"][0]["text"].as_str() {
+                if !text.is_empty() {
+                    handler.text(text)?;
+                }
+            } else if let Some("SAFETY") = data["promptFeedback"]["blockReason"]
+                .as_str()
+                .or_else(|| data["candidates"][0]["finishReason"].as_str())
+            {
+                bail!("Content Blocked")
+            } else if let Some(parts) = data["candidates"][0]["content"]["parts"].as_array() {
+                for part in parts {
+                    if let (Some(name), Some(args)) = (
+                        part["functionCall"]["name"].as_str(),
+                        part["functionCall"]["args"].as_object(),
+                    ) {
+                        handler.tool_call(ToolCall::new(name.to_string(), json!(args), None))?;
+                    }
+                }
+            }
+
             Ok(())
         };
         json_stream(res.bytes_stream(), handle).await?;
@@ -114,30 +134,45 @@ pub async fn gemini_send_message_streaming(
     Ok(())
 }
 
-fn gemini_extract_completion_text(data: &Value) -> Result<(String, CompletionDetails)> {
-    let text = gemini_extract_text(data)?;
-    let details = CompletionDetails {
+fn gemini_extract_completion_text(data: &Value) -> Result<CompletionOutput> {
+    let text = data["candidates"][0]["content"]["parts"][0]["text"]
+        .as_str()
+        .unwrap_or_default();
+
+    let mut tool_calls = vec![];
+    if let Some(parts) = data["candidates"][0]["content"]["parts"].as_array() {
+        tool_calls = parts
+            .iter()
+            .filter_map(|part| {
+                if let (Some(name), Some(args)) = (
+                    part["functionCall"]["name"].as_str(),
+                    part["functionCall"]["args"].as_object(),
+                ) {
+                    Some(ToolCall::new(name.to_string(), json!(args), None))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+    if text.is_empty() && tool_calls.is_empty() {
+        if let Some("SAFETY") = data["promptFeedback"]["blockReason"]
+            .as_str()
+            .or_else(|| data["candidates"][0]["finishReason"].as_str())
+        {
+            bail!("Content Blocked")
+        } else {
+            bail!("Invalid response data: {data}");
+        }
+    }
+    let output = CompletionOutput {
+        text: text.to_string(),
+        tool_calls,
         id: None,
         input_tokens: data["usageMetadata"]["promptTokenCount"].as_u64(),
         output_tokens: data["usageMetadata"]["candidatesTokenCount"].as_u64(),
     };
-    Ok((text.to_string(), details))
-}
-
-fn gemini_extract_text(data: &Value) -> Result<&str> {
-    match data["candidates"][0]["content"]["parts"][0]["text"].as_str() {
-        Some(text) => Ok(text),
-        None => {
-            if let Some("SAFETY") = data["promptFeedback"]["blockReason"]
-                .as_str()
-                .or_else(|| data["candidates"][0]["finishReason"].as_str())
-            {
-                bail!("Blocked by safety settings，consider adjusting `safetySettings` in the client configuration")
-            } else {
-                bail!("Invalid response data: {data}")
-            }
-        }
-    }
+    Ok(output)
 }
 
 pub(crate) fn gemini_build_body(
@@ -149,6 +184,7 @@ pub(crate) fn gemini_build_body(
         mut messages,
         temperature,
         top_p,
+        functions,
         stream: _,
     } = data;
 
@@ -157,34 +193,60 @@ pub(crate) fn gemini_build_body(
     let mut network_image_urls = vec![];
     let contents: Vec<Value> = messages
         .into_iter()
-        .map(|message| {
-            let role = match message.role {
+        .flat_map(|message| {
+            let Message { role, content } = message;
+            let role = match role {
                 MessageRole::User => "user",
                 _ => "model",
             };
-            match message.content {
-                MessageContent::Text(text) => json!({
-                    "role": role,
-                    "parts": [{ "text": text }]
-                }),
-                MessageContent::Array(list) => {
-                    let list: Vec<Value> = list
-                        .into_iter()
-                        .map(|item| match item {
-                            MessageContentPart::Text { text } => json!({"text": text}),
-                            MessageContentPart::ImageUrl { image_url: ImageUrl { url } } => {
-                                if let Some((mime_type, data)) = url.strip_prefix("data:").and_then(|v| v.split_once(";base64,")) {
-                                    json!({ "inline_data": { "mime_type": mime_type, "data": data } })
-                                } else {
-                                    network_image_urls.push(url.clone());
-                                    json!({ "url": url })
+               match content {
+                    MessageContent::Text(text) => vec![json!({
+                        "role": role,
+                        "parts": [{ "text": text }]
+                    })],
+                    MessageContent::Array(list) => {
+                        let parts: Vec<Value> = list
+                            .into_iter()
+                            .map(|item| match item {
+                                MessageContentPart::Text { text } => json!({"text": text}),
+                                MessageContentPart::ImageUrl { image_url: ImageUrl { url } } => {
+                                    if let Some((mime_type, data)) = url.strip_prefix("data:").and_then(|v| v.split_once(";base64,")) {
+                                        json!({ "inline_data": { "mime_type": mime_type, "data": data } })
+                                    } else {
+                                        network_image_urls.push(url.clone());
+                                        json!({ "url": url })
+                                    }
+                                },
+                            })
+                            .collect();
+                        vec![json!({ "role": role, "parts": parts })]
+                    },
+                    MessageContent::ToolResults((tool_call_results, _)) => {
+                        let function_call_parts: Vec<Value> = tool_call_results.iter().map(|tool_call_result| {
+                            json!({
+                                "functionCall": {
+                                    "name": tool_call_result.call.name,
+                                    "args": tool_call_result.call.arguments,
                                 }
-                            },
-                        })
-                        .collect();
-                    json!({ "role": role, "parts": list })
+                            })
+                        }).collect();
+                        let function_response_parts: Vec<Value> = tool_call_results.into_iter().map(|tool_call_result| {
+                            json!({
+                                "functionResponse": {
+                                    "name": tool_call_result.call.name,
+                                    "response": {
+                                        "name": tool_call_result.call.name,
+                                        "content": tool_call_result.output,
+                                    }
+                                }
+                            })
+                        }).collect();
+                        vec![
+                            json!({ "role": "model", "parts": function_call_parts }),
+                            json!({ "role": "function", "parts": function_response_parts }),
+                        ]
+                    }
                 }
-            }
         })
         .collect();
 
@@ -209,6 +271,10 @@ pub(crate) fn gemini_build_body(
     }
     if let Some(v) = top_p {
         body["generationConfig"]["topP"] = v.into();
+    }
+
+    if let Some(functions) = functions {
+        body["tools"] = json!([{ "functionDeclarations": *functions }]);
     }
 
     Ok(body)

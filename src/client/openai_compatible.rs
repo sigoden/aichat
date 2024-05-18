@@ -2,7 +2,7 @@ use crate::client::OPENAI_COMPATIBLE_PLATFORMS;
 
 use super::openai::openai_build_body;
 use super::{
-    ExtraConfig, Model, ModelConfig, OpenAICompatibleClient, PromptAction, PromptKind, SendData,
+    ExtraConfig, Model, ModelData, OpenAICompatibleClient, PromptAction, PromptKind, SendData,
 };
 
 use anyhow::Result;
@@ -16,7 +16,7 @@ pub struct OpenAICompatibleConfig {
     pub api_key: Option<String>,
     pub chat_endpoint: Option<String>,
     #[serde(default)]
-    pub models: Vec<ModelConfig>,
+    pub models: Vec<ModelData>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -44,7 +44,7 @@ impl OpenAICompatibleClient {
                 match OPENAI_COMPATIBLE_PLATFORMS
                     .into_iter()
                     .find_map(|(name, api_base)| {
-                        if name == self.model.client_name {
+                        if name == self.model.client_name() {
                             Some(api_base.to_string())
                         } else {
                             None

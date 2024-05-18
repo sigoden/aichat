@@ -1,5 +1,5 @@
 use super::{
-    catch_error, sse_stream, CloudflareClient, CompletionDetails, ExtraConfig, Model, ModelConfig,
+    catch_error, sse_stream, CloudflareClient, CompletionOutput, ExtraConfig, Model, ModelData,
     PromptAction, PromptKind, SendData, SsMmessage, SseHandler,
 };
 
@@ -16,7 +16,7 @@ pub struct CloudflareConfig {
     pub account_id: Option<String>,
     pub api_key: Option<String>,
     #[serde(default)]
-    pub models: Vec<ModelConfig>,
+    pub models: Vec<ModelData>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -37,7 +37,7 @@ impl CloudflareClient {
 
         let url = format!(
             "{API_BASE}/accounts/{account_id}/ai/run/{}",
-            self.model.name
+            self.model.name()
         );
 
         debug!("Cloudflare Request: {url} {body}");
@@ -50,7 +50,7 @@ impl CloudflareClient {
 
 impl_client_trait!(CloudflareClient, send_message, send_message_streaming);
 
-async fn send_message(builder: RequestBuilder) -> Result<(String, CompletionDetails)> {
+async fn send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -58,6 +58,7 @@ async fn send_message(builder: RequestBuilder) -> Result<(String, CompletionDeta
         catch_error(&data, status.as_u16())?;
     }
 
+    debug!("non-stream-data: {data}");
     extract_completion(&data)
 }
 
@@ -67,6 +68,7 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
             return Ok(true);
         }
         let data: Value = serde_json::from_str(&message.data)?;
+        debug!("stream-data: {data}");
         if let Some(text) = data["response"].as_str() {
             handler.text(text)?;
         }
@@ -80,11 +82,12 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
         messages,
         temperature,
         top_p,
+        functions: _,
         stream,
     } = data;
 
     let mut body = json!({
-        "model": &model.name,
+        "model": &model.name(),
         "messages": messages,
     });
 
@@ -104,10 +107,10 @@ fn build_body(data: SendData, model: &Model) -> Result<Value> {
     Ok(body)
 }
 
-fn extract_completion(data: &Value) -> Result<(String, CompletionDetails)> {
+fn extract_completion(data: &Value) -> Result<CompletionOutput> {
     let text = data["result"]["response"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
 
-    Ok((text.to_string(), CompletionDetails::default()))
+    Ok(CompletionOutput::new(text))
 }

@@ -24,6 +24,34 @@ test-platform-env() {
     cargo run -- "$@"
 }
 
+# @cmd Test function calling
+# @option --model[?`_choice_model`]
+# @option --preset[=default|weather|multi-weathers]
+# @flag -S --no-stream
+# @arg text~
+test-function-calling() {
+    args=(--role %functions%)
+    if [[ -n "$argc_model"  ]]; then
+      args+=("--model" "$argc_model")
+    fi
+    if [[ -n "$argc_no_stream" ]]; then
+        args+=("-S")
+    fi
+    if [[ -z "$argc_text" ]]; then
+        case "$argc_preset" in
+        multi-weathers)
+            text="what is the weather in London and Pairs?"
+            ;;
+        weather|*)
+            text="what is the weather in London?"
+            ;;
+        esac
+    else
+        text="${argc_text[*]}"
+    fi
+    cargo run -- "${args[@]}" "$text"
+}
+
 # @cmd Test clients
 # @arg clients+[`_choice_client`]
 test-clients() {
@@ -36,7 +64,7 @@ test-clients() {
 }
 
 # @cmd Test proxy server
-# @option -m --model[`_choice_model`]
+# @option -m --model[?`_choice_model`]
 # @flag -S --no-stream
 # @arg text~
 test-server() {
@@ -153,10 +181,7 @@ chat-gemini() {
     _wrapper curl -i "https://generativelanguage.googleapis.com/v1beta/models/${argc_model}:${method}?key=${GEMINI_API_KEY}" \
 -i -X POST \
 -H 'Content-Type: application/json' \
--d '{ 
-    "safetySettings":[{"category":"HARM_CATEGORY_HARASSMENT","threshold":"BLOCK_ONLY_HIGH"},{"category":"HARM_CATEGORY_HATE_SPEECH","threshold":"BLOCK_ONLY_HIGH"},{"category":"HARM_CATEGORY_SEXUALLY_EXPLICIT","threshold":"BLOCK_ONLY_HIGH"},{"category":"HARM_CATEGORY_DANGEROUS_CONTENT","threshold":"BLOCK_ONLY_HIGH"}],
-    "contents": '"$(_build_msg_gemini $*)"'
-}'
+-d "$(_build_body gemini "$@")" 
 }
 
 # @cmd List gemini models
@@ -177,14 +202,9 @@ chat-claude() {
 -X POST \
 -H 'content-type: application/json' \
 -H 'anthropic-version: 2023-06-01' \
+-H 'anthropic-beta: tools-2024-05-16' \
 -H "x-api-key: $CLAUDE_API_KEY" \
--d '{
-  "model": "'$argc_model'",
-  "messages": '"$(_build_msg $*)"',
-  "max_tokens": 4096,
-  "stream": '$stream'
-}
-'
+-d "$(_build_body claude "$@")"
 }
 
 # @cmd Chat with cohere api
@@ -221,11 +241,7 @@ chat-ollama() {
     _wrapper curl -i http://localhost:11434/api/chat \
 -X POST \
 -H 'Content-Type: application/json' \
--d '{
-    "model": "'$argc_model'",
-    "stream": '$stream',
-    "messages": '"$(_build_msg $*)"'
-}'
+-d "$(_build_body ollama "$@")"
 }
 
 # @cmd Chat with vertexai api
@@ -246,10 +262,7 @@ chat-vertexai() {
 -X POST \
 -H "Authorization: Bearer $api_key" \
 -H 'Content-Type: application/json' \
--d '{ 
-    "contents": '"$(_build_msg_gemini $*)"',
-    "generationConfig": {}
-}'
+-d "$(_build_body vertexai "$@")" 
 }
 
 # @cmd Chat with vertexai-claude api
@@ -266,12 +279,7 @@ chat-vertexai-claude() {
 -X POST \
 -H "Authorization: Bearer $api_key" \
 -H 'Content-Type: application/json' \
--d '{
-  "anthropic_version": "vertex-2023-10-16",
-  "messages": '"$(_build_msg $*)"',
-  "max_tokens": 4096,
-  "stream": '$stream'
-}'
+-d "$(_build_body vertexai-claude "$@")" 
 }
 
 # @cmd Chat with bedrock api
@@ -285,11 +293,7 @@ chat-bedrock() {
             body='{"prompt":"'"$*"'"}'
             ;;
         anthropic.*)
-            body='{
-  "anthropic_version": "vertex-2023-10-16",
-  "messages": '"$(_build_msg $*)"',
-  "max_tokens": 4096
-}'
+            body="$(_build_body bedrock-claude "$@")"
             ;;
         *)
             _die "Invalid model: $argc_model"
@@ -314,10 +318,7 @@ chat-cloudflare() {
     _wrapper curl -i "$url" \
 -X POST \
 -H "Authorization: Bearer $CLOUDFLARE_API_KEY" \
--d '{
-  "messages": '"$(_build_msg $*)"',
-  "stream": '$stream'
-}'
+-d "$(_build_body cloudflare "$@")" 
 }
 
 # @cmd Chat with replicate api
@@ -331,12 +332,8 @@ chat-replicate() {
 -X POST \
 -H "Authorization: Bearer $REPLICATE_API_KEY" \
 -H "Content-Type: application/json" \
--d '{	
-    "stream": '$stream',
-	"input": {
-      "prompt": "'"$*"'"
-	}
-}')"
+-d "$(_build_body replicate "$@")" \
+)"
     echo "$res"
     if [[ -n "$argc_no_stream" ]]; then
         prediction_url="$(echo "$res" | jq -r '.urls.get')"
@@ -373,10 +370,7 @@ chat-ernie() {
     url="https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/$argc_model?access_token=$ACCESS_TOKEN"
     _wrapper curl -i "$url" \
 -X POST \
--d '{
-    "messages": '"$(_build_msg $*)"',
-    "stream": '$stream'
-}'
+-d "$(_build_body ernie "$@")"
 }
 
 
@@ -397,13 +391,7 @@ chat-qianwen() {
 -X POST \
 -H "Authorization: Bearer $QIANWEN_API_KEY" \
 -H 'Content-Type: application/json' $stream_args  \
--d '{
-    "model": "'$argc_model'",
-    "parameters": '"$parameters_args"',
-    "input":{
-        "messages": '"$(_build_msg $*)"'
-    }
-}'
+-d "$(_build_body qianwen "$@")"
 }
 
 _argc_before() {
@@ -420,12 +408,7 @@ _openai_chat() {
 -X POST \
 -H "Content-Type: application/json" \
 -H "Authorization: Bearer $api_key" \
---data '{
-  "model": "'$argc_model'",
-  "messages": '"$(_build_msg $*)"',
-  "stream": '$stream'
-}
-'
+-d "$(_build_body openai "$@")"
 }
 
 _openai_models() {
@@ -460,35 +443,112 @@ _choice_openai_compatible_platform() {
     done
 }
 
-_build_msg() {
-    if [[ $# -eq 0 ]]; then
-        cat tmp/messages.json
-    else
-        echo '
-[
-    {
-        "role": "user",
-        "content": "'"$*"'"
-    }
-]
-'
-    fi
-}
+_build_body() {
+    kind="$1"
+    if [[ "$#" -eq 1 ]]; then
+        file="${BODY_FILE:-"tmp/body/$1.json"}"
+        if [[ -f "$file" ]]; then
+            cat "$file" | \
+            sed \
+                -e 's/"model": ".*"/"model": "'"$argc_model"'"/' \
+                -e 's/"stream": \(true\|false\)/"stream": '$stream'/' \
 
-_build_msg_gemini() {
-    if [[ $# -eq 0 ]]; then
-        cat tmp/messages.gemini.json
+
+        fi
     else
-        echo '
-[{
-    "role": "user",
-    "parts": [
+        shift
+        case "$kind" in
+        openai|ollama)
+            echo '{
+    "model": "'$argc_model'",
+    "messages": [
         {
-            "text": "'"$*"'"
+            "role": "user",
+            "content": "'"$*"'"
         }
-    ]
-}]
-'
+    ],
+    "stream": '$stream'
+}'
+            ;;
+        claude)
+            echo '{
+    "model": "'$argc_model'",
+    "messages": [
+        {
+            "role": "user",
+            "content": "'"$*"'"
+        }
+    ],
+    "max_tokens": 4096,
+    "stream": '$stream'
+}'
+
+            ;;
+        vertexai-claude|bedrock-claude)
+            echo '{
+    "anthropic_version": "vertex-2023-10-16",
+    "messages": [
+        {
+            "role": "user",
+            "content": "'"$*"'"
+        }
+    ],
+    "max_tokens": 4096,
+    "stream": '$stream'
+}'
+
+            ;;
+        gemini|vertexai)
+            echo '{
+    "contents": [{
+        "role": "user",
+        "parts": [
+            {
+                "text": "'"$*"'"
+            }
+        ]
+    }],
+    "safetySettings":[{"category":"HARM_CATEGORY_HARASSMENT","threshold":"BLOCK_ONLY_HIGH"},{"category":"HARM_CATEGORY_HATE_SPEECH","threshold":"BLOCK_ONLY_HIGH"},{"category":"HARM_CATEGORY_SEXUALLY_EXPLICIT","threshold":"BLOCK_ONLY_HIGH"},{"category":"HARM_CATEGORY_DANGEROUS_CONTENT","threshold":"BLOCK_ONLY_HIGH"}]
+}'
+            ;;
+        ernie|cloudflare)
+            echo '{
+    "messages": [
+        {
+            "role": "user",
+            "content": "'"$*"'"
+        }
+    ],
+    "stream": '$stream'
+}'
+            ;;
+        replicate)
+            echo '{
+    "stream": '$stream',
+	"input": {
+      "prompt": "'"$*"'"
+	}
+}'
+            ;;
+        qianwen)
+            echo '{
+    "model": "'$argc_model'",
+    "parameters": '"$parameters_args"',
+    "input":{
+        "messages": [
+            {
+                "role": "user",
+                "content": "'"$*"'"
+            }
+        ]
+    }
+}'
+            ;;
+        *)
+            _die "Unsupported build body for $kind"
+            ;;
+        esac
+
     fi
 }
 

@@ -6,12 +6,14 @@ use self::completer::ReplCompleter;
 use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
-use crate::client::{ensure_model_capabilities, send_stream};
+use crate::client::send_stream;
 use crate::config::{GlobalConfig, Input, InputContext, State};
+use crate::function::need_send_call_results;
 use crate::render::render_error;
 use crate::utils::{create_abort_signal, set_text, AbortSignal};
 
 use anyhow::{bail, Context, Result};
+use async_recursion::async_recursion;
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
 use nu_ansi_term::Color;
@@ -184,7 +186,7 @@ impl Repl {
                                 text.trim(),
                                 Some(InputContext::role(role)),
                             );
-                            self.ask(input).await?;
+                            ask(&self.config, self.abort.clone(), input).await?;
                         }
                         None => {
                             self.config.write().set_role(args)?;
@@ -226,7 +228,7 @@ impl Repl {
                         let (files, text) = split_files_text(args);
                         let files = shell_words::split(files).with_context(|| "Invalid args")?;
                         let input = Input::new(&self.config, text, files, None)?;
-                        self.ask(input).await?;
+                        ask(&self.config, self.abort.clone(), input).await?;
                     }
                     None => println!("Usage: .file <files>... [-- <text>...]"),
                 },
@@ -252,48 +254,13 @@ impl Repl {
             },
             None => {
                 let input = Input::from_str(&self.config, line, None);
-                self.ask(input).await?;
+                ask(&self.config, self.abort.clone(), input).await?;
             }
         }
 
         println!();
 
         Ok(false)
-    }
-
-    async fn ask(&self, input: Input) -> Result<()> {
-        if input.is_empty() {
-            return Ok(());
-        }
-        while self.config.read().is_compressing_session() {
-            std::thread::sleep(std::time::Duration::from_millis(100));
-        }
-        let mut client = input.create_client()?;
-        ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
-        let output = send_stream(&input, client.as_ref(), &self.config, self.abort.clone()).await?;
-        self.config.write().save_message(input, &output)?;
-        self.config.read().maybe_copy(&output);
-        if self.config.write().should_compress_session() {
-            let config = self.config.clone();
-            let color = if config.read().light_theme {
-                Color::LightGray
-            } else {
-                Color::DarkGray
-            };
-            print!(
-                "\n📢 {}{}{}\n",
-                color.normal().paint(
-                    "Session compression is being activated because the current tokens exceed `"
-                ),
-                color.italic().paint("compress_threshold"),
-                color.normal().paint("`."),
-            );
-            tokio::spawn(async move {
-                let _ = compress_session(&config).await;
-                config.write().end_compressing_session();
-            });
-        }
-        Ok(())
     }
 
     fn banner(&self) {
@@ -416,6 +383,53 @@ impl Validator for ReplValidator {
     }
 }
 
+#[async_recursion]
+async fn ask(config: &GlobalConfig, abort: AbortSignal, input: Input) -> Result<()> {
+    if input.is_empty() {
+        return Ok(());
+    }
+    while config.read().is_compressing_session() {
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+    let client = input.create_client()?;
+    let (output, tool_call_results) =
+        send_stream(&input, client.as_ref(), config, abort.clone()).await?;
+    config
+        .write()
+        .save_message(&input, &output, &tool_call_results)?;
+    config.read().maybe_copy(&output);
+    if config.write().should_compress_session() {
+        let config = config.clone();
+        let color = if config.read().light_theme {
+            Color::LightGray
+        } else {
+            Color::DarkGray
+        };
+        print!(
+            "\n📢 {}{}{}\n",
+            color.normal().paint(
+                "Session compression is being activated because the current tokens exceed `"
+            ),
+            color.italic().paint("compress_threshold"),
+            color.normal().paint("`."),
+        );
+        tokio::spawn(async move {
+            let _ = compress_session(&config).await;
+            config.write().end_compressing_session();
+        });
+    }
+    if need_send_call_results(&tool_call_results) {
+        ask(
+            config,
+            abort,
+            input.merge_tool_call(output, tool_call_results),
+        )
+        .await
+    } else {
+        Ok(())
+    }
+}
+
 fn unknown_command() -> Result<()> {
     bail!(r#"Unknown command. Type ".help" for additional help."#);
 }
@@ -449,9 +463,8 @@ fn parse_command(line: &str) -> Option<(&str, Option<&str>)> {
 
 async fn compress_session(config: &GlobalConfig) -> Result<()> {
     let input = Input::from_str(config, config.read().summarize_prompt(), None);
-    let mut client = input.create_client()?;
-    ensure_model_capabilities(client.as_mut(), input.required_capabilities())?;
-    let (summary, _) = client.send_message(input).await?;
+    let client = input.create_client()?;
+    let summary = client.send_message(input).await?.text;
     config.write().compress_session(&summary);
     Ok(())
 }

@@ -1,4 +1,4 @@
-use crate::config::Input;
+use super::ToolResults;
 
 use serde::{Deserialize, Serialize};
 
@@ -8,12 +8,18 @@ pub struct Message {
     pub content: MessageContent,
 }
 
-impl Message {
-    pub fn new(input: &Input) -> Self {
+impl Default for Message {
+    fn default() -> Self {
         Self {
             role: MessageRole::User,
-            content: input.to_message_content(),
+            content: MessageContent::Text(String::new()),
         }
+    }
+}
+
+impl Message {
+    pub fn new(role: MessageRole, content: MessageContent) -> Self {
+        Self { role, content }
     }
 }
 
@@ -34,10 +40,6 @@ impl MessageRole {
     pub fn is_user(&self) -> bool {
         matches!(self, MessageRole::User)
     }
-
-    pub fn is_assistant(&self) -> bool {
-        matches!(self, MessageRole::Assistant)
-    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -45,6 +47,8 @@ impl MessageRole {
 pub enum MessageContent {
     Text(String),
     Array(Vec<MessageContentPart>),
+    // Note: This type is primarily for convenience and does not exist in OpenAI's API.
+    ToolResults(ToolResults),
 }
 
 impl MessageContent {
@@ -68,6 +72,7 @@ impl MessageContent {
                 }
                 format!(".file {}{}", files.join(" "), concated_text)
             }
+            MessageContent::ToolResults(_) => String::new(),
         }
     }
 
@@ -83,6 +88,7 @@ impl MessageContent {
                     *text = replace_fn(text)
                 }
             }
+            MessageContent::ToolResults(_) => {}
         }
     }
 
@@ -98,6 +104,7 @@ impl MessageContent {
                 }
                 parts.join("\n\n")
             }
+            MessageContent::ToolResults(_) => String::new(),
         }
     }
 }

@@ -2,6 +2,7 @@ use super::{openai::OpenAIConfig, BuiltinModels, ClientConfig, Message, Model, S
 
 use crate::{
     config::{GlobalConfig, Input},
+    function::{eval_tool_calls, FunctionDeclaration, ToolCall, ToolCallResult},
     render::{render_error, render_stream},
     utils::{prompt_input_integer, prompt_input_string, tokenize, AbortSignal, PromptKind},
 };
@@ -52,7 +53,7 @@ macro_rules! register_client {
         pub enum ClientModel {
             $(
                 #[serde(rename = $name)]
-                $config { models: Vec<ModelConfig> },
+                $config { models: Vec<ModelData> },
             )+
             #[serde(other)]
             Unknown,
@@ -73,7 +74,7 @@ macro_rules! register_client {
                 pub fn init(global_config: &$crate::config::GlobalConfig, model: &$crate::client::Model) -> Option<Box<dyn Client>> {
                     let config = global_config.read().clients.iter().find_map(|client_config| {
                         if let ClientConfig::$config(c) = client_config {
-                            if Self::name(c) == &model.client_name {
+                            if Self::name(c) == model.client_name() {
                                 return Some(c.clone())
                             }
                         }
@@ -113,22 +114,8 @@ macro_rules! register_client {
             None
             $(.or_else(|| $client::init(config, &model)))+
             .ok_or_else(|| {
-                anyhow::anyhow!("Unknown client '{}'", model.client_name)
+                anyhow::anyhow!("Unknown client '{}'", model.client_name())
             })
-        }
-
-        pub fn ensure_model_capabilities(client: &mut dyn Client, capabilities: $crate::client::ModelCapabilities) -> anyhow::Result<()> {
-            if !client.model().capabilities.contains(capabilities) {
-                let models = client.list_models();
-                if let Some(model) = models.into_iter().find(|v| v.capabilities.contains(capabilities)) {
-                    client.set_model(model);
-                } else {
-                    anyhow::bail!(
-                        "The current model is incapable of doing that."
-                    );
-                }
-            }
-            Ok(())
         }
 
         pub fn list_client_types() -> Vec<&'static str> {
@@ -213,7 +200,7 @@ macro_rules! impl_client_trait {
                 &self,
                 client: &reqwest::Client,
                 data: $crate::client::SendData,
-            ) -> anyhow::Result<(String, $crate::client::CompletionDetails)> {
+            ) -> anyhow::Result<$crate::client::CompletionOutput> {
                 let builder = self.request_builder(client, data)?;
                 $send_message(builder).await
             }
@@ -261,14 +248,16 @@ macro_rules! unsupported_model {
 pub trait Client: Sync + Send {
     fn config(&self) -> (&GlobalConfig, &Option<ExtraConfig>);
 
-    fn list_models(&self) -> Vec<Model>;
-
     fn name(&self) -> &str;
+
+    #[allow(unused)]
+    fn list_models(&self) -> Vec<Model>;
 
     fn model(&self) -> &Model;
 
     fn model_mut(&mut self) -> &mut Model;
 
+    #[allow(unused)]
     fn set_model(&mut self, model: Model);
 
     fn build_client(&self) -> Result<ReqwestClient> {
@@ -287,14 +276,15 @@ pub trait Client: Sync + Send {
         Ok(client)
     }
 
-    async fn send_message(&self, input: Input) -> Result<(String, CompletionDetails)> {
+    async fn send_message(&self, input: Input) -> Result<CompletionOutput> {
         let global_config = self.config().0;
         if global_config.read().dry_run {
             let content = input.echo_messages();
-            return Ok((content, CompletionDetails::default()));
+            return Ok(CompletionOutput::new(&content));
         }
         let client = self.build_client()?;
-        let data = input.prepare_send_data(false)?;
+
+        let data = input.prepare_send_data(self.model(), false)?;
         self.send_message_inner(&client, data)
             .await
             .with_context(|| "Failed to get answer")
@@ -324,7 +314,7 @@ pub trait Client: Sync + Send {
                     return Ok(());
                 }
                 let client = self.build_client()?;
-                let data = input.prepare_send_data(true)?;
+                let data = input.prepare_send_data(self.model(), true)?;
                 self.send_message_streaming_inner(&client, handler, data).await
             } => {
                 handler.done()?;
@@ -341,7 +331,7 @@ pub trait Client: Sync + Send {
         &self,
         client: &ReqwestClient,
         data: SendData,
-    ) -> Result<(String, CompletionDetails)>;
+    ) -> Result<CompletionOutput>;
 
     async fn send_message_streaming_inner(
         &self,
@@ -368,14 +358,26 @@ pub struct SendData {
     pub messages: Vec<Message>,
     pub temperature: Option<f64>,
     pub top_p: Option<f64>,
+    pub functions: Option<Vec<FunctionDeclaration>>,
     pub stream: bool,
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct CompletionDetails {
+pub struct CompletionOutput {
+    pub text: String,
+    pub tool_calls: Vec<ToolCall>,
     pub id: Option<String>,
     pub input_tokens: Option<u64>,
     pub output_tokens: Option<u64>,
+}
+
+impl CompletionOutput {
+    pub fn new(text: &str) -> Self {
+        Self {
+            text: text.to_string(),
+            ..Default::default()
+        }
+    }
 }
 
 pub type PromptAction<'a> = (&'a str, &'a str, bool, PromptKind);
@@ -429,22 +431,24 @@ pub async fn send_stream(
     client: &dyn Client,
     config: &GlobalConfig,
     abort: AbortSignal,
-) -> Result<String> {
+) -> Result<(String, Vec<ToolCallResult>)> {
     let (tx, rx) = unbounded_channel();
-    let mut stream_handler = SseHandler::new(tx, abort.clone());
+    let mut handler = SseHandler::new(tx, abort.clone());
 
     let (send_ret, rend_ret) = tokio::join!(
-        client.send_message_streaming(input, &mut stream_handler),
+        client.send_message_streaming(input, &mut handler),
         render_stream(rx, config, abort.clone()),
     );
     if let Err(err) = rend_ret {
         render_error(err, config.read().highlight);
     }
-    let output = stream_handler.get_buffer().to_string();
+    let (output, calls) = handler.take();
     match send_ret {
         Ok(_) => {
-            println!();
-            Ok(output)
+            if !output.is_empty() && !output.ends_with('\n') {
+                println!();
+            }
+            Ok((output, eval_tool_calls(config, calls)?))
         }
         Err(err) => {
             if !output.is_empty() {

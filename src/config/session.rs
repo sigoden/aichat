@@ -1,5 +1,5 @@
 use super::input::resolve_data_url;
-use super::{Config, Input, Model};
+use super::{Config, Input, Model, Role};
 
 use crate::client::{Message, MessageContent, MessageRole};
 use crate::render::MarkdownRender;
@@ -17,15 +17,20 @@ pub const TEMP_SESSION_NAME: &str = "temp";
 pub struct Session {
     #[serde(rename(serialize = "model", deserialize = "model"))]
     model_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     temperature: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     top_p: Option<f64>,
-    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    function_filter: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     save_session: Option<bool>,
     messages: Vec<Message>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     data_urls: HashMap<String, String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     compressed_messages: Vec<Message>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     compress_threshold: Option<usize>,
     #[serde(skip)]
     pub name: String,
@@ -41,13 +46,14 @@ pub struct Session {
 
 impl Session {
     pub fn new(config: &Config, name: &str) -> Self {
-        Self {
+        let mut session = Self {
             model_id: config.model.id(),
             temperature: config.temperature,
             top_p: config.top_p,
+            function_filter: None,
             save_session: config.save_session,
-            messages: vec![],
-            compressed_messages: vec![],
+            messages: Default::default(),
+            compressed_messages: Default::default(),
             compress_threshold: None,
             data_urls: Default::default(),
             name: name.to_string(),
@@ -55,7 +61,11 @@ impl Session {
             dirty: false,
             compressing: false,
             model: config.model.clone(),
+        };
+        if let Some(role) = &config.role {
+            session.set_role_properties(role);
         }
+        session
     }
 
     pub fn load(name: &str, path: &Path) -> Result<Self> {
@@ -84,6 +94,10 @@ impl Session {
 
     pub fn top_p(&self) -> Option<f64> {
         self.top_p
+    }
+
+    pub fn function_filter(&self) -> Option<&str> {
+        self.function_filter.as_deref()
     }
 
     pub fn save_session(&self) -> Option<bool> {
@@ -120,12 +134,15 @@ impl Session {
         if let Some(top_p) = self.top_p() {
             data["top_p"] = top_p.into();
         }
+        if let Some(function_filter) = self.function_filter() {
+            data["function_filter"] = function_filter.into();
+        }
         if let Some(save_session) = self.save_session() {
             data["save_session"] = save_session.into();
         }
         data["total_tokens"] = tokens.into();
-        if let Some(context_window) = self.model.max_input_tokens {
-            data["max_input_tokens"] = context_window.into();
+        if let Some(max_input_tokens) = self.model.max_input_tokens() {
+            data["max_input_tokens"] = max_input_tokens.into();
         }
         if percent != 0.0 {
             data["total/max"] = format!("{}%", percent).into();
@@ -153,6 +170,10 @@ impl Session {
             items.push(("top_p", top_p.to_string()));
         }
 
+        if let Some(function_filter) = self.function_filter() {
+            items.push(("function_filter", function_filter.into()));
+        }
+
         if let Some(save_session) = self.save_session() {
             items.push(("save_session", save_session.to_string()));
         }
@@ -161,7 +182,7 @@ impl Session {
             items.push(("compress_threshold", compress_threshold.to_string()));
         }
 
-        if let Some(max_input_tokens) = self.model.max_input_tokens {
+        if let Some(max_input_tokens) = self.model.max_input_tokens() {
             items.push(("max_input_tokens", max_input_tokens.to_string()));
         }
 
@@ -202,7 +223,7 @@ impl Session {
 
     pub fn tokens_and_percent(&self) -> (usize, f32) {
         let tokens = self.tokens();
-        let max_input_tokens = self.model.max_input_tokens.unwrap_or_default();
+        let max_input_tokens = self.model.max_input_tokens().unwrap_or_default();
         let percent = if max_input_tokens == 0 {
             0.0
         } else {
@@ -224,6 +245,16 @@ impl Session {
             self.top_p = value;
             self.dirty = true;
         }
+    }
+
+    pub fn set_functions(&mut self, function_filter: Option<&str>) {
+        self.function_filter = function_filter.map(|v| v.to_string());
+    }
+
+    pub fn set_role_properties(&mut self, role: &Role) {
+        self.set_temperature(role.temperature);
+        self.set_top_p(role.top_p);
+        self.set_functions(role.function_filter.as_deref());
     }
 
     pub fn set_save_session(&mut self, value: Option<bool>) {
@@ -251,10 +282,10 @@ impl Session {
 
     pub fn compress(&mut self, prompt: String) {
         self.compressed_messages.append(&mut self.messages);
-        self.messages.push(Message {
-            role: MessageRole::System,
-            content: MessageContent::Text(prompt),
-        });
+        self.messages.push(Message::new(
+            MessageRole::System,
+            MessageContent::Text(prompt),
+        ));
         self.dirty = true;
     }
 
@@ -300,16 +331,14 @@ impl Session {
             }
         }
         if need_add_msg {
-            self.messages.push(Message {
-                role: MessageRole::User,
-                content: input.to_message_content(),
-            });
+            self.messages
+                .push(Message::new(MessageRole::User, input.message_content()));
         }
         self.data_urls.extend(input.data_urls());
-        self.messages.push(Message {
-            role: MessageRole::Assistant,
-            content: MessageContent::Text(output.to_string()),
-        });
+        self.messages.push(Message::new(
+            MessageRole::Assistant,
+            MessageContent::Text(output.to_string()),
+        ));
         self.dirty = true;
         Ok(())
     }
@@ -340,10 +369,7 @@ impl Session {
                 .extend(self.compressed_messages[self.compressed_messages.len() - 2..].to_vec());
         }
         if need_add_msg {
-            messages.push(Message {
-                role: MessageRole::User,
-                content: input.to_message_content(),
-            });
+            messages.push(Message::new(MessageRole::User, input.message_content()));
         }
         messages
     }

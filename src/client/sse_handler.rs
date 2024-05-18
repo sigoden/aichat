@@ -3,10 +3,13 @@ use crate::utils::AbortSignal;
 use anyhow::{Context, Result};
 use tokio::sync::mpsc::UnboundedSender;
 
+use super::ToolCall;
+
 pub struct SseHandler {
     sender: UnboundedSender<SseEvent>,
-    buffer: String,
     abort: AbortSignal,
+    buffer: String,
+    tool_calls: Vec<ToolCall>,
 }
 
 impl SseHandler {
@@ -15,11 +18,12 @@ impl SseHandler {
             sender,
             abort,
             buffer: String::new(),
+            tool_calls: Vec::new(),
         }
     }
 
     pub fn text(&mut self, text: &str) -> Result<()> {
-        // debug!("ReplyText: {}", text);
+        // debug!("HandleText: {}", text);
         if text.is_empty() {
             return Ok(());
         }
@@ -33,7 +37,7 @@ impl SseHandler {
     }
 
     pub fn done(&mut self) -> Result<()> {
-        // debug!("ReplyDone");
+        // debug!("HandleDone");
         let ret = self
             .sender
             .send(SseEvent::Done)
@@ -42,12 +46,21 @@ impl SseHandler {
         Ok(())
     }
 
-    pub fn get_buffer(&self) -> &str {
-        &self.buffer
+    pub fn tool_call(&mut self, call: ToolCall) -> Result<()> {
+        // debug!("HandleCall: {:?}", call);
+        self.tool_calls.push(call);
+        Ok(())
     }
 
     pub fn get_abort(&self) -> AbortSignal {
         self.abort.clone()
+    }
+
+    pub fn take(self) -> (String, Vec<ToolCall>) {
+        let Self {
+            buffer, tool_calls, ..
+        } = self;
+        (buffer, tool_calls)
     }
 
     fn safe_ret(&self, ret: Result<()>) -> Result<()> {
