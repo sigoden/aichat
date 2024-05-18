@@ -25,7 +25,7 @@ test-platform-env() {
 }
 
 # @cmd Test function calling
-# @option --model[`_choice_model`]
+# @option --model[?`_choice_model`]
 # @option --preset[=default|weather|multi-weathers]
 # @flag -S --no-stream
 # @arg text~
@@ -64,7 +64,7 @@ test-clients() {
 }
 
 # @cmd Test proxy server
-# @option -m --model[`_choice_model`]
+# @option -m --model[?`_choice_model`]
 # @flag -S --no-stream
 # @arg text~
 test-server() {

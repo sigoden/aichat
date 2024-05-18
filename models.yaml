@@ -1,7 +1,6 @@
 # notes:
 #   - do not submit pull requests to add new models; this list will be updated in batches with new releases.
 #   - do not add any open-source LLMs except for the following: Mixtral, LLama-3, Gemma, Qwen, Phi-3, DeepSeek, Command-R, dbrx, Yi.
-#   - only model that supports parallel fucntion calling can have the `supports_function_calling` property set to true.
 
 - platform: openai
   # docs:
@@ -80,6 +79,7 @@
       max_output_tokens: 2048
       input_price: 0.5
       output_price: 1.5
+      supports_function_calling: true
     - name: gemini-1.0-pro-vision-latest
       max_input_tokens: 12288
       max_output_tokens: 4096
@@ -92,6 +92,7 @@
       input_price: 0.35
       output_price: 0.53
       supports_vision: true
+      supports_function_calling: true
     - name: gemini-1.5-pro-latest
       max_input_tokens: 1048576
       max_output_tokens: 8192
@@ -122,6 +123,7 @@
       input_price: 3
       output_price: 15
       supports_vision: true
+      supports_function_calling: true
     - name: claude-3-haiku-20240307
       max_input_tokens: 200000
       max_output_tokens: 4096
@@ -129,6 +131,7 @@
       input_price: 0.25
       output_price: 1.25
       supports_vision: true
+      supports_function_calling: true
 
 - platform: mistral
   # docs:
@@ -158,6 +161,7 @@
       max_input_tokens: 32000
       input_price: 8
       output_price: 24
+      supports_function_calling: true
 
 - platform: cohere
   # docs:
@@ -253,12 +257,13 @@
   # notes:
   #   - get max_output_tokens info from models doc
   models:
-    - name: gemini-1.0-pro
+    - name: gemini-1.0-pro-002
       max_input_tokens: 24568
       max_output_tokens: 8192
       input_price: 0.125
       output_price: 0.375
-    - name: gemini-1.0-pro-vision
+      supports_function_calling: true
+    - name: gemini-1.0-pro-vision-001
       max_input_tokens: 14336
       max_output_tokens: 2048
       input_price: 0.125

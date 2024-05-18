@@ -18,7 +18,7 @@ use crate::config::{
     Config, GlobalConfig, Input, InputContext, WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE,
     SHELL_ROLE,
 };
-use crate::function::run_tool_calls;
+use crate::function::eval_tool_calls;
 use crate::render::{render_error, MarkdownRender};
 use crate::repl::Repl;
 use crate::utils::{create_abort_signal, extract_block, run_spinner, spawn_command, CODE_BLOCK_RE};
@@ -150,7 +150,7 @@ async fn start_directive(
             text, tool_calls, ..
         } = client.send_message(input.clone()).await?;
         if !tool_calls.is_empty() {
-            (String::new(), run_tool_calls(config, tool_calls)?)
+            (String::new(), eval_tool_calls(config, tool_calls)?)
         } else {
             let text = if extract_code && text.trim_start().starts_with("```") {
                 extract_block(&text)

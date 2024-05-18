@@ -83,9 +83,10 @@ pub async fn claude_send_message_streaming(
                         data["content_block"]["id"].as_str(),
                     ) {
                         if !function_name.is_empty() {
-                            let arguments: Value = function_arguments
-                                .parse()
-                                .context("Invalid call arguments: must be json")?;
+                            let arguments: Value =
+                                function_arguments.parse().with_context(|| {
+                                    format!("Tool call '{function_name}' is invalid: arguments must be in valid JSON format")
+                                })?;
                             handler.tool_call(ToolCall::new(
                                 function_name.clone(),
                                 arguments,
@@ -109,9 +110,9 @@ pub async fn claude_send_message_streaming(
                 }
                 "content_block_stop" => {
                     if !function_name.is_empty() {
-                        let arguments: Value = function_arguments
-                            .parse()
-                            .context("Invalid call arguments: must be json")?;
+                        let arguments: Value = function_arguments.parse().with_context(|| {
+                            format!("Tool call '{function_name}' is invalid: arguments must be in valid JSON format")
+                        })?;
                         handler.tool_call(ToolCall::new(
                             function_name.clone(),
                             arguments,

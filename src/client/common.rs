@@ -2,7 +2,7 @@ use super::{openai::OpenAIConfig, BuiltinModels, ClientConfig, Message, Model, S
 
 use crate::{
     config::{GlobalConfig, Input},
-    function::{run_tool_calls, FunctionDeclaration, ToolCall, ToolCallResult},
+    function::{eval_tool_calls, FunctionDeclaration, ToolCall, ToolCallResult},
     render::{render_error, render_stream},
     utils::{prompt_input_integer, prompt_input_string, tokenize, AbortSignal, PromptKind},
 };
@@ -448,7 +448,7 @@ pub async fn send_stream(
             if !output.is_empty() && !output.ends_with('\n') {
                 println!();
             }
-            Ok((output, run_tool_calls(config, calls)?))
+            Ok((output, eval_tool_calls(config, calls)?))
         }
         Err(err) => {
             if !output.is_empty() {

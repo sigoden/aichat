@@ -11,7 +11,13 @@ use is_terminal::IsTerminal;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::{collections::HashMap, fs, io::stdout, path::Path, sync::mpsc::channel};
+use std::{
+    collections::{HashMap, HashSet},
+    fs,
+    io::stdout,
+    path::Path,
+    sync::mpsc::channel,
+};
 use threadpool::ThreadPool;
 
 const BIN_DIR_NAME: &str = "bin";
@@ -23,11 +29,15 @@ lazy_static! {
 
 pub type ToolResults = (Vec<ToolCallResult>, String);
 
-pub fn run_tool_calls(config: &GlobalConfig, calls: Vec<ToolCall>) -> Result<Vec<ToolCallResult>> {
+pub fn eval_tool_calls(
+    config: &GlobalConfig,
+    mut calls: Vec<ToolCall>,
+) -> Result<Vec<ToolCallResult>> {
     let mut output = vec![];
     if calls.is_empty() {
         return Ok(output);
     }
+    calls = ToolCall::dedup(calls);
     let parallel = calls.len() > 1 && calls.iter().all(|v| !v.is_execute());
     if parallel {
         let (tx, rx) = channel();
@@ -36,7 +46,7 @@ pub fn run_tool_calls(config: &GlobalConfig, calls: Vec<ToolCall>) -> Result<Vec
             let tx = tx.clone();
             let config = config.clone();
             THREAD_POOL.execute(move || {
-                let result = call.run(&config);
+                let result = call.eval(&config);
                 let _ = tx.send((index, call, result));
             });
         }
@@ -51,7 +61,7 @@ pub fn run_tool_calls(config: &GlobalConfig, calls: Vec<ToolCall>) -> Result<Vec
         }
     } else {
         for call in calls {
-            if let Some(result) = call.run(config)? {
+            if let Some(result) = call.eval(config)? {
                 output.push(ToolCallResult::new(call, result));
             }
         }
@@ -168,6 +178,25 @@ pub struct ToolCall {
 }
 
 impl ToolCall {
+    pub fn dedup(calls: Vec<Self>) -> Vec<Self> {
+        let mut new_calls = vec![];
+        let mut seen_ids = HashSet::new();
+
+        for call in calls.into_iter().rev() {
+            if let Some(id) = &call.id {
+                if !seen_ids.contains(id) {
+                    seen_ids.insert(id.clone());
+                    new_calls.push(call);
+                }
+            } else {
+                new_calls.push(call);
+            }
+        }
+
+        new_calls.reverse();
+        new_calls
+    }
+
     pub fn new(name: String, arguments: Value, id: Option<String>) -> Self {
         Self {
             name,
@@ -176,7 +205,7 @@ impl ToolCall {
         }
     }
 
-    pub fn run(&self, config: &GlobalConfig) -> Result<Option<Value>> {
+    pub fn eval(&self, config: &GlobalConfig) -> Result<Option<Value>> {
         let name = self.name.clone();
         if !config.read().function.names.contains(&name) {
             bail!("Unexpected call: {name} {}", self.arguments);

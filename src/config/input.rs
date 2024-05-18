@@ -120,7 +120,13 @@ impl Input {
         output: String,
         tool_call_results: Vec<ToolCallResult>,
     ) -> Self {
-        self.tool_call = Some((tool_call_results, output));
+        match self.tool_call.as_mut() {
+            Some(exist_tool_call_results) => {
+                exist_tool_call_results.0.extend(tool_call_results);
+                exist_tool_call_results.1 = output;
+            }
+            None => self.tool_call = Some((tool_call_results, output)),
+        }
         self
     }
 
