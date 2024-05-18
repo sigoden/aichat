@@ -21,7 +21,10 @@ use crate::config::{
 use crate::function::eval_tool_calls;
 use crate::render::{render_error, MarkdownRender};
 use crate::repl::Repl;
-use crate::utils::{create_abort_signal, extract_block, run_command, run_spinner, CODE_BLOCK_RE};
+use crate::utils::{
+    create_abort_signal, detect_shell, extract_block, run_command, run_spinner, Shell,
+    CODE_BLOCK_RE,
+};
 
 use anyhow::{bail, Result};
 use async_recursion::async_recursion;
@@ -34,7 +37,6 @@ use std::io::{stderr, stdin, stdout, Read};
 use std::process;
 use std::sync::Arc;
 use tokio::sync::oneshot;
-use utils::detect_shell;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -118,8 +120,8 @@ async fn main() -> Result<()> {
             bail!("No input");
         }
         let input = create_input(&config, text, file)?;
-        let (_, shell, shell_arg) = detect_shell();
-        shell_execute(&config, &shell, shell_arg, input).await?;
+        let shell = detect_shell();
+        shell_execute(&config, &shell, input).await?;
         return Ok(());
     }
     config.write().apply_prelude()?;
@@ -195,12 +197,7 @@ async fn start_interactive(config: &GlobalConfig) -> Result<()> {
 }
 
 #[async_recursion::async_recursion]
-async fn shell_execute(
-    config: &GlobalConfig,
-    shell: &str,
-    shell_arg: &str,
-    mut input: Input,
-) -> Result<()> {
+async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -> Result<()> {
     let client = input.create_client()?;
     let is_terminal_stdout = stdout().is_terminal();
     let ret = if is_terminal_stdout {
@@ -227,15 +224,15 @@ async fn shell_execute(
     if is_terminal_stdout {
         loop {
             let answer = Select::new(
-                markdown_render.render(&eval_str).trim(),
+                eval_str.trim(),
                 vec!["✅ Execute", "🤔 Revise", "📙 Explain", "❌ Cancel"],
             )
             .prompt()?;
 
             match answer {
                 "✅ Execute" => {
-                    debug!("{} {:?}", shell, &[shell_arg, &eval_str]);
-                    let code = run_command(shell, &[shell_arg, &eval_str], None)?;
+                    debug!("{} {:?}", shell.cmd, &[&shell.arg, &eval_str]);
+                    let code = run_command(&shell.cmd, &[&shell.arg, &eval_str], None)?;
                     if code != 0 {
                         process::exit(code);
                     }
@@ -244,7 +241,7 @@ async fn shell_execute(
                     let revision = Text::new("Enter your revision:").prompt()?;
                     let text = format!("{}\n{revision}", input.text());
                     input.set_text(text);
-                    return shell_execute(config, shell, shell_arg, input).await;
+                    return shell_execute(config, shell, input).await;
                 }
                 "📙 Explain" => {
                     let role = config.read().retrieve_role(EXPLAIN_SHELL_ROLE)?;
