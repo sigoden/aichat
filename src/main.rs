@@ -131,7 +131,8 @@ async fn main() -> Result<()> {
         true => start_interactive(&config).await,
     } {
         let highlight = stderr().is_terminal() && config.read().highlight;
-        render_error(err, highlight)
+        render_error(err, highlight);
+        std::process::exit(1);
     }
     Ok(())
 }
