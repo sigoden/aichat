@@ -225,23 +225,16 @@ fn parse_structure_prompt(prompt: &str) -> (&str, Vec<(&str, &str)>) {
 
 fn shell_prompt() -> String {
     let os = detect_os();
-    let (detected_shell, _, _) = detect_shell();
-    let (shell, use_semicolon) = match (detected_shell.as_str(), os.as_str()) {
-        // GPT doesn’t know much about nushell
-        ("nushell", "windows") => ("cmd", true),
-        ("nushell", _) => ("bash", true),
-        ("powershell", _) => ("powershell", true),
-        ("pwsh", _) => ("powershell", false),
-        _ => (detected_shell.as_str(), false),
-    };
-    let combine = if use_semicolon {
+    let shell = detect_shell();
+    let shell = shell.name.as_str();
+    let combinator = if shell == "powershell" {
         "\nIf multiple steps required try to combine them together using ';'.\nIf it already combined with '&&' try to replace it with ';'.".to_string()
     } else {
         "\nIf multiple steps required try to combine them together using '&&'.".to_string()
     };
     format!(
         r#"Provide only {shell} commands for {os} without any description.
-Ensure the output is a valid {shell} command. {combine}
+Ensure the output is a valid {shell} command. {combinator}
 If there is a lack of details, provide most logical solution.
 Output plain text only, without any markdown formatting."#
     )

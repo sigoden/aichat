@@ -16,18 +16,32 @@ pub fn detect_os() -> String {
     os.to_string()
 }
 
-pub fn detect_shell() -> (String, String, &'static str) {
+pub struct Shell {
+    pub name: String,
+    pub cmd: String,
+    pub arg: String,
+}
+
+impl Shell {
+    pub fn new(name: &str, cmd: &str, arg: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            cmd: cmd.to_string(),
+            arg: arg.to_string(),
+        }
+    }
+}
+
+pub fn detect_shell() -> Shell {
     let os = env::consts::OS;
     if os == "windows" {
-        if env::var("NU_VERSION").is_ok() {
-            ("nushell".into(), "nu.exe".into(), "-c")
-        } else if let Some(ret) = env::var("PSModulePath").ok().and_then(|v| {
+        if let Some(ret) = env::var("PSModulePath").ok().and_then(|v| {
             let v = v.to_lowercase();
             if v.split(';').count() >= 3 {
                 if v.contains("powershell\\7\\") {
-                    Some(("pwsh".into(), "pwsh.exe".into(), "-c"))
+                    Some(Shell::new("pwsh", "pwsh.exe", "-c"))
                 } else {
-                    Some(("powershell".into(), "powershell.exe".into(), "-Command"))
+                    Some(Shell::new("powershell", "powershell.exe", "-Command"))
                 }
             } else {
                 None
@@ -35,22 +49,18 @@ pub fn detect_shell() -> (String, String, &'static str) {
         }) {
             ret
         } else {
-            ("cmd".into(), "cmd.exe".into(), "/C")
+            Shell::new("cmd", "cmd.exe", "/C")
         }
-    } else if env::var("NU_VERSION").is_ok() {
-        ("nushell".into(), "nu".into(), "-c")
     } else {
-        let shell_cmd = env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
-        let shell_name = match shell_cmd.rsplit_once('/') {
-            Some((_, name)) => name.to_string(),
-            None => shell_cmd.clone(),
+        let shell = env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
+        let shell = match shell.rsplit_once('/') {
+            Some((_, v)) => v,
+            None => &shell,
         };
-        let shell_name = if shell_name == "nu" {
-            "nushell".into()
-        } else {
-            shell_name
-        };
-        (shell_name, shell_cmd, "-c")
+        match shell {
+            "bash" | "zsh" | "fish" | "pwsh" => Shell::new(shell, shell, "-c"),
+            _ => Shell::new("sh", "sh", "-c"),
+        }
     }
 }
 
