@@ -26,6 +26,7 @@ use crate::utils::{create_abort_signal, extract_block, run_spinner, spawn_comman
 use anyhow::{bail, Result};
 use async_recursion::async_recursion;
 use clap::Parser;
+use function::need_send_call_results;
 use inquire::{Select, Text};
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
@@ -174,7 +175,7 @@ async fn start_directive(
         .write()
         .save_message(&input, &output, &tool_call_results)?;
     config.write().end_session()?;
-    if !tool_call_results.is_empty() {
+    if need_send_call_results(&tool_call_results) {
         start_directive(
             config,
             input.merge_tool_call(output, tool_call_results),

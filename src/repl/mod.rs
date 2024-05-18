@@ -8,6 +8,7 @@ use self::prompt::ReplPrompt;
 
 use crate::client::send_stream;
 use crate::config::{GlobalConfig, Input, InputContext, State};
+use crate::function::need_send_call_results;
 use crate::render::render_error;
 use crate::utils::{create_abort_signal, set_text, AbortSignal};
 
@@ -417,15 +418,15 @@ async fn ask(config: &GlobalConfig, abort: AbortSignal, input: Input) -> Result<
             config.write().end_compressing_session();
         });
     }
-    if tool_call_results.is_empty() {
-        Ok(())
-    } else {
+    if need_send_call_results(&tool_call_results) {
         ask(
             config,
             abort,
             input.merge_tool_call(output, tool_call_results),
         )
         .await
+    } else {
+        Ok(())
     }
 }
 

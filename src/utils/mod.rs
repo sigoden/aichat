@@ -130,8 +130,23 @@ pub fn error_text(input: &str) -> String {
         .to_string()
 }
 
+pub fn warning_text(input: &str) -> String {
+    nu_ansi_term::Style::new()
+        .fg(nu_ansi_term::Color::Yellow)
+        .paint(input)
+        .to_string()
+}
+
 pub fn dimmed_text(input: &str) -> String {
     nu_ansi_term::Style::new().dimmed().paint(input).to_string()
+}
+
+pub fn indent_text(text: &str, spaces: usize) -> String {
+    let indent_size = " ".repeat(spaces);
+    text.lines()
+        .map(|line| format!("{}{}", indent_size, line))
+        .collect::<Vec<String>>()
+        .join("\n")
 }
 
 #[cfg(test)]

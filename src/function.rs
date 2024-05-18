@@ -1,6 +1,6 @@
 use crate::{
     config::GlobalConfig,
-    utils::{dimmed_text, error_text, exec_command, spawn_command},
+    utils::{dimmed_text, exec_command, indent_text, spawn_command, warning_text},
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -50,23 +50,22 @@ pub fn eval_tool_calls(
                 let _ = tx.send((index, call, result));
             });
         }
-        let mut list: Vec<(usize, ToolCall, Result<Option<Value>>)> =
-            rx.iter().take(calls_len).collect();
+        let mut list: Vec<(usize, ToolCall, Result<Value>)> = rx.iter().take(calls_len).collect();
         list.sort_by_key(|v| v.0);
         for (_, call, result) in list {
-            let result = result?;
-            if let Some(result) = result {
-                output.push(ToolCallResult::new(call, result));
-            }
+            output.push(ToolCallResult::new(call, result?));
         }
     } else {
         for call in calls {
-            if let Some(result) = call.eval(config)? {
-                output.push(ToolCallResult::new(call, result));
-            }
+            let result = call.eval(config)?;
+            output.push(ToolCallResult::new(call, result));
         }
     }
     Ok(output)
+}
+
+pub fn need_send_call_results(arr: &[ToolCallResult]) -> bool {
+    arr.iter().any(|v| !v.output.is_null())
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -205,7 +204,7 @@ impl ToolCall {
         }
     }
 
-    pub fn eval(&self, config: &GlobalConfig) -> Result<Option<Value>> {
+    pub fn eval(&self, config: &GlobalConfig) -> Result<Value> {
         let name = self.name.clone();
         if !config.read().function.names.contains(&name) {
             bail!("Unexpected call: {name} {}", self.arguments);
@@ -214,10 +213,10 @@ impl ToolCall {
             self.arguments.clone()
         } else if let Some(arguments) = self.arguments.as_str() {
             let args: Value = serde_json::from_str(arguments)
-                .map_err(|_| anyhow!("Invalid call arguments: {arguments}"))?;
+                .map_err(|_| anyhow!("The {name} call has invalid arguments: {arguments}"))?;
             args
         } else {
-            bail!("Invalid call arguments: {}", self.arguments);
+            bail!("The {name} call has invalid arguments: {}", self.arguments);
         };
         let arguments = convert_arguments(&arguments);
 
@@ -250,21 +249,38 @@ impl ToolCall {
                 let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
                 spawn_command(&name, &arguments, envs)?;
             }
-            None
+            Value::Null
         } else {
             println!("{}", dimmed_text(&prompt_text));
             #[cfg(windows)]
             let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
             let (success, stdout, stderr) = exec_command(&name, &arguments, envs)?;
-            if stderr.is_empty() {
-                eprintln!("{}", error_text(&stderr));
-            }
-            if success && !stdout.is_empty() {
-                serde_json::from_str(&stdout)
-                    .ok()
-                    .or_else(|| Some(json!({"output": stdout})))
+
+            if success {
+                if !stderr.is_empty() {
+                    eprintln!(
+                        "{}",
+                        warning_text(&format!("{prompt_text}:\n{}", indent_text(&stderr, 4)))
+                    );
+                }
+                if !stdout.is_empty() {
+                    serde_json::from_str(&stdout)
+                        .ok()
+                        .unwrap_or_else(|| json!({"output": stdout}))
+                } else {
+                    Value::Null
+                }
             } else {
-                None
+                let err = if stderr.is_empty() {
+                    if stdout.is_empty() {
+                        "Something wrong"
+                    } else {
+                        &stdout
+                    }
+                } else {
+                    &stderr
+                };
+                bail!("{}", &format!("{prompt_text}:\n{}", indent_text(err, 4)));
             }
         };
 
