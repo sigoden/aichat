@@ -191,7 +191,7 @@
       position: relative;
       display: flex;
       flex-direction: column;
-      width: 100%;
+      width: calc(100% - 1rem);
       margin-top: -2px;
       padding-left: 0.625rem;
       flex-grow: 1;
@@ -825,21 +825,24 @@
         },
 
         handleScrollChatBody(event) {
-          const { scrollTop, clientHeight, scrollHeight } = event.target;
-          if ((event.target._prevScrollTop || 0) > scrollTop + 1) {
+          const $chatBody = event.target;
+          const { scrollTop, clientHeight, scrollHeight, _prevScrollTop = 0 } = $chatBody;
+          if (scrollTop + clientHeight > scrollHeight - 5) {
+            this.isShowScrollToBottomBtn = false;
+            this.shouldScrollChatBodyToBottom = true;
+          }
+          if (scrollHeight > clientHeight && _prevScrollTop > 1 && _prevScrollTop > scrollTop + 1) {
             this.shouldScrollChatBodyToBottom = false;
             this.isShowScrollToBottomBtn = true;
-          } else if (this.isShowScrollToBottomBtn && scrollTop + clientHeight > scrollHeight - 5) {
-            this.isShowScrollToBottomBtn = false;
           }
+          $chatBody._prevScrollTop = scrollTop;
         },
 
         handleScrollToBottom() {
           const $chatBody = this.$refs["chat-body"];
           $chatBody.scrollTop = $chatBody.scrollHeight;
-          $chatBody._prevScrollTop = $chatBody.scrollTop;
           this.isShowScrollToBottomBtn = false;
-          this.autoScrollChatBodyToBottom = true;
+          this.shouldScrollChatBodyToBottom = true;
         },
 
         handleShowSidebarBtnClick() {
@@ -893,14 +896,11 @@
 
         autoScrollChatBodyToBottom() {
           if (this.shouldScrollChatBodyToBottom) {
-            const $chatBody = this.$refs["chat-body"];
-            if ($chatBody) {
-              const { scrollTop, scrollHeight, clientHeight } = $chatBody;
-              if (scrollTop + clientHeight < scrollHeight - 5) {
-                $chatBody.scrollTop = scrollHeight;
-                $chatBody._prevScrollTop = $chatBody.scrollTop;
-              }
+            let $chatBody = this.$refs["chat-body"];
+            if (!$chatBody) {
+              $chatBody = document.querySelector('[x-ref="chat-body"]')
             }
+            $chatBody.scrollTop = $chatBody.scrollHeight;
           }
         },
 
@@ -925,10 +925,7 @@
 
         async ask() {
           this.askAbortController = new AbortController();
-          this.$nextTick(() => {
-            this.shouldScrollChatBodyToBottom = true;
-            this.autoScrollChatBodyToBottom();
-          });
+          this.shouldScrollChatBodyToBottom = true;
           const lastMessage = this.messages[this.messages.length - 1];
           const body = this.buildBody();
           let succeed = false;
