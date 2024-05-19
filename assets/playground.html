@@ -178,6 +178,7 @@
     .chat-message {
       display: flex;
       padding: 0.7rem;
+      margin-bottom: 0.7rem;
     }
 
     .chat-avatar svg {
@@ -247,7 +248,7 @@
     .message-toolbox {
       display: flex;
       position: absolute;
-      bottom: -1.25rem;
+      bottom: -1.4rem;
     }
 
     .copy-message-btn,
@@ -1193,6 +1194,9 @@
 
     function estimateTokenLength(input) {
       let tokenLength = 0;
+      if (Array.isArray(input)) {
+        input = input.map(v => v.text || "").join("");
+      }
 
       for (let i = 0; i < input.length; i++) {
         const charCode = input.charCodeAt(i);
