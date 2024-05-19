@@ -114,7 +114,7 @@
       position: relative;
       display: flex;
       flex-direction: column;
-      width: 100%;
+      width: calc(100% - 1rem);
       margin-top: -2px;
       padding-left: 0.625rem;
       flex-grow: 1;
@@ -674,22 +674,25 @@
 
         handleScrollChatBody(event, index) {
           const chat = this.chats[index];
-          const { scrollTop, clientHeight, scrollHeight } = event.target;
-          if ((event.target._prevScrollTop || 0) > scrollTop + 1) {
+          const $chatBody = event.target;
+          const { scrollTop, clientHeight, scrollHeight, _prevScrollTop = 0 } = $chatBody;
+          if (scrollTop + clientHeight > scrollHeight - 5) {
+            chat.isShowScrollToBottomBtn = false;
+            chat.shouldScrollChatBodyToBottom = true;
+          }
+          if (scrollHeight > clientHeight && _prevScrollTop > 1 && _prevScrollTop > scrollTop + 1) {
             chat.shouldScrollChatBodyToBottom = false;
             chat.isShowScrollToBottomBtn = true;
-          } else if (chat.isShowScrollToBottomBtn && scrollTop + clientHeight > scrollHeight - 5) {
-            chat.isShowScrollToBottomBtn = false;
           }
+          $chatBody._prevScrollTop = scrollTop;
         },
 
         handleScrollToBottom(index) {
           const chat = this.chats[index];
           const $chatBody = document.querySelector('#chat-body-' + index);
           $chatBody.scrollTop = $chatBody.scrollHeight;
-          $chatBody._prevScrollTop = $chatBody.scrollTop;
           chat.isShowScrollToBottomBtn = false;
-          chat.autoScrollChatBodyToBottom = true;
+          chat.shouldScrollChatBodyToBottom = true;
         },
 
         handleNewlineInput(event) {
@@ -743,11 +746,7 @@
           if (chat.shouldScrollChatBodyToBottom) {
             const $chatBody = document.querySelector('#chat-body-' + index);
             if ($chatBody) {
-              const { scrollTop, scrollHeight, clientHeight } = $chatBody;
-              if (scrollTop + clientHeight < scrollHeight - 5) {
-                $chatBody.scrollTop = scrollHeight;
-                $chatBody._prevScrollTop = $chatBody.scrollTop;
-              }
+              $chatBody.scrollTop = $chatBody.scrollHeight;
             }
           }
         },
@@ -774,10 +773,7 @@
         async ask(index) {
           const chat = this.chats[index];
           chat.askAbortController = new AbortController();
-          this.$nextTick(() => {
-            chat.shouldScrollChatBodyToBottom = true;
-            this.autoScrollChatBodyToBottom(index);
-          });
+          chat.shouldScrollChatBodyToBottom = true;
           const lastMessage = chat.messages[chat.messages.length - 1];
           const body = this.buildBody(index);
           let succeed = false;
