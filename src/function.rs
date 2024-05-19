@@ -230,12 +230,10 @@ impl ToolCall {
                 .join(" ")
         );
 
-        let envs = if let Some(env_path) = config.read().function.env_path.clone() {
-            let mut envs = HashMap::new();
+        let mut envs = HashMap::new();
+        envs.insert("LLM_FUNCTION_DATA".into(), self.arguments.to_string());
+        if let Some(env_path) = config.read().function.env_path.clone() {
             envs.insert("PATH".into(), env_path);
-            Some(envs)
-        } else {
-            None
         };
         let output = if self.is_execute_type() {
             let proceed = if stdout().is_terminal() {
@@ -247,14 +245,14 @@ impl ToolCall {
             if proceed {
                 #[cfg(windows)]
                 let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
-                run_command(&name, &arguments, envs)?;
+                run_command(&name, &arguments, Some(envs))?;
             }
             Value::Null
         } else {
             println!("{}", dimmed_text(&prompt_text));
             #[cfg(windows)]
             let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
-            let (success, stdout, stderr) = run_command_with_output(&name, &arguments, envs)?;
+            let (success, stdout, stderr) = run_command_with_output(&name, &arguments, Some(envs))?;
 
             if success {
                 if !stderr.is_empty() {
