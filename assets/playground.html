@@ -14,6 +14,7 @@
   <script src="//unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
   <script src="//unpkg.com/marked@12.0.2/lib/marked.umd.js" defer></script>
   <script src="//unpkg.com/alpinejs@3.13.10/dist/cdn.min.js" defer></script>
+  <script src="//unpkg.com/clipboard@2.0.1/dist/clipboard.min.js" def></script>
   <style>
     :root {
       --fg-primary: #1652f1;
@@ -168,7 +169,7 @@
     .chat-body {
       display: flex;
       flex-direction: column;
-      padding: 1.25rem;
+      padding: 0.5rem;
       flex-grow: 1;
       overflow-x: hidden;
       overflow-y: auto;
@@ -186,9 +187,11 @@
     }
 
     .chat-message-content {
+      position: relative;
       display: flex;
       flex-direction: column;
       width: 100%;
+      margin-top: -2px;
       padding-left: 0.625rem;
       flex-grow: 1;
     }
@@ -239,6 +242,27 @@
     .code-block {
       position: relative;
       width: 100%;
+    }
+
+    .message-toolbox {
+      display: flex;
+      position: absolute;
+      bottom: -1.25rem;
+    }
+
+    .copy-message-btn,
+    .regenerate-message-btn {
+      top: 0.7rem;
+      right: 0.7rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding-right: 4px;
+    }
+
+    .copy-message-btn svg,
+    .regenerate-message-btn svg {
+      width: 1rem;
+      height: 1rem;
     }
 
     .copy-code-btn {
@@ -362,8 +386,9 @@
     }
 
     .spinner {
-      width: 1.25rem;
-      height: 1.25rem;
+      width: 1.1rem;
+      height: 1.1rem;
+      margin-top: 3px;
       border: 2px solid #000;
       border-bottom-color: transparent;
       border-radius: 50%;
@@ -378,7 +403,6 @@
       left: 50%;
       text-align: center;
       transform: translate(-50%, 0);
-      min-width: 200px;
       background-color: var(--fg-default);
       color: var(--bg-primary);
       padding: 1rem;
@@ -527,8 +551,8 @@
         </div>
       </div>
       <div class="chat-body" x-ref="chat-body" @scroll="handleScrollChatBody">
-        <template x-for="message in messages" :key="message.id">
-          <div class="chat-message">
+        <template x-for="(message, index) in messages" :key="message.id">
+          <div class="chat-message" @mouseover="hoveredMessageIndex = index" @mouseleave="messageHoveredIndex = null">
             <div class="chat-avatar" :class="message.role == 'user' ? 'chat-avatar user' : 'chat-avatar assistant'">
               <template x-if="message.role == 'user'">
                 <svg fill="currentColor" viewBox="0 0 16 16">
@@ -547,6 +571,7 @@
               </template>
             </div>
             <div class="chat-message-content">
+              <!-- message -->
               <template x-if="message.role == 'assistant' && message.html">
                 <div class="markdown-body" x-html="message.html"></div>
               </template>
@@ -572,6 +597,28 @@
               <template
                 x-if="message.role == 'user' && Object.prototype.toString.call(message.content) == '[object String]'">
                 <div class="message-text" x-text="message.content"></div>
+              </template>
+              <!-- toolbox -->
+              <template x-if="index == hoveredMessageIndex">
+                <div class="message-toolbox">
+                  <div class="copy-message-btn" :data-clipboard-text="message.content"
+                    x-init="copyMessageClipboard = new ClipboardJS('.copy-message-btn'); copyMessageClipboard.on('success', () => {toast('Copied Message')})" title="Copy">
+                    <svg fill="currentColor" viewBox="0 0 16 16">
+                      <path fill-rule="evenodd"
+                        d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z" />
+                    </svg>
+                  </div>
+                  <template
+                    x-if="index == messages.length - 1 && (message.state == 'succeed' || message.state == 'failed')">
+                    <div class="regenerate-message-btn" @click="handleRegenerateMessage" title="Regenerate">
+                      <svg fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z" />
+                        <path
+                          d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466" />
+                      </svg>
+                    </div>
+                  </template>
+                </div>
               </template>
             </div>
           </div>
@@ -679,6 +726,8 @@
         roles: [{ name: "", prompt: "" }],
         currentModel: {},
         messages: [],
+        hoveredMessageIndex: null,
+        copyMessageClipboard: null,
         skipMessageId: -1,
         input: "",
         images: [],
@@ -750,6 +799,21 @@
           this.ask();
         },
 
+        handleRegenerateMessage() {
+          const lastIndex = this.messages.length -  1;
+          if (lastIndex !== this.hoveredMessageIndex) {
+            return
+          }
+          let lastMessage = this.messages[lastIndex];
+          lastMessage.content = "";
+          lastMessage.state = "loading";
+          lastMessage.error = "";
+          lastMessage.html = "";
+          this.asking = true;
+          this.ask();
+        },
+
+
         handleCancelAsk() {
           this.askAbortController?.abort();
         },
@@ -773,6 +837,7 @@
           $chatBody.scrollTop = $chatBody.scrollHeight;
           $chatBody._prevScrollTop = $chatBody.scrollTop;
           this.isShowScrollToBottomBtn = false;
+          this.autoScrollChatBodyToBottom = true;
         },
 
         handleShowSidebarBtnClick() {
@@ -810,7 +875,7 @@
             window.getSelection().addRange(range);
             document.execCommand('copy');
             window.getSelection().removeAllRanges();
-            toast("Copied code to clipboard");
+            toast("Copied Code");
           }
         },
 
