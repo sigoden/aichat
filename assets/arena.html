@@ -389,7 +389,8 @@
           </div>
           <div class="chat-body" :id="'chat-body-' + index" @scroll="(event) => handleScrollChatBody(event, index)">
             <template x-for="(message, messageIndex) in chat.messages" :key="message.id">
-              <div class="chat-message"  @mouseover="chat.hoveredMessageIndex = messageIndex" @mouseleave="chat.messageHoveredIndex = null">
+              <div class="chat-message" @mouseover="chat.hoveredMessageIndex = messageIndex"
+                @mouseleave="chat.messageHoveredIndex = null">
                 <div class="chat-avatar" :class="message.role == 'user' ? 'chat-avatar user' : 'chat-avatar assistant'">
                   <template x-if="message.role == 'user'">
                     <svg fill="currentColor" viewBox="0 0 16 16">
@@ -438,8 +439,10 @@
                   <!-- toolbox -->
                   <template x-if="messageIndex == chat.hoveredMessageIndex">
                     <div class="message-toolbox">
-                      <div :id="'copy-message-btn-' + index" class="copy-message-btn" :data-clipboard-text="message.content"
-                        x-init="copyMessageClipboard = new ClipboardJS('#copy-message-btn-' + index); copyMessageClipboard.on('success', () => {toast('Copied Message')})" title="Copy">
+                      <div :id="'copy-message-btn-' + index" class="copy-message-btn"
+                        :data-clipboard-text="message.content"
+                        x-init="copyMessageClipboard = new ClipboardJS('#copy-message-btn-' + index); copyMessageClipboard.on('success', () => {toast('Copied Message')})"
+                        title="Copy">
                         <svg fill="currentColor" viewBox="0 0 16 16">
                           <path fill-rule="evenodd"
                             d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z" />
@@ -447,9 +450,11 @@
                       </div>
                       <template
                         x-if="messageIndex == chat.messages.length - 1 && (message.state == 'succeed' || message.state == 'failed')">
-                        <div class="regenerate-message-btn" @click="(event) => handleRegenerateMessage(index)" title="Regenerate">
+                        <div class="regenerate-message-btn" @click="(event) => handleRegenerateMessage(index)"
+                          title="Regenerate">
                           <svg fill="currentColor" viewBox="0 0 16 16">
-                            <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z" />
+                            <path fill-rule="evenodd"
+                              d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z" />
                             <path
                               d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466" />
                           </svg>
@@ -581,7 +586,7 @@
             }
             $scrollToBottomBtns[i].style.left = offsets[i];
           }
-          this.$watch("input", () => this.autoExpandHeight(this.$refs.input));
+          this.$watch("input", () => this.autoScrollAndHeightOnInput(this.$refs.input));
           new ResizeObserver(() => {
             this.autoHeightChatPanel();
           }).observe($inputPanel)
@@ -641,7 +646,7 @@
 
         handleRegenerateMessage(index) {
           const chat = this.chats[index];
-          const lastIndex = chat.messages.length -  1;
+          const lastIndex = chat.messages.length - 1;
           if (lastIndex !== chat.hoveredMessageIndex) {
             return
           }
@@ -688,16 +693,16 @@
 
         handleNewlineInput(event) {
           event.preventDefault();
-          const textarea = event.target;
-          const start = textarea.selectionStart;
-          const end = textarea.selectionEnd;
-          const text = textarea.value;
+          const $input = event.target;
+          const start = $input.selectionStart;
+          const end = $input.selectionEnd;
+          const text = $input.value;
           const before = text.substring(0, start);
           const after = text.substring(end);
 
-          textarea.value = before + '\n' + after;
-          textarea.selectionStart = textarea.selectionEnd = start + 1;
-          this.input = textarea.value;
+          $input.value = before + '\n' + after;
+          $input.selectionStart = $input.selectionEnd = start + 1;
+          this.input = $input.value;
         },
 
         handleCopyCode(event) {
@@ -746,9 +751,23 @@
           }
         },
 
-        autoExpandHeight($node) {
-          $node.style.height = "auto";
-          $node.style.height = $node.scrollHeight + "px";
+        autoScrollAndHeightOnInput($input) {
+          if (!$input.value) {
+            $input.style.overflowY = "hidden";
+            $input.style.height = "51px";
+          } else if ($input.scrollHeight < 500) {
+            $input.style.overflowY = "hidden";
+            $input.style.height = "auto";
+            $input.style.height = $input.scrollHeight + "px";
+          } else {
+            $input.style.overflowY = "auto";
+            $input.style.height = "500px"
+            const lineHeight = 19;
+            const cursorTop = Math.floor(($input.selectionStart + 1) / $input.cols) * lineHeight;
+            if (cursorTop < $input.scrollTop || cursorTop > ($input.scrollTop + $input.clientHeight - lineHeight)) {
+              $input.scrollTop = cursorTop;
+            }
+          }
         },
 
         async ask(index) {
