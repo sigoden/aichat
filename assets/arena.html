@@ -531,9 +531,10 @@
   <script>
     const QUERY = parseQueryString(location.search);
     const NUM = parseInt(QUERY.num) || 2
-    const API_BASE = QUERY.api_base || ".";
-    const CHAT_COMPLETIONS_URL = API_BASE + "/v1/chat/completions";
-    const MODELS_API = API_BASE + "/v1/models";
+    const API_BASE = QUERY.api_base || "./v1";
+    const API_KEY = QUERY.api_key || "";
+    const CHAT_COMPLETIONS_URL = API_BASE + "/chat/completions";
+    const MODELS_API = API_BASE + "/models";
     const MODEL_IDS_STORAGE_KEY = "__model_ids__";
 
     document.addEventListener("alpine:init", () => {
@@ -566,7 +567,8 @@
             const models = await fetchJSON(MODELS_API);
             this.models = models;
           } catch (err) {
-            console.error(err);
+            toast("No available model");
+            console.error("Failed to load models", err);
           }
           let model_ids = []
           try {
@@ -695,6 +697,7 @@
           if (event.shiftKey) {
             return;
           }
+          event.preventDefault();
           this.handleAsk();
         },
 
@@ -765,7 +768,7 @@
           chat.askAbortController = new AbortController();
           chat.shouldScrollChatBodyToBottom = true;
           this.$nextTick(() => {
-              this.autoScrollChatBodyToBottom(index);
+            this.autoScrollChatBodyToBottom(index);
           });
           const lastMessage = chat.messages[chat.messages.length - 1];
           const body = this.buildBody(index);
@@ -831,7 +834,7 @@
     }
 
     async function fetchJSON(url) {
-      const res = await fetch(url);
+      const res = await fetch(url, { headers: getHeaders() });
       const data = await res.json()
       return data.data;
     }
@@ -841,9 +844,7 @@
       const response = await fetch(url, {
         method: "POST",
         signal,
-        headers: {
-          "content-type": "application/json",
-        },
+        headers: getHeaders(),
         body: JSON.stringify(body),
       });
 
@@ -889,6 +890,16 @@
           }
         }
       }
+    }
+
+    function getHeaders() {
+      const headers = {
+        "content-type": "application/json",
+      };
+      if (API_KEY) {
+        headers["authorization"] = `Bearer ${API_KEY}`;
+      }
+      return headers
     }
 
     function retrieveModel(models, id) {
