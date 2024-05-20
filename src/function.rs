@@ -1,6 +1,8 @@
 use crate::{
     config::GlobalConfig,
-    utils::{dimmed_text, indent_text, run_command, run_command_with_output, warning_text},
+    utils::{
+        dimmed_text, get_env_bool, indent_text, run_command, run_command_with_output, warning_text,
+    },
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -265,7 +267,11 @@ impl ToolCall {
     }
 
     pub fn is_execute(&self) -> bool {
-        self.name.starts_with("may_") || self.name.contains("__may_")
+        if get_env_bool("function_auto_execute") {
+            false
+        } else {
+            self.name.starts_with("may_") || self.name.contains("__may_")
+        }
     }
 }
 
