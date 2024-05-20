@@ -687,10 +687,11 @@
   </div>
   <script>
     const QUERY = parseQueryString(location.search);
-    const API_BASE = QUERY.api_base || ".";
-    const CHAT_COMPLETIONS_URL = API_BASE + "/v1/chat/completions";
-    const MODELS_API = API_BASE + "/v1/models";
-    const ROLES_API = API_BASE + "/v1/roles";
+    const API_BASE = QUERY.api_base || "./v1";
+    const API_KEY = QUERY.api_key || "";
+    const CHAT_COMPLETIONS_URL = API_BASE + "/chat/completions";
+    const MODELS_API = API_BASE + "/models";
+    const ROLES_API = API_BASE + "/roles";
     const SETTINGS_STORAGE_KEY = "__settings__";
 
     document.addEventListener("alpine:init", () => {
@@ -739,13 +740,17 @@
         settings: defaultSettings,
 
         async init() {
-          try {
-            const [models, roles] = await Promise.all([MODELS_API, ROLES_API].map(url => fetchJSON(url)));
-            this.models = models;
-            this.roles.push(...roles);
-          } catch (err) {
-            console.error(err);
-          }
+          await Promise.all([
+            fetchJSON(MODELS_API).then(models => {
+              this.models = models;
+            }).catch(err => {
+              toast("No model available");
+              console.error("Failed to load models", err);
+            }),
+            fetchJSON(ROLES_API).then(roles => {
+              this.roles.push(...roles.filter(v => !!v.prompt));
+            }).catch(() => { }),
+          ])
           this.$watch("input", () => this.autosizeInput(this.$refs.input));
           this.$watch("settings", () => {
             localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(this.settings));
@@ -857,6 +862,7 @@
           if (event.shiftKey) {
             return;
           }
+          event.preventDefault();
           this.handleAsk();
         },
 
@@ -1038,7 +1044,7 @@
     }
 
     async function fetchJSON(url) {
-      const res = await fetch(url);
+      const res = await fetch(url, { headers: getHeaders() });
       const data = await res.json()
       return data.data;
     }
@@ -1048,9 +1054,7 @@
       const response = await fetch(url, {
         method: "POST",
         signal,
-        headers: {
-          "content-type": "application/json",
-        },
+        headers: getHeaders(),
         body: JSON.stringify(body),
       });
 
@@ -1096,6 +1100,16 @@
           }
         }
       }
+    }
+
+    function getHeaders() {
+      const headers = {
+        "content-type": "application/json",
+      };
+      if (API_KEY) {
+        headers["authorization"] = `Bearer ${API_KEY}`;
+      }
+      return headers
     }
 
     function retrieveModel(models, id) {
