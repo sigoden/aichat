@@ -14,7 +14,6 @@
   <script src="//unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
   <script src="//unpkg.com/marked@12.0.2/lib/marked.umd.js" defer></script>
   <script src="//unpkg.com/alpinejs@3.13.10/dist/cdn.min.js" defer></script>
-  <script src="//unpkg.com/clipboard@2.0.1/dist/clipboard.min.js" def></script>
   <style>
     :root {
       --fg-primary: #1652f1;
@@ -317,7 +316,9 @@
       border: none;
       outline: none;
       resize: none;
-      overflow: hidden;
+      max-height: 500px;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     .input-toolbox {
@@ -602,9 +603,7 @@
               <!-- toolbox -->
               <template x-if="index == hoveredMessageIndex">
                 <div class="message-toolbox">
-                  <div class="copy-message-btn" :data-clipboard-text="message.content"
-                    x-init="copyMessageClipboard = new ClipboardJS('.copy-message-btn'); copyMessageClipboard.on('success', () => {toast('Copied Message')})"
-                    title="Copy">
+                  <div class="copy-message-btn" @click="handleCopyMessage(message.content)" title=" Copy">
                     <svg fill="currentColor" viewBox="0 0 16 16">
                       <path fill-rule="evenodd"
                         d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z" />
@@ -634,8 +633,7 @@
       </div>
       <div class="input-panel">
         <div class="input-panel-inner">
-          <textarea id="chat-input" rows="2" x-model="input" x-ref="input"
-            @keydown.enter.prevent="!$event.shiftKey && handleAsk()" @keydown.enter.shift="handleNewlineInput"
+          <textarea id="chat-input" x-model="input" x-ref="input" @keydown.enter="handleEnterKeydown"
             placeholder="Enter to send, Shift + Enter to wrap"></textarea>
           <div class="input-image-bar" x-show="images.length > 0">
             <template x-for="(image, index) in images">
@@ -710,7 +708,7 @@
         temperature: null,
         top_p: null,
         enable_session: true,
-        compress_threshold: 2000,
+        compress_threshold: 4000,
       };
       try {
         const persistSettings = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY)) || {};
@@ -729,7 +727,6 @@
         currentModel: {},
         messages: [],
         hoveredMessageIndex: null,
-        copyMessageClipboard: null,
         skipMessageId: -1,
         input: "",
         images: [],
@@ -749,7 +746,7 @@
           } catch (err) {
             console.error(err);
           }
-          this.$watch("input", () => this.autoScrollAndHeightOnInput(this.$refs.input));
+          this.$watch("input", () => this.autosizeInput(this.$refs.input));
           this.$watch("settings", () => {
             localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(this.settings));
           });
@@ -856,18 +853,11 @@
           this.$refs["main-panel"].style.display = this.$refs["main-panel"]._display;
         },
 
-        handleNewlineInput(event) {
-          event.preventDefault();
-          const $input = event.target;
-          const start = $input.selectionStart;
-          const end = $input.selectionEnd;
-          const text = $input.value;
-          const before = text.substring(0, start);
-          const after = text.substring(end);
-
-          $input.value = before + '\n' + after;
-          $input.selectionStart = $input.selectionEnd = start + 1;
-          this.input = $input.value;
+        handleEnterKeydown(event) {
+          if (event.shiftKey) {
+            return;
+          }
+          this.handleAsk();
         },
 
         handleCopyCode(event) {
@@ -882,6 +872,21 @@
             window.getSelection().removeAllRanges();
             toast("Copied Code");
           }
+        },
+
+        handleCopyMessage(content) {
+          if (Array.isArray(content)) {
+            content = content.map(v => v.text || "").join("");
+          }
+
+          const $tempTextArea = document.createElement("textarea");
+          $tempTextArea.value = content;
+          document.body.appendChild($tempTextArea);
+          $tempTextArea.select();
+          $tempTextArea.setSelectionRange(0, 99999); // For mobile devices
+          document.execCommand("copy");
+          document.body.removeChild($tempTextArea);
+          toast("Copied Message")
         },
 
         async handleImageUpload(event) {
@@ -904,28 +909,17 @@
           }
         },
 
-        autoScrollAndHeightOnInput($input) {
-          if (!$input.value) {
-            $input.style.overflowY = "hidden";
-            $input.style.height = "51px";
-          } else if ($input.scrollHeight < 500) {
-            $input.style.overflowY = "hidden";
-            $input.style.height = "auto";
-            $input.style.height = $input.scrollHeight + "px";
-          } else {
-            $input.style.overflowY = "auto";
-            $input.style.height = "500px"
-            const lineHeight = 19;
-            const cursorTop = Math.floor(($input.selectionStart + 1) / $input.cols) * lineHeight;
-            if (cursorTop < $input.scrollTop || cursorTop > ($input.scrollTop + $input.clientHeight - lineHeight)) {
-              $input.scrollTop = cursorTop;
-            }
-          }
+        autosizeInput($input) {
+          $input.style.height = 'auto';
+          $input.style.height = $input.scrollHeight + 'px';
         },
 
         async ask() {
           this.askAbortController = new AbortController();
           this.shouldScrollChatBodyToBottom = true;
+          this.$nextTick(() => {
+            this.autoScrollChatBodyToBottom();
+          });
           const lastMessage = this.messages[this.messages.length - 1];
           const body = this.buildBody();
           let succeed = false;
