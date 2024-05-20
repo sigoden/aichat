@@ -322,13 +322,13 @@
     .toast {
       display: none;
       position: fixed;
-      top: 0;
+      top: 2px;
       left: 50%;
       text-align: center;
       transform: translate(-50%, 0);
-      background-color: var(--fg-default);
+      background-color: rgba(0, 0, 0, 0.7);
       color: var(--bg-primary);
-      padding: 1rem;
+      padding: 0.5rem;
       border-radius: 0.3rem;
       z-index: 9999;
     }
@@ -478,7 +478,7 @@
     <div class="input-panel">
       <div class="input-panel-inner">
         <textarea id="chat-input" x-model="input" x-ref="input" @keydown.enter="handleEnterKeydown"
-          placeholder="Enter to send, Shift + Enter to wrap"></textarea>
+          placeholder="Ask Anything"></textarea>
         <div class="input-image-bar" x-show="images.length > 0">
           <template x-for="(image, index) in images">
             <div class="input-image-item">
