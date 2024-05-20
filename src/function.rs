@@ -1,12 +1,14 @@
 use crate::{
     config::GlobalConfig,
-    utils::{dimmed_text, indent_text, run_command, run_command_with_output, warning_text},
+    utils::{
+        dimmed_text, get_env_bool, indent_text, run_command, run_command_with_output, warning_text,
+    },
 };
 
 use anyhow::{anyhow, bail, Context, Result};
 use fancy_regex::Regex;
 use indexmap::{IndexMap, IndexSet};
-use inquire::Confirm;
+use inquire::{validator::Validation, Text};
 use is_terminal::IsTerminal;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -38,7 +40,7 @@ pub fn eval_tool_calls(
         return Ok(output);
     }
     calls = ToolCall::dedup(calls);
-    let parallel = calls.len() > 1 && calls.iter().all(|v| !v.is_execute_type());
+    let parallel = calls.len() > 1 && calls.iter().all(|v| !v.is_execute());
     if parallel {
         let (tx, rx) = channel();
         let calls_len = calls.len();
@@ -226,62 +228,87 @@ impl ToolCall {
         if let Some(env_path) = config.read().function.env_path.clone() {
             envs.insert("PATH".into(), env_path);
         };
-        let output = if self.is_execute_type() {
-            let proceed = if stdout().is_terminal() {
-                Confirm::new(&prompt).with_default(true).prompt()?
-            } else {
-                println!("{}", dimmed_text(&prompt));
-                true
-            };
-            if proceed {
-                #[cfg(windows)]
-                let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
-                let exit_code = run_command(&name, &[&arguments], Some(envs))?;
-                if exit_code != 0 {
-                    bail!("Exit {exit_code}");
+        #[cfg(windows)]
+        let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
+
+        let output = if self.is_execute() {
+            if stdout().is_terminal() {
+                println!("{prompt}");
+                let anwser = Text::new("[1] Run, [2] Run & Retrieve, [3] Skip:")
+                    .with_default("1")
+                    .with_validator(|input: &str| match matches!(input, "1" | "2" | "3") {
+                        true => Ok(Validation::Valid),
+                        false => Ok(Validation::Invalid(
+                            "Invalid input, please select 1, 2 or 3".into(),
+                        )),
+                    })
+                    .prompt()?;
+                match anwser.as_str() {
+                    "1" => {
+                        let exit_code = run_command(&name, &[arguments], Some(envs))?;
+                        if exit_code != 0 {
+                            bail!("Exit {exit_code}");
+                        }
+                        Value::Null
+                    }
+                    "2" => run_and_retrieve(&name, &arguments, envs, &prompt)?,
+                    _ => Value::Null,
                 }
+            } else {
+                println!("Skipped {prompt}");
+                Value::Null
             }
-            Value::Null
         } else {
             println!("{}", dimmed_text(&prompt));
-            #[cfg(windows)]
-            let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
-            let (success, stdout, stderr) =
-                run_command_with_output(&name, &[arguments], Some(envs))?;
-
-            if success {
-                if !stderr.is_empty() {
-                    eprintln!(
-                        "{}",
-                        warning_text(&format!("{prompt}:\n{}", indent_text(&stderr, 4)))
-                    );
-                }
-                if !stdout.is_empty() {
-                    serde_json::from_str(&stdout)
-                        .ok()
-                        .unwrap_or_else(|| json!({"output": stdout}))
-                } else {
-                    Value::Null
-                }
-            } else {
-                let err = if stderr.is_empty() {
-                    if stdout.is_empty() {
-                        "Something wrong"
-                    } else {
-                        &stdout
-                    }
-                } else {
-                    &stderr
-                };
-                bail!("{}", &format!("{prompt}:\n{}", indent_text(err, 4)));
-            }
+            run_and_retrieve(&name, &arguments, envs, &prompt)?
         };
 
         Ok(output)
     }
 
-    pub fn is_execute_type(&self) -> bool {
-        self.name.starts_with("may_") || self.name.contains("__may_")
+    pub fn is_execute(&self) -> bool {
+        if get_env_bool("function_auto_execute") {
+            false
+        } else {
+            self.name.starts_with("may_") || self.name.contains("__may_")
+        }
+    }
+}
+
+fn run_and_retrieve(
+    name: &str,
+    arguments: &str,
+    envs: HashMap<String, String>,
+    prompt: &str,
+) -> Result<Value> {
+    let (success, stdout, stderr) = run_command_with_output(name, &[arguments], Some(envs))?;
+
+    if success {
+        if !stderr.is_empty() {
+            eprintln!(
+                "{}",
+                warning_text(&format!("{prompt}:\n{}", indent_text(&stderr, 4)))
+            );
+        }
+        let value = if !stdout.is_empty() {
+            serde_json::from_str(&stdout)
+                .ok()
+                .unwrap_or_else(|| json!({"output": stdout}))
+        } else {
+            Value::Null
+        };
+        Ok(value)
+    } else {
+        let err = if stderr.is_empty() {
+            if stdout.is_empty() {
+                "Something wrong"
+            } else {
+                &stdout
+            }
+        } else {
+            &stderr
+        };
+        bail!("{}", &format!("{prompt}:\n{}", indent_text(err, 4)));
     }
 }
 

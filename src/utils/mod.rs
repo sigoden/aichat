@@ -35,6 +35,14 @@ pub fn get_env_name(key: &str) -> String {
     )
 }
 
+pub fn get_env_bool(key: &str) -> bool {
+    if let Ok(value) = env::var(get_env_name(key)) {
+        value == "1" || value == "true"
+    } else {
+        false
+    }
+}
+
 pub fn tokenize(text: &str) -> Vec<&str> {
     if text.is_ascii() {
         text.split_inclusive(|c: char| c.is_ascii_whitespace())
