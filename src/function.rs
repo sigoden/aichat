@@ -218,47 +218,42 @@ impl ToolCall {
         } else {
             bail!("The {name} call has invalid arguments: {}", self.arguments);
         };
-        let arguments = convert_arguments(&arguments);
 
-        let prompt_text = format!(
-            "Call {} {}",
-            name,
-            arguments
-                .iter()
-                .map(|v| shell_words::quote(v).to_string())
-                .collect::<Vec<String>>()
-                .join(" ")
-        );
+        let arguments = arguments.to_string();
+        let prompt = format!("Call {name} '{arguments}'",);
 
         let mut envs = HashMap::new();
-        envs.insert("LLM_FUNCTION_DATA".into(), self.arguments.to_string());
         if let Some(env_path) = config.read().function.env_path.clone() {
             envs.insert("PATH".into(), env_path);
         };
         let output = if self.is_execute_type() {
             let proceed = if stdout().is_terminal() {
-                Confirm::new(&prompt_text).with_default(true).prompt()?
+                Confirm::new(&prompt).with_default(true).prompt()?
             } else {
-                println!("{}", dimmed_text(&prompt_text));
+                println!("{}", dimmed_text(&prompt));
                 true
             };
             if proceed {
                 #[cfg(windows)]
                 let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
-                run_command(&name, &arguments, Some(envs))?;
+                let exit_code = run_command(&name, &[&arguments], Some(envs))?;
+                if exit_code != 0 {
+                    bail!("Exit {exit_code}");
+                }
             }
             Value::Null
         } else {
-            println!("{}", dimmed_text(&prompt_text));
+            println!("{}", dimmed_text(&prompt));
             #[cfg(windows)]
             let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
-            let (success, stdout, stderr) = run_command_with_output(&name, &arguments, Some(envs))?;
+            let (success, stdout, stderr) =
+                run_command_with_output(&name, &[arguments], Some(envs))?;
 
             if success {
                 if !stderr.is_empty() {
                     eprintln!(
                         "{}",
-                        warning_text(&format!("{prompt_text}:\n{}", indent_text(&stderr, 4)))
+                        warning_text(&format!("{prompt}:\n{}", indent_text(&stderr, 4)))
                     );
                 }
                 if !stdout.is_empty() {
@@ -278,7 +273,7 @@ impl ToolCall {
                 } else {
                     &stderr
                 };
-                bail!("{}", &format!("{prompt_text}:\n{}", indent_text(err, 4)));
+                bail!("{}", &format!("{prompt}:\n{}", indent_text(err, 4)));
             }
         };
 
@@ -288,35 +283,6 @@ impl ToolCall {
     pub fn is_execute_type(&self) -> bool {
         self.name.starts_with("may_") || self.name.contains("__may_")
     }
-}
-
-fn convert_arguments(args: &Value) -> Vec<String> {
-    let mut options: Vec<String> = Vec::new();
-
-    if let Value::Object(map) = args {
-        for (key, value) in map {
-            let key = key.replace('_', "-");
-            match value {
-                Value::Bool(true) => {
-                    options.push(format!("--{key}"));
-                }
-                Value::String(s) => {
-                    options.push(format!("--{key}"));
-                    options.push(s.to_string());
-                }
-                Value::Array(arr) => {
-                    for item in arr {
-                        if let Value::String(s) = item {
-                            options.push(format!("--{key}"));
-                            options.push(s.to_string());
-                        }
-                    }
-                }
-                _ => {} // Ignore other types
-            }
-        }
-    }
-    options
 }
 
 fn prepend_env_path(bin_dir: &Path) -> Result<String> {
@@ -343,23 +309,4 @@ fn polyfill_cmd_name(name: &str, bin_dir: &std::path::Path) -> String {
         }
     }
     name
-}
-
-#[cfg(test)]
-mod tests {
-
-    use super::*;
-
-    #[test]
-    fn test_convert_args() {
-        let args = serde_json::json!({
-          "foo": true,
-          "bar": "val",
-          "baz": ["v1", "v2"]
-        });
-        assert_eq!(
-            convert_arguments(&args),
-            vec!["--foo", "--bar", "val", "--baz", "v1", "--baz", "v2"]
-        );
-    }
 }
