@@ -225,7 +225,7 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
         loop {
             let answer = Select::new(
                 eval_str.trim(),
-                vec!["✅ Execute", "🤔 Revise", "📙 Explain", "❌ Cancel"],
+                vec!["✅ Execute", "🔄️ Revise", "📖 Explain", "❌ Cancel"],
             )
             .prompt()?;
 
@@ -237,13 +237,13 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
                         process::exit(code);
                     }
                 }
-                "🤔 Revise" => {
+                "🔄️ Revise" => {
                     let revision = Text::new("Enter your revision:").prompt()?;
                     let text = format!("{}\n{revision}", input.text());
                     input.set_text(text);
                     return shell_execute(config, shell, input).await;
                 }
-                "📙 Explain" => {
+                "📖 Explain" => {
                     let role = config.read().retrieve_role(EXPLAIN_SHELL_ROLE)?;
                     let input = Input::from_str(config, &eval_str, Some(InputContext::role(role)));
                     let abort = create_abort_signal();
