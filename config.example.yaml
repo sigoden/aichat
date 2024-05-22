@@ -64,16 +64,17 @@ clients:
   - type: gemini
     api_key: xxx                                      # ENV: {client}_API_KEY
     patches:
-      '.*':                                           # Override safetySettings for all models
-        safetySettings:
-          - category: HARM_CATEGORY_HARASSMENT
-            threshold: BLOCK_NONE
-          - category: HARM_CATEGORY_HATE_SPEECH
-            threshold: BLOCK_NONE
-          - category: HARM_CATEGORY_SEXUALLY_EXPLICIT
-            threshold: BLOCK_NONE
-          - category: HARM_CATEGORY_DANGEROUS_CONTENT
-            threshold: BLOCK_NONE
+      '.*':                                           
+        request_body:                                 # Override safetySettings for all models
+          safetySettings:
+            - category: HARM_CATEGORY_HARASSMENT
+              threshold: BLOCK_NONE
+            - category: HARM_CATEGORY_HATE_SPEECH
+              threshold: BLOCK_NONE
+            - category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+              threshold: BLOCK_NONE
+            - category: HARM_CATEGORY_DANGEROUS_CONTENT
+              threshold: BLOCK_NONE
 
   # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
   - type: claude
@@ -127,16 +128,17 @@ clients:
     # see https://cloud.google.com/docs/authentication/external/set-up-adc
     adc_file: <path-to/gcloud/application_default_credentials.json> 
     patches:
-      'gemini-.*':                                    # Override safetySettings for all gemini models
-        safetySettings:
-          - category: HARM_CATEGORY_HARASSMENT
-            threshold: BLOCK_ONLY_HIGH
-          - category: HARM_CATEGORY_HATE_SPEECH
-            threshold: BLOCK_ONLY_HIGH
-          - category: HARM_CATEGORY_SEXUALLY_EXPLICIT
-            threshold: BLOCK_ONLY_HIGH
-          - category: HARM_CATEGORY_DANGEROUS_CONTENT
-            threshold: BLOCK_ONLY_HIGH
+      'gemini-.*':
+        request_body:                                 # Override safetySettings for all gemini models
+          safetySettings:
+            - category: HARM_CATEGORY_HARASSMENT
+              threshold: BLOCK_ONLY_HIGH
+            - category: HARM_CATEGORY_HATE_SPEECH
+              threshold: BLOCK_ONLY_HIGH
+            - category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+              threshold: BLOCK_ONLY_HIGH
+            - category: HARM_CATEGORY_DANGEROUS_CONTENT
+              threshold: BLOCK_ONLY_HIGH
 
   # See https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-claude
   - type: vertexai-claude

@@ -48,7 +48,7 @@ impl VertexAIClient {
         };
         let url = format!("{base_url}/google/models/{}:{func}", self.model.name());
 
-        let mut body = gemini_build_body(data, &self.model, self.config.safety_settings.clone())?;
+        let mut body = gemini_build_body(data, &self.model)?;
         self.patch_request_body(&mut body);
 
         debug!("VertexAI Request: {url} {body}");
@@ -180,7 +180,6 @@ fn gemini_extract_completion_text(data: &Value) -> Result<CompletionOutput> {
 pub(crate) fn gemini_build_body(
     data: SendData,
     model: &Model,
-    safety_settings: Option<Value>,
 ) -> Result<Value> {
     let SendData {
         mut messages,
@@ -260,10 +259,6 @@ pub(crate) fn gemini_build_body(
     }
 
     let mut body = json!({ "contents": contents, "generationConfig": {} });
-
-    if let Some(safety_settings) = safety_settings {
-        body["safetySettings"] = safety_settings;
-    }
 
     if let Some(v) = model.max_tokens_param() {
         body["generationConfig"]["maxOutputTokens"] = v.into();
