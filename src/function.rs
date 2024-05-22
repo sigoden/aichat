@@ -126,9 +126,9 @@ impl Function {
         })
     }
 
-    pub fn filtered_declarations(&self, filter: Option<&str>) -> Option<Vec<FunctionDeclaration>> {
-        let filter = filter?;
-        let regex = Regex::new(&format!("^({filter})$")).ok()?;
+    pub fn select(&self, matcher: Option<&str>) -> Option<Vec<FunctionDeclaration>> {
+        let matcher = matcher?;
+        let regex = Regex::new(&format!("^({matcher})$")).ok()?;
         let output: Vec<FunctionDeclaration> = self
             .declarations
             .iter()

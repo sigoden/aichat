@@ -22,7 +22,7 @@ pub struct Session {
     #[serde(skip_serializing_if = "Option::is_none")]
     top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    function_filter: Option<String>,
+    function_matcher: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     save_session: Option<bool>,
     messages: Vec<Message>,
@@ -50,7 +50,7 @@ impl Session {
             model_id: config.model.id(),
             temperature: config.temperature,
             top_p: config.top_p,
-            function_filter: None,
+            function_matcher: None,
             save_session: config.save_session,
             messages: Default::default(),
             compressed_messages: Default::default(),
@@ -96,8 +96,8 @@ impl Session {
         self.top_p
     }
 
-    pub fn function_filter(&self) -> Option<&str> {
-        self.function_filter.as_deref()
+    pub fn function_matcher(&self) -> Option<&str> {
+        self.function_matcher.as_deref()
     }
 
     pub fn save_session(&self) -> Option<bool> {
@@ -134,8 +134,8 @@ impl Session {
         if let Some(top_p) = self.top_p() {
             data["top_p"] = top_p.into();
         }
-        if let Some(function_filter) = self.function_filter() {
-            data["function_filter"] = function_filter.into();
+        if let Some(function_matcher) = self.function_matcher() {
+            data["function_matcher"] = function_matcher.into();
         }
         if let Some(save_session) = self.save_session() {
             data["save_session"] = save_session.into();
@@ -170,8 +170,8 @@ impl Session {
             items.push(("top_p", top_p.to_string()));
         }
 
-        if let Some(function_filter) = self.function_filter() {
-            items.push(("function_filter", function_filter.into()));
+        if let Some(function_matcher) = self.function_matcher() {
+            items.push(("function_matcher", function_matcher.into()));
         }
 
         if let Some(save_session) = self.save_session() {
@@ -247,14 +247,14 @@ impl Session {
         }
     }
 
-    pub fn set_functions(&mut self, function_filter: Option<&str>) {
-        self.function_filter = function_filter.map(|v| v.to_string());
+    pub fn set_function_matcher(&mut self, function_matcher: Option<&str>) {
+        self.function_matcher = function_matcher.map(|v| v.to_string());
     }
 
     pub fn set_role_properties(&mut self, role: &Role) {
         self.set_temperature(role.temperature);
         self.set_top_p(role.top_p);
-        self.set_functions(role.function_filter.as_deref());
+        self.set_function_matcher(role.function_matcher.as_deref());
     }
 
     pub fn set_save_session(&mut self, value: Option<bool>) {
