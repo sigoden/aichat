@@ -29,7 +29,7 @@ pub struct Role {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub function_filter: Option<String>,
+    pub function_matcher: Option<String>,
 }
 
 impl Role {
@@ -40,7 +40,7 @@ impl Role {
             temperature: None,
             model_id: None,
             top_p: None,
-            function_filter: None,
+            function_matcher: None,
         }
     }
 
@@ -74,13 +74,13 @@ async function timeout(ms) {
             ("%functions%", String::new(), Some(".*".into())),
         ]
         .into_iter()
-        .map(|(name, prompt, function_filter)| Self {
+        .map(|(name, prompt, function_matcher)| Self {
             name: name.into(),
             prompt,
             model_id: None,
             temperature: None,
             top_p: None,
-            function_filter,
+            function_matcher,
         })
         .collect()
     }

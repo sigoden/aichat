@@ -167,14 +167,14 @@ impl Input {
         let mut functions = None;
         if self.config.read().function_calling && model.supports_function_calling() {
             let config = self.config.read();
-            let function_filter = if let Some(session) = self.session(&config.session) {
-                session.function_filter()
+            let function_matcher = if let Some(session) = self.session(&config.session) {
+                session.function_matcher()
             } else if let Some(role) = self.role() {
-                role.function_filter.as_deref()
+                role.function_matcher.as_deref()
             } else {
                 None
             };
-            functions = config.function.filtered_declarations(function_filter);
+            functions = config.function.select(function_matcher);
         };
         Ok(SendData {
             messages,
