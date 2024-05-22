@@ -191,26 +191,6 @@ impl Model {
         }
         Ok(())
     }
-
-    pub fn merge_extra_fields(&self, body: &mut serde_json::Value) {
-        if let (Some(body), Some(extra_fields)) = (body.as_object_mut(), &self.data.extra_fields) {
-            for (key, extra_field) in extra_fields {
-                if body.contains_key(key) {
-                    if let (Some(sub_body), Some(extra_field)) =
-                        (body[key].as_object_mut(), extra_field.as_object())
-                    {
-                        for (subkey, sub_field) in extra_field {
-                            if !sub_body.contains_key(subkey) {
-                                sub_body.insert(subkey.clone(), sub_field.clone());
-                            }
-                        }
-                    }
-                } else {
-                    body.insert(key.clone(), extra_field.clone());
-                }
-            }
-        }
-    }
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -226,7 +206,6 @@ pub struct ModelData {
     pub supports_vision: bool,
     #[serde(default)]
     pub supports_function_calling: bool,
-    pub extra_fields: Option<serde_json::Map<String, serde_json::Value>>,
 }
 
 impl ModelData {

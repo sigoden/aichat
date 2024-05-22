@@ -1,7 +1,7 @@
 use super::{
-    catch_error, extract_system_message, message::*, sse_stream, ClaudeClient, CompletionOutput,
-    ExtraConfig, ImageUrl, MessageContent, MessageContentPart, Model, ModelData, PromptAction,
-    PromptKind, SendData, SsMmessage, SseHandler, ToolCall,
+    catch_error, extract_system_message, message::*, sse_stream, ClaudeClient, Client,
+    CompletionOutput, ExtraConfig, ImageUrl, MessageContent, MessageContentPart, Model, ModelData,
+    ModelPatches, PromptAction, PromptKind, SendData, SsMmessage, SseHandler, ToolCall,
 };
 
 use anyhow::{bail, Context, Result};
@@ -17,6 +17,7 @@ pub struct ClaudeConfig {
     pub api_key: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
+    pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -29,7 +30,8 @@ impl ClaudeClient {
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
 
-        let body = claude_build_body(data, &self.model)?;
+        let mut body = claude_build_body(data, &self.model)?;
+        self.patch_request_body(&mut body);
 
         let url = API_BASE;
 

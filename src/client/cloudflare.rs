@@ -1,6 +1,6 @@
 use super::{
-    catch_error, sse_stream, CloudflareClient, CompletionOutput, ExtraConfig, Model, ModelData,
-    PromptAction, PromptKind, SendData, SsMmessage, SseHandler,
+    catch_error, sse_stream, Client, CloudflareClient, CompletionOutput, ExtraConfig, Model,
+    ModelData, ModelPatches, PromptAction, PromptKind, SendData, SsMmessage, SseHandler,
 };
 
 use anyhow::{anyhow, Result};
@@ -17,6 +17,7 @@ pub struct CloudflareConfig {
     pub api_key: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
+    pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -33,7 +34,8 @@ impl CloudflareClient {
         let account_id = self.get_account_id()?;
         let api_key = self.get_api_key()?;
 
-        let body = build_body(data, &self.model)?;
+        let mut body = build_body(data, &self.model)?;
+        self.patch_request_body(&mut body);
 
         let url = format!(
             "{API_BASE}/accounts/{account_id}/ai/run/{}",

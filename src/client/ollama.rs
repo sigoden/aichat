@@ -1,6 +1,6 @@
 use super::{
-    catch_error, message::*, CompletionOutput, ExtraConfig, Model, ModelData, OllamaClient,
-    PromptAction, PromptKind, SendData, SseHandler,
+    catch_error, message::*, Client, CompletionOutput, ExtraConfig, Model, ModelData, ModelPatches,
+    OllamaClient, PromptAction, PromptKind, SendData, SseHandler,
 };
 
 use anyhow::{anyhow, bail, Result};
@@ -16,6 +16,7 @@ pub struct OllamaConfig {
     pub api_auth: Option<String>,
     pub chat_endpoint: Option<String>,
     pub models: Vec<ModelData>,
+    pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -40,7 +41,7 @@ impl OllamaClient {
         let api_auth = self.get_api_auth().ok();
 
         let mut body = build_body(data, &self.model)?;
-        self.model.merge_extra_fields(&mut body);
+        self.patch_request_body(&mut body);
 
         let chat_endpoint = self.config.chat_endpoint.as_deref().unwrap_or("/api/chat");
 

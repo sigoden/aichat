@@ -1,9 +1,7 @@
-use std::time::Duration;
-
 use super::{
-    catch_error, generate_prompt, smart_prompt_format, sse_stream, Client, CompletionOutput,
-    ExtraConfig, Model, ModelData, PromptAction, PromptKind, ReplicateClient, SendData, SsMmessage,
-    SseHandler,
+    catch_error, prompt_format::*, sse_stream, Client, CompletionOutput, ExtraConfig,
+    Model, ModelData, ModelPatches, PromptAction, PromptKind, ReplicateClient, SendData,
+    SsMmessage, SseHandler,
 };
 
 use anyhow::{anyhow, Result};
@@ -11,6 +9,7 @@ use async_trait::async_trait;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::time::Duration;
 
 const API_BASE: &str = "https://api.replicate.com/v1";
 
@@ -20,6 +19,7 @@ pub struct ReplicateConfig {
     pub api_key: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
+    pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -35,7 +35,8 @@ impl ReplicateClient {
         data: SendData,
         api_key: &str,
     ) -> Result<RequestBuilder> {
-        let body = build_body(data, &self.model)?;
+        let mut body = build_body(data, &self.model)?;
+        self.patch_request_body(&mut body);
 
         let url = format!("{API_BASE}/models/{}/predictions", self.model.name());
 

@@ -11,7 +11,6 @@ pub use crate::utils::PromptKind;
 pub use common::*;
 pub use message::*;
 pub use model::*;
-pub use prompt_format::*;
 pub use sse_handler::*;
 
 register_client!(

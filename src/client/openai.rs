@@ -1,6 +1,7 @@
 use super::{
-    catch_error, message::*, sse_stream, CompletionOutput, ExtraConfig, Model, ModelData,
-    OpenAIClient, PromptAction, PromptKind, SendData, SsMmessage, SseHandler, ToolCall,
+    catch_error, message::*, sse_stream, Client, CompletionOutput, ExtraConfig, Model, ModelData,
+    ModelPatches, OpenAIClient, PromptAction, PromptKind, SendData, SsMmessage, SseHandler,
+    ToolCall,
 };
 
 use anyhow::{bail, Result};
@@ -18,6 +19,7 @@ pub struct OpenAIConfig {
     pub organization_id: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
+    pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -32,7 +34,8 @@ impl OpenAIClient {
         let api_key = self.get_api_key()?;
         let api_base = self.get_api_base().unwrap_or_else(|_| API_BASE.to_string());
 
-        let body = openai_build_body(data, &self.model);
+        let mut body = openai_build_body(data, &self.model);
+        self.patch_request_body(&mut body);
 
         let url = format!("{api_base}/chat/completions");
 

@@ -1,7 +1,7 @@
 use super::{
     access_token::*, catch_error, json_stream, message::*, patch_system_message, Client,
-    CompletionOutput, ExtraConfig, Model, ModelData, PromptAction, PromptKind, SendData,
-    SseHandler, ToolCall, VertexAIClient,
+    CompletionOutput, ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind,
+    SendData, SseHandler, ToolCall, VertexAIClient,
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -22,6 +22,7 @@ pub struct VertexAIConfig {
     pub safety_settings: Option<Value>,
     #[serde(default)]
     pub models: Vec<ModelData>,
+    pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -47,7 +48,8 @@ impl VertexAIClient {
         };
         let url = format!("{base_url}/google/models/{}:{func}", self.model.name());
 
-        let body = gemini_build_body(data, &self.model, self.config.safety_settings.clone())?;
+        let mut body = gemini_build_body(data, &self.model, self.config.safety_settings.clone())?;
+        self.patch_request_body(&mut body);
 
         debug!("VertexAI Request: {url} {body}");
 
