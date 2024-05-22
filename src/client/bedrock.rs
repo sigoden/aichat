@@ -1,8 +1,7 @@
-use super::claude::{claude_build_body, claude_extract_completion};
 use super::{
-    catch_error, generate_prompt, BedrockClient, Client, CompletionOutput, ExtraConfig, Model,
-    ModelData, PromptAction, PromptFormat, PromptKind, SendData, SseHandler, LLAMA3_PROMPT_FORMAT,
-    MISTRAL_PROMPT_FORMAT,
+    prompt_format::*, claude::*,
+    catch_error, BedrockClient, Client, CompletionOutput, ExtraConfig, Model, ModelData,
+    ModelPatches, PromptAction, PromptKind, SendData, SseHandler,
 };
 
 use crate::utils::{base64_decode, encode_uri, hex_encode, hmac_sha256, sha256};
@@ -31,6 +30,7 @@ pub struct BedrockConfig {
     pub region: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
+    pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -102,7 +102,7 @@ impl BedrockClient {
         let headers = IndexMap::new();
 
         let mut body = build_body(data, &self.model, model_category)?;
-        self.model.merge_extra_fields(&mut body);
+        self.patch_request_body(&mut body);
 
         let builder = aws_fetch(
             client,

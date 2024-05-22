@@ -1,6 +1,7 @@
 use super::{
-    catch_error, extract_system_message, json_stream, message::*, CohereClient, CompletionOutput,
-    ExtraConfig, Model, ModelData, PromptAction, PromptKind, SendData, SseHandler, ToolCall,
+    catch_error, extract_system_message, json_stream, message::*, Client, CohereClient,
+    CompletionOutput, ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind,
+    SendData, SseHandler, ToolCall,
 };
 
 use anyhow::{bail, Result};
@@ -16,6 +17,7 @@ pub struct CohereConfig {
     pub api_key: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
+    pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -28,7 +30,8 @@ impl CohereClient {
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
 
-        let body = build_body(data, &self.model)?;
+        let mut body = build_body(data, &self.model)?;
+        self.patch_request_body(&mut body);
 
         let url = API_URL;
 

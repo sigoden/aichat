@@ -1,6 +1,7 @@
 use super::{
     maybe_catch_error, message::*, sse_stream, Client, CompletionOutput, ExtraConfig, Model,
-    ModelData, PromptAction, PromptKind, QianwenClient, SendData, SsMmessage, SseHandler,
+    ModelData, ModelPatches, PromptAction, PromptKind, QianwenClient, SendData, SsMmessage,
+    SseHandler,
 };
 
 use crate::utils::{base64_decode, sha256};
@@ -27,6 +28,7 @@ pub struct QianwenConfig {
     pub api_key: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
+    pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -46,7 +48,8 @@ impl QianwenClient {
             true => API_URL_VL,
             false => API_URL,
         };
-        let (body, has_upload) = build_body(data, &self.model, is_vl)?;
+        let (mut body, has_upload) = build_body(data, &self.model, is_vl)?;
+        self.patch_request_body(&mut body);
 
         debug!("Qianwen Request: {url} {body}");
 

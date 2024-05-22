@@ -1,8 +1,6 @@
-use crate::client::OPENAI_COMPATIBLE_PLATFORMS;
-
-use super::openai::openai_build_body;
 use super::{
-    ExtraConfig, Model, ModelData, OpenAICompatibleClient, PromptAction, PromptKind, SendData,
+    openai::*, Client, ExtraConfig, Model, ModelData, ModelPatches, OpenAICompatibleClient,
+    PromptAction, PromptKind, SendData, OPENAI_COMPATIBLE_PLATFORMS,
 };
 
 use anyhow::Result;
@@ -17,6 +15,7 @@ pub struct OpenAICompatibleConfig {
     pub chat_endpoint: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
+    pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -58,7 +57,7 @@ impl OpenAICompatibleClient {
         let api_key = self.get_api_key().ok();
 
         let mut body = openai_build_body(data, &self.model);
-        self.model.merge_extra_fields(&mut body);
+        self.patch_request_body(&mut body);
 
         let chat_endpoint = self
             .config

@@ -37,8 +37,9 @@ clients:
   #     - name: xxxx                                  # The model name
   #       max_input_tokens: 100000
   #       supports_vision: true
-  #       extra_fields:                               # Set custom parameters, will merge with the body json
-  #          key: value                               
+  #   patches: 
+  #     <regex>:                                      # The regex to match model names, e.g. '.*' 'gpt-4o' 'gpt-4o|gpt-4-.*'
+  #       request_body:                               # The JSON to be merged with the request body.
   #   extra:
   #     proxy: socks5://127.0.0.1:1080                # Set https/socks5 proxy. ENV: HTTPS_PROXY/https_proxy/ALL_PROXY/all_proxy
   #     connect_timeout: 10                           # Set timeout in seconds for connect to api
@@ -62,15 +63,18 @@ clients:
   # See https://ai.google.dev/docs
   - type: gemini
     api_key: xxx                                      # ENV: {client}_API_KEY
-    safetySettings:
-      - category: HARM_CATEGORY_HARASSMENT
-        threshold: BLOCK_NONE
-      - category: HARM_CATEGORY_HATE_SPEECH
-        threshold: BLOCK_NONE
-      - category: HARM_CATEGORY_SEXUALLY_EXPLICIT
-        threshold: BLOCK_NONE
-      - category: HARM_CATEGORY_DANGEROUS_CONTENT
-        threshold: BLOCK_NONE
+    patches:
+      '.*':                                           
+        request_body:                                 # Override safetySettings for all models
+          safetySettings:
+            - category: HARM_CATEGORY_HARASSMENT
+              threshold: BLOCK_NONE
+            - category: HARM_CATEGORY_HATE_SPEECH
+              threshold: BLOCK_NONE
+            - category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+              threshold: BLOCK_NONE
+            - category: HARM_CATEGORY_DANGEROUS_CONTENT
+              threshold: BLOCK_NONE
 
   # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
   - type: claude
@@ -123,15 +127,18 @@ clients:
     # Run `gcloud auth application-default login` to init the adc file
     # see https://cloud.google.com/docs/authentication/external/set-up-adc
     adc_file: <path-to/gcloud/application_default_credentials.json> 
-    safetySettings:
-      - category: HARM_CATEGORY_HARASSMENT
-        threshold: BLOCK_ONLY_HIGH
-      - category: HARM_CATEGORY_HATE_SPEECH
-        threshold: BLOCK_ONLY_HIGH
-      - category: HARM_CATEGORY_SEXUALLY_EXPLICIT
-        threshold: BLOCK_ONLY_HIGH
-      - category: HARM_CATEGORY_DANGEROUS_CONTENT
-        threshold: BLOCK_ONLY_HIGH
+    patches:
+      'gemini-.*':
+        request_body:                                 # Override safetySettings for all gemini models
+          safetySettings:
+            - category: HARM_CATEGORY_HARASSMENT
+              threshold: BLOCK_ONLY_HIGH
+            - category: HARM_CATEGORY_HATE_SPEECH
+              threshold: BLOCK_ONLY_HIGH
+            - category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+              threshold: BLOCK_ONLY_HIGH
+            - category: HARM_CATEGORY_DANGEROUS_CONTENT
+              threshold: BLOCK_ONLY_HIGH
 
   # See https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-claude
   - type: vertexai-claude

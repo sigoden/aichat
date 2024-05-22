@@ -1,9 +1,6 @@
-use super::access_token::*;
-use super::claude::{claude_build_body, claude_send_message, claude_send_message_streaming};
-use super::vertexai::prepare_gcloud_access_token;
 use super::{
-    Client, CompletionOutput, ExtraConfig, Model, ModelData, PromptAction, PromptKind, SendData,
-    SseHandler, VertexAIClaudeClient,
+    access_token::*, claude::*, vertexai::*, Client, CompletionOutput, ExtraConfig, Model,
+    ModelData, ModelPatches, PromptAction, PromptKind, SendData, SseHandler, VertexAIClaudeClient,
 };
 
 use anyhow::Result;
@@ -19,6 +16,7 @@ pub struct VertexAIClaudeConfig {
     pub adc_file: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
+    pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -43,6 +41,7 @@ impl VertexAIClaudeClient {
         );
 
         let mut body = claude_build_body(data, &self.model)?;
+        self.patch_request_body(&mut body);
         if let Some(body_obj) = body.as_object_mut() {
             body_obj.remove("model");
         }

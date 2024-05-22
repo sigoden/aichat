@@ -1,5 +1,7 @@
-use super::openai::openai_build_body;
-use super::{AzureOpenAIClient, ExtraConfig, Model, ModelData, PromptAction, PromptKind, SendData};
+use super::{
+    openai::*, AzureOpenAIClient, Client, ExtraConfig, Model, ModelData, ModelPatches,
+    PromptAction, PromptKind, SendData,
+};
 
 use anyhow::Result;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
@@ -11,6 +13,7 @@ pub struct AzureOpenAIConfig {
     pub api_base: Option<String>,
     pub api_key: Option<String>,
     pub models: Vec<ModelData>,
+    pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -35,7 +38,7 @@ impl AzureOpenAIClient {
         let api_key = self.get_api_key()?;
 
         let mut body = openai_build_body(data, &self.model);
-        self.model.merge_extra_fields(&mut body);
+        self.patch_request_body(&mut body);
 
         let url = format!(
             "{}/openai/deployments/{}/chat/completions?api-version=2024-02-01",

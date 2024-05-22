@@ -1,5 +1,7 @@
-use super::vertexai::gemini_build_body;
-use super::{ExtraConfig, GeminiClient, Model, ModelData, PromptAction, PromptKind, SendData};
+use super::{
+    vertexai::*, Client, ExtraConfig, GeminiClient, Model, ModelData, ModelPatches, PromptAction,
+    PromptKind, SendData,
+};
 
 use anyhow::Result;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
@@ -15,6 +17,7 @@ pub struct GeminiConfig {
     pub safety_settings: Option<serde_json::Value>,
     #[serde(default)]
     pub models: Vec<ModelData>,
+    pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -32,7 +35,8 @@ impl GeminiClient {
             false => "generateContent",
         };
 
-        let body = gemini_build_body(data, &self.model, self.config.safety_settings.clone())?;
+        let mut body = gemini_build_body(data, &self.model)?;
+        self.patch_request_body(&mut body);
 
         let model = &self.model.name();
 

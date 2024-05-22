@@ -1,7 +1,8 @@
 use super::access_token::*;
 use super::{
     maybe_catch_error, patch_system_message, sse_stream, Client, CompletionOutput, ErnieClient,
-    ExtraConfig, Model, ModelData, PromptAction, PromptKind, SendData, SsMmessage, SseHandler,
+    ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, SendData, SsMmessage,
+    SseHandler,
 };
 
 use anyhow::{anyhow, Context, Result};
@@ -21,6 +22,7 @@ pub struct ErnieConfig {
     pub secret_key: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
+    pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -31,7 +33,9 @@ impl ErnieClient {
     ];
 
     fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
-        let body = build_body(data, &self.model);
+        let mut body = build_body(data, &self.model);
+        self.patch_request_body(&mut body);
+
         let access_token = get_access_token(self.name())?;
 
         let url = format!(
