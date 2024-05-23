@@ -7,14 +7,12 @@ use crate::{
     utils::{prompt_input_integer, prompt_input_string, tokenize, AbortSignal, PromptKind},
 };
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
 use fancy_regex::Regex;
-use futures_util::{Stream, StreamExt};
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use reqwest::{Client as ReqwestClient, ClientBuilder, Proxy, RequestBuilder};
-use reqwest_eventsource::{Error as EventSourceError, Event, RequestBuilderExt};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{env, future::Future, time::Duration};
@@ -577,159 +575,6 @@ pub fn maybe_catch_error(data: &Value) -> Result<()> {
         bail!("{error_msg} (error_code: {error_code})");
     }
     Ok(())
-}
-
-#[derive(Debug)]
-pub struct SsMmessage {
-    pub event: String,
-    pub data: String,
-}
-
-pub async fn sse_stream<F>(builder: RequestBuilder, mut handle: F) -> Result<()>
-where
-    F: FnMut(SsMmessage) -> Result<bool>,
-{
-    let mut es = builder.eventsource()?;
-    while let Some(event) = es.next().await {
-        match event {
-            Ok(Event::Open) => {}
-            Ok(Event::Message(message)) => {
-                let message = SsMmessage {
-                    event: message.event,
-                    data: message.data,
-                };
-                if handle(message)? {
-                    break;
-                }
-            }
-            Err(err) => {
-                match err {
-                    EventSourceError::StreamEnded => {}
-                    EventSourceError::InvalidStatusCode(status, res) => {
-                        let text = res.text().await?;
-                        let data: Value = match text.parse() {
-                            Ok(data) => data,
-                            Err(_) => {
-                                bail!(
-                                    "Invalid response data: {text} (status: {})",
-                                    status.as_u16()
-                                );
-                            }
-                        };
-                        catch_error(&data, status.as_u16())?;
-                    }
-                    EventSourceError::InvalidContentType(header_value, res) => {
-                        let text = res.text().await?;
-                        bail!(
-                            "Invalid response event-stream. content-type: {}, data: {text}",
-                            header_value.to_str().unwrap_or_default()
-                        );
-                    }
-                    _ => {
-                        bail!("{}", err);
-                    }
-                }
-                es.close();
-            }
-        }
-    }
-    Ok(())
-}
-
-pub async fn json_stream<S, F, E>(mut stream: S, mut handle: F) -> Result<()>
-where
-    S: Stream<Item = Result<bytes::Bytes, E>> + Unpin,
-    F: FnMut(&str) -> Result<()>,
-    E: std::error::Error,
-{
-    let mut process_json = ProcessJson::default();
-    let mut remaining_bytes = vec![];
-    while let Some(chunk_bytes) = stream.next().await {
-        let chunk_bytes =
-            chunk_bytes.map_err(|err| anyhow!("Failed to read json stream, {err}"))?;
-        remaining_bytes.extend(chunk_bytes);
-        match std::str::from_utf8(&remaining_bytes) {
-            Ok(text) => {
-                process_json.buffer.extend(text.chars());
-                process_json.process(&mut handle)?;
-                remaining_bytes.clear();
-            }
-            Err(_) => {
-                continue;
-            }
-        }
-    }
-    if !remaining_bytes.is_empty() {
-        let text = std::str::from_utf8(&remaining_bytes)?;
-        process_json.buffer.extend(text.chars());
-        process_json.process(&mut handle)?;
-    }
-
-    Ok(())
-}
-
-#[derive(Debug, Default)]
-struct ProcessJson {
-    buffer: Vec<char>,
-    cursor: usize,
-    start: Option<usize>,
-    balances: Vec<char>,
-    quoting: bool,
-    escape: bool,
-}
-
-impl ProcessJson {
-    fn process<F>(&mut self, handle: &mut F) -> Result<()>
-    where
-        F: FnMut(&str) -> Result<()>,
-    {
-        for i in self.cursor..self.buffer.len() {
-            let ch = self.buffer[i];
-            if self.quoting {
-                if ch == '\\' {
-                    self.escape = !self.escape;
-                } else {
-                    if !self.escape && ch == '"' {
-                        self.quoting = false;
-                    }
-                    self.escape = false;
-                }
-                continue;
-            }
-            match ch {
-                '"' => {
-                    self.quoting = true;
-                    self.escape = false;
-                }
-                '{' => {
-                    if self.balances.is_empty() {
-                        self.start = Some(i);
-                    }
-                    self.balances.push(ch);
-                }
-                '[' => {
-                    if self.start.is_some() {
-                        self.balances.push(ch);
-                    }
-                }
-                '}' => {
-                    self.balances.pop();
-                    if self.balances.is_empty() {
-                        if let Some(start) = self.start.take() {
-                            let value: String = self.buffer[start..=i].iter().collect();
-                            handle(&value)?;
-                        }
-                    }
-                }
-                ']' => {
-                    self.balances.pop();
-                }
-                _ => {}
-            }
-        }
-        self.cursor = self.buffer.len();
-        Ok(())
-    }
 }
 
 fn set_client_config_values(
