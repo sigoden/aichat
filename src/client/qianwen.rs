@@ -42,13 +42,12 @@ impl QianwenClient {
         let api_key = self.get_api_key()?;
 
         let stream = data.stream;
-
-        let is_vl = self.is_vl();
-        let url = match is_vl {
+ 
+        let url = match self.model.supports_vision() {
             true => API_URL_VL,
             false => API_URL,
         };
-        let (mut body, has_upload) = build_body(data, &self.model, is_vl)?;
+        let (mut body, has_upload) = build_body(data, &self.model)?;
         self.patch_request_body(&mut body);
 
         debug!("Qianwen Request: {url} {body}");
@@ -63,11 +62,9 @@ impl QianwenClient {
 
         Ok(builder)
     }
-
-    fn is_vl(&self) -> bool {
-        self.model.name().starts_with("qwen-vl")
-    }
 }
+
+
 
 #[async_trait]
 impl Client for QianwenClient {
@@ -81,7 +78,7 @@ impl Client for QianwenClient {
         let api_key = self.get_api_key()?;
         patch_messages(self.model.name(), &api_key, &mut data.messages).await?;
         let builder = self.request_builder(client, data)?;
-        send_message(builder, self.is_vl()).await
+        send_message(builder, &self.model).await
     }
 
     async fn send_message_streaming_inner(
@@ -93,28 +90,35 @@ impl Client for QianwenClient {
         let api_key = self.get_api_key()?;
         patch_messages(self.model.name(), &api_key, &mut data.messages).await?;
         let builder = self.request_builder(client, data)?;
-        send_message_streaming(builder, handler, self.is_vl()).await
+        send_message_streaming(builder, handler, &self.model).await
     }
 }
 
-async fn send_message(builder: RequestBuilder, is_vl: bool) -> Result<CompletionOutput> {
+async fn send_message(builder: RequestBuilder, model: &Model) -> Result<CompletionOutput> {
     let data: Value = builder.send().await?.json().await?;
     maybe_catch_error(&data)?;
 
     debug!("non-stream-data: {data}");
-    extract_completion_text(&data, is_vl)
+    extract_completion_text(&data, model)
 }
 
 async fn send_message_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
-    is_vl: bool,
+    model: &Model,
 ) -> Result<()> {
+    let model_name = model.name();
     let handle = |message: SsMmessage| -> Result<bool> {
         let data: Value = serde_json::from_str(&message.data)?;
         maybe_catch_error(&data)?;
         debug!("stream-data: {data}");
-        if is_vl {
+        if model_name == "qwen-long" {
+            if let Some(text) =
+                data["output"]["choices"][0]["message"]["content"].as_str()
+            {
+                handler.text(text)?;
+            }
+        } else if model.supports_vision() {
             if let Some(text) =
                 data["output"]["choices"][0]["message"]["content"][0]["text"].as_str()
             {
@@ -129,7 +133,7 @@ async fn send_message_streaming(
     sse_stream(builder, handle).await
 }
 
-fn build_body(data: SendData, model: &Model, is_vl: bool) -> Result<(Value, bool)> {
+fn build_body(data: SendData, model: &Model) -> Result<(Value, bool)> {
     let SendData {
         messages,
         temperature,
@@ -140,7 +144,7 @@ fn build_body(data: SendData, model: &Model, is_vl: bool) -> Result<(Value, bool
 
     let mut has_upload = false;
     let mut is_tool_call = false;
-    let input = if is_vl {
+    let input = if model.supports_vision() {
         let messages: Vec<Value> = messages
             .into_iter()
             .map(|message| {
@@ -206,9 +210,13 @@ fn build_body(data: SendData, model: &Model, is_vl: bool) -> Result<(Value, bool
     Ok((body, has_upload))
 }
 
-fn extract_completion_text(data: &Value, is_vl: bool) -> Result<CompletionOutput> {
+fn extract_completion_text(data: &Value, model: &Model) -> Result<CompletionOutput> {
     let err = || anyhow!("Invalid response data: {data}");
-    let text = if is_vl {
+    let text = if model.name() == "qwen-long" {
+        data["output"]["choices"][0]["message"]["content"]
+            .as_str()
+            .ok_or_else(err)?
+    } else if model.supports_vision() {
         data["output"]["choices"][0]["message"]["content"][0]["text"]
             .as_str()
             .ok_or_else(err)?
