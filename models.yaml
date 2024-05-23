@@ -455,20 +455,20 @@
       max_input_tokens: 124000
       max_output_tokens: 4096
       pass_max_tokens: true
-      input_price: 0.56
-      output_price: 1.12
+      input_price: 0
+      output_price: 0
     - name: ernie-lite-8k
       max_input_tokens: 7168
       max_output_tokens: 2048
       pass_max_tokens: true
-      input_price: 0.42
-      output_price: 0.84
+      input_price: 0
+      output_price: 0
     - name: ernie-tiny-8k
       max_input_tokens: 7168
       max_output_tokens: 2048
       pass_max_tokens: true
-      input_price: 0.14
-      output_price: 0.14
+      input_price: 0
+      output_price: 0
 
 - platform: qianwen
   # docs:
@@ -477,22 +477,28 @@
   # notes:
   #   - get max_output_tokens info from models doc
   models:
+    - name: qwen-long
+      max_input_tokens: 1000000
+      input_price: 0.07
+      output_price: 0.28
     - name: qwen-turbo
       max_input_tokens: 6000
       max_output_tokens: 1500
-      input_price: 1.12
-      output_price: 1.12
+      input_price: 0.28
+      output_price: 0.84
     - name: qwen-plus
       max_input_tokens: 30000
       max_output_tokens: 2000
-      input_price: 2.8
-      output_price: 2.8
+      input_price: 0.56
+      output_price: 1.68
     - name: qwen-max
       max_input_tokens: 6000
       max_output_tokens: 2000
-      input_price: 16.8
+      input_price: 5.6
       output_price: 16.8
     - name: qwen-max-longcontext
+      input_price: 5.6
+      output_price: 16.8
       max_input_tokens: 28000
       max_output_tokens: 2000
     - name: qwen-vl-plus
