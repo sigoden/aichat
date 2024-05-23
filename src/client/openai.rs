@@ -1,6 +1,6 @@
 use super::{
     catch_error, message::*, sse_stream, Client, CompletionOutput, ExtraConfig, Model, ModelData,
-    ModelPatches, OpenAIClient, PromptAction, PromptKind, SendData, SsMmessage, SseHandler,
+    ModelPatches, OpenAIClient, PromptAction, PromptKind, SendData, SseHandler, SseMmessage,
     ToolCall,
 };
 
@@ -71,7 +71,7 @@ pub async fn openai_send_message_streaming(
     let mut function_name = String::new();
     let mut function_arguments = String::new();
     let mut function_id = String::new();
-    let handle = |message: SsMmessage| -> Result<bool> {
+    let handle = |message: SseMmessage| -> Result<bool> {
         if message.data == "[DONE]" {
             if !function_name.is_empty() {
                 handler.tool_call(ToolCall::new(

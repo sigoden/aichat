@@ -217,12 +217,7 @@ chat-cohere() {
 -X POST \
 -H 'Content-Type: application/json' \
 -H "Authorization: Bearer $COHERE_API_KEY" \
---data '{
-  "model": "'$argc_model'",
-  "message": "'"$*"'",
-  "stream": '$stream'
-}
-'
+-d "$(_build_body cohere "$@")"
 }
 
 # @cmd List cohere models
@@ -468,6 +463,13 @@ _build_body() {
         }
     ],
     "stream": '$stream'
+}'
+            ;;
+        cohere)
+            echo '{
+  "model": "'$argc_model'",
+  "message": "'"$*"'",
+  "stream": '$stream'
 }'
             ;;
         claude)

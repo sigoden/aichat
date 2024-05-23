@@ -79,6 +79,9 @@ arboard = { version = "3.3.0", default-features = false, features = ["wayland-da
 [target.'cfg(not(any(target_os = "linux", target_os = "android", target_os = "emscripten")))'.dependencies]
 arboard = { version = "3.3.0", default-features = false }
 
+[dev-dependencies]
+rand = "0.8.5"
+
 [profile.release]
 lto = true
 strip = true

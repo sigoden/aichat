@@ -10,11 +10,9 @@ use crate::{
 use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
 use fancy_regex::Regex;
-use futures_util::{Stream, StreamExt};
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use reqwest::{Client as ReqwestClient, ClientBuilder, Proxy, RequestBuilder};
-use reqwest_eventsource::{Error as EventSourceError, Event, RequestBuilderExt};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{env, future::Future, time::Duration};
@@ -575,125 +573,6 @@ pub fn maybe_catch_error(data: &Value) -> Result<()> {
     {
         debug!("Invalid response: {}", data);
         bail!("{error_msg} (error_code: {error_code})");
-    }
-    Ok(())
-}
-
-#[derive(Debug)]
-pub struct SsMmessage {
-    pub event: String,
-    pub data: String,
-}
-
-pub async fn sse_stream<F>(builder: RequestBuilder, mut handle: F) -> Result<()>
-where
-    F: FnMut(SsMmessage) -> Result<bool>,
-{
-    let mut es = builder.eventsource()?;
-    while let Some(event) = es.next().await {
-        match event {
-            Ok(Event::Open) => {}
-            Ok(Event::Message(message)) => {
-                let message = SsMmessage {
-                    event: message.event,
-                    data: message.data,
-                };
-                if handle(message)? {
-                    break;
-                }
-            }
-            Err(err) => {
-                match err {
-                    EventSourceError::StreamEnded => {}
-                    EventSourceError::InvalidStatusCode(status, res) => {
-                        let text = res.text().await?;
-                        let data: Value = match text.parse() {
-                            Ok(data) => data,
-                            Err(_) => {
-                                bail!(
-                                    "Invalid response data: {text} (status: {})",
-                                    status.as_u16()
-                                );
-                            }
-                        };
-                        catch_error(&data, status.as_u16())?;
-                    }
-                    EventSourceError::InvalidContentType(header_value, res) => {
-                        let text = res.text().await?;
-                        bail!(
-                            "Invalid response event-stream. content-type: {}, data: {text}",
-                            header_value.to_str().unwrap_or_default()
-                        );
-                    }
-                    _ => {
-                        bail!("{}", err);
-                    }
-                }
-                es.close();
-            }
-        }
-    }
-    Ok(())
-}
-
-pub async fn json_stream<S, F>(mut stream: S, mut handle: F) -> Result<()>
-where
-    S: Stream<Item = Result<bytes::Bytes, reqwest::Error>> + Unpin,
-    F: FnMut(&str) -> Result<()>,
-{
-    let mut buffer = vec![];
-    let mut cursor = 0;
-    let mut start = 0;
-    let mut balances = vec![];
-    let mut quoting = false;
-    let mut escape = false;
-    while let Some(chunk) = stream.next().await {
-        let chunk = chunk?;
-        let chunk = std::str::from_utf8(&chunk)?;
-        buffer.extend(chunk.chars());
-        for i in cursor..buffer.len() {
-            let ch = buffer[i];
-            if quoting {
-                if ch == '\\' {
-                    escape = !escape;
-                } else {
-                    if !escape && ch == '"' {
-                        quoting = false;
-                    }
-                    escape = false;
-                }
-                continue;
-            }
-            match ch {
-                '"' => {
-                    quoting = true;
-                    escape = false;
-                }
-                '{' => {
-                    if balances.is_empty() {
-                        start = i;
-                    }
-                    balances.push(ch);
-                }
-                '[' => {
-                    if start != 0 {
-                        balances.push(ch);
-                    }
-                }
-                '}' => {
-                    balances.pop();
-                    if balances.is_empty() {
-                        let value: String = buffer[start..=i].iter().collect();
-                        handle(&value)?;
-                    }
-                }
-                ']' => {
-                    balances.pop();
-                }
-                _ => {}
-            }
-        }
-        cursor = buffer.len();
     }
     Ok(())
 }

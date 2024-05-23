@@ -1,6 +1,6 @@
 use super::{
     catch_error, sse_stream, Client, CloudflareClient, CompletionOutput, ExtraConfig, Model,
-    ModelData, ModelPatches, PromptAction, PromptKind, SendData, SsMmessage, SseHandler,
+    ModelData, ModelPatches, PromptAction, PromptKind, SendData, SseHandler, SseMmessage,
 };
 
 use anyhow::{anyhow, Result};
@@ -65,7 +65,7 @@ async fn send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
 }
 
 async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
-    let handle = |message: SsMmessage| -> Result<bool> {
+    let handle = |message: SseMmessage| -> Result<bool> {
         if message.data == "[DONE]" {
             return Ok(true);
         }

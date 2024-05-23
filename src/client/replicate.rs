@@ -1,7 +1,7 @@
 use super::{
-    catch_error, prompt_format::*, sse_stream, Client, CompletionOutput, ExtraConfig,
-    Model, ModelData, ModelPatches, PromptAction, PromptKind, ReplicateClient, SendData,
-    SsMmessage, SseHandler,
+    catch_error, prompt_format::*, sse_stream, Client, CompletionOutput, ExtraConfig, Model,
+    ModelData, ModelPatches, PromptAction, PromptKind, ReplicateClient, SendData, SseHandler,
+    SseMmessage,
 };
 
 use anyhow::{anyhow, Result};
@@ -125,7 +125,7 @@ async fn send_message_streaming(
 
     let sse_builder = client.get(stream_url).header("accept", "text/event-stream");
 
-    let handle = |message: SsMmessage| -> Result<bool> {
+    let handle = |message: SseMmessage| -> Result<bool> {
         if message.event == "done" {
             return Ok(true);
         }

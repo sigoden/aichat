@@ -1,7 +1,7 @@
 use super::{
     maybe_catch_error, message::*, sse_stream, Client, CompletionOutput, ExtraConfig, Model,
-    ModelData, ModelPatches, PromptAction, PromptKind, QianwenClient, SendData, SsMmessage,
-    SseHandler,
+    ModelData, ModelPatches, PromptAction, PromptKind, QianwenClient, SendData, SseHandler,
+    SseMmessage,
 };
 
 use crate::utils::{base64_decode, sha256};
@@ -42,7 +42,7 @@ impl QianwenClient {
         let api_key = self.get_api_key()?;
 
         let stream = data.stream;
- 
+
         let url = match self.model.supports_vision() {
             true => API_URL_VL,
             false => API_URL,
@@ -63,8 +63,6 @@ impl QianwenClient {
         Ok(builder)
     }
 }
-
-
 
 #[async_trait]
 impl Client for QianwenClient {
@@ -108,14 +106,12 @@ async fn send_message_streaming(
     model: &Model,
 ) -> Result<()> {
     let model_name = model.name();
-    let handle = |message: SsMmessage| -> Result<bool> {
+    let handle = |message: SseMmessage| -> Result<bool> {
         let data: Value = serde_json::from_str(&message.data)?;
         maybe_catch_error(&data)?;
         debug!("stream-data: {data}");
         if model_name == "qwen-long" {
-            if let Some(text) =
-                data["output"]["choices"][0]["message"]["content"].as_str()
-            {
+            if let Some(text) = data["output"]["choices"][0]["message"]["content"].as_str() {
                 handler.text(text)?;
             }
         } else if model.supports_vision() {
