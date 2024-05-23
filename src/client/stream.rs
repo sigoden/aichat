@@ -239,10 +239,26 @@ mod tests {
 
     use bytes::Bytes;
     use futures_util::stream;
+    use rand::{thread_rng, Rng};
+
+    fn split_chunks(text: &str) -> Vec<Vec<u8>> {
+        let mut rng = thread_rng();
+        let len = text.len();
+        let cut1 = rng.gen_range(1..len - 1);
+        let cut2 = rng.gen_range(cut1 + 1..len);
+        let chunk1 = text[..cut1].as_bytes().to_vec();
+        let chunk2 = text[cut1..cut2].as_bytes().to_vec();
+        let chunk3 = text[cut2..].as_bytes().to_vec();
+        vec![chunk1, chunk2, chunk3]
+    }
 
     macro_rules! assert_json_stream {
         ($input:expr, $output:expr) => {
-            let stream = stream::iter(vec![Ok::<_, std::convert::Infallible>(Bytes::from($input))]);
+            let chunks: Vec<_> = split_chunks($input)
+                .into_iter()
+                .map(|chunk| Ok::<_, std::convert::Infallible>(Bytes::from(chunk)))
+                .collect();
+            let stream = stream::iter(chunks);
             let mut output = vec![];
             let ret = json_stream(stream, |data| {
                 output.push(data.to_string());
