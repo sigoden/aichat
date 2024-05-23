@@ -1,7 +1,7 @@
 use super::{
     catch_error, extract_system_message, message::*, sse_stream, ClaudeClient, Client,
     CompletionOutput, ExtraConfig, ImageUrl, MessageContent, MessageContentPart, Model, ModelData,
-    ModelPatches, PromptAction, PromptKind, SendData, SsMmessage, SseHandler, ToolCall,
+    ModelPatches, PromptAction, PromptKind, SendData, SseHandler, SseMmessage, ToolCall,
 };
 
 use anyhow::{bail, Context, Result};
@@ -73,7 +73,7 @@ pub async fn claude_send_message_streaming(
     let mut function_name = String::new();
     let mut function_arguments = String::new();
     let mut function_id = String::new();
-    let handle = |message: SsMmessage| -> Result<bool> {
+    let handle = |message: SseMmessage| -> Result<bool> {
         let data: Value = serde_json::from_str(&message.data)?;
         debug!("stream-data: {data}");
         if let Some(typ) = data["type"].as_str() {

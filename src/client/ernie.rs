@@ -1,8 +1,8 @@
 use super::access_token::*;
 use super::{
     maybe_catch_error, patch_system_message, sse_stream, Client, CompletionOutput, ErnieClient,
-    ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, SendData, SsMmessage,
-    SseHandler,
+    ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, SendData, SseHandler,
+    SseMmessage,
 };
 
 use anyhow::{anyhow, Context, Result};
@@ -108,7 +108,7 @@ async fn send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
 }
 
 async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
-    let handle = |message: SsMmessage| -> Result<bool> {
+    let handle = |message: SseMmessage| -> Result<bool> {
         let data: Value = serde_json::from_str(&message.data)?;
         debug!("stream-data: {data}");
         if let Some(text) = data["result"].as_str() {

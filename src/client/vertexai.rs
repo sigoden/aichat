@@ -177,10 +177,7 @@ fn gemini_extract_completion_text(data: &Value) -> Result<CompletionOutput> {
     Ok(output)
 }
 
-pub(crate) fn gemini_build_body(
-    data: SendData,
-    model: &Model,
-) -> Result<Value> {
+pub(crate) fn gemini_build_body(data: SendData, model: &Model) -> Result<Value> {
     let SendData {
         mut messages,
         temperature,

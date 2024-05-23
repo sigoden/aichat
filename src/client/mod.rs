@@ -4,7 +4,6 @@ mod access_token;
 mod message;
 mod model;
 mod prompt_format;
-mod sse_handler;
 mod stream;
 
 pub use crate::function::{ToolCall, ToolResults};
@@ -12,7 +11,6 @@ pub use crate::utils::PromptKind;
 pub use common::*;
 pub use message::*;
 pub use model::*;
-pub use sse_handler::*;
 pub use stream::*;
 
 register_client!(
