@@ -7,7 +7,7 @@ use crate::{
     utils::{prompt_input_integer, prompt_input_string, tokenize, AbortSignal, PromptKind},
 };
 
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
 use fancy_regex::Regex;
 use futures_util::{Stream, StreamExt};
@@ -636,66 +636,100 @@ where
     Ok(())
 }
 
-pub async fn json_stream<S, F>(mut stream: S, mut handle: F) -> Result<()>
+pub async fn json_stream<S, F, E>(mut stream: S, mut handle: F) -> Result<()>
 where
-    S: Stream<Item = Result<bytes::Bytes, reqwest::Error>> + Unpin,
+    S: Stream<Item = Result<bytes::Bytes, E>> + Unpin,
     F: FnMut(&str) -> Result<()>,
+    E: std::error::Error,
 {
-    let mut buffer = vec![];
-    let mut cursor = 0;
-    let mut start = 0;
-    let mut balances = vec![];
-    let mut quoting = false;
-    let mut escape = false;
-    while let Some(chunk) = stream.next().await {
-        let chunk = chunk?;
-        let chunk = std::str::from_utf8(&chunk)?;
-        buffer.extend(chunk.chars());
-        for i in cursor..buffer.len() {
-            let ch = buffer[i];
-            if quoting {
+    let mut process_json = ProcessJson::default();
+    let mut remaining_bytes = vec![];
+    while let Some(chunk_bytes) = stream.next().await {
+        let chunk_bytes =
+            chunk_bytes.map_err(|err| anyhow!("Failed to read json stream, {err}"))?;
+        remaining_bytes.extend(chunk_bytes);
+        match std::str::from_utf8(&remaining_bytes) {
+            Ok(text) => {
+                process_json.buffer.extend(text.chars());
+                process_json.process(&mut handle)?;
+                remaining_bytes.clear();
+            }
+            Err(_) => {
+                continue;
+            }
+        }
+    }
+    if !remaining_bytes.is_empty() {
+        let text = std::str::from_utf8(&remaining_bytes)?;
+        process_json.buffer.extend(text.chars());
+        process_json.process(&mut handle)?;
+    }
+
+    Ok(())
+}
+
+#[derive(Debug, Default)]
+struct ProcessJson {
+    buffer: Vec<char>,
+    cursor: usize,
+    start: Option<usize>,
+    balances: Vec<char>,
+    quoting: bool,
+    escape: bool,
+}
+
+impl ProcessJson {
+    fn process<F>(&mut self, handle: &mut F) -> Result<()>
+    where
+        F: FnMut(&str) -> Result<()>,
+    {
+        for i in self.cursor..self.buffer.len() {
+            let ch = self.buffer[i];
+            if self.quoting {
                 if ch == '\\' {
-                    escape = !escape;
+                    self.escape = !self.escape;
                 } else {
-                    if !escape && ch == '"' {
-                        quoting = false;
+                    if !self.escape && ch == '"' {
+                        self.quoting = false;
                     }
-                    escape = false;
+                    self.escape = false;
                 }
                 continue;
             }
             match ch {
                 '"' => {
-                    quoting = true;
-                    escape = false;
+                    self.quoting = true;
+                    self.escape = false;
                 }
                 '{' => {
-                    if balances.is_empty() {
-                        start = i;
+                    if self.balances.is_empty() {
+                        self.start = Some(i);
                     }
-                    balances.push(ch);
+                    self.balances.push(ch);
                 }
                 '[' => {
-                    if start != 0 {
-                        balances.push(ch);
+                    if self.start.is_some() {
+                        self.balances.push(ch);
                     }
                 }
                 '}' => {
-                    balances.pop();
-                    if balances.is_empty() {
-                        let value: String = buffer[start..=i].iter().collect();
-                        handle(&value)?;
+                    self.balances.pop();
+                    if self.balances.is_empty() {
+                        if let Some(start) = self.start.take() {
+                            let value: String = self.buffer[start..=i].iter().collect();
+                            handle(&value)?;
+                        }
                     }
                 }
                 ']' => {
-                    balances.pop();
+                    self.balances.pop();
                 }
                 _ => {}
             }
         }
-        cursor = buffer.len();
+        self.cursor = self.buffer.len();
+        Ok(())
     }
-    Ok(())
 }
 
 fn set_client_config_values(
