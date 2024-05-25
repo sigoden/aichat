@@ -342,13 +342,13 @@
       supports_vision: true
     - name: meta.llama3-8b-instruct-v1:0
       max_input_tokens: 8192
-      max_output_tokens: 4096
+      max_output_tokens: 2048
       pass_max_tokens: true
       input_price: 0.4
       output_price: 0.6
     - name: meta.llama3-70b-instruct-v1:0
       max_input_tokens: 8192
-      max_output_tokens: 4096
+      max_output_tokens: 2048
       pass_max_tokens: true
       input_price: 2.65
       output_price: 3.5

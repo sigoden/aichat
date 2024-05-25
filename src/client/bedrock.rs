@@ -217,6 +217,7 @@ fn build_body(data: SendData, model: &Model, model_category: &ModelCategory) -> 
             let mut body = claude_build_body(data, model)?;
             if let Some(body_obj) = body.as_object_mut() {
                 body_obj.remove("model");
+                body_obj.remove("stream");
             }
             body["anthropic_version"] = "bedrock-2023-05-31".into();
             Ok(body)
