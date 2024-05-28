@@ -46,12 +46,22 @@ pub struct Session {
 
 impl Session {
     pub fn new(config: &Config, name: &str) -> Self {
+        let name = if name.is_empty() {
+            TEMP_SESSION_NAME
+        } else {
+            name
+        };
+        let save_session = if name == TEMP_SESSION_NAME {
+            None
+        } else {
+            config.save_session
+        };
         let mut session = Self {
             model_id: config.model.id(),
             temperature: config.temperature,
             top_p: config.top_p,
             function_matcher: None,
-            save_session: config.save_session,
+            save_session,
             messages: Default::default(),
             compressed_messages: Default::default(),
             compress_threshold: None,
@@ -258,6 +268,9 @@ impl Session {
     }
 
     pub fn set_save_session(&mut self, value: Option<bool>) {
+        if self.name == TEMP_SESSION_NAME {
+            return;
+        }
         if self.save_session != value {
             self.save_session = value;
             self.dirty = true;
