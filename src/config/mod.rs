@@ -679,7 +679,7 @@ impl Config {
             self.last_message = None;
             let save_session = session.save_session();
             if session.dirty && save_session != Some(false) {
-                if save_session.is_none() || session.is_temp() {
+                if save_session.is_none() {
                     if self.working_mode != WorkingMode::Repl {
                         return Ok(());
                     }
@@ -687,7 +687,7 @@ impl Config {
                     if !ans {
                         return Ok(());
                     }
-                    while session.is_temp() || session.name().is_empty() {
+                    while session.is_temp() {
                         session.name = Text::new("Session name:").prompt()?;
                     }
                 }
