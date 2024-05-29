@@ -1,7 +1,7 @@
 use super::{
-    catch_error, message::*, Client, CompletionOutput, ExtraConfig, Model, ModelData, ModelPatches, OllamaClient, PromptAction, PromptKind, SendData, SseHandler, json_stream
+    catch_error, json_stream, message::*, Client, CompletionOutput, ExtraConfig, Model, ModelData,
+    ModelPatches, OllamaClient, PromptAction, PromptKind, SendData, SseHandler,
 };
-
 
 use anyhow::{anyhow, bail, Result};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
@@ -80,8 +80,6 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
         let data = res.json().await?;
         catch_error(&data, status.as_u16())?;
     } else {
-
-        let stream = res.bytes_stream();
         let handle = |message: &str| -> Result<()> {
             let data: Value = serde_json::from_str(message)?;
             debug!("stream-data: {data}");
@@ -97,7 +95,7 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
             Ok(())
         };
 
-        json_stream(stream, handle).await?;
+        json_stream(res.bytes_stream(), handle).await?;
     }
 
     Ok(())
