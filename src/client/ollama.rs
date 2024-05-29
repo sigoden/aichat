@@ -1,7 +1,7 @@
 use super::{
-    catch_error, message::*, Client, CompletionOutput, ExtraConfig, Model, ModelData, ModelPatches,
-    OllamaClient, PromptAction, PromptKind, SendData, SseHandler,
+    catch_error, message::*, Client, CompletionOutput, ExtraConfig, Model, ModelData, ModelPatches, OllamaClient, PromptAction, PromptKind, SendData, SseHandler, json_stream
 };
+
 
 use anyhow::{anyhow, bail, Result};
 use futures_util::StreamExt;
@@ -81,14 +81,12 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
         let data = res.json().await?;
         catch_error(&data, status.as_u16())?;
     } else {
-        let mut stream = res.bytes_stream();
-        while let Some(chunk) = stream.next().await {
-            let chunk = chunk?;
-            if chunk.is_empty() {
-                continue;
-            }
-            let data: Value = serde_json::from_slice(&chunk)?;
+
+        let stream = res.bytes_stream();
+        let handle = |message: &str| -> Result<()> {
+            let data: Value = serde_json::from_str(&message)?;
             debug!("stream-data: {data}");
+
             if data["done"].is_boolean() {
                 if let Some(text) = data["message"]["content"].as_str() {
                     handler.text(text)?;
@@ -96,8 +94,13 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
             } else {
                 bail!("Invalid response data: {data}")
             }
-        }
+
+            Ok(())
+        };
+
+        json_stream(stream, handle).await?;
     }
+
     Ok(())
 }
 
