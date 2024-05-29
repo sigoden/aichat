@@ -83,7 +83,7 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
 
         let stream = res.bytes_stream();
         let handle = |message: &str| -> Result<()> {
-            let data: Value = serde_json::from_str(&message)?;
+            let data: Value = serde_json::from_str(message)?;
             debug!("stream-data: {data}");
 
             if data["done"].is_boolean() {
