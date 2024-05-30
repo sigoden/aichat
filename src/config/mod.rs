@@ -112,7 +112,7 @@ impl Default for Config {
             prelude: None,
             buffer_editor: None,
             function_calling: false,
-            compress_threshold: 2000,
+            compress_threshold: 4000,
             summarize_prompt: None,
             summary_prompt: None,
             left_prompt: None,
