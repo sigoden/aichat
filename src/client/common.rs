@@ -333,7 +333,7 @@ pub trait Client: Sync + Send {
 
     fn patch_request_body(&self, body: &mut Value) {
         let model_name = self.model().name();
-        if let Some(patch_data) = slect_model_patch(self.patches_config(), model_name) {
+        if let Some(patch_data) = select_model_patch(self.patches_config(), model_name) {
             if body.is_object() && patch_data.request_body.is_object() {
                 json_patch::merge(body, &patch_data.request_body)
             }
@@ -374,7 +374,7 @@ pub struct ModelPatch {
     pub request_body: Value,
 }
 
-pub fn slect_model_patch<'a>(
+pub fn select_model_patch<'a>(
     patch: Option<&'a ModelPatches>,
     name: &str,
 ) -> Option<&'a ModelPatch> {

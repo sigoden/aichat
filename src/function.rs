@@ -234,7 +234,7 @@ impl ToolCall {
         let output = if self.is_execute() {
             if stdout().is_terminal() {
                 println!("{prompt}");
-                let anwser = Text::new("[1] Run, [2] Run & Retrieve, [3] Skip:")
+                let answer = Text::new("[1] Run, [2] Run & Retrieve, [3] Skip:")
                     .with_default("1")
                     .with_validator(|input: &str| match matches!(input, "1" | "2" | "3") {
                         true => Ok(Validation::Valid),
@@ -243,7 +243,7 @@ impl ToolCall {
                         )),
                     })
                     .prompt()?;
-                match anwser.as_str() {
+                match answer.as_str() {
                     "1" => {
                         let exit_code = run_command(&name, &[arguments], Some(envs))?;
                         if exit_code != 0 {
