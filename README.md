@@ -21,7 +21,7 @@ AIChat is an all-in-one AI CLI tool that allows users to access over 100 LLMs ac
 - **Shell Auto-Completion**: AI-based auto-completion for shell commands.
 - **Highly Customizable**: Customize configurations and themes to your preferences.
 - **Local API Server**: Host a local server with OpenAI-compatible API.
-- **LLM Playground/Arena**: Experiment and compete LLMs in WebUI
+- **LLM Playground/Arena**: Experiment and compete LLMs in WebUI.
 
 ## Supported AI Platforms
 
@@ -94,7 +94,7 @@ prelude: null                    # Set a default role or session to start with (
 buffer_editor: null
 
 # Compress session when token count reaches or exceeds this threshold (must be at least 1000)
-compress_threshold: 1000
+compress_threshold: 4000
 
 # Controls the function calling feature. For setup instructions, visit https://github.com/sigoden/llm-functions.
 function_calling: false
@@ -381,13 +381,13 @@ curl -X POST -H "Content-Type: application/json" -d '{
 
 The LLM Playground is a webapp that allows you to interact with any LLM supported by AIChat directly in your browser.
 
-![image](https://github.com/sigoden/aichat/assets/4012553/68043aa3-5778-4688-9c2f-3d96aa600b7a)
+![image](https://github.com/sigoden/aichat/assets/4012553/d2334c03-9a07-41a4-a326-e4ee37477ce3)
 
 ### LLM Arena
 
 The LLM Arena is a web-based platform where you can compare different LLMs side-by-side. 
 
-![image](https://github.com/sigoden/aichat/assets/4012553/dc6dbf5a-488f-4bf4-a710-f1f9fc76933b)
+![image](https://github.com/sigoden/aichat/assets/4012553/7883a708-aa8d-417b-a82d-9b58cc73d91b)
 
 ## Function Calling
 
