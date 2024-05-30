@@ -1,8 +1,8 @@
 use super::{role::Role, session::Session, GlobalConfig};
 
 use crate::client::{
-    init_client, list_models, Client, ImageUrl, Message, MessageContent, MessageContentPart,
-    MessageRole, Model, SendData,
+    init_client, list_models, Client, CompletionData, ImageUrl, Message, MessageContent,
+    MessageContentPart, MessageRole, Model,
 };
 use crate::function::{ToolCallResult, ToolResults};
 use crate::utils::{base64_encode, sha256};
@@ -149,7 +149,7 @@ impl Input {
         init_client(&self.config, Some(self.model()))
     }
 
-    pub fn prepare_send_data(&self, model: &Model, stream: bool) -> Result<SendData> {
+    pub fn prepare_completion_data(&self, model: &Model, stream: bool) -> Result<CompletionData> {
         if !self.medias.is_empty() && !model.supports_vision() {
             bail!("The current model does not support vision.");
         }
@@ -176,7 +176,7 @@ impl Input {
             };
             functions = config.function.select(function_matcher);
         };
-        Ok(SendData {
+        Ok(CompletionData {
             messages,
             temperature,
             top_p,

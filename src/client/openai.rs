@@ -1,7 +1,7 @@
 use super::{
-    catch_error, message::*, sse_stream, Client, CompletionOutput, ExtraConfig, Model, ModelData,
-    ModelPatches, OpenAIClient, PromptAction, PromptKind, SendData, SseHandler, SseMmessage,
-    ToolCall,
+    catch_error, message::*, sse_stream, Client, CompletionData, CompletionOutput, ExtraConfig,
+    Model, ModelData, ModelPatches, OpenAIClient, PromptAction, PromptKind, SseHandler,
+    SseMmessage, ToolCall,
 };
 
 use anyhow::{bail, Result};
@@ -30,7 +30,11 @@ impl OpenAIClient {
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
+    fn request_builder(
+        &self,
+        client: &ReqwestClient,
+        data: CompletionData,
+    ) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
         let api_base = self.get_api_base().unwrap_or_else(|_| API_BASE.to_string());
 
@@ -121,8 +125,8 @@ pub async fn openai_send_message_streaming(
     sse_stream(builder, handle).await
 }
 
-pub fn openai_build_body(data: SendData, model: &Model) -> Value {
-    let SendData {
+pub fn openai_build_body(data: CompletionData, model: &Model) -> Value {
+    let CompletionData {
         messages,
         temperature,
         top_p,

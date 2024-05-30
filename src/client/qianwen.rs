@@ -1,7 +1,7 @@
 use super::{
-    maybe_catch_error, message::*, sse_stream, Client, CompletionOutput, ExtraConfig, Model,
-    ModelData, ModelPatches, PromptAction, PromptKind, QianwenClient, SendData, SseHandler,
-    SseMmessage,
+    maybe_catch_error, message::*, sse_stream, Client, CompletionData, CompletionOutput,
+    ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, QianwenClient,
+    SseHandler, SseMmessage,
 };
 
 use crate::utils::{base64_decode, sha256};
@@ -38,7 +38,11 @@ impl QianwenClient {
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
+    fn request_builder(
+        &self,
+        client: &ReqwestClient,
+        data: CompletionData,
+    ) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
 
         let stream = data.stream;
@@ -71,7 +75,7 @@ impl Client for QianwenClient {
     async fn send_message_inner(
         &self,
         client: &ReqwestClient,
-        mut data: SendData,
+        mut data: CompletionData,
     ) -> Result<CompletionOutput> {
         let api_key = self.get_api_key()?;
         patch_messages(self.model.name(), &api_key, &mut data.messages).await?;
@@ -83,7 +87,7 @@ impl Client for QianwenClient {
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
-        mut data: SendData,
+        mut data: CompletionData,
     ) -> Result<()> {
         let api_key = self.get_api_key()?;
         patch_messages(self.model.name(), &api_key, &mut data.messages).await?;
@@ -129,8 +133,8 @@ async fn send_message_streaming(
     sse_stream(builder, handle).await
 }
 
-fn build_body(data: SendData, model: &Model) -> Result<(Value, bool)> {
-    let SendData {
+fn build_body(data: CompletionData, model: &Model) -> Result<(Value, bool)> {
+    let CompletionData {
         messages,
         temperature,
         top_p,

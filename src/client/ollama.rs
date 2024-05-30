@@ -1,6 +1,6 @@
 use super::{
-    catch_error, json_stream, message::*, Client, CompletionOutput, ExtraConfig, Model, ModelData,
-    ModelPatches, OllamaClient, PromptAction, PromptKind, SendData, SseHandler,
+    catch_error, json_stream, message::*, Client, CompletionData, CompletionOutput, ExtraConfig,
+    Model, ModelData, ModelPatches, OllamaClient, PromptAction, PromptKind, SseHandler,
 };
 
 use anyhow::{anyhow, bail, Result};
@@ -35,7 +35,11 @@ impl OllamaClient {
         ),
     ];
 
-    fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
+    fn request_builder(
+        &self,
+        client: &ReqwestClient,
+        data: CompletionData,
+    ) -> Result<RequestBuilder> {
         let api_base = self.get_api_base()?;
         let api_auth = self.get_api_auth().ok();
 
@@ -101,8 +105,8 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
     Ok(())
 }
 
-fn build_body(data: SendData, model: &Model) -> Result<Value> {
-    let SendData {
+fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
+    let CompletionData {
         messages,
         temperature,
         top_p,
