@@ -19,7 +19,7 @@ buffer_editor: null
 function_calling: false
 
 # Compress session when token count reaches or exceeds this threshold (must be at least 1000)
-compress_threshold: 1000
+compress_threshold: 4000
 # Text prompt used for creating a concise summary of session message
 summarize_prompt: 'Summarize the discussion briefly in 200 words or less to use as a prompt for future context.'
 # Text prompt used for including the summary of the entire session
