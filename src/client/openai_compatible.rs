@@ -1,6 +1,6 @@
 use super::{
-    openai::*, Client, ExtraConfig, Model, ModelData, ModelPatches, OpenAICompatibleClient,
-    PromptAction, PromptKind, SendData, OPENAI_COMPATIBLE_PLATFORMS,
+    openai::*, Client, CompletionData, ExtraConfig, Model, ModelData, ModelPatches,
+    OpenAICompatibleClient, PromptAction, PromptKind, OPENAI_COMPATIBLE_PLATFORMS,
 };
 
 use anyhow::Result;
@@ -36,7 +36,11 @@ impl OpenAICompatibleClient {
         ),
     ];
 
-    fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
+    fn request_builder(
+        &self,
+        client: &ReqwestClient,
+        data: CompletionData,
+    ) -> Result<RequestBuilder> {
         let api_base = match self.get_api_base() {
             Ok(v) => v,
             Err(err) => {

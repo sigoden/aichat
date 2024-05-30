@@ -1,7 +1,7 @@
 use super::{
     catch_error, extract_system_message, message::*, sse_stream, ClaudeClient, Client,
-    CompletionOutput, ExtraConfig, ImageUrl, MessageContent, MessageContentPart, Model, ModelData,
-    ModelPatches, PromptAction, PromptKind, SendData, SseHandler, SseMmessage, ToolCall,
+    CompletionData, CompletionOutput, ExtraConfig, ImageUrl, MessageContent, MessageContentPart,
+    Model, ModelData, ModelPatches, PromptAction, PromptKind, SseHandler, SseMmessage, ToolCall,
 };
 
 use anyhow::{bail, Context, Result};
@@ -27,7 +27,11 @@ impl ClaudeClient {
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
+    fn request_builder(
+        &self,
+        client: &ReqwestClient,
+        data: CompletionData,
+    ) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
 
         let mut body = claude_build_body(data, &self.model)?;
@@ -131,8 +135,8 @@ pub async fn claude_send_message_streaming(
     sse_stream(builder, handle).await
 }
 
-pub fn claude_build_body(data: SendData, model: &Model) -> Result<Value> {
-    let SendData {
+pub fn claude_build_body(data: CompletionData, model: &Model) -> Result<Value> {
+    let CompletionData {
         mut messages,
         temperature,
         top_p,

@@ -1,6 +1,6 @@
 use super::{
-    vertexai::*, Client, ExtraConfig, GeminiClient, Model, ModelData, ModelPatches, PromptAction,
-    PromptKind, SendData,
+    vertexai::*, Client, CompletionData, ExtraConfig, GeminiClient, Model, ModelData, ModelPatches,
+    PromptAction, PromptKind,
 };
 
 use anyhow::Result;
@@ -27,7 +27,11 @@ impl GeminiClient {
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
+    fn request_builder(
+        &self,
+        client: &ReqwestClient,
+        data: CompletionData,
+    ) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
 
         let func = match data.stream {
