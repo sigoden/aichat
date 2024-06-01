@@ -1,8 +1,7 @@
-use super::access_token::*;
 use super::{
-    maybe_catch_error, patch_system_message, sse_stream, Client, CompletionOutput, ErnieClient,
-    ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, SendData, SseHandler,
-    SseMmessage,
+    access_token::*, maybe_catch_error, patch_system_message, sse_stream, Client, CompletionData,
+    CompletionOutput, ErnieClient, ExtraConfig, Model, ModelData, ModelPatches, PromptAction,
+    PromptKind, SseHandler, SseMmessage,
 };
 
 use anyhow::{anyhow, Context, Result};
@@ -32,7 +31,11 @@ impl ErnieClient {
         ("secret_key", "Secret Key:", true, PromptKind::String),
     ];
 
-    fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
+    fn request_builder(
+        &self,
+        client: &ReqwestClient,
+        data: CompletionData,
+    ) -> Result<RequestBuilder> {
         let mut body = build_body(data, &self.model);
         self.patch_request_body(&mut body);
 
@@ -81,7 +84,7 @@ impl Client for ErnieClient {
     async fn send_message_inner(
         &self,
         client: &ReqwestClient,
-        data: SendData,
+        data: CompletionData,
     ) -> Result<CompletionOutput> {
         self.prepare_access_token().await?;
         let builder = self.request_builder(client, data)?;
@@ -92,7 +95,7 @@ impl Client for ErnieClient {
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
-        data: SendData,
+        data: CompletionData,
     ) -> Result<()> {
         self.prepare_access_token().await?;
         let builder = self.request_builder(client, data)?;
@@ -120,8 +123,8 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
     sse_stream(builder, handle).await
 }
 
-fn build_body(data: SendData, model: &Model) -> Value {
-    let SendData {
+fn build_body(data: CompletionData, model: &Model) -> Value {
+    let CompletionData {
         mut messages,
         temperature,
         top_p,

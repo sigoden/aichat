@@ -1,7 +1,7 @@
 use super::{
-    catch_error, prompt_format::*, sse_stream, Client, CompletionOutput, ExtraConfig, Model,
-    ModelData, ModelPatches, PromptAction, PromptKind, ReplicateClient, SendData, SseHandler,
-    SseMmessage,
+    catch_error, prompt_format::*, sse_stream, Client, CompletionData, CompletionOutput,
+    ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, ReplicateClient,
+    SseHandler, SseMmessage,
 };
 
 use anyhow::{anyhow, Result};
@@ -32,7 +32,7 @@ impl ReplicateClient {
     fn request_builder(
         &self,
         client: &ReqwestClient,
-        data: SendData,
+        data: CompletionData,
         api_key: &str,
     ) -> Result<RequestBuilder> {
         let mut body = build_body(data, &self.model)?;
@@ -55,7 +55,7 @@ impl Client for ReplicateClient {
     async fn send_message_inner(
         &self,
         client: &ReqwestClient,
-        data: SendData,
+        data: CompletionData,
     ) -> Result<CompletionOutput> {
         let api_key = self.get_api_key()?;
         let builder = self.request_builder(client, data, &api_key)?;
@@ -66,7 +66,7 @@ impl Client for ReplicateClient {
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
-        data: SendData,
+        data: CompletionData,
     ) -> Result<()> {
         let api_key = self.get_api_key()?;
         let builder = self.request_builder(client, data, &api_key)?;
@@ -135,8 +135,8 @@ async fn send_message_streaming(
     sse_stream(sse_builder, handle).await
 }
 
-fn build_body(data: SendData, model: &Model) -> Result<Value> {
-    let SendData {
+fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
+    let CompletionData {
         messages,
         temperature,
         top_p,

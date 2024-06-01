@@ -1,7 +1,7 @@
 use super::{
     catch_error, extract_system_message, json_stream, message::*, Client, CohereClient,
-    CompletionOutput, ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind,
-    SendData, SseHandler, ToolCall,
+    CompletionData, CompletionOutput, ExtraConfig, Model, ModelData, ModelPatches, PromptAction,
+    PromptKind, SseHandler, ToolCall,
 };
 
 use anyhow::{bail, Result};
@@ -27,7 +27,11 @@ impl CohereClient {
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
+    fn request_builder(
+        &self,
+        client: &ReqwestClient,
+        data: CompletionData,
+    ) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
 
         let mut body = build_body(data, &self.model)?;
@@ -93,8 +97,8 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
     Ok(())
 }
 
-fn build_body(data: SendData, model: &Model) -> Result<Value> {
-    let SendData {
+fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
+    let CompletionData {
         mut messages,
         temperature,
         top_p,

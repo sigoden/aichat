@@ -203,7 +203,7 @@ macro_rules! impl_client_trait {
             async fn send_message_inner(
                 &self,
                 client: &reqwest::Client,
-                data: $crate::client::SendData,
+                data: $crate::client::CompletionData,
             ) -> anyhow::Result<$crate::client::CompletionOutput> {
                 let builder = self.request_builder(client, data)?;
                 $send_message(builder).await
@@ -213,7 +213,7 @@ macro_rules! impl_client_trait {
                 &self,
                 client: &reqwest::Client,
                 handler: &mut $crate::client::SseHandler,
-                data: $crate::client::SendData,
+                data: $crate::client::CompletionData,
             ) -> Result<()> {
                 let builder = self.request_builder(client, data)?;
                 $send_message_streaming(builder, handler).await
@@ -289,7 +289,7 @@ pub trait Client: Sync + Send {
         }
         let client = self.build_client()?;
 
-        let data = input.prepare_send_data(self.model(), false)?;
+        let data = input.prepare_completion_data(self.model(), false)?;
         self.send_message_inner(&client, data)
             .await
             .with_context(|| "Failed to get answer")
@@ -318,7 +318,7 @@ pub trait Client: Sync + Send {
                     return Ok(());
                 }
                 let client = self.build_client()?;
-                let data = input.prepare_send_data(self.model(), true)?;
+                let data = input.prepare_completion_data(self.model(), true)?;
                 self.send_message_streaming_inner(&client, handler, data).await
             } => {
                 handler.done()?;
@@ -343,14 +343,14 @@ pub trait Client: Sync + Send {
     async fn send_message_inner(
         &self,
         client: &ReqwestClient,
-        data: SendData,
+        data: CompletionData,
     ) -> Result<CompletionOutput>;
 
     async fn send_message_streaming_inner(
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
-        data: SendData,
+        data: CompletionData,
     ) -> Result<()>;
 }
 
@@ -391,7 +391,7 @@ pub fn select_model_patch<'a>(
 }
 
 #[derive(Debug)]
-pub struct SendData {
+pub struct CompletionData {
     pub messages: Vec<Message>,
     pub temperature: Option<f64>,
     pub top_p: Option<f64>,

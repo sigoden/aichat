@@ -1,6 +1,6 @@
 use super::{
-    catch_error, sse_stream, Client, CloudflareClient, CompletionOutput, ExtraConfig, Model,
-    ModelData, ModelPatches, PromptAction, PromptKind, SendData, SseHandler, SseMmessage,
+    catch_error, sse_stream, Client, CloudflareClient, CompletionData, CompletionOutput,
+    ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, SseHandler, SseMmessage,
 };
 
 use anyhow::{anyhow, Result};
@@ -30,7 +30,11 @@ impl CloudflareClient {
         ("api_key", "API Key:", true, PromptKind::String),
     ];
 
-    fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
+    fn request_builder(
+        &self,
+        client: &ReqwestClient,
+        data: CompletionData,
+    ) -> Result<RequestBuilder> {
         let account_id = self.get_account_id()?;
         let api_key = self.get_api_key()?;
 
@@ -79,8 +83,8 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
     sse_stream(builder, handle).await
 }
 
-fn build_body(data: SendData, model: &Model) -> Result<Value> {
-    let SendData {
+fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
+    let CompletionData {
         messages,
         temperature,
         top_p,
