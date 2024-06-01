@@ -306,7 +306,7 @@ impl Server {
                 }
                 tokio::select! {
                     _ = map_event(rx2, &tx, &mut is_first) => {}
-                    ret = client.send_message_streaming_inner(&http_client, &mut handler, data) => {
+                    ret = client.chat_completions_streaming_inner(&http_client, &mut handler, data) => {
                         if let Err(err) = ret {
                             send_first_event(&tx, Some(format!("{err:?}")), &mut is_first)
                         }
@@ -350,7 +350,7 @@ impl Server {
                 .body(BodyExt::boxed(StreamBody::new(stream)))?;
             Ok(res)
         } else {
-            let output = client.send_message_inner(&http_client, data).await?;
+            let output = client.chat_completions_inner(&http_client, data).await?;
             let res = Response::builder()
                 .header("Content-Type", "application/json")
                 .body(

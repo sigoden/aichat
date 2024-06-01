@@ -52,17 +52,17 @@ impl ReplicateClient {
 impl Client for ReplicateClient {
     client_common_fns!();
 
-    async fn send_message_inner(
+    async fn chat_completions_inner(
         &self,
         client: &ReqwestClient,
         data: ChatCompletionsData,
     ) -> Result<ChatCompletionsOutput> {
         let api_key = self.get_api_key()?;
         let builder = self.request_builder(client, data, &api_key)?;
-        send_message(client, builder, &api_key).await
+        chat_completions(client, builder, &api_key).await
     }
 
-    async fn send_message_streaming_inner(
+    async fn chat_completions_streaming_inner(
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
@@ -70,11 +70,11 @@ impl Client for ReplicateClient {
     ) -> Result<()> {
         let api_key = self.get_api_key()?;
         let builder = self.request_builder(client, data, &api_key)?;
-        send_message_streaming(client, builder, handler).await
+        chat_completions_streaming(client, builder, handler).await
     }
 }
 
-async fn send_message(
+async fn chat_completions(
     client: &ReqwestClient,
     builder: RequestBuilder,
     api_key: &str,
@@ -108,7 +108,7 @@ async fn send_message(
     }
 }
 
-async fn send_message_streaming(
+async fn chat_completions_streaming(
     client: &ReqwestClient,
     builder: RequestBuilder,
     handler: &mut SseHandler,

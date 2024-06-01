@@ -56,6 +56,6 @@ impl GeminiClient {
 
 impl_client_trait!(
     GeminiClient,
-    crate::client::vertexai::gemini_send_message,
-    crate::client::vertexai::gemini_send_message_streaming
+    crate::client::vertexai::gemini_chat_completions,
+    crate::client::vertexai::gemini_chat_completions_streaming
 );

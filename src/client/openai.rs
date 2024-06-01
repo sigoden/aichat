@@ -55,7 +55,7 @@ impl OpenAIClient {
     }
 }
 
-pub async fn openai_send_message(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
+pub async fn openai_chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -67,7 +67,7 @@ pub async fn openai_send_message(builder: RequestBuilder) -> Result<ChatCompleti
     openai_extract_completion(&data)
 }
 
-pub async fn openai_send_message_streaming(
+pub async fn openai_chat_completions_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
 ) -> Result<()> {
@@ -243,6 +243,6 @@ pub fn openai_extract_completion(data: &Value) -> Result<ChatCompletionsOutput> 
 
 impl_client_trait!(
     OpenAIClient,
-    openai_send_message,
-    openai_send_message_streaming
+    openai_chat_completions,
+    openai_chat_completions_streaming
 );

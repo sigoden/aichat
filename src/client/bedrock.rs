@@ -38,17 +38,17 @@ pub struct BedrockConfig {
 impl Client for BedrockClient {
     client_common_fns!();
 
-    async fn send_message_inner(
+    async fn chat_completions_inner(
         &self,
         client: &ReqwestClient,
         data: ChatCompletionsData,
     ) -> Result<ChatCompletionsOutput> {
         let model_category = ModelCategory::from_str(self.model.name())?;
         let builder = self.request_builder(client, data, &model_category)?;
-        send_message(builder, &model_category).await
+        chat_completions(builder, &model_category).await
     }
 
-    async fn send_message_streaming_inner(
+    async fn chat_completions_streaming_inner(
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
@@ -56,7 +56,7 @@ impl Client for BedrockClient {
     ) -> Result<()> {
         let model_category = ModelCategory::from_str(self.model.name())?;
         let builder = self.request_builder(client, data, &model_category)?;
-        send_message_streaming(builder, handler, &model_category).await
+        chat_completions_streaming(builder, handler, &model_category).await
     }
 }
 
@@ -126,7 +126,7 @@ impl BedrockClient {
     }
 }
 
-async fn send_message(
+async fn chat_completions(
     builder: RequestBuilder,
     model_category: &ModelCategory,
 ) -> Result<ChatCompletionsOutput> {
@@ -146,7 +146,7 @@ async fn send_message(
     }
 }
 
-async fn send_message_streaming(
+async fn chat_completions_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
     model_category: &ModelCategory,

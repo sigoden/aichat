@@ -62,9 +62,9 @@ impl OllamaClient {
     }
 }
 
-impl_client_trait!(OllamaClient, send_message, send_message_streaming);
+impl_client_trait!(OllamaClient, chat_completions, chat_completions_streaming);
 
-async fn send_message(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
+async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data = res.json().await?;
@@ -78,7 +78,7 @@ async fn send_message(builder: RequestBuilder) -> Result<ChatCompletionsOutput> 
     Ok(ChatCompletionsOutput::new(text))
 }
 
-async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
+async fn chat_completions_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
     let res = builder.send().await?;
     let status = res.status();
     if !status.is_success() {

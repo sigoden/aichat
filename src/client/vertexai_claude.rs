@@ -64,17 +64,17 @@ impl VertexAIClaudeClient {
 impl Client for VertexAIClaudeClient {
     client_common_fns!();
 
-    async fn send_message_inner(
+    async fn chat_completions_inner(
         &self,
         client: &ReqwestClient,
         data: ChatCompletionsData,
     ) -> Result<ChatCompletionsOutput> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let builder = self.request_builder(client, data)?;
-        claude_send_message(builder).await
+        claude_chat_completions(builder).await
     }
 
-    async fn send_message_streaming_inner(
+    async fn chat_completions_streaming_inner(
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
@@ -82,6 +82,6 @@ impl Client for VertexAIClaudeClient {
     ) -> Result<()> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let builder = self.request_builder(client, data)?;
-        claude_send_message_streaming(builder, handler).await
+        claude_chat_completions_streaming(builder, handler).await
     }
 }

@@ -47,9 +47,9 @@ impl CohereClient {
     }
 }
 
-impl_client_trait!(CohereClient, send_message, send_message_streaming);
+impl_client_trait!(CohereClient, chat_completions, chat_completions_streaming);
 
-async fn send_message(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
+async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -61,7 +61,7 @@ async fn send_message(builder: RequestBuilder) -> Result<ChatCompletionsOutput> 
     extract_completion(&data)
 }
 
-async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
+async fn chat_completions_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
     let res = builder.send().await?;
     let status = res.status();
     if !status.is_success() {

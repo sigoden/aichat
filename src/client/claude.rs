@@ -56,11 +56,11 @@ impl ClaudeClient {
 
 impl_client_trait!(
     ClaudeClient,
-    claude_send_message,
-    claude_send_message_streaming
+    claude_chat_completions,
+    claude_chat_completions_streaming
 );
 
-pub async fn claude_send_message(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
+pub async fn claude_chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -71,7 +71,7 @@ pub async fn claude_send_message(builder: RequestBuilder) -> Result<ChatCompleti
     claude_extract_completion(&data)
 }
 
-pub async fn claude_send_message_streaming(
+pub async fn claude_chat_completions_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
 ) -> Result<()> {

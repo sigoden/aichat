@@ -67,17 +67,17 @@ impl VertexAIClient {
 impl Client for VertexAIClient {
     client_common_fns!();
 
-    async fn send_message_inner(
+    async fn chat_completions_inner(
         &self,
         client: &ReqwestClient,
         data: ChatCompletionsData,
     ) -> Result<ChatCompletionsOutput> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let builder = self.request_builder(client, data)?;
-        gemini_send_message(builder).await
+        gemini_chat_completions(builder).await
     }
 
-    async fn send_message_streaming_inner(
+    async fn chat_completions_streaming_inner(
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
@@ -85,11 +85,11 @@ impl Client for VertexAIClient {
     ) -> Result<()> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let builder = self.request_builder(client, data)?;
-        gemini_send_message_streaming(builder, handler).await
+        gemini_chat_completions_streaming(builder, handler).await
     }
 }
 
-pub async fn gemini_send_message(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
+pub async fn gemini_chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -100,7 +100,7 @@ pub async fn gemini_send_message(builder: RequestBuilder) -> Result<ChatCompleti
     gemini_extract_completion_text(&data)
 }
 
-pub async fn gemini_send_message_streaming(
+pub async fn gemini_chat_completions_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
 ) -> Result<()> {

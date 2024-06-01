@@ -72,7 +72,7 @@ impl QianwenClient {
 impl Client for QianwenClient {
     client_common_fns!();
 
-    async fn send_message_inner(
+    async fn chat_completions_inner(
         &self,
         client: &ReqwestClient,
         mut data: ChatCompletionsData,
@@ -80,10 +80,10 @@ impl Client for QianwenClient {
         let api_key = self.get_api_key()?;
         patch_messages(self.model.name(), &api_key, &mut data.messages).await?;
         let builder = self.request_builder(client, data)?;
-        send_message(builder, &self.model).await
+        chat_completions(builder, &self.model).await
     }
 
-    async fn send_message_streaming_inner(
+    async fn chat_completions_streaming_inner(
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
@@ -92,11 +92,11 @@ impl Client for QianwenClient {
         let api_key = self.get_api_key()?;
         patch_messages(self.model.name(), &api_key, &mut data.messages).await?;
         let builder = self.request_builder(client, data)?;
-        send_message_streaming(builder, handler, &self.model).await
+        chat_completions_streaming(builder, handler, &self.model).await
     }
 }
 
-async fn send_message(builder: RequestBuilder, model: &Model) -> Result<ChatCompletionsOutput> {
+async fn chat_completions(builder: RequestBuilder, model: &Model) -> Result<ChatCompletionsOutput> {
     let data: Value = builder.send().await?.json().await?;
     maybe_catch_error(&data)?;
 
@@ -104,7 +104,7 @@ async fn send_message(builder: RequestBuilder, model: &Model) -> Result<ChatComp
     extract_completion_text(&data, model)
 }
 
-async fn send_message_streaming(
+async fn chat_completions_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
     model: &Model,

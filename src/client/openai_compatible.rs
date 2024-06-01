@@ -84,6 +84,6 @@ impl OpenAICompatibleClient {
 
 impl_client_trait!(
     OpenAICompatibleClient,
-    crate::client::openai::openai_send_message,
-    crate::client::openai::openai_send_message_streaming
+    crate::client::openai::openai_chat_completions,
+    crate::client::openai::openai_chat_completions_streaming
 );

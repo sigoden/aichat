@@ -81,17 +81,17 @@ impl ErnieClient {
 impl Client for ErnieClient {
     client_common_fns!();
 
-    async fn send_message_inner(
+    async fn chat_completions_inner(
         &self,
         client: &ReqwestClient,
         data: ChatCompletionsData,
     ) -> Result<ChatCompletionsOutput> {
         self.prepare_access_token().await?;
         let builder = self.request_builder(client, data)?;
-        send_message(builder).await
+        chat_completions(builder).await
     }
 
-    async fn send_message_streaming_inner(
+    async fn chat_completions_streaming_inner(
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
@@ -99,18 +99,18 @@ impl Client for ErnieClient {
     ) -> Result<()> {
         self.prepare_access_token().await?;
         let builder = self.request_builder(client, data)?;
-        send_message_streaming(builder, handler).await
+        chat_completions_streaming(builder, handler).await
     }
 }
 
-async fn send_message(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
+async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let data: Value = builder.send().await?.json().await?;
     maybe_catch_error(&data)?;
     debug!("non-stream-data: {data}");
     extract_completion_text(&data)
 }
 
-async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
+async fn chat_completions_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
     let handle = |message: SseMmessage| -> Result<bool> {
         let data: Value = serde_json::from_str(&message.data)?;
         debug!("stream-data: {data}");
