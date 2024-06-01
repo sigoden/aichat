@@ -35,7 +35,7 @@ impl ClaudeClient {
     ) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
 
-        let mut body = claude_build_body(data, &self.model)?;
+        let mut body = claude_build_chat_completions_body(data, &self.model)?;
         self.patch_request_body(&mut body);
 
         let url = API_BASE;
@@ -136,7 +136,7 @@ pub async fn claude_chat_completions_streaming(
     sse_stream(builder, handle).await
 }
 
-pub fn claude_build_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+pub fn claude_build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
     let ChatCompletionsData {
         mut messages,
         temperature,

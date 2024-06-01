@@ -52,7 +52,7 @@ impl VertexAIClient {
         };
         let url = format!("{base_url}/google/models/{}:{func}", self.model.name());
 
-        let mut body = gemini_build_body(data, &self.model)?;
+        let mut body = gemini_build_chat_completions_body(data, &self.model)?;
         self.patch_request_body(&mut body);
 
         debug!("VertexAI Request: {url} {body}");
@@ -181,7 +181,7 @@ fn gemini_extract_completion_text(data: &Value) -> Result<ChatCompletionsOutput>
     Ok(output)
 }
 
-pub(crate) fn gemini_build_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+pub(crate) fn gemini_build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
     let ChatCompletionsData {
         mut messages,
         temperature,

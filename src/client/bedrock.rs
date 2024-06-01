@@ -101,7 +101,7 @@ impl BedrockClient {
 
         let headers = IndexMap::new();
 
-        let mut body = build_body(data, &self.model, model_category)?;
+        let mut body = build_chat_completions_body(data, &self.model, model_category)?;
         self.patch_request_body(&mut body);
 
         let builder = aws_fetch(
@@ -211,14 +211,14 @@ async fn chat_completions_streaming(
     Ok(())
 }
 
-fn build_body(
+fn build_chat_completions_body(
     data: ChatCompletionsData,
     model: &Model,
     model_category: &ModelCategory,
 ) -> Result<Value> {
     match model_category {
         ModelCategory::Anthropic => {
-            let mut body = claude_build_body(data, model)?;
+            let mut body = claude_build_chat_completions_body(data, model)?;
             if let Some(body_obj) = body.as_object_mut() {
                 body_obj.remove("model");
                 body_obj.remove("stream");
@@ -226,12 +226,12 @@ fn build_body(
             body["anthropic_version"] = "bedrock-2023-05-31".into();
             Ok(body)
         }
-        ModelCategory::MetaLlama3 => meta_llama_build_body(data, model, LLAMA3_PROMPT_FORMAT),
-        ModelCategory::Mistral => mistral_build_body(data, model),
+        ModelCategory::MetaLlama3 => meta_llama_build_chat_completions_body(data, model, LLAMA3_PROMPT_FORMAT),
+        ModelCategory::Mistral => mistral_build_chat_completions_body(data, model),
     }
 }
 
-fn meta_llama_build_body(
+fn meta_llama_build_chat_completions_body(
     data: ChatCompletionsData,
     model: &Model,
     pt: PromptFormat,
@@ -259,7 +259,7 @@ fn meta_llama_build_body(
     Ok(body)
 }
 
-fn mistral_build_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+fn mistral_build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
     let ChatCompletionsData {
         messages,
         temperature,

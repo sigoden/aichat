@@ -34,7 +34,7 @@ impl CohereClient {
     ) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
 
-        let mut body = build_body(data, &self.model)?;
+        let mut body = build_chat_completions_body(data, &self.model)?;
         self.patch_request_body(&mut body);
 
         let url = API_URL;
@@ -97,7 +97,7 @@ async fn chat_completions_streaming(builder: RequestBuilder, handler: &mut SseHa
     Ok(())
 }
 
-fn build_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
     let ChatCompletionsData {
         mut messages,
         temperature,

@@ -38,7 +38,7 @@ impl OpenAIClient {
         let api_key = self.get_api_key()?;
         let api_base = self.get_api_base().unwrap_or_else(|_| API_BASE.to_string());
 
-        let mut body = openai_build_body(data, &self.model);
+        let mut body = openai_build_chat_completions_body(data, &self.model);
         self.patch_request_body(&mut body);
 
         let url = format!("{api_base}/chat/completions");
@@ -125,7 +125,7 @@ pub async fn openai_chat_completions_streaming(
     sse_stream(builder, handle).await
 }
 
-pub fn openai_build_body(data: ChatCompletionsData, model: &Model) -> Value {
+pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Value {
     let ChatCompletionsData {
         messages,
         temperature,

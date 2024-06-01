@@ -44,7 +44,7 @@ impl OllamaClient {
         let api_base = self.get_api_base()?;
         let api_auth = self.get_api_auth().ok();
 
-        let mut body = build_body(data, &self.model)?;
+        let mut body = build_chat_completions_body(data, &self.model)?;
         self.patch_request_body(&mut body);
 
         let chat_endpoint = self.config.chat_endpoint.as_deref().unwrap_or("/api/chat");
@@ -106,7 +106,7 @@ async fn chat_completions_streaming(builder: RequestBuilder, handler: &mut SseHa
     Ok(())
 }
 
-fn build_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
     let ChatCompletionsData {
         messages,
         temperature,

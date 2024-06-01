@@ -51,7 +51,7 @@ impl QianwenClient {
             true => API_URL_VL,
             false => API_URL,
         };
-        let (mut body, has_upload) = build_body(data, &self.model)?;
+        let (mut body, has_upload) = build_chat_completions_body(data, &self.model)?;
         self.patch_request_body(&mut body);
 
         debug!("Qianwen Request: {url} {body}");
@@ -133,7 +133,7 @@ async fn chat_completions_streaming(
     sse_stream(builder, handle).await
 }
 
-fn build_body(data: ChatCompletionsData, model: &Model) -> Result<(Value, bool)> {
+fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<(Value, bool)> {
     let ChatCompletionsData {
         messages,
         temperature,

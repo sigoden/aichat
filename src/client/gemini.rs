@@ -39,7 +39,7 @@ impl GeminiClient {
             false => "generateContent",
         };
 
-        let mut body = gemini_build_body(data, &self.model)?;
+        let mut body = gemini_build_chat_completions_body(data, &self.model)?;
         self.patch_request_body(&mut body);
 
         let model = &self.model.name();

@@ -35,7 +35,7 @@ impl ReplicateClient {
         data: ChatCompletionsData,
         api_key: &str,
     ) -> Result<RequestBuilder> {
-        let mut body = build_body(data, &self.model)?;
+        let mut body = build_chat_completions_body(data, &self.model)?;
         self.patch_request_body(&mut body);
 
         let url = format!("{API_BASE}/models/{}/predictions", self.model.name());
@@ -135,7 +135,7 @@ async fn chat_completions_streaming(
     sse_stream(sse_builder, handle).await
 }
 
-fn build_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
     let ChatCompletionsData {
         messages,
         temperature,

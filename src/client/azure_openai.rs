@@ -41,7 +41,7 @@ impl AzureOpenAIClient {
         let api_base = self.get_api_base()?;
         let api_key = self.get_api_key()?;
 
-        let mut body = openai_build_body(data, &self.model);
+        let mut body = openai_build_chat_completions_body(data, &self.model);
         self.patch_request_body(&mut body);
 
         let url = format!(

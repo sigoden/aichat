@@ -45,7 +45,7 @@ impl VertexAIClaudeClient {
             self.model.name()
         );
 
-        let mut body = claude_build_body(data, &self.model)?;
+        let mut body = claude_build_chat_completions_body(data, &self.model)?;
         self.patch_request_body(&mut body);
         if let Some(body_obj) = body.as_object_mut() {
             body_obj.remove("model");

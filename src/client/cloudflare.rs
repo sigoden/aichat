@@ -38,7 +38,7 @@ impl CloudflareClient {
         let account_id = self.get_account_id()?;
         let api_key = self.get_api_key()?;
 
-        let mut body = build_body(data, &self.model)?;
+        let mut body = build_chat_completions_body(data, &self.model)?;
         self.patch_request_body(&mut body);
 
         let url = format!(
@@ -83,7 +83,7 @@ async fn chat_completions_streaming(builder: RequestBuilder, handler: &mut SseHa
     sse_stream(builder, handle).await
 }
 
-fn build_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
     let ChatCompletionsData {
         messages,
         temperature,

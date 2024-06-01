@@ -36,7 +36,7 @@ impl ErnieClient {
         client: &ReqwestClient,
         data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
-        let mut body = build_body(data, &self.model);
+        let mut body = build_chat_completions_body(data, &self.model);
         self.patch_request_body(&mut body);
 
         let access_token = get_access_token(self.name())?;
@@ -123,7 +123,7 @@ async fn chat_completions_streaming(builder: RequestBuilder, handler: &mut SseHa
     sse_stream(builder, handle).await
 }
 
-fn build_body(data: ChatCompletionsData, model: &Model) -> Value {
+fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Value {
     let ChatCompletionsData {
         mut messages,
         temperature,

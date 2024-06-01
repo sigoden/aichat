@@ -60,7 +60,7 @@ impl OpenAICompatibleClient {
         };
         let api_key = self.get_api_key().ok();
 
-        let mut body = openai_build_body(data, &self.model);
+        let mut body = openai_build_chat_completions_body(data, &self.model);
         self.patch_request_body(&mut body);
 
         let chat_endpoint = self
