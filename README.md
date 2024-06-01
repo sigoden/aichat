@@ -4,7 +4,7 @@
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 [![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/mr3ZZUB9hG)
 
-AIChat is an all-in-one AI CLI tool that allows users to access over 100 LLMs across 20+ AI platforms, with features including a chat REPL, custom roles, unlimited sessions, function calling, and more.
+AIChat is an all-in-one AI CLI tool that accesses 100+ LLMs across 20+ AI platforms, with features including a chat REPL, custom roles, unlimited sessions, function calling, execute commands in natural language, a local api server, an LLM playground/arena, and more.
 
 ![AIChat Command](https://github.com/sigoden/aichat/assets/4012553/84ae8382-62be-41d0-a0f1-101b113c5bc7)
 
