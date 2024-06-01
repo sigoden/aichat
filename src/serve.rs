@@ -1,7 +1,7 @@
 use crate::{
     client::{
-        init_client, list_models, ClientConfig, CompletionData, CompletionOutput, Message, Model,
-        ModelData, SseEvent, SseHandler,
+        init_client, list_models, ChatCompletionsData, ChatCompletionsOutput, ClientConfig,
+        Message, Model, ModelData, SseEvent, SseHandler,
     },
     config::{Config, GlobalConfig, Role},
     utils::create_abort_signal,
@@ -270,7 +270,7 @@ impl Server {
         let completion_id = generate_completion_id();
         let created = Utc::now().timestamp();
 
-        let completion_data: CompletionData = CompletionData {
+        let data: ChatCompletionsData = ChatCompletionsData {
             messages,
             temperature,
             top_p,
@@ -306,7 +306,7 @@ impl Server {
                 }
                 tokio::select! {
                     _ = map_event(rx2, &tx, &mut is_first) => {}
-                    ret = client.send_message_streaming_inner(&http_client, &mut handler, completion_data) => {
+                    ret = client.chat_completions_streaming_inner(&http_client, &mut handler, data) => {
                         if let Err(err) = ret {
                             send_first_event(&tx, Some(format!("{err:?}")), &mut is_first)
                         }
@@ -350,9 +350,7 @@ impl Server {
                 .body(BodyExt::boxed(StreamBody::new(stream)))?;
             Ok(res)
         } else {
-            let output = client
-                .send_message_inner(&http_client, completion_data)
-                .await?;
+            let output = client.chat_completions_inner(&http_client, data).await?;
             let res = Response::builder()
                 .header("Content-Type", "application/json")
                 .body(
@@ -452,7 +450,7 @@ fn create_frame(id: &str, model: &str, created: i64, content: &str, done: bool) 
     Frame::data(Bytes::from(output))
 }
 
-fn ret_non_stream(id: &str, model: &str, created: i64, output: &CompletionOutput) -> Bytes {
+fn ret_non_stream(id: &str, model: &str, created: i64, output: &ChatCompletionsOutput) -> Bytes {
     let id = output.id.as_deref().unwrap_or(id);
     let input_tokens = output.input_tokens.unwrap_or_default();
     let output_tokens = output.output_tokens.unwrap_or_default();

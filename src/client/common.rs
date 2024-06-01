@@ -195,28 +195,28 @@ macro_rules! client_common_fns {
 
 #[macro_export]
 macro_rules! impl_client_trait {
-    ($client:ident, $send_message:path, $send_message_streaming:path) => {
+    ($client:ident, $chat_completions:path, $chat_completions_streaming:path) => {
         #[async_trait::async_trait]
         impl $crate::client::Client for $crate::client::$client {
             client_common_fns!();
 
-            async fn send_message_inner(
+            async fn chat_completions_inner(
                 &self,
                 client: &reqwest::Client,
-                data: $crate::client::CompletionData,
-            ) -> anyhow::Result<$crate::client::CompletionOutput> {
-                let builder = self.request_builder(client, data)?;
-                $send_message(builder).await
+                data: $crate::client::ChatCompletionsData,
+            ) -> anyhow::Result<$crate::client::ChatCompletionsOutput> {
+                let builder = self.chat_completions_builder(client, data)?;
+                $chat_completions(builder).await
             }
 
-            async fn send_message_streaming_inner(
+            async fn chat_completions_streaming_inner(
                 &self,
                 client: &reqwest::Client,
                 handler: &mut $crate::client::SseHandler,
-                data: $crate::client::CompletionData,
+                data: $crate::client::ChatCompletionsData,
             ) -> Result<()> {
-                let builder = self.request_builder(client, data)?;
-                $send_message_streaming(builder, handler).await
+                let builder = self.chat_completions_builder(client, data)?;
+                $chat_completions_streaming(builder, handler).await
             }
         }
     };
@@ -282,20 +282,24 @@ pub trait Client: Sync + Send {
         Ok(client)
     }
 
-    async fn send_message(&self, input: Input) -> Result<CompletionOutput> {
+    async fn chat_completions(&self, input: Input) -> Result<ChatCompletionsOutput> {
         if self.global_config().read().dry_run {
             let content = input.echo_messages();
-            return Ok(CompletionOutput::new(&content));
+            return Ok(ChatCompletionsOutput::new(&content));
         }
         let client = self.build_client()?;
 
         let data = input.prepare_completion_data(self.model(), false)?;
-        self.send_message_inner(&client, data)
+        self.chat_completions_inner(&client, data)
             .await
             .with_context(|| "Failed to get answer")
     }
 
-    async fn send_message_streaming(&self, input: &Input, handler: &mut SseHandler) -> Result<()> {
+    async fn chat_completions_streaming(
+        &self,
+        input: &Input,
+        handler: &mut SseHandler,
+    ) -> Result<()> {
         async fn watch_abort(abort: AbortSignal) {
             loop {
                 if abort.aborted() {
@@ -319,7 +323,7 @@ pub trait Client: Sync + Send {
                 }
                 let client = self.build_client()?;
                 let data = input.prepare_completion_data(self.model(), true)?;
-                self.send_message_streaming_inner(&client, handler, data).await
+                self.chat_completions_streaming_inner(&client, handler, data).await
             } => {
                 handler.done()?;
                 ret.with_context(|| "Failed to get answer")
@@ -340,17 +344,17 @@ pub trait Client: Sync + Send {
         }
     }
 
-    async fn send_message_inner(
+    async fn chat_completions_inner(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
-    ) -> Result<CompletionOutput>;
+        data: ChatCompletionsData,
+    ) -> Result<ChatCompletionsOutput>;
 
-    async fn send_message_streaming_inner(
+    async fn chat_completions_streaming_inner(
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<()>;
 }
 
@@ -391,7 +395,7 @@ pub fn select_model_patch<'a>(
 }
 
 #[derive(Debug)]
-pub struct CompletionData {
+pub struct ChatCompletionsData {
     pub messages: Vec<Message>,
     pub temperature: Option<f64>,
     pub top_p: Option<f64>,
@@ -400,7 +404,7 @@ pub struct CompletionData {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct CompletionOutput {
+pub struct ChatCompletionsOutput {
     pub text: String,
     pub tool_calls: Vec<ToolCall>,
     pub id: Option<String>,
@@ -408,7 +412,7 @@ pub struct CompletionOutput {
     pub output_tokens: Option<u64>,
 }
 
-impl CompletionOutput {
+impl ChatCompletionsOutput {
     pub fn new(text: &str) -> Self {
         Self {
             text: text.to_string(),
@@ -473,7 +477,7 @@ pub async fn send_stream(
     let mut handler = SseHandler::new(tx, abort.clone());
 
     let (send_ret, rend_ret) = tokio::join!(
-        client.send_message_streaming(input, &mut handler),
+        client.chat_completions_streaming(input, &mut handler),
         render_stream(rx, config, abort.clone()),
     );
     if let Err(err) = rend_ret {
@@ -497,7 +501,7 @@ pub async fn send_stream(
 }
 
 #[allow(unused)]
-pub async fn send_message_as_streaming<F, Fut>(
+pub async fn chat_completions_as_streaming<F, Fut>(
     builder: RequestBuilder,
     handler: &mut SseHandler,
     f: F,

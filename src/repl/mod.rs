@@ -464,7 +464,7 @@ fn parse_command(line: &str) -> Option<(&str, Option<&str>)> {
 async fn compress_session(config: &GlobalConfig) -> Result<()> {
     let input = Input::from_str(config, config.read().summarize_prompt(), None);
     let client = input.create_client()?;
-    let summary = client.send_message(input).await?.text;
+    let summary = client.chat_completions(input).await?.text;
     config.write().compress_session(&summary);
     Ok(())
 }

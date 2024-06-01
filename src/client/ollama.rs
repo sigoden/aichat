@@ -1,6 +1,7 @@
 use super::{
-    catch_error, json_stream, message::*, Client, CompletionData, CompletionOutput, ExtraConfig,
-    Model, ModelData, ModelPatches, OllamaClient, PromptAction, PromptKind, SseHandler,
+    catch_error, json_stream, message::*, ChatCompletionsData, ChatCompletionsOutput, Client,
+    ExtraConfig, Model, ModelData, ModelPatches, OllamaClient, PromptAction, PromptKind,
+    SseHandler,
 };
 
 use anyhow::{anyhow, bail, Result};
@@ -35,15 +36,15 @@ impl OllamaClient {
         ),
     ];
 
-    fn request_builder(
+    fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let api_base = self.get_api_base()?;
         let api_auth = self.get_api_auth().ok();
 
-        let mut body = build_body(data, &self.model)?;
+        let mut body = build_chat_completions_body(data, &self.model)?;
         self.patch_request_body(&mut body);
 
         let chat_endpoint = self.config.chat_endpoint.as_deref().unwrap_or("/api/chat");
@@ -61,9 +62,9 @@ impl OllamaClient {
     }
 }
 
-impl_client_trait!(OllamaClient, send_message, send_message_streaming);
+impl_client_trait!(OllamaClient, chat_completions, chat_completions_streaming);
 
-async fn send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
+async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data = res.json().await?;
@@ -74,10 +75,13 @@ async fn send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
     let text = data["message"]["content"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
-    Ok(CompletionOutput::new(text))
+    Ok(ChatCompletionsOutput::new(text))
 }
 
-async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
+async fn chat_completions_streaming(
+    builder: RequestBuilder,
+    handler: &mut SseHandler,
+) -> Result<()> {
     let res = builder.send().await?;
     let status = res.status();
     if !status.is_success() {
@@ -105,8 +109,8 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
     Ok(())
 }
 
-fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
-    let CompletionData {
+fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+    let ChatCompletionsData {
         messages,
         temperature,
         top_p,

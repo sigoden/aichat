@@ -1,5 +1,5 @@
 use super::{
-    openai::*, AzureOpenAIClient, Client, CompletionData, ExtraConfig, Model, ModelData,
+    openai::*, AzureOpenAIClient, ChatCompletionsData, Client, ExtraConfig, Model, ModelData,
     ModelPatches, PromptAction, PromptKind,
 };
 
@@ -33,15 +33,15 @@ impl AzureOpenAIClient {
         ),
     ];
 
-    fn request_builder(
+    fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let api_base = self.get_api_base()?;
         let api_key = self.get_api_key()?;
 
-        let mut body = openai_build_body(data, &self.model);
+        let mut body = openai_build_chat_completions_body(data, &self.model);
         self.patch_request_body(&mut body);
 
         let url = format!(
@@ -60,6 +60,6 @@ impl AzureOpenAIClient {
 
 impl_client_trait!(
     AzureOpenAIClient,
-    crate::client::openai::openai_send_message,
-    crate::client::openai::openai_send_message_streaming
+    crate::client::openai::openai_chat_completions,
+    crate::client::openai::openai_chat_completions_streaming
 );

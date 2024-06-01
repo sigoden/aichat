@@ -1,7 +1,7 @@
 use super::{
-    catch_error, extract_system_message, json_stream, message::*, Client, CohereClient,
-    CompletionData, CompletionOutput, ExtraConfig, Model, ModelData, ModelPatches, PromptAction,
-    PromptKind, SseHandler, ToolCall,
+    catch_error, extract_system_message, json_stream, message::*, ChatCompletionsData,
+    ChatCompletionsOutput, Client, CohereClient, ExtraConfig, Model, ModelData, ModelPatches,
+    PromptAction, PromptKind, SseHandler, ToolCall,
 };
 
 use anyhow::{bail, Result};
@@ -27,14 +27,14 @@ impl CohereClient {
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    fn request_builder(
+    fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
 
-        let mut body = build_body(data, &self.model)?;
+        let mut body = build_chat_completions_body(data, &self.model)?;
         self.patch_request_body(&mut body);
 
         let url = API_URL;
@@ -47,9 +47,9 @@ impl CohereClient {
     }
 }
 
-impl_client_trait!(CohereClient, send_message, send_message_streaming);
+impl_client_trait!(CohereClient, chat_completions, chat_completions_streaming);
 
-async fn send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
+async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -58,10 +58,13 @@ async fn send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
     }
 
     debug!("non-stream-data: {data}");
-    extract_completion(&data)
+    extract_chat_completions(&data)
 }
 
-async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
+async fn chat_completions_streaming(
+    builder: RequestBuilder,
+    handler: &mut SseHandler,
+) -> Result<()> {
     let res = builder.send().await?;
     let status = res.status();
     if !status.is_success() {
@@ -97,8 +100,8 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
     Ok(())
 }
 
-fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
-    let CompletionData {
+fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+    let ChatCompletionsData {
         mut messages,
         temperature,
         top_p,
@@ -224,7 +227,7 @@ fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
     Ok(body)
 }
 
-fn extract_completion(data: &Value) -> Result<CompletionOutput> {
+fn extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["text"].as_str().unwrap_or_default();
 
     let mut tool_calls = vec![];
@@ -246,7 +249,7 @@ fn extract_completion(data: &Value) -> Result<CompletionOutput> {
     if text.is_empty() && tool_calls.is_empty() {
         bail!("Invalid response data: {data}");
     }
-    let output = CompletionOutput {
+    let output = ChatCompletionsOutput {
         text: text.to_string(),
         tool_calls,
         id: data["generation_id"].as_str().map(|v| v.to_string()),

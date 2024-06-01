@@ -1,5 +1,5 @@
 use super::{
-    catch_error, prompt_format::*, sse_stream, Client, CompletionData, CompletionOutput,
+    catch_error, prompt_format::*, sse_stream, ChatCompletionsData, ChatCompletionsOutput, Client,
     ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, ReplicateClient,
     SseHandler, SseMmessage,
 };
@@ -29,13 +29,13 @@ impl ReplicateClient {
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    fn request_builder(
+    fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
         api_key: &str,
     ) -> Result<RequestBuilder> {
-        let mut body = build_body(data, &self.model)?;
+        let mut body = build_chat_completions_body(data, &self.model)?;
         self.patch_request_body(&mut body);
 
         let url = format!("{API_BASE}/models/{}/predictions", self.model.name());
@@ -52,33 +52,33 @@ impl ReplicateClient {
 impl Client for ReplicateClient {
     client_common_fns!();
 
-    async fn send_message_inner(
+    async fn chat_completions_inner(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
-    ) -> Result<CompletionOutput> {
+        data: ChatCompletionsData,
+    ) -> Result<ChatCompletionsOutput> {
         let api_key = self.get_api_key()?;
-        let builder = self.request_builder(client, data, &api_key)?;
-        send_message(client, builder, &api_key).await
+        let builder = self.chat_completions_builder(client, data, &api_key)?;
+        chat_completions(client, builder, &api_key).await
     }
 
-    async fn send_message_streaming_inner(
+    async fn chat_completions_streaming_inner(
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<()> {
         let api_key = self.get_api_key()?;
-        let builder = self.request_builder(client, data, &api_key)?;
-        send_message_streaming(client, builder, handler).await
+        let builder = self.chat_completions_builder(client, data, &api_key)?;
+        chat_completions_streaming(client, builder, handler).await
     }
 }
 
-async fn send_message(
+async fn chat_completions(
     client: &ReqwestClient,
     builder: RequestBuilder,
     api_key: &str,
-) -> Result<CompletionOutput> {
+) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -101,14 +101,14 @@ async fn send_message(
         let err = || anyhow!("Invalid response data: {prediction_data}");
         let status = prediction_data["status"].as_str().ok_or_else(err)?;
         if status == "succeeded" {
-            return extract_completion(&prediction_data);
+            return extract_chat_completions(&prediction_data);
         } else if status == "failed" || status == "canceled" {
             return Err(err());
         }
     }
 }
 
-async fn send_message_streaming(
+async fn chat_completions_streaming(
     client: &ReqwestClient,
     builder: RequestBuilder,
     handler: &mut SseHandler,
@@ -135,8 +135,8 @@ async fn send_message_streaming(
     sse_stream(sse_builder, handle).await
 }
 
-fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
-    let CompletionData {
+fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+    let ChatCompletionsData {
         messages,
         temperature,
         top_p,
@@ -173,7 +173,7 @@ fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
     Ok(body)
 }
 
-fn extract_completion(data: &Value) -> Result<CompletionOutput> {
+fn extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["output"]
         .as_array()
         .map(|parts| {
@@ -185,7 +185,7 @@ fn extract_completion(data: &Value) -> Result<CompletionOutput> {
         })
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
 
-    let output = CompletionOutput {
+    let output = ChatCompletionsOutput {
         text: text.to_string(),
         tool_calls: vec![],
         id: data["id"].as_str().map(|v| v.to_string()),

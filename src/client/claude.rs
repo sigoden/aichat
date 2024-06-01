@@ -1,7 +1,8 @@
 use super::{
-    catch_error, extract_system_message, message::*, sse_stream, ClaudeClient, Client,
-    CompletionData, CompletionOutput, ExtraConfig, ImageUrl, MessageContent, MessageContentPart,
-    Model, ModelData, ModelPatches, PromptAction, PromptKind, SseHandler, SseMmessage, ToolCall,
+    catch_error, extract_system_message, message::*, sse_stream, ChatCompletionsData,
+    ChatCompletionsOutput, ClaudeClient, Client, ExtraConfig, ImageUrl, MessageContent,
+    MessageContentPart, Model, ModelData, ModelPatches, PromptAction, PromptKind, SseHandler,
+    SseMmessage, ToolCall,
 };
 
 use anyhow::{bail, Context, Result};
@@ -27,14 +28,14 @@ impl ClaudeClient {
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    fn request_builder(
+    fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
 
-        let mut body = claude_build_body(data, &self.model)?;
+        let mut body = claude_build_chat_completions_body(data, &self.model)?;
         self.patch_request_body(&mut body);
 
         let url = API_BASE;
@@ -55,11 +56,11 @@ impl ClaudeClient {
 
 impl_client_trait!(
     ClaudeClient,
-    claude_send_message,
-    claude_send_message_streaming
+    claude_chat_completions,
+    claude_chat_completions_streaming
 );
 
-pub async fn claude_send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
+pub async fn claude_chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -67,10 +68,10 @@ pub async fn claude_send_message(builder: RequestBuilder) -> Result<CompletionOu
         catch_error(&data, status.as_u16())?;
     }
     debug!("non-stream-data: {data}");
-    claude_extract_completion(&data)
+    claude_extract_chat_completions(&data)
 }
 
-pub async fn claude_send_message_streaming(
+pub async fn claude_chat_completions_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
 ) -> Result<()> {
@@ -135,8 +136,11 @@ pub async fn claude_send_message_streaming(
     sse_stream(builder, handle).await
 }
 
-pub fn claude_build_body(data: CompletionData, model: &Model) -> Result<Value> {
-    let CompletionData {
+pub fn claude_build_chat_completions_body(
+    data: ChatCompletionsData,
+    model: &Model,
+) -> Result<Value> {
+    let ChatCompletionsData {
         mut messages,
         temperature,
         top_p,
@@ -269,7 +273,7 @@ pub fn claude_build_body(data: CompletionData, model: &Model) -> Result<Value> {
     Ok(body)
 }
 
-pub fn claude_extract_completion(data: &Value) -> Result<CompletionOutput> {
+pub fn claude_extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["content"][0]["text"].as_str().unwrap_or_default();
 
     let mut tool_calls = vec![];
@@ -303,7 +307,7 @@ pub fn claude_extract_completion(data: &Value) -> Result<CompletionOutput> {
         bail!("Invalid response data: {data}");
     }
 
-    let output = CompletionOutput {
+    let output = ChatCompletionsOutput {
         text: text.to_string(),
         tool_calls,
         id: data["id"].as_str().map(|v| v.to_string()),

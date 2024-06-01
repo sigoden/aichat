@@ -1,6 +1,6 @@
 use super::{
-    vertexai::*, Client, CompletionData, ExtraConfig, GeminiClient, Model, ModelData, ModelPatches,
-    PromptAction, PromptKind,
+    vertexai::*, ChatCompletionsData, Client, ExtraConfig, GeminiClient, Model, ModelData,
+    ModelPatches, PromptAction, PromptKind,
 };
 
 use anyhow::Result;
@@ -13,8 +13,6 @@ const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta/models/
 pub struct GeminiConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
-    #[serde(rename = "safetySettings")]
-    pub safety_settings: Option<serde_json::Value>,
     #[serde(default)]
     pub models: Vec<ModelData>,
     pub patches: Option<ModelPatches>,
@@ -27,10 +25,10 @@ impl GeminiClient {
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    fn request_builder(
+    fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
 
@@ -39,7 +37,7 @@ impl GeminiClient {
             false => "generateContent",
         };
 
-        let mut body = gemini_build_body(data, &self.model)?;
+        let mut body = gemini_build_chat_completions_body(data, &self.model)?;
         self.patch_request_body(&mut body);
 
         let model = &self.model.name();
@@ -56,6 +54,6 @@ impl GeminiClient {
 
 impl_client_trait!(
     GeminiClient,
-    crate::client::vertexai::gemini_send_message,
-    crate::client::vertexai::gemini_send_message_streaming
+    crate::client::vertexai::gemini_chat_completions,
+    crate::client::vertexai::gemini_chat_completions_streaming
 );

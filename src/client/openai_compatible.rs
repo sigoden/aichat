@@ -1,5 +1,5 @@
 use super::{
-    openai::*, Client, CompletionData, ExtraConfig, Model, ModelData, ModelPatches,
+    openai::*, ChatCompletionsData, Client, ExtraConfig, Model, ModelData, ModelPatches,
     OpenAICompatibleClient, PromptAction, PromptKind, OPENAI_COMPATIBLE_PLATFORMS,
 };
 
@@ -36,10 +36,10 @@ impl OpenAICompatibleClient {
         ),
     ];
 
-    fn request_builder(
+    fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let api_base = match self.get_api_base() {
             Ok(v) => v,
@@ -60,7 +60,7 @@ impl OpenAICompatibleClient {
         };
         let api_key = self.get_api_key().ok();
 
-        let mut body = openai_build_body(data, &self.model);
+        let mut body = openai_build_chat_completions_body(data, &self.model);
         self.patch_request_body(&mut body);
 
         let chat_endpoint = self
@@ -84,6 +84,6 @@ impl OpenAICompatibleClient {
 
 impl_client_trait!(
     OpenAICompatibleClient,
-    crate::client::openai::openai_send_message,
-    crate::client::openai::openai_send_message_streaming
+    crate::client::openai::openai_chat_completions,
+    crate::client::openai::openai_chat_completions_streaming
 );

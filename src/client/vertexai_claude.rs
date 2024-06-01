@@ -1,6 +1,7 @@
 use super::{
-    access_token::*, claude::*, vertexai::*, Client, CompletionData, CompletionOutput, ExtraConfig,
-    Model, ModelData, ModelPatches, PromptAction, PromptKind, SseHandler, VertexAIClaudeClient,
+    access_token::*, claude::*, vertexai::*, ChatCompletionsData, ChatCompletionsOutput, Client,
+    ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, SseHandler,
+    VertexAIClaudeClient,
 };
 
 use anyhow::Result;
@@ -29,10 +30,10 @@ impl VertexAIClaudeClient {
         ("location", "Location", true, PromptKind::String),
     ];
 
-    fn request_builder(
+    fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let project_id = self.get_project_id()?;
         let location = self.get_location()?;
@@ -44,7 +45,7 @@ impl VertexAIClaudeClient {
             self.model.name()
         );
 
-        let mut body = claude_build_body(data, &self.model)?;
+        let mut body = claude_build_chat_completions_body(data, &self.model)?;
         self.patch_request_body(&mut body);
         if let Some(body_obj) = body.as_object_mut() {
             body_obj.remove("model");
@@ -63,24 +64,24 @@ impl VertexAIClaudeClient {
 impl Client for VertexAIClaudeClient {
     client_common_fns!();
 
-    async fn send_message_inner(
+    async fn chat_completions_inner(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
-    ) -> Result<CompletionOutput> {
+        data: ChatCompletionsData,
+    ) -> Result<ChatCompletionsOutput> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
-        let builder = self.request_builder(client, data)?;
-        claude_send_message(builder).await
+        let builder = self.chat_completions_builder(client, data)?;
+        claude_chat_completions(builder).await
     }
 
-    async fn send_message_streaming_inner(
+    async fn chat_completions_streaming_inner(
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<()> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
-        let builder = self.request_builder(client, data)?;
-        claude_send_message_streaming(builder, handler).await
+        let builder = self.chat_completions_builder(client, data)?;
+        claude_chat_completions_streaming(builder, handler).await
     }
 }

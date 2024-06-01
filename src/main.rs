@@ -13,7 +13,7 @@ mod utils;
 extern crate log;
 
 use crate::cli::Cli;
-use crate::client::{list_models, send_stream, CompletionOutput};
+use crate::client::{list_models, send_stream, ChatCompletionsOutput};
 use crate::config::{
     Config, GlobalConfig, Input, InputContext, WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE,
     SHELL_ROLE,
@@ -150,9 +150,9 @@ async fn start_directive(
     let is_terminal_stdout = stdout().is_terminal();
     let extract_code = !is_terminal_stdout && code_mode;
     let (output, tool_call_results) = if no_stream || extract_code {
-        let CompletionOutput {
+        let ChatCompletionsOutput {
             text, tool_calls, ..
-        } = client.send_message(input.clone()).await?;
+        } = client.chat_completions(input.clone()).await?;
         if !tool_calls.is_empty() {
             (String::new(), eval_tool_calls(config, tool_calls)?)
         } else {
@@ -203,11 +203,11 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
     let ret = if is_terminal_stdout {
         let (spinner_tx, spinner_rx) = oneshot::channel();
         tokio::spawn(run_spinner(" Generating", spinner_rx));
-        let ret = client.send_message(input.clone()).await;
+        let ret = client.chat_completions(input.clone()).await;
         let _ = spinner_tx.send(());
         ret
     } else {
-        client.send_message(input.clone()).await
+        client.chat_completions(input.clone()).await
     };
     let mut eval_str = ret?.text;
     if let Ok(true) = CODE_BLOCK_RE.is_match(&eval_str) {
