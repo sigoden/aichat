@@ -18,8 +18,6 @@ pub struct VertexAIConfig {
     pub project_id: Option<String>,
     pub location: Option<String>,
     pub adc_file: Option<String>,
-    #[serde(rename = "safetySettings")]
-    pub safety_settings: Option<Value>,
     #[serde(default)]
     pub models: Vec<ModelData>,
     pub patches: Option<ModelPatches>,

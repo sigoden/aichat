@@ -13,8 +13,6 @@ const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta/models/
 pub struct GeminiConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
-    #[serde(rename = "safetySettings")]
-    pub safety_settings: Option<serde_json::Value>,
     #[serde(default)]
     pub models: Vec<ModelData>,
     pub patches: Option<ModelPatches>,
