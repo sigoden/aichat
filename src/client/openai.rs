@@ -1,7 +1,7 @@
 use super::{
-    catch_error, message::*, sse_stream, Client, CompletionData, CompletionOutput, ExtraConfig,
-    Model, ModelData, ModelPatches, OpenAIClient, PromptAction, PromptKind, SseHandler,
-    SseMmessage, ToolCall,
+    catch_error, message::*, sse_stream, ChatCompletionsData, ChatCompletionsOutput, Client,
+    ExtraConfig, Model, ModelData, ModelPatches, OpenAIClient, PromptAction, PromptKind,
+    SseHandler, SseMmessage, ToolCall,
 };
 
 use anyhow::{bail, Result};
@@ -33,7 +33,7 @@ impl OpenAIClient {
     fn request_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
         let api_base = self.get_api_base().unwrap_or_else(|_| API_BASE.to_string());
@@ -55,7 +55,7 @@ impl OpenAIClient {
     }
 }
 
-pub async fn openai_send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
+pub async fn openai_send_message(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -125,8 +125,8 @@ pub async fn openai_send_message_streaming(
     sse_stream(builder, handle).await
 }
 
-pub fn openai_build_body(data: CompletionData, model: &Model) -> Value {
-    let CompletionData {
+pub fn openai_build_body(data: ChatCompletionsData, model: &Model) -> Value {
+    let ChatCompletionsData {
         messages,
         temperature,
         top_p,
@@ -201,7 +201,7 @@ pub fn openai_build_body(data: CompletionData, model: &Model) -> Value {
     body
 }
 
-pub fn openai_extract_completion(data: &Value) -> Result<CompletionOutput> {
+pub fn openai_extract_completion(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["choices"][0]["message"]["content"]
         .as_str()
         .unwrap_or_default();
@@ -231,7 +231,7 @@ pub fn openai_extract_completion(data: &Value) -> Result<CompletionOutput> {
     if text.is_empty() && tool_calls.is_empty() {
         bail!("Invalid response data: {data}");
     }
-    let output = CompletionOutput {
+    let output = ChatCompletionsOutput {
         text: text.to_string(),
         tool_calls,
         id: data["id"].as_str().map(|v| v.to_string()),

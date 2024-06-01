@@ -1,7 +1,7 @@
 use super::{
-    access_token::*, catch_error, json_stream, message::*, patch_system_message, Client,
-    CompletionData, CompletionOutput, ExtraConfig, Model, ModelData, ModelPatches, PromptAction,
-    PromptKind, SseHandler, ToolCall, VertexAIClient,
+    access_token::*, catch_error, json_stream, message::*, patch_system_message,
+    ChatCompletionsData, ChatCompletionsOutput, Client, ExtraConfig, Model, ModelData, ModelPatches,
+    PromptAction, PromptKind, SseHandler, ToolCall, VertexAIClient,
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -38,7 +38,7 @@ impl VertexAIClient {
     fn request_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let project_id = self.get_project_id()?;
         let location = self.get_location()?;
@@ -70,8 +70,8 @@ impl Client for VertexAIClient {
     async fn send_message_inner(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
-    ) -> Result<CompletionOutput> {
+        data: ChatCompletionsData,
+    ) -> Result<ChatCompletionsOutput> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let builder = self.request_builder(client, data)?;
         gemini_send_message(builder).await
@@ -81,7 +81,7 @@ impl Client for VertexAIClient {
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<()> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let builder = self.request_builder(client, data)?;
@@ -89,7 +89,7 @@ impl Client for VertexAIClient {
     }
 }
 
-pub async fn gemini_send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
+pub async fn gemini_send_message(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -140,7 +140,7 @@ pub async fn gemini_send_message_streaming(
     Ok(())
 }
 
-fn gemini_extract_completion_text(data: &Value) -> Result<CompletionOutput> {
+fn gemini_extract_completion_text(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["candidates"][0]["content"]["parts"][0]["text"]
         .as_str()
         .unwrap_or_default();
@@ -171,7 +171,7 @@ fn gemini_extract_completion_text(data: &Value) -> Result<CompletionOutput> {
             bail!("Invalid response data: {data}");
         }
     }
-    let output = CompletionOutput {
+    let output = ChatCompletionsOutput {
         text: text.to_string(),
         tool_calls,
         id: None,
@@ -181,8 +181,8 @@ fn gemini_extract_completion_text(data: &Value) -> Result<CompletionOutput> {
     Ok(output)
 }
 
-pub(crate) fn gemini_build_body(data: CompletionData, model: &Model) -> Result<Value> {
-    let CompletionData {
+pub(crate) fn gemini_build_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+    let ChatCompletionsData {
         mut messages,
         temperature,
         top_p,

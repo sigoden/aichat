@@ -13,7 +13,7 @@ mod utils;
 extern crate log;
 
 use crate::cli::Cli;
-use crate::client::{list_models, send_stream, CompletionOutput};
+use crate::client::{list_models, send_stream, ChatCompletionsOutput};
 use crate::config::{
     Config, GlobalConfig, Input, InputContext, WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE,
     SHELL_ROLE,
@@ -150,7 +150,7 @@ async fn start_directive(
     let is_terminal_stdout = stdout().is_terminal();
     let extract_code = !is_terminal_stdout && code_mode;
     let (output, tool_call_results) = if no_stream || extract_code {
-        let CompletionOutput {
+        let ChatCompletionsOutput {
             text, tool_calls, ..
         } = client.send_message(input.clone()).await?;
         if !tool_calls.is_empty() {

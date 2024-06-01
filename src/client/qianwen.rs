@@ -1,5 +1,5 @@
 use super::{
-    maybe_catch_error, message::*, sse_stream, Client, CompletionData, CompletionOutput,
+    maybe_catch_error, message::*, sse_stream, ChatCompletionsData, ChatCompletionsOutput, Client,
     ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, QianwenClient,
     SseHandler, SseMmessage,
 };
@@ -41,7 +41,7 @@ impl QianwenClient {
     fn request_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
 
@@ -75,8 +75,8 @@ impl Client for QianwenClient {
     async fn send_message_inner(
         &self,
         client: &ReqwestClient,
-        mut data: CompletionData,
-    ) -> Result<CompletionOutput> {
+        mut data: ChatCompletionsData,
+    ) -> Result<ChatCompletionsOutput> {
         let api_key = self.get_api_key()?;
         patch_messages(self.model.name(), &api_key, &mut data.messages).await?;
         let builder = self.request_builder(client, data)?;
@@ -87,7 +87,7 @@ impl Client for QianwenClient {
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
-        mut data: CompletionData,
+        mut data: ChatCompletionsData,
     ) -> Result<()> {
         let api_key = self.get_api_key()?;
         patch_messages(self.model.name(), &api_key, &mut data.messages).await?;
@@ -96,7 +96,7 @@ impl Client for QianwenClient {
     }
 }
 
-async fn send_message(builder: RequestBuilder, model: &Model) -> Result<CompletionOutput> {
+async fn send_message(builder: RequestBuilder, model: &Model) -> Result<ChatCompletionsOutput> {
     let data: Value = builder.send().await?.json().await?;
     maybe_catch_error(&data)?;
 
@@ -133,8 +133,8 @@ async fn send_message_streaming(
     sse_stream(builder, handle).await
 }
 
-fn build_body(data: CompletionData, model: &Model) -> Result<(Value, bool)> {
-    let CompletionData {
+fn build_body(data: ChatCompletionsData, model: &Model) -> Result<(Value, bool)> {
+    let ChatCompletionsData {
         messages,
         temperature,
         top_p,
@@ -210,7 +210,7 @@ fn build_body(data: CompletionData, model: &Model) -> Result<(Value, bool)> {
     Ok((body, has_upload))
 }
 
-fn extract_completion_text(data: &Value, model: &Model) -> Result<CompletionOutput> {
+fn extract_completion_text(data: &Value, model: &Model) -> Result<ChatCompletionsOutput> {
     let err = || anyhow!("Invalid response data: {data}");
     let text = if model.name() == "qwen-long" {
         data["output"]["choices"][0]["message"]["content"]
@@ -223,7 +223,7 @@ fn extract_completion_text(data: &Value, model: &Model) -> Result<CompletionOutp
     } else {
         data["output"]["text"].as_str().ok_or_else(err)?
     };
-    let output = CompletionOutput {
+    let output = ChatCompletionsOutput {
         text: text.to_string(),
         tool_calls: vec![],
         id: data["request_id"].as_str().map(|v| v.to_string()),

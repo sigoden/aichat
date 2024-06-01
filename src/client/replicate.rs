@@ -1,5 +1,5 @@
 use super::{
-    catch_error, prompt_format::*, sse_stream, Client, CompletionData, CompletionOutput,
+    catch_error, prompt_format::*, sse_stream, ChatCompletionsData, ChatCompletionsOutput, Client,
     ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, ReplicateClient,
     SseHandler, SseMmessage,
 };
@@ -32,7 +32,7 @@ impl ReplicateClient {
     fn request_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
         api_key: &str,
     ) -> Result<RequestBuilder> {
         let mut body = build_body(data, &self.model)?;
@@ -55,8 +55,8 @@ impl Client for ReplicateClient {
     async fn send_message_inner(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
-    ) -> Result<CompletionOutput> {
+        data: ChatCompletionsData,
+    ) -> Result<ChatCompletionsOutput> {
         let api_key = self.get_api_key()?;
         let builder = self.request_builder(client, data, &api_key)?;
         send_message(client, builder, &api_key).await
@@ -66,7 +66,7 @@ impl Client for ReplicateClient {
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<()> {
         let api_key = self.get_api_key()?;
         let builder = self.request_builder(client, data, &api_key)?;
@@ -78,7 +78,7 @@ async fn send_message(
     client: &ReqwestClient,
     builder: RequestBuilder,
     api_key: &str,
-) -> Result<CompletionOutput> {
+) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -135,8 +135,8 @@ async fn send_message_streaming(
     sse_stream(sse_builder, handle).await
 }
 
-fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
-    let CompletionData {
+fn build_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+    let ChatCompletionsData {
         messages,
         temperature,
         top_p,
@@ -173,7 +173,7 @@ fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
     Ok(body)
 }
 
-fn extract_completion(data: &Value) -> Result<CompletionOutput> {
+fn extract_completion(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["output"]
         .as_array()
         .map(|parts| {
@@ -185,7 +185,7 @@ fn extract_completion(data: &Value) -> Result<CompletionOutput> {
         })
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
 
-    let output = CompletionOutput {
+    let output = ChatCompletionsOutput {
         text: text.to_string(),
         tool_calls: vec![],
         id: data["id"].as_str().map(|v| v.to_string()),

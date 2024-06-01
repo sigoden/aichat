@@ -1,6 +1,7 @@
 use super::{
-    catch_error, json_stream, message::*, Client, CompletionData, CompletionOutput, ExtraConfig,
-    Model, ModelData, ModelPatches, OllamaClient, PromptAction, PromptKind, SseHandler,
+    catch_error, json_stream, message::*, ChatCompletionsData, ChatCompletionsOutput, Client,
+    ExtraConfig, Model, ModelData, ModelPatches, OllamaClient, PromptAction, PromptKind,
+    SseHandler,
 };
 
 use anyhow::{anyhow, bail, Result};
@@ -38,7 +39,7 @@ impl OllamaClient {
     fn request_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let api_base = self.get_api_base()?;
         let api_auth = self.get_api_auth().ok();
@@ -63,7 +64,7 @@ impl OllamaClient {
 
 impl_client_trait!(OllamaClient, send_message, send_message_streaming);
 
-async fn send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
+async fn send_message(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data = res.json().await?;
@@ -74,7 +75,7 @@ async fn send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
     let text = data["message"]["content"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
-    Ok(CompletionOutput::new(text))
+    Ok(ChatCompletionsOutput::new(text))
 }
 
 async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
@@ -105,8 +106,8 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
     Ok(())
 }
 
-fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
-    let CompletionData {
+fn build_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+    let ChatCompletionsData {
         messages,
         temperature,
         top_p,

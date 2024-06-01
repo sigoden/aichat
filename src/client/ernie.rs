@@ -1,7 +1,7 @@
 use super::{
-    access_token::*, maybe_catch_error, patch_system_message, sse_stream, Client, CompletionData,
-    CompletionOutput, ErnieClient, ExtraConfig, Model, ModelData, ModelPatches, PromptAction,
-    PromptKind, SseHandler, SseMmessage,
+    access_token::*, maybe_catch_error, patch_system_message, sse_stream, ChatCompletionsData,
+    ChatCompletionsOutput, Client, ErnieClient, ExtraConfig, Model, ModelData, ModelPatches,
+    PromptAction, PromptKind, SseHandler, SseMmessage,
 };
 
 use anyhow::{anyhow, Context, Result};
@@ -34,7 +34,7 @@ impl ErnieClient {
     fn request_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let mut body = build_body(data, &self.model);
         self.patch_request_body(&mut body);
@@ -84,8 +84,8 @@ impl Client for ErnieClient {
     async fn send_message_inner(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
-    ) -> Result<CompletionOutput> {
+        data: ChatCompletionsData,
+    ) -> Result<ChatCompletionsOutput> {
         self.prepare_access_token().await?;
         let builder = self.request_builder(client, data)?;
         send_message(builder).await
@@ -95,7 +95,7 @@ impl Client for ErnieClient {
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<()> {
         self.prepare_access_token().await?;
         let builder = self.request_builder(client, data)?;
@@ -103,7 +103,7 @@ impl Client for ErnieClient {
     }
 }
 
-async fn send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
+async fn send_message(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let data: Value = builder.send().await?.json().await?;
     maybe_catch_error(&data)?;
     debug!("non-stream-data: {data}");
@@ -123,8 +123,8 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
     sse_stream(builder, handle).await
 }
 
-fn build_body(data: CompletionData, model: &Model) -> Value {
-    let CompletionData {
+fn build_body(data: ChatCompletionsData, model: &Model) -> Value {
+    let ChatCompletionsData {
         mut messages,
         temperature,
         top_p,
@@ -155,11 +155,11 @@ fn build_body(data: CompletionData, model: &Model) -> Value {
     body
 }
 
-fn extract_completion_text(data: &Value) -> Result<CompletionOutput> {
+fn extract_completion_text(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["result"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
-    let output = CompletionOutput {
+    let output = ChatCompletionsOutput {
         text: text.to_string(),
         tool_calls: vec![],
         id: data["id"].as_str().map(|v| v.to_string()),

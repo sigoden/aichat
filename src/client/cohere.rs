@@ -1,7 +1,7 @@
 use super::{
-    catch_error, extract_system_message, json_stream, message::*, Client, CohereClient,
-    CompletionData, CompletionOutput, ExtraConfig, Model, ModelData, ModelPatches, PromptAction,
-    PromptKind, SseHandler, ToolCall,
+    catch_error, extract_system_message, json_stream, message::*, ChatCompletionsData,
+    ChatCompletionsOutput, Client, CohereClient, ExtraConfig, Model, ModelData, ModelPatches,
+    PromptAction, PromptKind, SseHandler, ToolCall,
 };
 
 use anyhow::{bail, Result};
@@ -30,7 +30,7 @@ impl CohereClient {
     fn request_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
 
@@ -49,7 +49,7 @@ impl CohereClient {
 
 impl_client_trait!(CohereClient, send_message, send_message_streaming);
 
-async fn send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
+async fn send_message(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -97,8 +97,8 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
     Ok(())
 }
 
-fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
-    let CompletionData {
+fn build_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+    let ChatCompletionsData {
         mut messages,
         temperature,
         top_p,
@@ -224,7 +224,7 @@ fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
     Ok(body)
 }
 
-fn extract_completion(data: &Value) -> Result<CompletionOutput> {
+fn extract_completion(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["text"].as_str().unwrap_or_default();
 
     let mut tool_calls = vec![];
@@ -246,7 +246,7 @@ fn extract_completion(data: &Value) -> Result<CompletionOutput> {
     if text.is_empty() && tool_calls.is_empty() {
         bail!("Invalid response data: {data}");
     }
-    let output = CompletionOutput {
+    let output = ChatCompletionsOutput {
         text: text.to_string(),
         tool_calls,
         id: data["generation_id"].as_str().map(|v| v.to_string()),

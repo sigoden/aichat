@@ -1,7 +1,8 @@
 use super::{
-    catch_error, extract_system_message, message::*, sse_stream, ClaudeClient, Client,
-    CompletionData, CompletionOutput, ExtraConfig, ImageUrl, MessageContent, MessageContentPart,
-    Model, ModelData, ModelPatches, PromptAction, PromptKind, SseHandler, SseMmessage, ToolCall,
+    catch_error, extract_system_message, message::*, sse_stream, ChatCompletionsData,
+    ChatCompletionsOutput, ClaudeClient, Client, ExtraConfig, ImageUrl, MessageContent,
+    MessageContentPart, Model, ModelData, ModelPatches, PromptAction, PromptKind, SseHandler,
+    SseMmessage, ToolCall,
 };
 
 use anyhow::{bail, Context, Result};
@@ -30,7 +31,7 @@ impl ClaudeClient {
     fn request_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let api_key = self.get_api_key().ok();
 
@@ -59,7 +60,7 @@ impl_client_trait!(
     claude_send_message_streaming
 );
 
-pub async fn claude_send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
+pub async fn claude_send_message(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -135,8 +136,8 @@ pub async fn claude_send_message_streaming(
     sse_stream(builder, handle).await
 }
 
-pub fn claude_build_body(data: CompletionData, model: &Model) -> Result<Value> {
-    let CompletionData {
+pub fn claude_build_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+    let ChatCompletionsData {
         mut messages,
         temperature,
         top_p,
@@ -269,7 +270,7 @@ pub fn claude_build_body(data: CompletionData, model: &Model) -> Result<Value> {
     Ok(body)
 }
 
-pub fn claude_extract_completion(data: &Value) -> Result<CompletionOutput> {
+pub fn claude_extract_completion(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["content"][0]["text"].as_str().unwrap_or_default();
 
     let mut tool_calls = vec![];
@@ -303,7 +304,7 @@ pub fn claude_extract_completion(data: &Value) -> Result<CompletionOutput> {
         bail!("Invalid response data: {data}");
     }
 
-    let output = CompletionOutput {
+    let output = ChatCompletionsOutput {
         text: text.to_string(),
         tool_calls,
         id: data["id"].as_str().map(|v| v.to_string()),

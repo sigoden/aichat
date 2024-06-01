@@ -1,6 +1,7 @@
 use super::{
-    access_token::*, claude::*, vertexai::*, Client, CompletionData, CompletionOutput, ExtraConfig,
-    Model, ModelData, ModelPatches, PromptAction, PromptKind, SseHandler, VertexAIClaudeClient,
+    access_token::*, claude::*, vertexai::*, ChatCompletionsData, ChatCompletionsOutput, Client,
+    ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, SseHandler,
+    VertexAIClaudeClient,
 };
 
 use anyhow::Result;
@@ -32,7 +33,7 @@ impl VertexAIClaudeClient {
     fn request_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let project_id = self.get_project_id()?;
         let location = self.get_location()?;
@@ -66,8 +67,8 @@ impl Client for VertexAIClaudeClient {
     async fn send_message_inner(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
-    ) -> Result<CompletionOutput> {
+        data: ChatCompletionsData,
+    ) -> Result<ChatCompletionsOutput> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let builder = self.request_builder(client, data)?;
         claude_send_message(builder).await
@@ -77,7 +78,7 @@ impl Client for VertexAIClaudeClient {
         &self,
         client: &ReqwestClient,
         handler: &mut SseHandler,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<()> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let builder = self.request_builder(client, data)?;

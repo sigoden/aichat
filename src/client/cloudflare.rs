@@ -1,5 +1,5 @@
 use super::{
-    catch_error, sse_stream, Client, CloudflareClient, CompletionData, CompletionOutput,
+    catch_error, sse_stream, ChatCompletionsData, ChatCompletionsOutput, Client, CloudflareClient,
     ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, SseHandler, SseMmessage,
 };
 
@@ -33,7 +33,7 @@ impl CloudflareClient {
     fn request_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let account_id = self.get_account_id()?;
         let api_key = self.get_api_key()?;
@@ -56,7 +56,7 @@ impl CloudflareClient {
 
 impl_client_trait!(CloudflareClient, send_message, send_message_streaming);
 
-async fn send_message(builder: RequestBuilder) -> Result<CompletionOutput> {
+async fn send_message(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -83,8 +83,8 @@ async fn send_message_streaming(builder: RequestBuilder, handler: &mut SseHandle
     sse_stream(builder, handle).await
 }
 
-fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
-    let CompletionData {
+fn build_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+    let ChatCompletionsData {
         messages,
         temperature,
         top_p,
@@ -113,10 +113,10 @@ fn build_body(data: CompletionData, model: &Model) -> Result<Value> {
     Ok(body)
 }
 
-fn extract_completion(data: &Value) -> Result<CompletionOutput> {
+fn extract_completion(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["result"]["response"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
 
-    Ok(CompletionOutput::new(text))
+    Ok(ChatCompletionsOutput::new(text))
 }

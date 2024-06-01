@@ -1,6 +1,6 @@
 use super::{
-    vertexai::*, Client, CompletionData, ExtraConfig, GeminiClient, Model, ModelData, ModelPatches,
-    PromptAction, PromptKind,
+    vertexai::*, ChatCompletionsData, Client, ExtraConfig, GeminiClient, Model, ModelData,
+    ModelPatches, PromptAction, PromptKind,
 };
 
 use anyhow::Result;
@@ -30,7 +30,7 @@ impl GeminiClient {
     fn request_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
 

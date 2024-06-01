@@ -1,5 +1,5 @@
 use super::{
-    openai::*, AzureOpenAIClient, Client, CompletionData, ExtraConfig, Model, ModelData,
+    openai::*, AzureOpenAIClient, ChatCompletionsData, Client, ExtraConfig, Model, ModelData,
     ModelPatches, PromptAction, PromptKind,
 };
 
@@ -36,7 +36,7 @@ impl AzureOpenAIClient {
     fn request_builder(
         &self,
         client: &ReqwestClient,
-        data: CompletionData,
+        data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let api_base = self.get_api_base()?;
         let api_key = self.get_api_key()?;
