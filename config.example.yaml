@@ -37,6 +37,7 @@ clients:
   #     - name: xxxx                                  # The model name
   #       max_input_tokens: 100000
   #       supports_vision: true
+  #       supports_function_calling: true
   #   patches: 
   #     <regex>:                                      # The regex to match model names, e.g. '.*' 'gpt-4o' 'gpt-4o|gpt-4-.*'
   #       request_body:                               # The JSON to be merged with the request body.
