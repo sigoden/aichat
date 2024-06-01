@@ -101,7 +101,7 @@ async fn chat_completions(builder: RequestBuilder, model: &Model) -> Result<Chat
     maybe_catch_error(&data)?;
 
     debug!("non-stream-data: {data}");
-    extract_completion_text(&data, model)
+    extract_chat_completions_text(&data, model)
 }
 
 async fn chat_completions_streaming(
@@ -210,7 +210,7 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
     Ok((body, has_upload))
 }
 
-fn extract_completion_text(data: &Value, model: &Model) -> Result<ChatCompletionsOutput> {
+fn extract_chat_completions_text(data: &Value, model: &Model) -> Result<ChatCompletionsOutput> {
     let err = || anyhow!("Invalid response data: {data}");
     let text = if model.name() == "qwen-long" {
         data["output"]["choices"][0]["message"]["content"]

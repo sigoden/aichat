@@ -68,7 +68,7 @@ pub async fn claude_chat_completions(builder: RequestBuilder) -> Result<ChatComp
         catch_error(&data, status.as_u16())?;
     }
     debug!("non-stream-data: {data}");
-    claude_extract_completion(&data)
+    claude_extract_chat_completions(&data)
 }
 
 pub async fn claude_chat_completions_streaming(
@@ -270,7 +270,7 @@ pub fn claude_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
     Ok(body)
 }
 
-pub fn claude_extract_completion(data: &Value) -> Result<ChatCompletionsOutput> {
+pub fn claude_extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["content"][0]["text"].as_str().unwrap_or_default();
 
     let mut tool_calls = vec![];

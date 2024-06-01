@@ -65,7 +65,7 @@ async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutp
     }
 
     debug!("non-stream-data: {data}");
-    extract_completion(&data)
+    extract_chat_completions(&data)
 }
 
 async fn chat_completions_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
@@ -113,7 +113,7 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
     Ok(body)
 }
 
-fn extract_completion(data: &Value) -> Result<ChatCompletionsOutput> {
+fn extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["result"]["response"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;

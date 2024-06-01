@@ -97,7 +97,7 @@ pub async fn gemini_chat_completions(builder: RequestBuilder) -> Result<ChatComp
         catch_error(&data, status.as_u16())?;
     }
     debug!("non-stream-data: {data}");
-    gemini_extract_completion_text(&data)
+    gemini_extract_chat_completions_text(&data)
 }
 
 pub async fn gemini_chat_completions_streaming(
@@ -140,7 +140,7 @@ pub async fn gemini_chat_completions_streaming(
     Ok(())
 }
 
-fn gemini_extract_completion_text(data: &Value) -> Result<ChatCompletionsOutput> {
+fn gemini_extract_chat_completions_text(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["candidates"][0]["content"]["parts"][0]["text"]
         .as_str()
         .unwrap_or_default();

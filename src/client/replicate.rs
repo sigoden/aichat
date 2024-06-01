@@ -101,7 +101,7 @@ async fn chat_completions(
         let err = || anyhow!("Invalid response data: {prediction_data}");
         let status = prediction_data["status"].as_str().ok_or_else(err)?;
         if status == "succeeded" {
-            return extract_completion(&prediction_data);
+            return extract_chat_completions(&prediction_data);
         } else if status == "failed" || status == "canceled" {
             return Err(err());
         }
@@ -173,7 +173,7 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
     Ok(body)
 }
 
-fn extract_completion(data: &Value) -> Result<ChatCompletionsOutput> {
+fn extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["output"]
         .as_array()
         .map(|parts| {

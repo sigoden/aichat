@@ -140,9 +140,9 @@ async fn chat_completions(
 
     debug!("non-stream-data: {data}");
     match model_category {
-        ModelCategory::Anthropic => claude_extract_completion(&data),
-        ModelCategory::MetaLlama3 => llama_extract_completion(&data),
-        ModelCategory::Mistral => mistral_extract_completion(&data),
+        ModelCategory::Anthropic => claude_extract_chat_completions(&data),
+        ModelCategory::MetaLlama3 => llama_extract_chat_completions(&data),
+        ModelCategory::Mistral => mistral_extract_chat_completions(&data),
     }
 }
 
@@ -283,7 +283,7 @@ fn mistral_build_chat_completions_body(data: ChatCompletionsData, model: &Model)
     Ok(body)
 }
 
-fn llama_extract_completion(data: &Value) -> Result<ChatCompletionsOutput> {
+fn llama_extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["generation"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
@@ -297,7 +297,7 @@ fn llama_extract_completion(data: &Value) -> Result<ChatCompletionsOutput> {
     Ok(output)
 }
 
-fn mistral_extract_completion(data: &Value) -> Result<ChatCompletionsOutput> {
+fn mistral_extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["outputs"][0]["text"]
         .as_str()
         .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;

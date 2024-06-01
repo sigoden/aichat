@@ -64,7 +64,7 @@ pub async fn openai_chat_completions(builder: RequestBuilder) -> Result<ChatComp
     }
 
     debug!("non-stream-data: {data}");
-    openai_extract_completion(&data)
+    openai_extract_chat_completions(&data)
 }
 
 pub async fn openai_chat_completions_streaming(
@@ -201,7 +201,7 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
     body
 }
 
-pub fn openai_extract_completion(data: &Value) -> Result<ChatCompletionsOutput> {
+pub fn openai_extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["choices"][0]["message"]["content"]
         .as_str()
         .unwrap_or_default();
