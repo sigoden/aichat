@@ -78,7 +78,10 @@ async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutp
     Ok(ChatCompletionsOutput::new(text))
 }
 
-async fn chat_completions_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
+async fn chat_completions_streaming(
+    builder: RequestBuilder,
+    handler: &mut SseHandler,
+) -> Result<()> {
     let res = builder.send().await?;
     let status = res.status();
     if !status.is_success() {

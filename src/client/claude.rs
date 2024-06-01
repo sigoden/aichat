@@ -136,7 +136,10 @@ pub async fn claude_chat_completions_streaming(
     sse_stream(builder, handle).await
 }
 
-pub fn claude_build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+pub fn claude_build_chat_completions_body(
+    data: ChatCompletionsData,
+    model: &Model,
+) -> Result<Value> {
     let ChatCompletionsData {
         mut messages,
         temperature,

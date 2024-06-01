@@ -226,7 +226,9 @@ fn build_chat_completions_body(
             body["anthropic_version"] = "bedrock-2023-05-31".into();
             Ok(body)
         }
-        ModelCategory::MetaLlama3 => meta_llama_build_chat_completions_body(data, model, LLAMA3_PROMPT_FORMAT),
+        ModelCategory::MetaLlama3 => {
+            meta_llama_build_chat_completions_body(data, model, LLAMA3_PROMPT_FORMAT)
+        }
         ModelCategory::Mistral => mistral_build_chat_completions_body(data, model),
     }
 }

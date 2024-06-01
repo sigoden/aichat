@@ -1,7 +1,7 @@
 use super::{
     access_token::*, catch_error, json_stream, message::*, patch_system_message,
-    ChatCompletionsData, ChatCompletionsOutput, Client, ExtraConfig, Model, ModelData, ModelPatches,
-    PromptAction, PromptKind, SseHandler, ToolCall, VertexAIClient,
+    ChatCompletionsData, ChatCompletionsOutput, Client, ExtraConfig, Model, ModelData,
+    ModelPatches, PromptAction, PromptKind, SseHandler, ToolCall, VertexAIClient,
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -181,7 +181,10 @@ fn gemini_extract_chat_completions_text(data: &Value) -> Result<ChatCompletionsO
     Ok(output)
 }
 
-pub(crate) fn gemini_build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
+pub(crate) fn gemini_build_chat_completions_body(
+    data: ChatCompletionsData,
+    model: &Model,
+) -> Result<Value> {
     let ChatCompletionsData {
         mut messages,
         temperature,

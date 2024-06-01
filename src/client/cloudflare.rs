@@ -54,7 +54,11 @@ impl CloudflareClient {
     }
 }
 
-impl_client_trait!(CloudflareClient, chat_completions, chat_completions_streaming);
+impl_client_trait!(
+    CloudflareClient,
+    chat_completions,
+    chat_completions_streaming
+);
 
 async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
@@ -68,7 +72,10 @@ async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutp
     extract_chat_completions(&data)
 }
 
-async fn chat_completions_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
+async fn chat_completions_streaming(
+    builder: RequestBuilder,
+    handler: &mut SseHandler,
+) -> Result<()> {
     let handle = |message: SseMmessage| -> Result<bool> {
         if message.data == "[DONE]" {
             return Ok(true);

@@ -110,7 +110,10 @@ async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutp
     extract_chat_completions_text(&data)
 }
 
-async fn chat_completions_streaming(builder: RequestBuilder, handler: &mut SseHandler) -> Result<()> {
+async fn chat_completions_streaming(
+    builder: RequestBuilder,
+    handler: &mut SseHandler,
+) -> Result<()> {
     let handle = |message: SseMmessage| -> Result<bool> {
         let data: Value = serde_json::from_str(&message.data)?;
         debug!("stream-data: {data}");
