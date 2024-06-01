@@ -33,7 +33,7 @@ impl AzureOpenAIClient {
         ),
     ];
 
-    fn request_builder(
+    fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
         data: ChatCompletionsData,

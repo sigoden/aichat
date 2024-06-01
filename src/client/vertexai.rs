@@ -35,7 +35,7 @@ impl VertexAIClient {
         ("location", "Location", true, PromptKind::String),
     ];
 
-    fn request_builder(
+    fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
         data: ChatCompletionsData,
@@ -73,7 +73,7 @@ impl Client for VertexAIClient {
         data: ChatCompletionsData,
     ) -> Result<ChatCompletionsOutput> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
-        let builder = self.request_builder(client, data)?;
+        let builder = self.chat_completions_builder(client, data)?;
         gemini_chat_completions(builder).await
     }
 
@@ -84,7 +84,7 @@ impl Client for VertexAIClient {
         data: ChatCompletionsData,
     ) -> Result<()> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
-        let builder = self.request_builder(client, data)?;
+        let builder = self.chat_completions_builder(client, data)?;
         gemini_chat_completions_streaming(builder, handler).await
     }
 }

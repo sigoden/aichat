@@ -205,7 +205,7 @@ macro_rules! impl_client_trait {
                 client: &reqwest::Client,
                 data: $crate::client::ChatCompletionsData,
             ) -> anyhow::Result<$crate::client::ChatCompletionsOutput> {
-                let builder = self.request_builder(client, data)?;
+                let builder = self.chat_completions_builder(client, data)?;
                 $chat_completions(builder).await
             }
 
@@ -215,7 +215,7 @@ macro_rules! impl_client_trait {
                 handler: &mut $crate::client::SseHandler,
                 data: $crate::client::ChatCompletionsData,
             ) -> Result<()> {
-                let builder = self.request_builder(client, data)?;
+                let builder = self.chat_completions_builder(client, data)?;
                 $chat_completions_streaming(builder, handler).await
             }
         }

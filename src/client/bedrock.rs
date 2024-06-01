@@ -44,7 +44,7 @@ impl Client for BedrockClient {
         data: ChatCompletionsData,
     ) -> Result<ChatCompletionsOutput> {
         let model_category = ModelCategory::from_str(self.model.name())?;
-        let builder = self.request_builder(client, data, &model_category)?;
+        let builder = self.chat_completions_builder(client, data, &model_category)?;
         chat_completions(builder, &model_category).await
     }
 
@@ -55,7 +55,7 @@ impl Client for BedrockClient {
         data: ChatCompletionsData,
     ) -> Result<()> {
         let model_category = ModelCategory::from_str(self.model.name())?;
-        let builder = self.request_builder(client, data, &model_category)?;
+        let builder = self.chat_completions_builder(client, data, &model_category)?;
         chat_completions_streaming(builder, handler, &model_category).await
     }
 }
@@ -81,7 +81,7 @@ impl BedrockClient {
         ("region", "AWS Region", true, PromptKind::String),
     ];
 
-    fn request_builder(
+    fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
         data: ChatCompletionsData,

@@ -38,7 +38,7 @@ impl QianwenClient {
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    fn request_builder(
+    fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
         data: ChatCompletionsData,
@@ -79,7 +79,7 @@ impl Client for QianwenClient {
     ) -> Result<ChatCompletionsOutput> {
         let api_key = self.get_api_key()?;
         patch_messages(self.model.name(), &api_key, &mut data.messages).await?;
-        let builder = self.request_builder(client, data)?;
+        let builder = self.chat_completions_builder(client, data)?;
         chat_completions(builder, &self.model).await
     }
 
@@ -91,7 +91,7 @@ impl Client for QianwenClient {
     ) -> Result<()> {
         let api_key = self.get_api_key()?;
         patch_messages(self.model.name(), &api_key, &mut data.messages).await?;
-        let builder = self.request_builder(client, data)?;
+        let builder = self.chat_completions_builder(client, data)?;
         chat_completions_streaming(builder, handler, &self.model).await
     }
 }

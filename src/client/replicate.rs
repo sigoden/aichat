@@ -29,7 +29,7 @@ impl ReplicateClient {
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    fn request_builder(
+    fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
         data: ChatCompletionsData,
@@ -58,7 +58,7 @@ impl Client for ReplicateClient {
         data: ChatCompletionsData,
     ) -> Result<ChatCompletionsOutput> {
         let api_key = self.get_api_key()?;
-        let builder = self.request_builder(client, data, &api_key)?;
+        let builder = self.chat_completions_builder(client, data, &api_key)?;
         chat_completions(client, builder, &api_key).await
     }
 
@@ -69,7 +69,7 @@ impl Client for ReplicateClient {
         data: ChatCompletionsData,
     ) -> Result<()> {
         let api_key = self.get_api_key()?;
-        let builder = self.request_builder(client, data, &api_key)?;
+        let builder = self.chat_completions_builder(client, data, &api_key)?;
         chat_completions_streaming(client, builder, handler).await
     }
 }

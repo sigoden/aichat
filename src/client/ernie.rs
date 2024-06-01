@@ -31,7 +31,7 @@ impl ErnieClient {
         ("secret_key", "Secret Key:", true, PromptKind::String),
     ];
 
-    fn request_builder(
+    fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
         data: ChatCompletionsData,
@@ -87,7 +87,7 @@ impl Client for ErnieClient {
         data: ChatCompletionsData,
     ) -> Result<ChatCompletionsOutput> {
         self.prepare_access_token().await?;
-        let builder = self.request_builder(client, data)?;
+        let builder = self.chat_completions_builder(client, data)?;
         chat_completions(builder).await
     }
 
@@ -98,7 +98,7 @@ impl Client for ErnieClient {
         data: ChatCompletionsData,
     ) -> Result<()> {
         self.prepare_access_token().await?;
-        let builder = self.request_builder(client, data)?;
+        let builder = self.chat_completions_builder(client, data)?;
         chat_completions_streaming(builder, handler).await
     }
 }

@@ -30,7 +30,7 @@ impl CloudflareClient {
         ("api_key", "API Key:", true, PromptKind::String),
     ];
 
-    fn request_builder(
+    fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
         data: ChatCompletionsData,
