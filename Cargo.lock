@@ -38,6 +38,7 @@ dependencies = [
  "aws-smithy-eventstream",
  "base64 0.22.1",
  "bincode",
+ "bitflags 2.5.0",
  "bstr",
  "bytes",
  "chrono",

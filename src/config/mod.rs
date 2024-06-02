@@ -327,22 +327,19 @@ impl Config {
         Ok(())
     }
 
-    pub fn state(&self) -> State {
+    pub fn state(&self) -> StateFlags {
+        let mut flags = StateFlags::empty();
         if let Some(session) = &self.session {
             if session.is_empty() {
-                if self.role.is_some() {
-                    State::EmptySessionWithRole
-                } else {
-                    State::EmptySession
-                }
+                flags |= StateFlags::SESSION_EMPTY;
             } else {
-                State::Session
+                flags |= StateFlags::SESSION;
             }
-        } else if self.role.is_some() {
-            State::Role
-        } else {
-            State::Normal
         }
+        if self.role.is_some() {
+            flags |= StateFlags::ROLE
+        }
+        flags
     }
 
     pub fn set_temperature(&mut self, value: Option<f64>) {
@@ -1046,60 +1043,24 @@ pub enum WorkingMode {
     Serve,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum State {
-    Normal,
-    Role,
-    EmptySession,
-    EmptySessionWithRole,
-    Session,
+bitflags::bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    pub struct StateFlags: u32 {
+        const ROLE = 1 << 0;
+        const SESSION_EMPTY = 1 << 1;
+        const SESSION = 1 << 2;
+    }
 }
 
-impl State {
-    pub fn all() -> Vec<Self> {
-        vec![
-            Self::Normal,
-            Self::Role,
-            Self::EmptySession,
-            Self::EmptySessionWithRole,
-            Self::Session,
-        ]
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum AssertState {
+    True(StateFlags),
+    False(StateFlags),
+}
 
-    pub fn in_session() -> Vec<Self> {
-        vec![
-            Self::EmptySession,
-            Self::EmptySessionWithRole,
-            Self::Session,
-        ]
-    }
-
-    pub fn not_in_session() -> Vec<Self> {
-        let excludes: HashSet<_> = Self::in_session().into_iter().collect();
-        Self::all()
-            .into_iter()
-            .filter(|v| !excludes.contains(v))
-            .collect()
-    }
-
-    pub fn unable_change_role() -> Vec<Self> {
-        vec![Self::Session]
-    }
-
-    pub fn able_change_role() -> Vec<Self> {
-        let excludes: HashSet<_> = Self::unable_change_role().into_iter().collect();
-        Self::all()
-            .into_iter()
-            .filter(|v| !excludes.contains(v))
-            .collect()
-    }
-
-    pub fn in_role() -> Vec<Self> {
-        vec![Self::Role, Self::EmptySessionWithRole]
-    }
-
-    pub fn is_normal(&self) -> bool {
-        self == &Self::Normal
+impl AssertState {
+    pub fn any() -> Self {
+        AssertState::False(StateFlags::empty())
     }
 }
 
