@@ -7,7 +7,7 @@ use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
 use crate::client::send_stream;
-use crate::config::{GlobalConfig, Input, InputContext, State};
+use crate::config::{AssertState, GlobalConfig, Input, InputContext, StateFlags};
 use crate::function::need_send_call_results;
 use crate::render::render_error;
 use crate::utils::{create_abort_signal, set_text, AbortSignal};
@@ -34,42 +34,62 @@ const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
     static ref REPL_COMMANDS: [ReplCommand; 16] = [
-        ReplCommand::new(".help", "Show this help message", State::all()),
-        ReplCommand::new(".info", "View system info", State::all()),
-        ReplCommand::new(".model", "Change the current LLM", State::all()),
+        ReplCommand::new(".help", "Show this help message", AssertState::any()),
+        ReplCommand::new(".info", "View system info", AssertState::any()),
+        ReplCommand::new(".model", "Change the current LLM", AssertState::any()),
         ReplCommand::new(
             ".prompt",
             "Create a temporary role using a prompt",
-            State::able_change_role()
+            AssertState::False(StateFlags::SESSION)
         ),
         ReplCommand::new(
             ".role",
             "Switch to a specific role",
-            State::able_change_role()
+            AssertState::False(StateFlags::SESSION)
         ),
-        ReplCommand::new(".info role", "View role info", State::in_role(),),
-        ReplCommand::new(".exit role", "Leave the role", State::in_role(),),
-        ReplCommand::new(".session", "Begin a chat session", State::not_in_session(),),
-        ReplCommand::new(".info session", "View session info", State::in_session(),),
+        ReplCommand::new(
+            ".info role",
+            "View role info",
+            AssertState::True(StateFlags::ROLE),
+        ),
+        ReplCommand::new(
+            ".exit role",
+            "Leave the role",
+            AssertState::True(StateFlags::ROLE),
+        ),
+        ReplCommand::new(
+            ".session",
+            "Begin a chat session",
+            AssertState::False(StateFlags::SESSION_EMPTY | StateFlags::SESSION),
+        ),
+        ReplCommand::new(
+            ".info session",
+            "View session info",
+            AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION),
+        ),
         ReplCommand::new(
             ".save session",
             "Save the chat to file",
-            State::in_session(),
+            AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
         ReplCommand::new(
             ".clear messages",
             "Erase messages in the current session",
-            State::unable_change_role()
+            AssertState::True(StateFlags::SESSION)
         ),
         ReplCommand::new(
             ".exit session",
             "End the current session",
-            State::in_session(),
+            AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
-        ReplCommand::new(".file", "Include files with the message", State::all()),
-        ReplCommand::new(".set", "Adjust settings", State::all()),
-        ReplCommand::new(".copy", "Copy the last response", State::all()),
-        ReplCommand::new(".exit", "Exit the REPL", State::all()),
+        ReplCommand::new(
+            ".file",
+            "Include files with the message",
+            AssertState::any()
+        ),
+        ReplCommand::new(".set", "Adjust settings", AssertState::any()),
+        ReplCommand::new(".copy", "Copy the last response", AssertState::any()),
+        ReplCommand::new(".exit", "Exit the REPL", AssertState::any()),
     ];
     static ref COMMAND_RE: Regex = Regex::new(r"^\s*(\.\S*)\s*").unwrap();
     static ref MULTILINE_RE: Regex = Regex::new(r"(?s)^\s*:::\s*(.*)\s*:::\s*$").unwrap();
@@ -165,7 +185,7 @@ impl Repl {
                 ".model" => match args {
                     Some(name) => {
                         self.config.write().set_model(name)?;
-                        if self.config.read().state().is_normal() {
+                        if self.config.read().state().is_empty() {
                             self.config.write().set_model_id();
                         }
                     }
@@ -352,20 +372,23 @@ Type ".help" for additional help.
 pub struct ReplCommand {
     name: &'static str,
     description: &'static str,
-    valid_states: Vec<State>,
+    state: AssertState,
 }
 
 impl ReplCommand {
-    fn new(name: &'static str, desc: &'static str, valid_states: Vec<State>) -> Self {
+    fn new(name: &'static str, desc: &'static str, state: AssertState) -> Self {
         Self {
             name,
             description: desc,
-            valid_states,
+            state,
         }
     }
 
-    fn is_valid(&self, state: &State) -> bool {
-        self.valid_states.contains(state)
+    fn is_valid(&self, flags: StateFlags) -> bool {
+        match self.state {
+            AssertState::True(check_flags) => check_flags & flags != StateFlags::empty(),
+            AssertState::False(check_flags) => check_flags & flags == StateFlags::empty(),
+        }
     }
 }
 
