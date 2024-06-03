@@ -181,10 +181,6 @@ macro_rules! client_common_fns {
             self.config.patches.as_ref()
         }
 
-        fn list_models(&self) -> Vec<Model> {
-            Self::list_models(&self.config)
-        }
-
         fn name(&self) -> &str {
             Self::name(&self.config)
         }
@@ -195,10 +191,6 @@ macro_rules! client_common_fns {
 
         fn model_mut(&mut self) -> &mut Model {
             &mut self.model
-        }
-
-        fn set_model(&mut self, model: Model) {
-            self.model = model;
         }
     };
 }
@@ -300,18 +292,11 @@ pub trait Client: Sync + Send {
 
     fn patches_config(&self) -> Option<&ModelPatches>;
 
-    #[allow(unused)]
     fn name(&self) -> &str;
-
-    #[allow(unused)]
-    fn list_models(&self) -> Vec<Model>;
 
     fn model(&self) -> &Model;
 
     fn model_mut(&mut self) -> &mut Model;
-
-    #[allow(unused)]
-    fn set_model(&mut self, model: Model);
 
     fn build_client(&self) -> Result<ReqwestClient> {
         let mut builder = ReqwestClient::builder();
@@ -372,6 +357,7 @@ pub trait Client: Sync + Send {
 
     async fn embeddings(&self, data: EmbeddingsData) -> Result<Vec<Vec<f32>>> {
         let client = self.build_client()?;
+        self.model().guard_max_concurrent_chunks(&data)?;
         self.embeddings_inner(&client, data)
             .await
             .with_context(|| "Failed to get embeddings")
@@ -474,7 +460,7 @@ impl ChatCompletionsOutput {
 #[derive(Debug)]
 pub struct EmbeddingsData {
     pub texts: Vec<String>,
-    pub search: bool,
+    pub query: bool,
 }
 
 pub type EmbeddingsOutput = Vec<Vec<f32>>;

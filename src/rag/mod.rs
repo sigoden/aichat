@@ -21,9 +21,8 @@ use std::{io::BufReader, path::Path};
 use tokio::sync::oneshot;
 
 pub const TEMP_RAG_NAME: &str = "temp";
-pub const CHUNK_SIZE: usize = 1500;
-pub const CHUNK_OVERLAP: usize = 100;
-pub const NUM_RESULTS: usize = 5;
+pub const CHUNK_OVERLAP: usize = 20;
+pub const SIMILARITY_THRESHOLD: f32 = 0.25;
 
 pub struct Rag {
     client: Box<dyn Client>,
@@ -54,9 +53,9 @@ impl Rag {
     ) -> Result<Self> {
         debug!("init rag: {name}");
         let model = Self::select_embedding_model(config)?;
-        let data = RagData::new(&model.id());
+        let chunk_size = model.max_chunk_size();
+        let data = RagData::new(&model.id(), chunk_size);
         let mut rag = Self::create(config, name, path, data)?;
-
         let paths: Vec<String> = {
             let text = Text::new("Add paths:")
                 .with_validator(required!("This field is required"))
@@ -89,7 +88,7 @@ impl Rag {
 
     pub fn create(config: &GlobalConfig, name: &str, path: &Path, data: RagData) -> Result<Self> {
         let hnsw = data.build_hnsw();
-        let model = retrive_embedding_model(&config.read(), &data.model)?;
+        let model = retrieve_embedding_model(&config.read(), &data.model)?;
         let client = init_client(config, Some(model.clone()))?;
         let rag = Rag {
             client,
@@ -105,7 +104,7 @@ impl Rag {
     pub fn select_embedding_model(config: &GlobalConfig) -> Result<Model> {
         let config = config.read();
         let model = match config.embedding_model.clone() {
-            Some(model_id) => retrive_embedding_model(&config, &model_id)?,
+            Some(model_id) => retrieve_embedding_model(&config, &model_id)?,
             None => {
                 let models = list_embedding_models(&config);
                 if models.is_empty() {
@@ -113,7 +112,7 @@ impl Rag {
                 }
                 let model_ids: Vec<_> = models.iter().map(|v| v.id()).collect();
                 let model_id = Select::new("Select embedding model:", model_ids).prompt()?;
-                retrive_embedding_model(&config, &model_id)?
+                retrieve_embedding_model(&config, &model_id)?
             }
         };
         Ok(model)
@@ -132,6 +131,7 @@ impl Rag {
         let data = json!({
             "path": self.path,
             "model": self.model.id(),
+            "chunk_size": self.data.chunk_size,
             "files": files,
         });
         let output = serde_yaml::to_string(&data)
@@ -147,11 +147,16 @@ impl Rag {
         self.name == TEMP_RAG_NAME
     }
 
-    pub async fn search(&self, text: &str, abort_signal: AbortSignal) -> Result<String> {
+    pub async fn search(
+        &self,
+        text: &str,
+        top_k: usize,
+        abort_signal: AbortSignal,
+    ) -> Result<String> {
         let (spinner_tx, spinner_rx) = oneshot::channel();
         tokio::spawn(run_spinner(" Embedding", spinner_rx));
         let ret = tokio::select! {
-            ret = self.search_inner(text) => {
+            ret = self.search_impl(text, top_k) => {
                 ret
             }
             _ = watch_abort_signal(abort_signal) => {
@@ -191,8 +196,8 @@ impl Rag {
                 .extension()
                 .map(|v| v.to_string_lossy())
                 .unwrap_or_default();
-            let separater = autodetect_separater(&extension);
-            let splitter = Splitter::new(CHUNK_SIZE, CHUNK_OVERLAP, separater);
+            let separator = autodetect_separator(&extension);
+            let splitter = Splitter::new(self.data.chunk_size, CHUNK_OVERLAP, separator);
             let documents = load_text(&path)
                 .await
                 .with_context(|| format!("Failed to load text at '{path}'"))?;
@@ -200,6 +205,7 @@ impl Rag {
                 splitter.split_documents(&documents, &SplitterChunkHeaderOptions::default());
             rag_files.push(RagFile { path, documents });
         }
+
         if rag_files.is_empty() {
             return Ok(());
         }
@@ -222,22 +228,26 @@ impl Rag {
         Ok(())
     }
 
-    async fn search_inner(&self, text: &str) -> Result<Vec<String>> {
-        let splitter = Splitter::new(CHUNK_SIZE, CHUNK_OVERLAP, &DEFAULT_SEPARATERS);
+    async fn search_impl(&self, text: &str, top_k: usize) -> Result<Vec<String>> {
+        let splitter = Splitter::new(self.data.chunk_size, CHUNK_OVERLAP, &DEFAULT_SEPARATES);
         let texts = splitter.split_text(text);
         let embeddings_data = self.build_embeddings_data(texts, true);
         let embeddings = self.create_embeddings(embeddings_data).await?;
         let output = self
             .hnsw
-            .parallel_search(&embeddings, NUM_RESULTS, 30)
+            .parallel_search(&embeddings, top_k, 30)
             .into_iter()
             .flat_map(|list| {
                 list.into_iter()
-                    .map(|v| {
+                    .filter_map(|v| {
+                        if v.distance < SIMILARITY_THRESHOLD {
+                            return None;
+                        }
                         let (file_index, document_index) = split_vector_id(v.d_id);
-                        self.data.files[file_index].documents[document_index]
+                        let text = self.data.files[file_index].documents[document_index]
                             .page_content
-                            .clone()
+                            .clone();
+                        Some(text)
                     })
                     .collect::<Vec<_>>()
             })
@@ -246,28 +256,44 @@ impl Rag {
     }
 
     fn build_embeddings_data(&self, texts: Vec<String>, search: bool) -> EmbeddingsData {
-        EmbeddingsData { texts, search }
+        EmbeddingsData {
+            texts,
+            query: search,
+        }
     }
 
     async fn create_embeddings(&self, data: EmbeddingsData) -> Result<EmbeddingsOutput> {
-        self.client
-            .embeddings(data)
-            .await
-            .context("Failed to create embedding")
+        let EmbeddingsData { texts, query } = data;
+        let mut output = vec![];
+        for texts in texts.chunks(self.model.max_concurrent_chunks()) {
+            let chunk_data = EmbeddingsData {
+                texts: texts.to_vec(),
+                query,
+            };
+            let chunk_output = self
+                .client
+                .embeddings(chunk_data)
+                .await
+                .context("Failed to create embedding")?;
+            output.extend(chunk_output);
+        }
+        Ok(output)
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RagData {
     pub model: String,
+    pub chunk_size: usize,
     pub files: Vec<RagFile>,
     pub vectors: IndexMap<VectorID, Vec<f32>>,
 }
 
 impl RagData {
-    pub fn new(model: &str) -> Self {
+    pub fn new(model: &str, chunk_size: usize) -> Self {
         Self {
             model: model.to_string(),
+            chunk_size,
             files: Default::default(),
             vectors: Default::default(),
         }
@@ -284,9 +310,9 @@ impl RagData {
     }
 
     pub fn build_hnsw(&self) -> Hnsw<'static, f32, DistCosine> {
-        let hnsw = Hnsw::new(16, 100, 16, 200, DistCosine {});
-        let datas: Vec<_> = self.vectors.iter().map(|(k, v)| (v, *k)).collect();
-        hnsw.parallel_insert(&datas);
+        let hnsw = Hnsw::new(32, self.vectors.len(), 16, 200, DistCosine {});
+        let list: Vec<_> = self.vectors.iter().map(|(k, v)| (v, *k)).collect();
+        hnsw.parallel_insert(&list);
         hnsw
     }
 }
@@ -302,8 +328,6 @@ pub struct RagDocument {
     pub page_content: String,
     pub metadata: RagMetadata,
 }
-
-pub type RagMetadata = IndexMap<String, String>;
 
 impl RagDocument {
     pub fn new<S: Into<String>>(page_content: S) -> Self {
@@ -329,6 +353,8 @@ impl Default for RagDocument {
     }
 }
 
+pub type RagMetadata = IndexMap<String, String>;
+
 pub type VectorID = usize;
 
 pub fn combine_vector_id(file_index: usize, document_index: usize) -> VectorID {
@@ -342,7 +368,7 @@ pub fn split_vector_id(value: VectorID) -> (usize, usize) {
     (high, low)
 }
 
-fn retrive_embedding_model(config: &Config, model_id: &str) -> Result<Model> {
+fn retrieve_embedding_model(config: &Config, model_id: &str) -> Result<Model> {
     let models = list_embedding_models(config);
     let model =
         Model::find(&models, model_id).ok_or_else(|| anyhow!("No embedding model '{model_id}'"))?;

@@ -52,12 +52,12 @@ const SUMMARIZE_PROMPT: &str =
     "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.";
 const SUMMARY_PROMPT: &str = "This is a summary of the chat history as a recap: ";
 
-const RAG_PROMPT: &str = r#"Use the following context as your learned knowledge to answer the question
+const RAG_TEMPLATE: &str = r#"Answer the following question based only on the provided context:
 <context>
 __CONTEXT__
 </context>
 
-__INPUT__
+Question: __INPUT__
 "#;
 
 const LEFT_PROMPT: &str = "{color.green}{?session {session}{?role /}}{role}{?rag #{rag}}{color.cyan}{?session )}{!session >}{color.reset} ";
@@ -83,7 +83,8 @@ pub struct Config {
     pub prelude: Option<String>,
     pub buffer_editor: Option<String>,
     pub embedding_model: Option<String>,
-    pub rag_prompt: Option<String>,
+    pub rag_top_k: usize,
+    pub rag_template: Option<String>,
     pub function_calling: bool,
     pub compress_threshold: usize,
     pub summarize_prompt: Option<String>,
@@ -127,7 +128,8 @@ impl Default for Config {
             prelude: None,
             buffer_editor: None,
             embedding_model: None,
-            rag_prompt: None,
+            rag_top_k: 4,
+            rag_template: None,
             function_calling: false,
             compress_threshold: 4000,
             summarize_prompt: None,
@@ -473,6 +475,7 @@ impl Config {
             ),
             ("temperature", format_option_value(&temperature)),
             ("top_p", format_option_value(&top_p)),
+            ("rag_top_k", self.rag_top_k.to_string()),
             ("function_calling", self.function_calling.to_string()),
             ("compress_threshold", self.compress_threshold.to_string()),
             ("dry_run", self.dry_run.to_string()),
@@ -571,6 +574,7 @@ impl Config {
                     "max_output_tokens",
                     "temperature",
                     "top_p",
+                    "rag_top_k",
                     "function_calling",
                     "compress_threshold",
                     "save",
@@ -638,6 +642,11 @@ impl Config {
             "top_p" => {
                 let value = parse_value(value)?;
                 self.set_top_p(value);
+            }
+            "rag_top_k" => {
+                if let Some(value) = parse_value(value)? {
+                    self.rag_top_k = value;
+                }
             }
             "function_calling" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
@@ -871,13 +880,13 @@ impl Config {
         }
     }
 
-    pub fn rag_prompt(&self, embeddings: &str, text: &str) -> String {
+    pub fn rag_template(&self, embeddings: &str, text: &str) -> String {
         if embeddings.is_empty() {
             return text.to_string();
         }
-        self.rag_prompt
+        self.rag_template
             .as_deref()
-            .unwrap_or(RAG_PROMPT)
+            .unwrap_or(RAG_TEMPLATE)
             .replace("__CONTEXT__", embeddings)
             .replace("__INPUT__", text)
     }

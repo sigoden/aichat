@@ -122,8 +122,9 @@ impl Input {
         if !self.text.is_empty() {
             let rag = self.config.read().rag.clone();
             if let Some(rag) = rag {
-                let embeddings = rag.search(&self.text, abort_signal).await?;
-                self.text = self.config.read().rag_prompt(&embeddings, &self.text);
+                let top_k = self.config.read().rag_top_k;
+                let embeddings = rag.search(&self.text, top_k, abort_signal).await?;
+                self.text = self.config.read().rag_template(&embeddings, &self.text);
             }
         }
         Ok(())
@@ -171,7 +172,7 @@ impl Input {
             bail!("The current model does not support vision.");
         }
         let messages = self.build_messages()?;
-        self.config.read().model.max_input_tokens_limit(&messages)?;
+        self.config.read().model.guard_max_input_tokens(&messages)?;
         let (temperature, top_p) = if let Some(session) = self.session(&self.config.read().session)
         {
             (session.temperature(), session.top_p())

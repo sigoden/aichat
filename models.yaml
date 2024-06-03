@@ -67,16 +67,12 @@
       output_price: 120
     - name: text-embedding-3-large
       mode: embedding
-      max_input_tokens: 8191
-      dimension: 3072
+      max_chunk_size: 8191
+      max_concurrent_chunks: 100
     - name: text-embedding-3-small
       mode: embedding
-      max_input_tokens: 8191
-      dimension: 1536
-    - name: text-embedding-ada-002
-      mode: embedding
-      max_input_tokens: 8191
-      dimension: 1536
+      max_chunk_size: 8191
+      max_concurrent_chunks: 100
 
 - platform: gemini 
   # docs:
@@ -112,6 +108,10 @@
       output_price: 10.5
       supports_vision: true
       supports_function_calling: true
+    - name: text-embedding-004
+      mode: embedding
+      max_chunk_size: 2048
+      max_concurrent_chunks: 1
 
 - platform: claude
   # docs:
@@ -174,6 +174,9 @@
       input_price: 8
       output_price: 24
       supports_function_calling: true
+    - name: mistral-embed
+      mode: embedding
+      max_chunk_size: 8092
 
 - platform: cohere
   # docs:
@@ -195,6 +198,14 @@
       input_price: 3
       output_price: 15
       supports_function_calling: true
+    - name: embed-english-v3.0
+      mode: embedding
+      max_chunk_size: 1000
+      max_concurrent_chunks: 96
+    - name: embed-multilingual-v3.0
+      mode: embedding
+      max_chunk_size: 1000
+      max_concurrent_chunks: 96
 
 - platform: perplexity
   # docs:
@@ -293,6 +304,14 @@
       input_price: 1.25
       output_price: 3.75
       supports_vision: true
+    - name: text-embedding-004
+      mode: embedding
+      max_chunk_size: 3072
+      max_concurrent_chunks: 5
+    - name: text-multilingual-embedding-002
+      mode: embedding
+      max_chunk_size: 3072
+      max_concurrent_chunks: 5
 
 - platform: vertexai-claude
   # docs:
@@ -521,6 +540,10 @@
       input_price: 2.8
       output_price: 2.8
       supports_vision: true
+    - name: text-embedding-v2
+      mode: embedding
+      max_chunk_size: 2048
+      max_concurrent_chunks: 5
 
 - platform: moonshot
   # docs:

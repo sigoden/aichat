@@ -1,6 +1,6 @@
 use super::*;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -39,7 +39,7 @@ impl OpenAIClient {
 
         let url = format!("{api_base}/chat/completions");
 
-        debug!("OpenAI Request: {url} {body}");
+        debug!("OpenAI Chat Completions Request: {url} {body}");
 
         let mut builder = client.post(url).bearer_auth(api_key).json(&body);
 
@@ -61,6 +61,8 @@ impl OpenAIClient {
         let body = openai_build_embeddings_body(data, &self.model);
 
         let url = format!("{api_base}/embeddings");
+
+        debug!("OpenAI Embeddings Request: {url} {body}");
 
         let builder = client.post(url).bearer_auth(api_key).json(&body);
 
@@ -143,23 +145,22 @@ pub async fn openai_embeddings(
 ) -> Result<EmbeddingsOutput> {
     let res = builder.send().await?;
     let status = res.status();
+    let data: Value = res.json().await?;
     if !status.is_success() {
-        let data: Value = res.json().await?;
         catch_error(&data, status.as_u16())?;
-        bail!("Invalid response data: {data} (status: {status})");
     }
-    let res_body: EmbeddingsResBody = res.json().await?;
+    let res_body: EmbeddingsResBody = serde_json::from_value(data).context("Invalid request data")?;
     let output = res_body.data.into_iter().map(|v| v.embedding).collect();
     Ok(output)
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Deserialize)]
 struct EmbeddingsResBody {
-    data: Vec<EmbeddingItem>,
+    data: Vec<EmbeddingsResBodyEmbedding>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-struct EmbeddingItem {
+#[derive(Deserialize)]
+struct EmbeddingsResBodyEmbedding {
     embedding: Vec<f32>,
 }
 

@@ -53,7 +53,7 @@ impl OpenAICompatibleClient {
 
         let url = format!("{api_base}{chat_endpoint}");
 
-        debug!("OpenAICompatible Request: {url} {body}");
+        debug!("OpenAICompatible Chat Completions Request: {url} {body}");
 
         let mut builder = client.post(url).json(&body);
         if let Some(api_key) = api_key {
@@ -74,6 +74,8 @@ impl OpenAICompatibleClient {
         let body = openai_build_embeddings_body(data, &self.model);
 
         let url = format!("{api_base}/embeddings");
+
+        debug!("OpenAICompatible Embeddings Request: {url} {body}");
 
         let builder = client.post(url).bearer_auth(api_key).json(&body);
 

@@ -16,6 +16,7 @@ AIChat is an all-in-one AI CLI tool that accesses 100+ LLMs across 20+ AI platfo
 - **Chat-REPL**: Powerful and feature-rich interactive chat interface.
 - **Custom Roles**: Tailor LLM behavior with customizable roles.
 - **Unlimited Sessions**: Automatic message compression for endless conversations.
+- **RAG**: Get answers enriched with context from your documents and knowledge bases.
 - **Function Calling**: Connect LLMs to external tools seamlessly.
 - **Execute Commands**: Use natural language to run shell commands.
 - **Shell Auto-Completion**: AI-based auto-completion for shell commands.
@@ -25,22 +26,22 @@ AIChat is an all-in-one AI CLI tool that accesses 100+ LLMs across 20+ AI platfo
 
 ## Supported AI Platforms
 
-- OpenAI GPT-3.5/GPT-4 (paid, vision, function-calling)
-- Gemini: Gemini-1.0/Gemini-1.5 (free, paid, vision, function-calling)
+- OpenAI GPT-3.5/GPT-4 (paid, vision, RAG, function-calling)
+- Gemini: Gemini-1.0/Gemini-1.5 (free, paid, vision, RAG, function-calling)
 - Claude: Claude-3 (vision, paid, function-calling)
-- Mistral (paid, function-calling)
-- Cohere: Command-R/Command-R+ (paid, function-calling)
+- Mistral (paid, RAG, function-calling)
+- Cohere: Command-R/Command-R+ (paid, RAG, function-calling)
 - Perplexity: Llama-3/Mixtral (paid)
 - Groq: Llama-3/Mixtral/Gemma (free)
-- Ollama (free, local)
-- Azure OpenAI (paid)
-- VertexAI: Gemini-1.0/Gemini-1.5 (paid, vision, function-calling)
+- Ollama (free, local, RAG)
+- Azure OpenAI (paid, vision, RAG, function-calling)
+- VertexAI: Gemini-1.0/Gemini-1.5 (paid, vision, RAG, function-calling)
 - VertexAI-Claude: Claude-3 (paid, vision)
 - Bedrock: Llama-3/Claude-3/Mistral (paid, vision)
 - Cloudflare (free, paid, vision)
 - Replicate (paid)
 - Ernie (paid)
-- Qianwen (paid, vision)
+- Qianwen (paid, vision, RAG)
 - Moonshot (paid)
 - ZhipuAI: GLM-3.5/GLM-4 (paid, vision)
 - Deepseek (paid)
@@ -346,6 +347,8 @@ Usage: .file <file>... [-- text...]
 .set max_output_tokens 4096
 .set temperature 1.2
 .set top_p 0.8
+.set rag_top_k 4
+.set function_calling true
 .set compress_threshold 1000
 .set dry_run true
 ```

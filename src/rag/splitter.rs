@@ -2,8 +2,8 @@ use super::{RagDocument, RagMetadata};
 
 use std::cmp::Ordering;
 
-pub const DEFAULT_SEPARATERS: [&str; 4] = ["\n\n", "\n", " ", ""];
-pub const HTML_SEPARATERS: [&str; 28] = [
+pub const DEFAULT_SEPARATES: [&str; 4] = ["\n\n", "\n", " ", ""];
+pub const HTML_SEPARATES: [&str; 28] = [
     // First, try to split along HTML tags
     "<body>", "<div>", "<p>", "<br>", "<li>", "<h1>", "<h2>", "<h3>", "<h4>", "<h5>", "<h6>",
     "<span>", "<table>", "<tr>", "<td>", "<th>", "<ul>", "<ol>", "<header>", "<footer>", "<nav>",
@@ -11,7 +11,7 @@ pub const HTML_SEPARATERS: [&str; 28] = [
     "<head>", "<style>", "<script>", "<meta>", "<title>", // Normal type of lines
     " ", "",
 ];
-pub const MARKDOWN_SEPARATERS: [&str; 13] = [
+pub const MARKDOWN_SEPARATES: [&str; 13] = [
     // First, try to split along Markdown headings (starting with level 2)
     "\n## ",
     "\n### ",
@@ -35,11 +35,11 @@ pub const MARKDOWN_SEPARATERS: [&str; 13] = [
     "",
 ];
 
-pub fn autodetect_separater(extension: &str) -> &[&'static str] {
+pub fn autodetect_separator(extension: &str) -> &[&'static str] {
     match extension {
-        "md" => &MARKDOWN_SEPARATERS,
-        "htm" | "html" => &HTML_SEPARATERS,
-        _ => &DEFAULT_SEPARATERS,
+        "md" => &MARKDOWN_SEPARATES,
+        "htm" | "html" => &HTML_SEPARATES,
+        _ => &DEFAULT_SEPARATES,
     }
 }
 
@@ -55,7 +55,7 @@ impl Default for Splitter {
         Self {
             chunk_size: 1000,
             chunk_overlap: 20,
-            separators: DEFAULT_SEPARATERS.iter().map(|v| v.to_string()).collect(),
+            separators: DEFAULT_SEPARATES.iter().map(|v| v.to_string()).collect(),
             length_function: Box::new(|text| text.len()),
         }
     }
@@ -166,10 +166,13 @@ impl Splitter {
                 let newlines_count = self.number_of_newlines(&chunk, 0, chunk.len());
 
                 let mut metadata = metadatas[i].clone();
-                metadata.insert("loc_from_line".into(), line_counter_index.to_string());
                 metadata.insert(
-                    "loc_to_line".into(),
-                    (line_counter_index + newlines_count).to_string(),
+                    "loc".into(),
+                    format!(
+                        "{}:{}",
+                        line_counter_index,
+                        line_counter_index + newlines_count
+                    ),
                 );
                 page_content += &chunk;
                 documents.push(RagDocument {
@@ -369,11 +372,10 @@ mod tests {
     use pretty_assertions::assert_eq;
     use serde_json::{json, Value};
 
-    fn build_metadata(source: &str, loc_from_line: &str, loc_to_line: &str) -> Value {
+    fn build_metadata(source: &str, loc_from_line: usize, loc_to_line: usize) -> Value {
         json!({
             "source": source,
-            "loc_from_line": loc_from_line,
-            "loc_to_line": loc_to_line,
+            "loc": format!("{loc_from_line}:{loc_to_line}"),
         })
     }
     #[test]
@@ -407,15 +409,15 @@ mod tests {
             json!([
                 {
                     "page_content": "foo",
-                    "metadata": build_metadata("1", "1", "1"),
+                    "metadata": build_metadata("1", 1, 1),
                 },
                 {
                     "page_content": "bar",
-                    "metadata": build_metadata("1", "1", "1"),
+                    "metadata": build_metadata("1", 1, 1),
                 },
                 {
                     "page_content": "baz",
-                    "metadata": build_metadata("2", "1", "1"),
+                    "metadata": build_metadata("2", 1, 1),
                 },
             ])
         );
@@ -442,15 +444,15 @@ mod tests {
             json!([
                 {
                     "page_content": "SOURCE NAME: testing\n-----\nfoo",
-                    "metadata": build_metadata("1", "1", "1"),
+                    "metadata": build_metadata("1", 1, 1),
                 },
                 {
                     "page_content": "SOURCE NAME: testing\n-----\n(cont'd) bar",
-                    "metadata": build_metadata("1", "1", "1"),
+                    "metadata": build_metadata("1", 1, 1),
                 },
                 {
                     "page_content": "SOURCE NAME: testing\n-----\nbaz",
-                    "metadata": build_metadata("2", "1", "1"),
+                    "metadata": build_metadata("2", 1, 1),
                 },
             ])
         );
@@ -470,7 +472,7 @@ pip install langchain
 ```
 
 As an open source project in a rapidly developing field, we are extremely open to contributions."#;
-        let splitter = Splitter::new(100, 0, &MARKDOWN_SEPARATERS);
+        let splitter = Splitter::new(100, 0, &MARKDOWN_SEPARATES);
         let output = splitter.split_text(text);
         let expected_output = vec![
             "# 🦜️🔗 LangChain\n\n⚡ Building applications with LLMs through composability ⚡",
@@ -506,7 +508,7 @@ As an open source project in a rapidly developing field, we are extremely open t
     </div>
   </body>
 </html>"#;
-        let splitter = Splitter::new(175, 20, &HTML_SEPARATERS);
+        let splitter = Splitter::new(175, 20, &HTML_SEPARATES);
         let output = splitter.split_text(text);
         let expected_output = vec![
             "<!DOCTYPE html>\n<html>",
