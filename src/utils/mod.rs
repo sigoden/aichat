@@ -6,7 +6,7 @@ mod prompt_input;
 mod render_prompt;
 mod spinner;
 
-pub use self::abort_signal::{create_abort_signal, AbortSignal};
+pub use self::abort_signal::*;
 pub use self::clipboard::set_text;
 pub use self::command::*;
 pub use self::crypto::*;

@@ -1,8 +1,5 @@
-use super::{
-    access_token::*, maybe_catch_error, patch_system_message, sse_stream, ChatCompletionsData,
-    ChatCompletionsOutput, Client, ErnieClient, ExtraConfig, Model, ModelData, ModelPatches,
-    PromptAction, PromptKind, SseHandler, SseMmessage,
-};
+use super::*;
+use super::access_token::*;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
@@ -37,7 +34,7 @@ impl ErnieClient {
         data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
         let mut body = build_chat_completions_body(data, &self.model);
-        self.patch_request_body(&mut body);
+        self.patch_chat_completions_body(&mut body);
 
         let access_token = get_access_token(self.name())?;
 

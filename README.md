@@ -68,7 +68,7 @@ Upon first launch, AIChat will guide you through the configuration process.
 > No config file, create a new one? Yes
 > AI Platform: openai
 > API Key: <your_api_key_here>
-✨ Saved config file to <config-dir>/aichat/config.yaml
+✨ Saved config file to '<config-dir>/aichat/config.yaml'
 ```
 
 Feel free to adjust the configuration according to your needs.

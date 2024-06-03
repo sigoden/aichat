@@ -1,7 +1,5 @@
-use super::{
-    vertexai::*, ChatCompletionsData, Client, ExtraConfig, GeminiClient, Model, ModelData,
-    ModelPatches, PromptAction, PromptKind,
-};
+use super::*;
+use super::vertexai::*;
 
 use anyhow::Result;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
@@ -38,7 +36,7 @@ impl GeminiClient {
         };
 
         let mut body = gemini_build_chat_completions_body(data, &self.model)?;
-        self.patch_request_body(&mut body);
+        self.patch_chat_completions_body(&mut body);
 
         let model = &self.model.name();
 
@@ -54,6 +52,6 @@ impl GeminiClient {
 
 impl_client_trait!(
     GeminiClient,
-    crate::client::vertexai::gemini_chat_completions,
-    crate::client::vertexai::gemini_chat_completions_streaming
+    gemini_chat_completions,
+    gemini_chat_completions_streaming
 );

@@ -1,8 +1,4 @@
-use super::{
-    catch_error, extract_system_message, json_stream, message::*, ChatCompletionsData,
-    ChatCompletionsOutput, Client, CohereClient, ExtraConfig, Model, ModelData, ModelPatches,
-    PromptAction, PromptKind, SseHandler, ToolCall,
-};
+use super::*;
 
 use anyhow::{bail, Result};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
@@ -35,7 +31,7 @@ impl CohereClient {
         let api_key = self.get_api_key()?;
 
         let mut body = build_chat_completions_body(data, &self.model)?;
-        self.patch_request_body(&mut body);
+        self.patch_chat_completions_body(&mut body);
 
         let url = API_URL;
 
@@ -47,7 +43,11 @@ impl CohereClient {
     }
 }
 
-impl_client_trait!(CohereClient, chat_completions, chat_completions_streaming);
+impl_client_trait!(
+    CohereClient,
+    chat_completions,
+    chat_completions_streaming
+);
 
 async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;

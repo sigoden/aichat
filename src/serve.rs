@@ -1,11 +1,4 @@
-use crate::{
-    client::{
-        init_client, list_models, ChatCompletionsData, ChatCompletionsOutput, ClientConfig,
-        Message, Model, ModelData, SseEvent, SseHandler,
-    },
-    config::{Config, GlobalConfig, Role},
-    utils::create_abort_signal,
-};
+use crate::{client::*, config::*, utils::*};
 
 use anyhow::{anyhow, bail, Result};
 use bytes::Bytes;
@@ -76,7 +69,7 @@ impl Server {
         let clients = config.clients.clone();
         let model = config.model.clone();
         let roles = config.roles.clone();
-        let mut models = list_models(&config);
+        let mut models = list_chat_models(&config);
         let mut default_model = model.clone();
         default_model.data_mut().name = DEFAULT_MODEL_NAME.into();
         models.insert(0, &default_model);

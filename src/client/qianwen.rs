@@ -1,8 +1,4 @@
-use super::{
-    maybe_catch_error, message::*, sse_stream, ChatCompletionsData, ChatCompletionsOutput, Client,
-    ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, QianwenClient,
-    SseHandler, SseMmessage,
-};
+use super::*;
 
 use crate::utils::{base64_decode, sha256};
 
@@ -52,7 +48,7 @@ impl QianwenClient {
             false => API_URL,
         };
         let (mut body, has_upload) = build_chat_completions_body(data, &self.model)?;
-        self.patch_request_body(&mut body);
+        self.patch_chat_completions_body(&mut body);
 
         debug!("Qianwen Request: {url} {body}");
 

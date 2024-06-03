@@ -18,6 +18,17 @@ buffer_editor: null
 # Controls the function calling feature. For setup instructions, visit https://github.com/sigoden/llm-functions.
 function_calling: false
 
+# Specify the embedding model to use
+embedding_model: null
+
+rag_prompt: |
+  Use the following context as your learned knowledge to answer the question
+  <context>
+  __CONTEXT__
+  </context>
+
+  __INPUT__
+
 # Compress session when token count reaches or exceeds this threshold (must be at least 1000)
 compress_threshold: 4000
 # Text prompt used for creating a concise summary of session message
@@ -26,7 +37,7 @@ summarize_prompt: 'Summarize the discussion briefly in 200 words or less to use 
 summary_prompt: 'This is a summary of the chat history as a recap: '
 
 # Custom REPL prompt, see https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt
-left_prompt: '{color.green}{?session {session}{?role /}}{role}{color.cyan}{?session )}{!session >}{color.reset} '
+left_prompt: '{color.green}{?session {session}{?role /}}{role}{?rag #{rag}{color.cyan}{?session )}{!session >}{color.reset} '
 right_prompt: '{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}'
 
 clients:
@@ -40,7 +51,7 @@ clients:
   #       supports_function_calling: true
   #   patches: 
   #     <regex>:                                      # The regex to match model names, e.g. '.*' 'gpt-4o' 'gpt-4o|gpt-4-.*'
-  #       request_body:                               # The JSON to be merged with the request body.
+  #       chat_completions_body:                      # The JSON to be merged with the request body.
   #   extra:
   #     proxy: socks5://127.0.0.1:1080                # Set https/socks5 proxy. ENV: HTTPS_PROXY/https_proxy/ALL_PROXY/all_proxy
   #     connect_timeout: 10                           # Set timeout in seconds for connect to api
@@ -66,7 +77,7 @@ clients:
     api_key: xxx                                      # ENV: {client}_API_KEY
     patches:
       '.*':                                           
-        request_body:                                 # Override safetySettings for all models
+        chat_completions_body:                        # Override safetySettings for all models
           safetySettings:
             - category: HARM_CATEGORY_HARASSMENT
               threshold: BLOCK_NONE
@@ -130,7 +141,7 @@ clients:
     adc_file: <path-to/gcloud/application_default_credentials.json> 
     patches:
       'gemini-.*':
-        request_body:                                 # Override safetySettings for all gemini models
+        chat_completions_body:                        # Override safetySettings for all gemini models
           safetySettings:
             - category: HARM_CATEGORY_HARASSMENT
               threshold: BLOCK_ONLY_HIGH

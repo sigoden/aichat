@@ -1,8 +1,4 @@
-use super::{
-    catch_error, json_stream, message::*, ChatCompletionsData, ChatCompletionsOutput, Client,
-    ExtraConfig, Model, ModelData, ModelPatches, OllamaClient, PromptAction, PromptKind,
-    SseHandler,
-};
+use super::*;
 
 use anyhow::{anyhow, bail, Result};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
@@ -15,6 +11,7 @@ pub struct OllamaConfig {
     pub api_base: Option<String>,
     pub api_auth: Option<String>,
     pub chat_endpoint: Option<String>,
+    #[serde(default)]
     pub models: Vec<ModelData>,
     pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
@@ -45,7 +42,7 @@ impl OllamaClient {
         let api_auth = self.get_api_auth().ok();
 
         let mut body = build_chat_completions_body(data, &self.model)?;
-        self.patch_request_body(&mut body);
+        self.patch_chat_completions_body(&mut body);
 
         let chat_endpoint = self.config.chat_endpoint.as_deref().unwrap_or("/api/chat");
 
@@ -62,7 +59,11 @@ impl OllamaClient {
     }
 }
 
-impl_client_trait!(OllamaClient, chat_completions, chat_completions_streaming);
+impl_client_trait!(
+    OllamaClient,
+    chat_completions,
+    chat_completions_streaming
+);
 
 async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;

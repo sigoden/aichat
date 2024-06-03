@@ -1,7 +1,4 @@
-use super::{
-    catch_error, sse_stream, ChatCompletionsData, ChatCompletionsOutput, Client, CloudflareClient,
-    ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, SseHandler, SseMmessage,
-};
+use super::*;
 
 use anyhow::{anyhow, Result};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
@@ -39,7 +36,7 @@ impl CloudflareClient {
         let api_key = self.get_api_key()?;
 
         let mut body = build_chat_completions_body(data, &self.model)?;
-        self.patch_request_body(&mut body);
+        self.patch_chat_completions_body(&mut body);
 
         let url = format!(
             "{API_BASE}/accounts/{account_id}/ai/run/{}",

@@ -1,8 +1,5 @@
-use super::{
-    access_token::*, catch_error, json_stream, message::*, patch_system_message,
-    ChatCompletionsData, ChatCompletionsOutput, Client, ExtraConfig, Model, ModelData,
-    ModelPatches, PromptAction, PromptKind, SseHandler, ToolCall, VertexAIClient,
-};
+use super::*;
+use super::access_token::*;
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
@@ -51,7 +48,7 @@ impl VertexAIClient {
         let url = format!("{base_url}/google/models/{}:{func}", self.model.name());
 
         let mut body = gemini_build_chat_completions_body(data, &self.model)?;
-        self.patch_request_body(&mut body);
+        self.patch_chat_completions_body(&mut body);
 
         debug!("VertexAI Request: {url} {body}");
 

@@ -160,7 +160,7 @@ impl Session {
         data["messages"] = json!(self.messages);
 
         let output = serde_yaml::to_string(&data)
-            .with_context(|| format!("Unable to show info about session {}", &self.name))?;
+            .with_context(|| format!("Unable to show info about session '{}'", &self.name))?;
         Ok(output)
     }
 

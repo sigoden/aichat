@@ -65,6 +65,18 @@
       max_output_tokens: 4096
       input_price: 60
       output_price: 120
+    - name: text-embedding-3-large
+      mode: embedding
+      max_input_tokens: 8191
+      dimension: 3072
+    - name: text-embedding-3-small
+      mode: embedding
+      max_input_tokens: 8191
+      dimension: 1536
+    - name: text-embedding-ada-002
+      mode: embedding
+      max_input_tokens: 8191
+      dimension: 1536
 
 - platform: gemini 
   # docs:

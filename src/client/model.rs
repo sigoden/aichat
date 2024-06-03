@@ -81,6 +81,10 @@ impl Model {
         &self.data.name
     }
 
+    pub fn mode(&self) -> &str {
+        &self.data.mode
+    }
+
     pub fn data(&self) -> &ModelData {
         &self.data
     }
@@ -196,12 +200,15 @@ impl Model {
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct ModelData {
     pub name: String,
+    #[serde(default = "default_model_mode")]
+    pub mode: String,
     pub max_input_tokens: Option<usize>,
     pub max_output_tokens: Option<isize>,
     #[serde(default)]
     pub pass_max_tokens: bool,
     pub input_price: Option<f64>,
     pub output_price: Option<f64>,
+    pub dimension: Option<usize>,
     #[serde(default)]
     pub supports_vision: bool,
     #[serde(default)]
@@ -221,4 +228,8 @@ impl ModelData {
 pub struct BuiltinModels {
     pub platform: String,
     pub models: Vec<ModelData>,
+}
+
+fn default_model_mode() -> String {
+    "chat".into()
 }
