@@ -56,7 +56,8 @@ clients:
   #       supports_function_calling: true
   #     - name: xxxx
   #       mode: embedding                             # Embedding model
-  #       max_chunk_size: 2048                        
+  #       max_input_tokens: 2048
+  #       default_chunk_size: 2000                        
   #       max_concurrent_chunks: 100
   #   patches: 
   #     <regex>:                                      # The regex to match model names, e.g. '.*' 'gpt-4o' 'gpt-4o|gpt-4-.*'

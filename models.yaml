@@ -67,11 +67,13 @@
       output_price: 120
     - name: text-embedding-3-large
       mode: embedding
-      max_chunk_size: 8191
+      max_input_tokens: 8191
+      default_chunk_size: 8000
       max_concurrent_chunks: 100
     - name: text-embedding-3-small
       mode: embedding
-      max_chunk_size: 8191
+      max_input_tokens: 8191
+      default_chunk_size: 8000
       max_concurrent_chunks: 100
 
 - platform: gemini 
@@ -110,8 +112,8 @@
       supports_function_calling: true
     - name: text-embedding-004
       mode: embedding
-      max_chunk_size: 2048
-      max_concurrent_chunks: 1
+      max_input_tokens: 2048
+      default_chunk_size: 2000
 
 - platform: claude
   # docs:
@@ -176,7 +178,8 @@
       supports_function_calling: true
     - name: mistral-embed
       mode: embedding
-      max_chunk_size: 8092
+      max_input_tokens: 8092
+      default_chunk_size: 8000
 
 - platform: cohere
   # docs:
@@ -200,11 +203,13 @@
       supports_function_calling: true
     - name: embed-english-v3.0
       mode: embedding
-      max_chunk_size: 1000
+      max_input_tokens: 512
+      default_chunk_size: 1000
       max_concurrent_chunks: 96
     - name: embed-multilingual-v3.0
       mode: embedding
-      max_chunk_size: 1000
+      max_input_tokens: 512
+      default_chunk_size: 1000
       max_concurrent_chunks: 96
 
 - platform: perplexity
@@ -306,11 +311,13 @@
       supports_vision: true
     - name: text-embedding-004
       mode: embedding
-      max_chunk_size: 3072
+      max_input_tokens: 3072
+      default_chunk_size: 3000
       max_concurrent_chunks: 5
     - name: text-multilingual-embedding-002
       mode: embedding
-      max_chunk_size: 3072
+      max_input_tokens: 3072
+      default_chunk_size: 3000
       max_concurrent_chunks: 5
 
 - platform: vertexai-claude
@@ -542,7 +549,8 @@
       supports_vision: true
     - name: text-embedding-v2
       mode: embedding
-      max_chunk_size: 2048
+      max_input_tokens: 2048
+      default_chunk_size: 2000
       max_concurrent_chunks: 5
 
 - platform: moonshot

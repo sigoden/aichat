@@ -144,8 +144,8 @@ impl Model {
         self.data.supports_function_calling
     }
 
-    pub fn max_chunk_size(&self) -> usize {
-        self.data.max_chunk_size.unwrap_or(1000)
+    pub fn default_chunk_size(&self) -> usize {
+        self.data.default_chunk_size.unwrap_or(1000)
     }
 
     pub fn max_concurrent_chunks(&self) -> usize {
@@ -220,11 +220,11 @@ pub struct ModelData {
     pub name: String,
     #[serde(default = "default_model_mode")]
     pub mode: String,
+    pub max_input_tokens: Option<usize>,
     pub input_price: Option<f64>,
     pub output_price: Option<f64>,
 
     // chat-only properties
-    pub max_input_tokens: Option<usize>,
     pub max_output_tokens: Option<isize>,
     #[serde(default)]
     pub pass_max_tokens: bool,
@@ -234,7 +234,7 @@ pub struct ModelData {
     pub supports_function_calling: bool,
 
     // embedding-only properties
-    pub max_chunk_size: Option<usize>,
+    pub default_chunk_size: Option<usize>,
     pub max_concurrent_chunks: Option<usize>,
 }
 

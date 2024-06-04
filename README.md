@@ -16,7 +16,7 @@ AIChat is an all-in-one AI CLI tool that accesses 100+ LLMs across 20+ AI platfo
 - **Chat-REPL**: Powerful and feature-rich interactive chat interface.
 - **Custom Roles**: Tailor LLM behavior with customizable roles.
 - **Unlimited Sessions**: Automatic message compression for endless conversations.
-- **RAG**: Get answers enriched with context from your documents and knowledge bases.
+- **RAG Retrieval**: Get answer enhanced by your knowledge base..
 - **Function Calling**: Connect LLMs to external tools seamlessly.
 - **Execute Commands**: Use natural language to run shell commands.
 - **Shell Auto-Completion**: AI-based auto-completion for shell commands.

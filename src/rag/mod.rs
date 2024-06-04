@@ -53,7 +53,7 @@ impl Rag {
     ) -> Result<Self> {
         debug!("init rag: {name}");
         let model = select_embedding_model(config)?;
-        let chunk_size = model.max_chunk_size();
+        let chunk_size = model.default_chunk_size();
         let chunk_size = set_chunk_size(chunk_size)?;
         let data = RagData::new(&model.id(), chunk_size);
         let mut rag = Self::create(config, name, path, data)?;
@@ -400,15 +400,7 @@ fn set_chunk_size(chunk_size: usize) -> Result<usize> {
         .with_default(&chunk_size.to_string())
         .with_validator(move |text: &str| {
             let out = match text.parse::<usize>() {
-                Ok(value) => {
-                    if value > chunk_size {
-                        Validation::Invalid(
-                            format!("Must be less than or equal to {chunk_size}").into(),
-                        )
-                    } else {
-                        Validation::Valid
-                    }
-                }
+                Ok(_) => Validation::Valid,
                 Err(_) => Validation::Invalid("Must be a integer".into()),
             };
             Ok(out)
@@ -418,7 +410,7 @@ fn set_chunk_size(chunk_size: usize) -> Result<usize> {
 }
 
 fn add_document_paths() -> Result<Vec<String>> {
-    let text = Text::new("Add doc paths:")
+    let text = Text::new("Add document paths:")
         .with_validator(required!("This field is required"))
         .with_help_message("e.g. file1;dir2/;dir3/**/*.md")
         .prompt()?;
