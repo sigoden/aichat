@@ -141,7 +141,7 @@ async fn main() -> Result<()> {
 #[async_recursion]
 async fn start_directive(
     config: &GlobalConfig,
-    input: Input,
+    mut input: Input,
     no_stream: bool,
     code_mode: bool,
 ) -> Result<()> {
@@ -175,7 +175,7 @@ async fn start_directive(
     };
     config
         .write()
-        .save_message(&input, &output, &tool_call_results)?;
+        .save_message(&mut input, &output, &tool_call_results)?;
     config.write().exit_session()?;
     if need_send_call_results(&tool_call_results) {
         start_directive(
@@ -211,7 +211,7 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
     if let Ok(true) = CODE_BLOCK_RE.is_match(&eval_str) {
         eval_str = extract_block(&eval_str);
     }
-    config.write().save_message(&input, &eval_str, &[])?;
+    config.write().save_message(&mut input, &eval_str, &[])?;
     config.read().maybe_copy(&eval_str);
     let render_options = config.read().get_render_options()?;
     let mut markdown_render = MarkdownRender::init(render_options)?;

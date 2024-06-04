@@ -243,10 +243,11 @@ impl Config {
 
     pub fn save_message(
         &mut self,
-        input: &Input,
+        input: &mut Input,
         output: &str,
         tool_call_results: &[ToolCallResult],
     ) -> Result<()> {
+        input.clear_patch_text();
         self.last_message = Some((input.clone(), output.to_string()));
 
         if self.dry_run || output.is_empty() || !tool_call_results.is_empty() {
@@ -268,17 +269,13 @@ impl Config {
         let timestamp = now();
         let summary = input.summary();
         let input_markdown = input.render();
-        let output = match input.role() {
-            None => {
-                format!("# CHAT: {summary} [{timestamp}]\n{input_markdown}\n--------\n{output}\n--------\n\n",)
-            }
-            Some(v) => {
-                format!(
-                    "# CHAT: {summary} [{timestamp}] ({})\n{input_markdown}\n--------\n{output}\n--------\n\n",
-                    v.name,
-                )
-            }
+        let scope = match (input.role().map(|v| v.name.as_str()), input.rag()) {
+            (Some(role), Some(rag)) => format!(" ({role}#{rag})"),
+            (Some(role), _) => format!(" ({role})"),
+            (None, Some(rag)) => format!(" (#{rag})"),
+            _ => String::new(),
         };
+        let output = format!("# CHAT: {summary} [{timestamp}]{scope}\n{input_markdown}\n--------\n{output}\n--------\n\n",);
         file.write_all(output.as_bytes())
             .with_context(|| "Failed to save message")
     }

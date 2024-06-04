@@ -82,11 +82,7 @@ lazy_static! {
             "End the current session",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
-        ReplCommand::new(
-            ".rag",
-            "Init or use a rag",
-            AssertState::False(StateFlags::SESSION_EMPTY | StateFlags::SESSION),
-        ),
+        ReplCommand::new(".rag", "Init or use a rag", AssertState::any()),
         ReplCommand::new(
             ".info rag",
             "View rag info",
@@ -299,7 +295,7 @@ impl Repl {
             },
             None => {
                 let mut input = Input::from_str(&self.config, line, None);
-                input.rag(self.abort_signal.clone()).await?;
+                input.maybe_embeddings(self.abort_signal.clone()).await?;
                 ask(&self.config, self.abort_signal.clone(), input).await?;
             }
         }
@@ -433,7 +429,7 @@ impl Validator for ReplValidator {
 }
 
 #[async_recursion]
-async fn ask(config: &GlobalConfig, abort: AbortSignal, input: Input) -> Result<()> {
+async fn ask(config: &GlobalConfig, abort: AbortSignal, mut input: Input) -> Result<()> {
     if input.is_empty() {
         return Ok(());
     }
@@ -443,9 +439,10 @@ async fn ask(config: &GlobalConfig, abort: AbortSignal, input: Input) -> Result<
     let client = input.create_client()?;
     let (output, tool_call_results) =
         send_stream(&input, client.as_ref(), config, abort.clone()).await?;
+
     config
         .write()
-        .save_message(&input, &output, &tool_call_results)?;
+        .save_message(&mut input, &output, &tool_call_results)?;
     config.read().maybe_copy(&output);
     if config.write().should_compress_session() {
         let config = config.clone();

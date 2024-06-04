@@ -29,9 +29,11 @@ lazy_static! {
 pub struct Input {
     config: GlobalConfig,
     text: String,
+    patch_text: Option<String>,
     medias: Vec<String>,
     data_urls: HashMap<String, String>,
     tool_call: Option<ToolResults>,
+    rag: Option<String>,
     context: InputContext,
 }
 
@@ -40,9 +42,11 @@ impl Input {
         Self {
             config: config.clone(),
             text: text.to_string(),
+            patch_text: None,
             medias: Default::default(),
             data_urls: Default::default(),
             tool_call: None,
+            rag: None,
             context: context.unwrap_or_else(|| InputContext::from_config(config)),
         }
     }
@@ -92,9 +96,11 @@ impl Input {
         Ok(Self {
             config: config.clone(),
             text: texts.join("\n"),
+            patch_text: None,
             medias,
             data_urls,
             tool_call: Default::default(),
+            rag: None,
             context: context.unwrap_or_else(|| InputContext::from_config(config)),
         })
     }
@@ -108,14 +114,17 @@ impl Input {
     }
 
     pub fn text(&self) -> String {
-        self.text.clone()
+        match self.patch_text.clone() {
+            Some(text) => text,
+            None => self.text.clone(),
+        }
     }
 
     pub fn set_text(&mut self, text: String) {
         self.text = text;
     }
 
-    pub async fn rag(&mut self, abort_signal: AbortSignal) -> Result<()> {
+    pub async fn maybe_embeddings(&mut self, abort_signal: AbortSignal) -> Result<()> {
         if self.text.is_empty() {
             return Ok(());
         }
@@ -124,11 +133,22 @@ impl Input {
             if let Some(rag) = rag {
                 let top_k = self.config.read().rag_top_k;
                 let embeddings = rag.search(&self.text, top_k, abort_signal).await?;
-                self.text = self.config.read().rag_template(&embeddings, &self.text);
+                let text = self.config.read().rag_template(&embeddings, &self.text);
+                self.patch_text = Some(text);
+                self.rag = Some(rag.name().to_string());
             }
         }
         Ok(())
     }
+
+    pub fn rag(&self) -> Option<&str> {
+        self.rag.as_deref()
+    }
+
+    pub fn clear_patch_text(&mut self) {
+        self.patch_text.take();
+    }
+
     pub fn merge_tool_call(
         mut self,
         output: String,
