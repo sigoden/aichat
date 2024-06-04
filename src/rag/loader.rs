@@ -42,12 +42,15 @@ pub async fn list_files(
     entry_path: &Path,
     suffixes: Option<&Vec<String>>,
 ) -> Result<()> {
+    if !entry_path.exists() {
+        bail!("Not found: {:?}", entry_path);
+    }
     if entry_path.is_file() {
         add_file(files, suffixes, entry_path);
         return Ok(());
     }
     if !entry_path.is_dir() {
-        bail!("Path is not a directory: {:?}", entry_path);
+        bail!("Not a directory: {:?}", entry_path);
     }
     let mut reader = fs::read_dir(entry_path).await?;
     while let Some(entry) = reader.next_entry().await? {

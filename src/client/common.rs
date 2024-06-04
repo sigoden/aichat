@@ -463,6 +463,12 @@ pub struct EmbeddingsData {
     pub query: bool,
 }
 
+impl EmbeddingsData {
+    pub fn new(texts: Vec<String>, query: bool) -> Self {
+        Self { texts, query }
+    }
+}
+
 pub type EmbeddingsOutput = Vec<Vec<f32>>;
 
 pub type PromptAction<'a> = (&'a str, &'a str, bool, PromptKind);

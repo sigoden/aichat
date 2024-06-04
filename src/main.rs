@@ -36,7 +36,6 @@ use parking_lot::RwLock;
 use std::io::{stderr, stdin, stdout, Read};
 use std::process;
 use std::sync::Arc;
-use tokio::sync::oneshot;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -201,10 +200,9 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
     let client = input.create_client()?;
     let is_terminal_stdout = stdout().is_terminal();
     let ret = if is_terminal_stdout {
-        let (spinner_tx, spinner_rx) = oneshot::channel();
-        tokio::spawn(run_spinner(" Generating", spinner_rx));
+        let (stop_spinner_tx, _) = run_spinner("Generating").await;
         let ret = client.chat_completions(input.clone()).await;
-        let _ = spinner_tx.send(());
+        let _ = stop_spinner_tx.send(());
         ret
     } else {
         client.chat_completions(input.clone()).await

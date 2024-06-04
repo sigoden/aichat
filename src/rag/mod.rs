@@ -12,13 +12,13 @@ use anyhow::bail;
 use anyhow::{anyhow, Context, Result};
 use hnsw_rs::prelude::*;
 use indexmap::IndexMap;
-use inquire::{required, Select, Text};
+use inquire::{required, validator::Validation, Select, Text};
 use path_absolutize::Absolutize;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fmt::Debug;
 use std::{io::BufReader, path::Path};
-use tokio::sync::oneshot;
+use tokio::sync::mpsc;
 
 pub const TEMP_RAG_NAME: &str = "temp";
 pub const CHUNK_OVERLAP: usize = 20;
@@ -52,28 +52,27 @@ impl Rag {
         abort_signal: AbortSignal,
     ) -> Result<Self> {
         debug!("init rag: {name}");
-        let model = Self::select_embedding_model(config)?;
+        let model = select_embedding_model(config)?;
         let chunk_size = model.max_chunk_size();
+        let chunk_size = set_chunk_size(chunk_size)?;
         let data = RagData::new(&model.id(), chunk_size);
         let mut rag = Self::create(config, name, path, data)?;
-        let paths: Vec<String> = {
-            let text = Text::new("Add paths:")
-                .with_validator(required!("This field is required"))
-                .with_help_message("e.g. file1;dir2/;dir3/**/*.md")
-                .prompt()?;
-            text.split(';').map(|v| v.to_string()).collect()
-        };
-        debug!("rag paths: {paths:?}");
+        let paths = add_document_paths()?;
+        debug!("document paths: {paths:?}");
+        let (stop_spinner_tx, set_spinner_message_tx) = run_spinner("Starting").await;
         tokio::select! {
-            ret = rag.add_paths(&paths) => {
+            ret = rag.add_paths(&paths, Some(set_spinner_message_tx)) => {
+                let _ = stop_spinner_tx.send(());
                 ret?;
             }
             _ = watch_abort_signal(abort_signal) => {
+                let _ = stop_spinner_tx.send(());
                 bail!("Aborted!")
             },
         };
         if !rag.is_temp() {
             rag.save(path)?;
+            println!("✨ Saved rag to '{}'", path.display());
         }
         Ok(rag)
     }
@@ -99,23 +98,6 @@ impl Rag {
             hnsw,
         };
         Ok(rag)
-    }
-
-    pub fn select_embedding_model(config: &GlobalConfig) -> Result<Model> {
-        let config = config.read();
-        let model = match config.embedding_model.clone() {
-            Some(model_id) => retrieve_embedding_model(&config, &model_id)?,
-            None => {
-                let models = list_embedding_models(&config);
-                if models.is_empty() {
-                    bail!("No embedding model");
-                }
-                let model_ids: Vec<_> = models.iter().map(|v| v.id()).collect();
-                let model_id = Select::new("Select embedding model:", model_ids).prompt()?;
-                retrieve_embedding_model(&config, &model_id)?
-            }
-        };
-        Ok(model)
     }
 
     pub fn save(&self, path: &Path) -> Result<()> {
@@ -153,8 +135,7 @@ impl Rag {
         top_k: usize,
         abort_signal: AbortSignal,
     ) -> Result<String> {
-        let (spinner_tx, spinner_rx) = oneshot::channel();
-        tokio::spawn(run_spinner(" Embedding", spinner_rx));
+        let (stop_spinner_tx, _) = run_spinner("Embedding").await;
         let ret = tokio::select! {
             ret = self.search_impl(text, top_k) => {
                 ret
@@ -163,14 +144,19 @@ impl Rag {
                 bail!("Aborted!")
             },
         };
-        let _ = spinner_tx.send(());
+        let _ = stop_spinner_tx.send(());
         let output = ret?.join("\n\n");
         Ok(output)
     }
 
-    pub async fn add_paths<T: AsRef<Path>>(&mut self, paths: &[T]) -> Result<()> {
+    pub async fn add_paths<T: AsRef<Path>>(
+        &mut self,
+        paths: &[T],
+        progress_tx: Option<mpsc::UnboundedSender<String>>,
+    ) -> Result<()> {
         // List files
         let mut file_paths = vec![];
+        progress(&progress_tx, "Listing paths".into());
         for path in paths {
             let path = path
                 .as_ref()
@@ -191,6 +177,8 @@ impl Rag {
 
         // Load files
         let mut rag_files = vec![];
+        let file_paths_len = file_paths.len();
+        progress(&progress_tx, format!("Loading files [1/{file_paths_len}]"));
         for path in file_paths {
             let extension = Path::new(&path)
                 .extension()
@@ -204,6 +192,10 @@ impl Rag {
             let documents =
                 splitter.split_documents(&documents, &SplitterChunkHeaderOptions::default());
             rag_files.push(RagFile { path, documents });
+            progress(
+                &progress_tx,
+                format!("Loading files [{}/{file_paths_len}]", rag_files.len()),
+            );
         }
 
         if rag_files.is_empty() {
@@ -219,10 +211,14 @@ impl Rag {
                 texts.push(doc.page_content.clone())
             }
         }
-        let embeddings_data = self.build_embeddings_data(texts, false);
-        let embeddings = self.create_embeddings(embeddings_data).await?;
+
+        let embeddings_data = EmbeddingsData::new(texts, false);
+        let embeddings = self
+            .create_embeddings(embeddings_data, progress_tx.clone())
+            .await?;
 
         self.data.add(rag_files, vector_ids, embeddings);
+        progress(&progress_tx, "Building vector store".into());
         self.hnsw = self.data.build_hnsw();
 
         Ok(())
@@ -231,8 +227,8 @@ impl Rag {
     async fn search_impl(&self, text: &str, top_k: usize) -> Result<Vec<String>> {
         let splitter = Splitter::new(self.data.chunk_size, CHUNK_OVERLAP, &DEFAULT_SEPARATES);
         let texts = splitter.split_text(text);
-        let embeddings_data = self.build_embeddings_data(texts, true);
-        let embeddings = self.create_embeddings(embeddings_data).await?;
+        let embeddings_data = EmbeddingsData::new(texts, true);
+        let embeddings = self.create_embeddings(embeddings_data, None).await?;
         let output = self
             .hnsw
             .parallel_search(&embeddings, top_k, 30)
@@ -255,17 +251,20 @@ impl Rag {
         Ok(output)
     }
 
-    fn build_embeddings_data(&self, texts: Vec<String>, search: bool) -> EmbeddingsData {
-        EmbeddingsData {
-            texts,
-            query: search,
-        }
-    }
-
-    async fn create_embeddings(&self, data: EmbeddingsData) -> Result<EmbeddingsOutput> {
+    async fn create_embeddings(
+        &self,
+        data: EmbeddingsData,
+        progress_tx: Option<mpsc::UnboundedSender<String>>,
+    ) -> Result<EmbeddingsOutput> {
         let EmbeddingsData { texts, query } = data;
         let mut output = vec![];
-        for texts in texts.chunks(self.model.max_concurrent_chunks()) {
+        let chunks = texts.chunks(self.model.max_concurrent_chunks());
+        let chunks_len = chunks.len();
+        progress(
+            &progress_tx,
+            format!("Creating embeddings [1/{chunks_len}]"),
+        );
+        for (index, texts) in chunks.enumerate() {
             let chunk_data = EmbeddingsData {
                 texts: texts.to_vec(),
                 query,
@@ -276,6 +275,10 @@ impl Rag {
                 .await
                 .context("Failed to create embedding")?;
             output.extend(chunk_output);
+            progress(
+                &progress_tx,
+                format!("Creating embeddings [{}/{chunks_len}]", index + 1),
+            );
         }
         Ok(output)
     }
@@ -373,4 +376,58 @@ fn retrieve_embedding_model(config: &Config, model_id: &str) -> Result<Model> {
     let model =
         Model::find(&models, model_id).ok_or_else(|| anyhow!("No embedding model '{model_id}'"))?;
     Ok(model)
+}
+
+fn select_embedding_model(config: &GlobalConfig) -> Result<Model> {
+    let config = config.read();
+    let model = match config.embedding_model.clone() {
+        Some(model_id) => retrieve_embedding_model(&config, &model_id)?,
+        None => {
+            let models = list_embedding_models(&config);
+            if models.is_empty() {
+                bail!("No embedding model");
+            }
+            let model_ids: Vec<_> = models.iter().map(|v| v.id()).collect();
+            let model_id = Select::new("Select embedding model:", model_ids).prompt()?;
+            retrieve_embedding_model(&config, &model_id)?
+        }
+    };
+    Ok(model)
+}
+
+fn set_chunk_size(chunk_size: usize) -> Result<usize> {
+    let value = Text::new("Set chunk size:")
+        .with_default(&chunk_size.to_string())
+        .with_validator(move |text: &str| {
+            let out = match text.parse::<usize>() {
+                Ok(value) => {
+                    if value > chunk_size {
+                        Validation::Invalid(
+                            format!("Must be less than or equal to {chunk_size}").into(),
+                        )
+                    } else {
+                        Validation::Valid
+                    }
+                }
+                Err(_) => Validation::Invalid("Must be a integer".into()),
+            };
+            Ok(out)
+        })
+        .prompt()?;
+    value.parse().map_err(|_| anyhow!("Invalid chunk_size"))
+}
+
+fn add_document_paths() -> Result<Vec<String>> {
+    let text = Text::new("Add doc paths:")
+        .with_validator(required!("This field is required"))
+        .with_help_message("e.g. file1;dir2/;dir3/**/*.md")
+        .prompt()?;
+    let paths = text.split(';').map(|v| v.to_string()).collect();
+    Ok(paths)
+}
+
+fn progress(spinner_message_tx: &Option<mpsc::UnboundedSender<String>>, message: String) {
+    if let Some(tx) = spinner_message_tx {
+        let _ = tx.send(message);
+    }
 }

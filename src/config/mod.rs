@@ -1218,7 +1218,7 @@ fn create_config_file(config_path: &Path) -> Result<()> {
         std::fs::set_permissions(config_path, perms)?;
     }
 
-    println!("✨ Saved config file to '{}'", config_path.display());
+    println!("✨ Saved config file to '{}'\n", config_path.display());
 
     Ok(())
 }
