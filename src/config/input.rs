@@ -1,7 +1,7 @@
 use super::{role::Role, session::Session, GlobalConfig};
 
 use crate::client::{
-    init_client, list_chat_models, ChatCompletionsData, Client, ImageUrl, Message, MessageContent,
+    init_client, ChatCompletionsData, Client, ImageUrl, Message, MessageContent,
     MessageContentPart, MessageRole, Model,
 };
 use crate::function::{ToolCallResult, ToolResults};
@@ -165,18 +165,15 @@ impl Input {
     }
 
     pub fn model(&self) -> Model {
-        let model = self.config.read().model.clone();
-        if let Some(model_id) = self.role().and_then(|v| v.model_id.clone()) {
-            if model.id() != model_id {
-                if let Some(model) = list_chat_models(&self.config.read())
-                    .into_iter()
-                    .find(|v| v.id() == model_id)
-                {
-                    return model.clone();
-                }
-            }
-        };
-        model
+        if let Some(session) = self.session(&self.config.read().session) {
+            return session.model.clone();
+        } else if let Some(model) = self
+            .role()
+            .and_then(|v| v.retrieve_model(&self.config.read()))
+        {
+            return model;
+        }
+        self.config.read().model.clone()
     }
 
     pub fn create_client(&self) -> Result<Box<dyn Client>> {

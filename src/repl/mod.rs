@@ -200,7 +200,7 @@ impl Repl {
                 ".model" => match args {
                     Some(name) => {
                         self.config.write().set_model(name)?;
-                        if self.config.read().state().is_empty() {
+                        if !self.config.read().has_role_or_session() {
                             self.config.write().set_model_id();
                         }
                     }
