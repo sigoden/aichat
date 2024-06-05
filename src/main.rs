@@ -24,7 +24,7 @@ use crate::render::{render_error, MarkdownRender};
 use crate::repl::Repl;
 use crate::utils::{
     create_abort_signal, detect_shell, extract_block, run_command, run_spinner, Shell,
-    CODE_BLOCK_RE,
+    CODE_BLOCK_RE, IS_STDOUT_TERMINAL,
 };
 
 use anyhow::{bail, Result};
@@ -33,7 +33,7 @@ use clap::Parser;
 use inquire::{Select, Text};
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
-use std::io::{stderr, stdin, stdout, Read};
+use std::io::{stderr, stdin, Read};
 use std::process;
 use std::sync::Arc;
 
@@ -146,8 +146,7 @@ async fn start_directive(
     code_mode: bool,
 ) -> Result<()> {
     let client = input.create_client()?;
-    let is_terminal_stdout = stdout().is_terminal();
-    let extract_code = !is_terminal_stdout && code_mode;
+    let extract_code = !*IS_STDOUT_TERMINAL && code_mode;
     let (output, tool_call_results) = if no_stream || extract_code {
         let ChatCompletionsOutput {
             text, tool_calls, ..
@@ -160,7 +159,7 @@ async fn start_directive(
             } else {
                 text.clone()
             };
-            if is_terminal_stdout {
+            if *IS_STDOUT_TERMINAL {
                 let render_options = config.read().get_render_options()?;
                 let mut markdown_render = MarkdownRender::init(render_options)?;
                 println!("{}", markdown_render.render(&text).trim());
@@ -198,8 +197,7 @@ async fn start_interactive(config: &GlobalConfig) -> Result<()> {
 #[async_recursion::async_recursion]
 async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -> Result<()> {
     let client = input.create_client()?;
-    let is_terminal_stdout = stdout().is_terminal();
-    let ret = if is_terminal_stdout {
+    let ret = if *IS_STDOUT_TERMINAL {
         let (stop_spinner_tx, _) = run_spinner("Generating").await;
         let ret = client.chat_completions(input.clone()).await;
         let _ = stop_spinner_tx.send(());
@@ -219,7 +217,7 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
         println!("{}", markdown_render.render(&eval_str).trim());
         return Ok(());
     }
-    if is_terminal_stdout {
+    if *IS_STDOUT_TERMINAL {
         loop {
             let answer = Select::new(
                 eval_str.trim(),

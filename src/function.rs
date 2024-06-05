@@ -2,6 +2,7 @@ use crate::{
     config::GlobalConfig,
     utils::{
         dimmed_text, get_env_bool, indent_text, run_command, run_command_with_output, warning_text,
+        IS_STDOUT_TERMINAL,
     },
 };
 
@@ -9,14 +10,12 @@ use anyhow::{anyhow, bail, Context, Result};
 use fancy_regex::Regex;
 use indexmap::{IndexMap, IndexSet};
 use inquire::{validator::Validation, Text};
-use is_terminal::IsTerminal;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{
     collections::{HashMap, HashSet},
     fs,
-    io::stdout,
     path::Path,
     sync::mpsc::channel,
 };
@@ -232,7 +231,7 @@ impl ToolCall {
         let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
 
         let output = if self.is_execute() {
-            if stdout().is_terminal() {
+            if *IS_STDOUT_TERMINAL {
                 println!("{prompt}");
                 let answer = Text::new("[1] Run, [2] Run & Retrieve, [3] Skip:")
                     .with_default("1")

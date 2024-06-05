@@ -4,12 +4,10 @@ mod stream;
 pub use self::markdown::{MarkdownRender, RenderOptions};
 use self::stream::{markdown_stream, raw_stream};
 
-use crate::utils::{error_text, AbortSignal};
+use crate::utils::{error_text, AbortSignal, IS_STDOUT_TERMINAL};
 use crate::{client::SseEvent, config::GlobalConfig};
 
 use anyhow::Result;
-use is_terminal::IsTerminal;
-use std::io::stdout;
 use tokio::sync::mpsc::UnboundedReceiver;
 
 pub async fn render_stream(
@@ -17,7 +15,7 @@ pub async fn render_stream(
     config: &GlobalConfig,
     abort: AbortSignal,
 ) -> Result<()> {
-    if stdout().is_terminal() {
+    if *IS_STDOUT_TERMINAL {
         let render_options = config.read().get_render_options()?;
         let mut render = MarkdownRender::init(render_options)?;
         markdown_stream(rx, &mut render, &abort).await

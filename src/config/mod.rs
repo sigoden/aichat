@@ -15,12 +15,11 @@ use crate::rag::{Rag, TEMP_RAG_NAME};
 use crate::render::{MarkdownRender, RenderOptions};
 use crate::utils::{
     format_option_value, fuzzy_match, get_env_name, light_theme_from_colorfgbg, now, render_prompt,
-    set_text, AbortSignal,
+    set_text, AbortSignal, IS_STDOUT_TERMINAL,
 };
 
 use anyhow::{anyhow, bail, Context, Result};
 use inquire::{Confirm, Select};
-use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use serde::Deserialize;
 use serde_json::json;
@@ -28,7 +27,7 @@ use std::collections::{HashMap, HashSet};
 use std::{
     env,
     fs::{create_dir_all, read_dir, read_to_string, remove_file, File, OpenOptions},
-    io::{stdout, Write},
+    io::Write,
     path::{Path, PathBuf},
     process::exit,
     sync::Arc,
@@ -915,7 +914,7 @@ impl Config {
         } else {
             None
         };
-        let wrap = if stdout().is_terminal() {
+        let wrap = if *IS_STDOUT_TERMINAL {
             self.wrap.clone()
         } else {
             None
