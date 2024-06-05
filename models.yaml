@@ -51,7 +51,7 @@
     - name: gpt-4-vision-preview
       max_input_tokens: 128000
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 10
       output_price: 30
       supports_vision: true
@@ -125,7 +125,7 @@
     - name: claude-3-opus-20240229
       max_input_tokens: 200000
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 15
       output_price: 75
       supports_vision: true
@@ -133,7 +133,7 @@
     - name: claude-3-sonnet-20240229
       max_input_tokens: 200000
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 3
       output_price: 15
       supports_vision: true
@@ -141,7 +141,7 @@
     - name: claude-3-haiku-20240307
       max_input_tokens: 200000
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 0.25
       output_price: 1.25
       supports_vision: true
@@ -330,21 +330,21 @@
     - name: claude-3-opus@20240229
       max_input_tokens: 200000
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 15
       output_price: 75
       supports_vision: true
     - name: claude-3-sonnet@20240229
       max_input_tokens: 200000
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 3
       output_price: 15
       supports_vision: true
     - name: claude-3-haiku@20240307
       max_input_tokens: 200000
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 0.25
       output_price: 1.25
       supports_vision: true
@@ -360,52 +360,52 @@
     - name: anthropic.claude-3-opus-20240229-v1:0
       max_input_tokens: 200000
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 15
       output_price: 75
       supports_vision: true
     - name: anthropic.claude-3-sonnet-20240229-v1:0
       max_input_tokens: 200000
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 3
       output_price: 15
       supports_vision: true
     - name: anthropic.claude-3-haiku-20240307-v1:0
       max_input_tokens: 200000
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 0.25
       output_price: 1.25
       supports_vision: true
     - name: meta.llama3-8b-instruct-v1:0
       max_input_tokens: 8192
       max_output_tokens: 2048
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 0.4
       output_price: 0.6
     - name: meta.llama3-70b-instruct-v1:0
       max_input_tokens: 8192
       max_output_tokens: 2048
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 2.65
       output_price: 3.5
     - name: mistral.mistral-7b-instruct-v0:2
       max_input_tokens: 32000
       max_output_tokens: 8192
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 0.15
       output_price: 0.2
     - name: mistral.mixtral-8x7b-instruct-v0:1
       max_input_tokens: 32000
       max_output_tokens: 8192
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 0.45
       output_price: 0.7
     - name: mistral.mistral-large-2402-v1:0
       max_input_tokens: 32000
       max_output_tokens: 8192
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 8
       output_price: 2.4
 
@@ -419,23 +419,23 @@
     - name: '@cf/meta/llama-3-8b-instruct'
       max_input_tokens: 4096
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
     - name: '@cf/mistral/mistral-7b-instruct-v0.2-lora'
       max_input_tokens: 4096
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
     - name: '@cf/google/gemma-7b-it-lora'
       max_input_tokens: 4096
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
     - name: '@cf/qwen/qwen1.5-14b-chat-awq'
       max_input_tokens: 4096
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
     - name: '@hf/thebloke/deepseek-coder-6.7b-instruct-awq'
       max_input_tokens: 4096
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
 
 - platform: replicate
   # docs:
@@ -448,25 +448,25 @@
     - name: meta/meta-llama-3-70b-instruct
       max_input_tokens: 8192
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 0.65
       output_price: 2.75
     - name: meta/meta-llama-3-8b-instruct
       max_input_tokens: 8192
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 0.05
       output_price: 0.25
     - name: mistralai/mistral-7b-instruct-v0.2
       max_input_tokens: 32000
       max_output_tokens: 8192
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 0.05
       output_price: 0.25
     - name: mistralai/mixtral-8x7b-instruct-v0.1
       max_input_tokens: 32000
       max_output_tokens: 8192
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 0.3
       output_price: 1
 
@@ -480,31 +480,31 @@
     - name: ernie-4.0-8k-preview
       max_input_tokens: 5120
       max_output_tokens: 2048
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 16.8
       output_price: 16.8
     - name: ernie-3.5-8k-preview
       max_input_tokens: 5120
       max_output_tokens: 2048
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 1.68
       output_price: 1.68
     - name: ernie-speed-128k
       max_input_tokens: 124000
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 0
       output_price: 0
     - name: ernie-lite-8k
       max_input_tokens: 7168
       max_output_tokens: 2048
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 0
       output_price: 0
     - name: ernie-tiny-8k
       max_input_tokens: 7168
       max_output_tokens: 2048
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 0
       output_price: 0
 
@@ -810,21 +810,21 @@
     - name: anthropic/claude-3-opus
       max_input_tokens: 200000
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 15
       output_price: 75
       supports_vision: true
     - name: anthropic/claude-3-sonnet
       max_input_tokens: 200000
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 3
       output_price: 15
       supports_vision: true
     - name: anthropic/claude-3-haiku
       max_input_tokens: 200000
       max_output_tokens: 4096
-      pass_max_tokens: true
+      require_max_tokens: true
       input_price: 0.25
       output_price: 1.25
       supports_vision: true

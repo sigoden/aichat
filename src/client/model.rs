@@ -153,7 +153,7 @@ impl Model {
     }
 
     pub fn max_tokens_param(&self) -> Option<isize> {
-        if self.data.pass_max_tokens {
+        if self.data.require_max_tokens {
             self.data.max_output_tokens
         } else {
             None
@@ -163,13 +163,13 @@ impl Model {
     pub fn set_max_tokens(
         &mut self,
         max_output_tokens: Option<isize>,
-        pass_max_tokens: bool,
+        require_max_tokens: bool,
     ) -> &mut Self {
         match max_output_tokens {
             None | Some(0) => self.data.max_output_tokens = None,
             _ => self.data.max_output_tokens = max_output_tokens,
         }
-        self.data.pass_max_tokens = pass_max_tokens;
+        self.data.require_max_tokens = require_max_tokens;
         self
     }
 
@@ -227,7 +227,7 @@ pub struct ModelData {
     // chat-only properties
     pub max_output_tokens: Option<isize>,
     #[serde(default)]
-    pub pass_max_tokens: bool,
+    pub require_max_tokens: bool,
     #[serde(default)]
     pub supports_vision: bool,
     #[serde(default)]
