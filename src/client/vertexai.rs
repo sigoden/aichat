@@ -262,12 +262,7 @@ pub fn gemini_build_chat_completions_body(
         stream: _,
     } = data;
 
-    let mut system_message = None;
-    if model.name().starts_with("gemini-1.5") {
-        system_message = extract_system_message(&mut messages);
-    } else {
-        patch_system_message(&mut messages);
-    };
+    patch_system_message(&mut messages);
 
     let mut network_image_urls = vec![];
     let contents: Vec<Value> = messages
@@ -337,10 +332,6 @@ pub fn gemini_build_chat_completions_body(
     }
 
     let mut body = json!({ "contents": contents, "generationConfig": {} });
-
-    if let Some(v) = system_message {
-        body["systemInstruction"] = json!({ "parts": [{ "text": v }] });
-    }
 
     if let Some(v) = model.max_tokens_param() {
         body["generationConfig"]["maxOutputTokens"] = v.into();
