@@ -1,7 +1,5 @@
-use super::{
-    openai::*, AzureOpenAIClient, ChatCompletionsData, Client, ExtraConfig, Model, ModelData,
-    ModelPatches, PromptAction, PromptKind,
-};
+use super::*;
+use super::openai::*;
 
 use anyhow::Result;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
@@ -12,6 +10,7 @@ pub struct AzureOpenAIConfig {
     pub name: Option<String>,
     pub api_base: Option<String>,
     pub api_key: Option<String>,
+    #[serde(default)]
     pub models: Vec<ModelData>,
     pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
@@ -42,7 +41,7 @@ impl AzureOpenAIClient {
         let api_key = self.get_api_key()?;
 
         let mut body = openai_build_chat_completions_body(data, &self.model);
-        self.patch_request_body(&mut body);
+        self.patch_chat_completions_body(&mut body);
 
         let url = format!(
             "{}/openai/deployments/{}/chat/completions?api-version=2024-02-01",
@@ -56,10 +55,28 @@ impl AzureOpenAIClient {
 
         Ok(builder)
     }
+
+    fn embeddings_builder(
+        &self,
+        client: &ReqwestClient,
+        data: EmbeddingsData,
+    ) -> Result<RequestBuilder> {
+        let api_base = self.get_api_base()?;
+        let api_key = self.get_api_key()?;
+
+        let body = openai_build_embeddings_body(data, &self.model);
+
+        let url = format!("{api_base}/embeddings");
+
+        let builder = client.post(url).bearer_auth(api_key).json(&body);
+
+        Ok(builder)
+    }
 }
 
 impl_client_trait!(
     AzureOpenAIClient,
-    crate::client::openai::openai_chat_completions,
-    crate::client::openai::openai_chat_completions_streaming
+    openai_chat_completions,
+    openai_chat_completions_streaming,
+    openai_embeddings
 );

@@ -1,9 +1,4 @@
-use super::{
-    catch_error, extract_system_message, message::*, sse_stream, ChatCompletionsData,
-    ChatCompletionsOutput, ClaudeClient, Client, ExtraConfig, ImageUrl, MessageContent,
-    MessageContentPart, Model, ModelData, ModelPatches, PromptAction, PromptKind, SseHandler,
-    SseMmessage, ToolCall,
-};
+use super::*;
 
 use anyhow::{bail, Context, Result};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
@@ -36,7 +31,7 @@ impl ClaudeClient {
         let api_key = self.get_api_key().ok();
 
         let mut body = claude_build_chat_completions_body(data, &self.model)?;
-        self.patch_request_body(&mut body);
+        self.patch_chat_completions_body(&mut body);
 
         let url = API_BASE;
 

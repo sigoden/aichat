@@ -1,8 +1,7 @@
-use super::{
-    access_token::*, claude::*, vertexai::*, ChatCompletionsData, ChatCompletionsOutput, Client,
-    ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, SseHandler,
-    VertexAIClaudeClient,
-};
+use super::*;
+use super::access_token::*;
+use super::claude::*;
+use super::vertexai::*;
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -46,7 +45,7 @@ impl VertexAIClaudeClient {
         );
 
         let mut body = claude_build_chat_completions_body(data, &self.model)?;
-        self.patch_request_body(&mut body);
+        self.patch_chat_completions_body(&mut body);
         if let Some(body_obj) = body.as_object_mut() {
             body_obj.remove("model");
         }

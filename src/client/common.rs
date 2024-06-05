@@ -1,10 +1,13 @@
-use super::{openai::OpenAIConfig, BuiltinModels, ClientConfig, Message, Model, SseHandler};
+use super::*;
 
 use crate::{
     config::{GlobalConfig, Input},
     function::{eval_tool_calls, FunctionDeclaration, ToolCall, ToolCallResult},
     render::{render_error, render_stream},
-    utils::{prompt_input_integer, prompt_input_string, tokenize, AbortSignal, PromptKind},
+    utils::{
+        prompt_input_integer, prompt_input_string, tokenize, watch_abort_signal, AbortSignal,
+        PromptKind,
+    },
 };
 
 use anyhow::{bail, Context, Result};
@@ -16,13 +19,12 @@ use reqwest::{Client as ReqwestClient, ClientBuilder, Proxy, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{env, future::Future, time::Duration};
-use tokio::{sync::mpsc::unbounded_channel, time::sleep};
+use tokio::sync::mpsc::unbounded_channel;
 
 const MODELS_YAML: &str = include_str!("../../models.yaml");
 
 lazy_static! {
-    pub static ref ALL_CLIENT_MODELS: Vec<BuiltinModels> =
-        serde_yaml::from_str(MODELS_YAML).unwrap();
+    pub static ref ALL_MODELS: Vec<BuiltinModels> = serde_yaml::from_str(MODELS_YAML).unwrap();
     static ref ESCAPE_SLASH_RE: Regex = Regex::new(r"(?<!\\)/").unwrap();
 }
 
@@ -92,10 +94,10 @@ macro_rules! register_client {
                 pub fn list_models(local_config: &$config) -> Vec<Model> {
                     let client_name = Self::name(local_config);
                     if local_config.models.is_empty() {
-                        if let Some(client_models) = $crate::client::ALL_CLIENT_MODELS.iter().find(|v| {
+                        if let Some(models) = $crate::client::ALL_MODELS.iter().find(|v| {
                             v.platform == $name || ($name == "openai-compatible" && local_config.name.as_deref() == Some(&v.platform))
                         }) {
-                            return Model::from_config(client_name, &client_models.models);
+                            return Model::from_config(client_name, &models.models);
                         }
                         vec![]
                     } else {
@@ -137,10 +139,10 @@ macro_rules! register_client {
             anyhow::bail!("Unknown client '{}'", client)
         }
 
-        static mut ALL_CLIENTS: Option<Vec<$crate::client::Model>> = None;
+        static mut ALL_CLIENT_MODELS: Option<Vec<$crate::client::Model>> = None;
 
-        pub fn list_models(config: &$crate::config::Config) -> Vec<&$crate::client::Model> {
-            if unsafe { ALL_CLIENTS.is_none() } {
+        pub fn list_models(config: &$crate::config::Config) -> Vec<&'static $crate::client::Model> {
+            if unsafe { ALL_CLIENT_MODELS.is_none() } {
                 let models: Vec<_> = config
                     .clients
                     .iter()
@@ -149,9 +151,17 @@ macro_rules! register_client {
                         ClientConfig::Unknown => vec![],
                     })
                     .collect();
-                unsafe { ALL_CLIENTS = Some(models) };
+                unsafe { ALL_CLIENT_MODELS = Some(models) };
             }
-            unsafe { ALL_CLIENTS.as_ref().unwrap().iter().collect() }
+            unsafe { ALL_CLIENT_MODELS.as_ref().unwrap().iter().collect() }
+        }
+
+        pub fn list_chat_models(config: &$crate::config::Config) -> Vec<&'static $crate::client::Model> {
+            list_models(config).into_iter().filter(|v| v.mode() == "chat").collect()
+        }
+
+        pub fn list_embedding_models(config: &$crate::config::Config) -> Vec<&'static $crate::client::Model> {
+            list_models(config).into_iter().filter(|v| v.mode() == "embedding").collect()
         }
     };
 }
@@ -171,10 +181,6 @@ macro_rules! client_common_fns {
             self.config.patches.as_ref()
         }
 
-        fn list_models(&self) -> Vec<Model> {
-            Self::list_models(&self.config)
-        }
-
         fn name(&self) -> &str {
             Self::name(&self.config)
         }
@@ -185,10 +191,6 @@ macro_rules! client_common_fns {
 
         fn model_mut(&mut self) -> &mut Model {
             &mut self.model
-        }
-
-        fn set_model(&mut self, model: Model) {
-            self.model = model;
         }
     };
 }
@@ -217,6 +219,40 @@ macro_rules! impl_client_trait {
             ) -> Result<()> {
                 let builder = self.chat_completions_builder(client, data)?;
                 $chat_completions_streaming(builder, handler).await
+            }
+        }
+    };
+    ($client:ident, $chat_completions:path, $chat_completions_streaming:path, $embeddings:path) => {
+        #[async_trait::async_trait]
+        impl $crate::client::Client for $crate::client::$client {
+            client_common_fns!();
+
+            async fn chat_completions_inner(
+                &self,
+                client: &reqwest::Client,
+                data: $crate::client::ChatCompletionsData,
+            ) -> anyhow::Result<$crate::client::ChatCompletionsOutput> {
+                let builder = self.chat_completions_builder(client, data)?;
+                $chat_completions(builder).await
+            }
+
+            async fn chat_completions_streaming_inner(
+                &self,
+                client: &reqwest::Client,
+                handler: &mut $crate::client::SseHandler,
+                data: $crate::client::ChatCompletionsData,
+            ) -> Result<()> {
+                let builder = self.chat_completions_builder(client, data)?;
+                $chat_completions_streaming(builder, handler).await
+            }
+
+            async fn embeddings_inner(
+                &self,
+                client: &ReqwestClient,
+                data: EmbeddingsData,
+            ) -> Result<Vec<Vec<f32>>> {
+                let builder = self.embeddings_builder(client, data)?;
+                $embeddings(builder).await
             }
         }
     };
@@ -256,18 +292,11 @@ pub trait Client: Sync + Send {
 
     fn patches_config(&self) -> Option<&ModelPatches>;
 
-    #[allow(unused)]
     fn name(&self) -> &str;
-
-    #[allow(unused)]
-    fn list_models(&self) -> Vec<Model>;
 
     fn model(&self) -> &Model;
 
     fn model_mut(&mut self) -> &mut Model;
-
-    #[allow(unused)]
-    fn set_model(&mut self, model: Model);
 
     fn build_client(&self) -> Result<ReqwestClient> {
         let mut builder = ReqwestClient::builder();
@@ -288,11 +317,10 @@ pub trait Client: Sync + Send {
             return Ok(ChatCompletionsOutput::new(&content));
         }
         let client = self.build_client()?;
-
         let data = input.prepare_completion_data(self.model(), false)?;
         self.chat_completions_inner(&client, data)
             .await
-            .with_context(|| "Failed to get answer")
+            .with_context(|| "Failed to get chat completions")
     }
 
     async fn chat_completions_streaming(
@@ -300,15 +328,7 @@ pub trait Client: Sync + Send {
         input: &Input,
         handler: &mut SseHandler,
     ) -> Result<()> {
-        async fn watch_abort(abort: AbortSignal) {
-            loop {
-                if abort.aborted() {
-                    break;
-                }
-                sleep(Duration::from_millis(100)).await;
-            }
-        }
-        let abort = handler.get_abort();
+        let abort_signal = handler.get_abort();
         let input = input.clone();
         tokio::select! {
             ret = async {
@@ -326,20 +346,28 @@ pub trait Client: Sync + Send {
                 self.chat_completions_streaming_inner(&client, handler, data).await
             } => {
                 handler.done()?;
-                ret.with_context(|| "Failed to get answer")
+                ret.with_context(|| "Failed to get chat completions")
             }
-            _ = watch_abort(abort.clone()) => {
+            _ = watch_abort_signal(abort_signal) => {
                 handler.done()?;
                 Ok(())
             },
         }
     }
 
-    fn patch_request_body(&self, body: &mut Value) {
+    async fn embeddings(&self, data: EmbeddingsData) -> Result<Vec<Vec<f32>>> {
+        let client = self.build_client()?;
+        self.model().guard_max_concurrent_chunks(&data)?;
+        self.embeddings_inner(&client, data)
+            .await
+            .with_context(|| "Failed to get embeddings")
+    }
+
+    fn patch_chat_completions_body(&self, body: &mut Value) {
         let model_name = self.model().name();
         if let Some(patch_data) = select_model_patch(self.patches_config(), model_name) {
-            if body.is_object() && patch_data.request_body.is_object() {
-                json_patch::merge(body, &patch_data.request_body)
+            if body.is_object() && patch_data.chat_completions_body.is_object() {
+                json_patch::merge(body, &patch_data.chat_completions_body)
             }
         }
     }
@@ -356,6 +384,14 @@ pub trait Client: Sync + Send {
         handler: &mut SseHandler,
         data: ChatCompletionsData,
     ) -> Result<()>;
+
+    async fn embeddings_inner(
+        &self,
+        _client: &ReqwestClient,
+        _data: EmbeddingsData,
+    ) -> Result<Vec<Vec<f32>>> {
+        bail!("No embeddings api")
+    }
 }
 
 impl Default for ClientConfig {
@@ -375,7 +411,7 @@ pub type ModelPatches = IndexMap<String, ModelPatch>;
 #[derive(Debug, Clone, Deserialize)]
 pub struct ModelPatch {
     #[serde(default)]
-    pub request_body: Value,
+    pub chat_completions_body: Value,
 }
 
 pub fn select_model_patch<'a>(
@@ -421,6 +457,20 @@ impl ChatCompletionsOutput {
     }
 }
 
+#[derive(Debug)]
+pub struct EmbeddingsData {
+    pub texts: Vec<String>,
+    pub query: bool,
+}
+
+impl EmbeddingsData {
+    pub fn new(texts: Vec<String>, query: bool) -> Self {
+        Self { texts, query }
+    }
+}
+
+pub type EmbeddingsOutput = Vec<Vec<f32>>;
+
 pub type PromptAction<'a> = (&'a str, &'a str, bool, PromptKind);
 
 pub fn create_config(prompts: &[PromptAction], client: &str) -> Result<(String, Value)> {
@@ -445,7 +495,7 @@ pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(St
                 "name": name,
                 "api_base": api_base,
             });
-            let prompts = if ALL_CLIENT_MODELS.iter().any(|v| &v.platform == name) {
+            let prompts = if ALL_MODELS.iter().any(|v| &v.platform == name) {
                 vec![("api_key", "API Key:", false, PromptKind::String)]
             } else {
                 vec![

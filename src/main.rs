@@ -3,6 +3,7 @@ mod client;
 mod config;
 mod function;
 mod logger;
+mod rag;
 mod render;
 mod repl;
 mod serve;
@@ -13,12 +14,12 @@ mod utils;
 extern crate log;
 
 use crate::cli::Cli;
-use crate::client::{list_models, send_stream, ChatCompletionsOutput};
+use crate::client::{list_chat_models, send_stream, ChatCompletionsOutput};
 use crate::config::{
     Config, GlobalConfig, Input, InputContext, WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE,
     SHELL_ROLE,
 };
-use crate::function::eval_tool_calls;
+use crate::function::{eval_tool_calls, need_send_call_results};
 use crate::render::{render_error, MarkdownRender};
 use crate::repl::Repl;
 use crate::utils::{
@@ -29,14 +30,12 @@ use crate::utils::{
 use anyhow::{bail, Result};
 use async_recursion::async_recursion;
 use clap::Parser;
-use function::need_send_call_results;
 use inquire::{Select, Text};
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use std::io::{stderr, stdin, stdout, Read};
 use std::process;
 use std::sync::Arc;
-use tokio::sync::oneshot;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -67,7 +66,7 @@ async fn main() -> Result<()> {
         return Ok(());
     }
     if cli.list_models {
-        for model in list_models(&config.read()) {
+        for model in list_chat_models(&config.read()) {
             println!("{}", model.id());
         }
         return Ok(());
@@ -87,18 +86,18 @@ async fn main() -> Result<()> {
         config.write().dry_run = true;
     }
     if let Some(prompt) = &cli.prompt {
-        config.write().set_prompt(prompt)?;
+        config.write().use_prompt(prompt)?;
     } else if let Some(name) = &cli.role {
-        config.write().set_role(name)?;
+        config.write().use_role(name)?;
     } else if cli.execute {
-        config.write().set_role(SHELL_ROLE)?;
+        config.write().use_role(SHELL_ROLE)?;
     } else if cli.code {
-        config.write().set_role(CODE_ROLE)?;
+        config.write().use_role(CODE_ROLE)?;
     }
     if let Some(session) = &cli.session {
         config
             .write()
-            .start_session(session.as_ref().map(|v| v.as_str()))?;
+            .use_session(session.as_ref().map(|v| v.as_str()))?;
     }
     if let Some(model) = &cli.model {
         config.write().set_model(model)?;
@@ -142,7 +141,7 @@ async fn main() -> Result<()> {
 #[async_recursion]
 async fn start_directive(
     config: &GlobalConfig,
-    input: Input,
+    mut input: Input,
     no_stream: bool,
     code_mode: bool,
 ) -> Result<()> {
@@ -176,8 +175,8 @@ async fn start_directive(
     };
     config
         .write()
-        .save_message(&input, &output, &tool_call_results)?;
-    config.write().end_session()?;
+        .save_message(&mut input, &output, &tool_call_results)?;
+    config.write().exit_session()?;
     if need_send_call_results(&tool_call_results) {
         start_directive(
             config,
@@ -201,10 +200,9 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
     let client = input.create_client()?;
     let is_terminal_stdout = stdout().is_terminal();
     let ret = if is_terminal_stdout {
-        let (spinner_tx, spinner_rx) = oneshot::channel();
-        tokio::spawn(run_spinner(" Generating", spinner_rx));
+        let (stop_spinner_tx, _) = run_spinner("Generating").await;
         let ret = client.chat_completions(input.clone()).await;
-        let _ = spinner_tx.send(());
+        let _ = stop_spinner_tx.send(());
         ret
     } else {
         client.chat_completions(input.clone()).await
@@ -213,7 +211,7 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
     if let Ok(true) = CODE_BLOCK_RE.is_match(&eval_str) {
         eval_str = extract_block(&eval_str);
     }
-    config.write().save_message(&input, &eval_str, &[])?;
+    config.write().save_message(&mut input, &eval_str, &[])?;
     config.read().maybe_copy(&eval_str);
     let render_options = config.read().get_render_options()?;
     let mut markdown_render = MarkdownRender::init(render_options)?;

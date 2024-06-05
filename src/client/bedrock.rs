@@ -1,8 +1,6 @@
-use super::{
-    catch_error, claude::*, prompt_format::*, BedrockClient, ChatCompletionsData,
-    ChatCompletionsOutput, Client, ExtraConfig, Model, ModelData, ModelPatches, PromptAction,
-    PromptKind, SseHandler,
-};
+use super::*;
+use super::claude::*;
+use super::prompt_format::*;
 
 use crate::utils::{base64_decode, encode_uri, hex_encode, hmac_sha256, sha256};
 
@@ -102,7 +100,7 @@ impl BedrockClient {
         let headers = IndexMap::new();
 
         let mut body = build_chat_completions_body(data, &self.model, model_category)?;
-        self.patch_request_body(&mut body);
+        self.patch_chat_completions_body(&mut body);
 
         let builder = aws_fetch(
             client,

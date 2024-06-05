@@ -14,7 +14,7 @@ use std::{
     time::Duration,
 };
 use textwrap::core::display_width;
-use tokio::sync::{mpsc::UnboundedReceiver, oneshot};
+use tokio::sync::mpsc::UnboundedReceiver;
 
 pub async fn markdown_stream(
     rx: UnboundedReceiver<SseEvent>,
@@ -62,17 +62,16 @@ async fn markdown_stream_inner(
 
     let columns = terminal::size()?.0;
 
-    let (spinner_tx, spinner_rx) = oneshot::channel();
-    let mut spinner_tx = Some(spinner_tx);
-    tokio::spawn(run_spinner(" Generating", spinner_rx));
+    let (stop_spinner_tx, _) = run_spinner("Generating").await;
+    let mut stop_spinner_tx = Some(stop_spinner_tx);
 
     'outer: loop {
         if abort.aborted() {
             return Ok(());
         }
         for reply_event in gather_events(&mut rx).await {
-            if let Some(spinner_tx) = spinner_tx.take() {
-                let _ = spinner_tx.send(());
+            if let Some(stop_spinner_tx) = stop_spinner_tx.take() {
+                let _ = stop_spinner_tx.send(());
             }
 
             match reply_event {
@@ -150,8 +149,8 @@ async fn markdown_stream_inner(
         }
     }
 
-    if let Some(spinner_tx) = spinner_tx.take() {
-        let _ = spinner_tx.send(());
+    if let Some(stop_spinner_tx) = stop_spinner_tx.take() {
+        let _ = stop_spinner_tx.send(());
     }
     Ok(())
 }

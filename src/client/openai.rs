@@ -1,10 +1,6 @@
-use super::{
-    catch_error, message::*, sse_stream, ChatCompletionsData, ChatCompletionsOutput, Client,
-    ExtraConfig, Model, ModelData, ModelPatches, OpenAIClient, PromptAction, PromptKind,
-    SseHandler, SseMmessage, ToolCall,
-};
+use super::*;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -39,17 +35,36 @@ impl OpenAIClient {
         let api_base = self.get_api_base().unwrap_or_else(|_| API_BASE.to_string());
 
         let mut body = openai_build_chat_completions_body(data, &self.model);
-        self.patch_request_body(&mut body);
+        self.patch_chat_completions_body(&mut body);
 
         let url = format!("{api_base}/chat/completions");
 
-        debug!("OpenAI Request: {url} {body}");
+        debug!("OpenAI Chat Completions Request: {url} {body}");
 
         let mut builder = client.post(url).bearer_auth(api_key).json(&body);
 
         if let Some(organization_id) = &self.config.organization_id {
             builder = builder.header("OpenAI-Organization", organization_id);
         }
+
+        Ok(builder)
+    }
+
+    fn embeddings_builder(
+        &self,
+        client: &ReqwestClient,
+        data: EmbeddingsData,
+    ) -> Result<RequestBuilder> {
+        let api_key = self.get_api_key()?;
+        let api_base = self.get_api_base().unwrap_or_else(|_| API_BASE.to_string());
+
+        let body = openai_build_embeddings_body(data, &self.model);
+
+        let url = format!("{api_base}/embeddings");
+
+        debug!("OpenAI Embeddings Request: {url} {body}");
+
+        let builder = client.post(url).bearer_auth(api_key).json(&body);
 
         Ok(builder)
     }
@@ -123,6 +138,30 @@ pub async fn openai_chat_completions_streaming(
     };
 
     sse_stream(builder, handle).await
+}
+
+pub async fn openai_embeddings(
+    builder: RequestBuilder,
+) -> Result<EmbeddingsOutput> {
+    let res = builder.send().await?;
+    let status = res.status();
+    let data: Value = res.json().await?;
+    if !status.is_success() {
+        catch_error(&data, status.as_u16())?;
+    }
+    let res_body: EmbeddingsResBody = serde_json::from_value(data).context("Invalid request data")?;
+    let output = res_body.data.into_iter().map(|v| v.embedding).collect();
+    Ok(output)
+}
+
+#[derive(Deserialize)]
+struct EmbeddingsResBody {
+    data: Vec<EmbeddingsResBodyEmbedding>,
+}
+
+#[derive(Deserialize)]
+struct EmbeddingsResBodyEmbedding {
+    embedding: Vec<f32>,
 }
 
 pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Value {
@@ -201,6 +240,15 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
     body
 }
 
+
+pub fn openai_build_embeddings_body(data: EmbeddingsData, model: &Model) -> Value {
+    json!({
+        "input": data.texts,
+        "model": model.name(),
+        "encoding_format": "float",
+    })
+}
+
 pub fn openai_extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["choices"][0]["message"]["content"]
         .as_str()
@@ -244,5 +292,6 @@ pub fn openai_extract_chat_completions(data: &Value) -> Result<ChatCompletionsOu
 impl_client_trait!(
     OpenAIClient,
     openai_chat_completions,
-    openai_chat_completions_streaming
+    openai_chat_completions_streaming,
+    openai_embeddings
 );

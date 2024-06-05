@@ -7,7 +7,7 @@ use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
 use crate::client::send_stream;
-use crate::config::{AssertState, GlobalConfig, Input, InputContext, StateFlags};
+use crate::config::{AssertState, Config, GlobalConfig, Input, InputContext, StateFlags};
 use crate::function::need_send_call_results;
 use crate::render::render_error;
 use crate::utils::{create_abort_signal, set_text, AbortSignal};
@@ -33,7 +33,7 @@ lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 16] = [
+    static ref REPL_COMMANDS: [ReplCommand; 19] = [
         ReplCommand::new(".help", "Show this help message", AssertState::any()),
         ReplCommand::new(".info", "View system info", AssertState::any()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::any()),
@@ -82,6 +82,17 @@ lazy_static! {
             "End the current session",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
+        ReplCommand::new(".rag", "Init or use a rag", AssertState::any()),
+        ReplCommand::new(
+            ".info rag",
+            "View rag info",
+            AssertState::True(StateFlags::RAG),
+        ),
+        ReplCommand::new(
+            ".exit rag",
+            "Leave the rag",
+            AssertState::True(StateFlags::RAG)
+        ),
         ReplCommand::new(
             ".file",
             "Include files with the message",
@@ -99,7 +110,7 @@ pub struct Repl {
     config: GlobalConfig,
     editor: Reedline,
     prompt: ReplPrompt,
-    abort: AbortSignal,
+    abort_signal: AbortSignal,
 }
 
 impl Repl {
@@ -114,7 +125,7 @@ impl Repl {
             config: config.clone(),
             editor,
             prompt,
-            abort,
+            abort_signal: abort,
         })
     }
 
@@ -122,13 +133,13 @@ impl Repl {
         self.banner();
 
         loop {
-            if self.abort.aborted_ctrld() {
+            if self.abort_signal.aborted_ctrld() {
                 break;
             }
             let sig = self.editor.read_line(&self.prompt);
             match sig {
                 Ok(Signal::Success(line)) => {
-                    self.abort.reset();
+                    self.abort_signal.reset();
                     match self.handle(&line).await {
                         Ok(exit) => {
                             if exit {
@@ -142,11 +153,11 @@ impl Repl {
                     }
                 }
                 Ok(Signal::CtrlC) => {
-                    self.abort.set_ctrlc();
+                    self.abort_signal.set_ctrlc();
                     println!("(To exit, press Ctrl+D or enter \".exit\")\n");
                 }
                 Ok(Signal::CtrlD) => {
-                    self.abort.set_ctrld();
+                    self.abort_signal.set_ctrld();
                     break;
                 }
                 _ => {}
@@ -176,6 +187,10 @@ impl Repl {
                         let info = self.config.read().session_info()?;
                         println!("{}", info);
                     }
+                    Some("rag") => {
+                        let info = self.config.read().rag_info()?;
+                        println!("{}", info);
+                    }
                     Some(_) => unknown_command()?,
                     None => {
                         let output = self.config.read().system_info()?;
@@ -193,7 +208,7 @@ impl Repl {
                 },
                 ".prompt" => match args {
                     Some(text) => {
-                        self.config.write().set_prompt(text)?;
+                        self.config.write().use_prompt(text)?;
                     }
                     None => println!("Usage: .prompt <text>..."),
                 },
@@ -206,16 +221,19 @@ impl Repl {
                                 text.trim(),
                                 Some(InputContext::role(role)),
                             );
-                            ask(&self.config, self.abort.clone(), input).await?;
+                            ask(&self.config, self.abort_signal.clone(), input).await?;
                         }
                         None => {
-                            self.config.write().set_role(args)?;
+                            self.config.write().use_role(args)?;
                         }
                     },
                     None => println!(r#"Usage: .role <name> [text]..."#),
                 },
                 ".session" => {
-                    self.config.write().start_session(args)?;
+                    self.config.write().use_session(args)?;
+                }
+                ".rag" => {
+                    Config::use_rag(&self.config, args, self.abort_signal.clone()).await?;
                 }
                 ".save" => {
                     match args.map(|v| match v.split_once(' ') {
@@ -248,16 +266,19 @@ impl Repl {
                         let (files, text) = split_files_text(args);
                         let files = shell_words::split(files).with_context(|| "Invalid args")?;
                         let input = Input::new(&self.config, text, files, None)?;
-                        ask(&self.config, self.abort.clone(), input).await?;
+                        ask(&self.config, self.abort_signal.clone(), input).await?;
                     }
                     None => println!("Usage: .file <files>... [-- <text>...]"),
                 },
                 ".exit" => match args {
                     Some("role") => {
-                        self.config.write().clear_role()?;
+                        self.config.write().exit_role()?;
                     }
                     Some("session") => {
-                        self.config.write().end_session()?;
+                        self.config.write().exit_session()?;
+                    }
+                    Some("rag") => {
+                        self.config.write().exit_rag()?;
                     }
                     Some(_) => unknown_command()?,
                     None => {
@@ -273,8 +294,9 @@ impl Repl {
                 _ => unknown_command()?,
             },
             None => {
-                let input = Input::from_str(&self.config, line, None);
-                ask(&self.config, self.abort.clone(), input).await?;
+                let mut input = Input::from_str(&self.config, line, None);
+                input.maybe_embeddings(self.abort_signal.clone()).await?;
+                ask(&self.config, self.abort_signal.clone(), input).await?;
             }
         }
 
@@ -407,7 +429,7 @@ impl Validator for ReplValidator {
 }
 
 #[async_recursion]
-async fn ask(config: &GlobalConfig, abort: AbortSignal, input: Input) -> Result<()> {
+async fn ask(config: &GlobalConfig, abort: AbortSignal, mut input: Input) -> Result<()> {
     if input.is_empty() {
         return Ok(());
     }
@@ -417,9 +439,10 @@ async fn ask(config: &GlobalConfig, abort: AbortSignal, input: Input) -> Result<
     let client = input.create_client()?;
     let (output, tool_call_results) =
         send_stream(&input, client.as_ref(), config, abort.clone()).await?;
+
     config
         .write()
-        .save_message(&input, &output, &tool_call_results)?;
+        .save_message(&mut input, &output, &tool_call_results)?;
     config.read().maybe_copy(&output);
     if config.write().should_compress_session() {
         let config = config.clone();

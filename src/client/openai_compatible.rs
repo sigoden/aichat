@@ -1,7 +1,5 @@
-use super::{
-    openai::*, ChatCompletionsData, Client, ExtraConfig, Model, ModelData, ModelPatches,
-    OpenAICompatibleClient, PromptAction, PromptKind, OPENAI_COMPATIBLE_PLATFORMS,
-};
+use super::*;
+use super::openai::*;
 
 use anyhow::Result;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
@@ -41,6 +39,50 @@ impl OpenAICompatibleClient {
         client: &ReqwestClient,
         data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
+        let api_key = self.get_api_key().ok();
+        let api_base = self.get_api_base_ext()?;
+
+        let mut body = openai_build_chat_completions_body(data, &self.model);
+        self.patch_chat_completions_body(&mut body);
+
+        let chat_endpoint = self
+            .config
+            .chat_endpoint
+            .as_deref()
+            .unwrap_or("/chat/completions");
+
+        let url = format!("{api_base}{chat_endpoint}");
+
+        debug!("OpenAICompatible Chat Completions Request: {url} {body}");
+
+        let mut builder = client.post(url).json(&body);
+        if let Some(api_key) = api_key {
+            builder = builder.bearer_auth(api_key);
+        }
+
+        Ok(builder)
+    }
+
+    fn embeddings_builder(
+        &self,
+        client: &ReqwestClient,
+        data: EmbeddingsData,
+    ) -> Result<RequestBuilder> {
+        let api_key = self.get_api_key()?;
+        let api_base = self.get_api_base_ext()?;
+
+        let body = openai_build_embeddings_body(data, &self.model);
+
+        let url = format!("{api_base}/embeddings");
+
+        debug!("OpenAICompatible Embeddings Request: {url} {body}");
+
+        let builder = client.post(url).bearer_auth(api_key).json(&body);
+
+        Ok(builder)
+    }
+
+    fn get_api_base_ext(&self) -> Result<String> {
         let api_base = match self.get_api_base() {
             Ok(v) => v,
             Err(err) => {
@@ -58,32 +100,13 @@ impl OpenAICompatibleClient {
                 }
             }
         };
-        let api_key = self.get_api_key().ok();
-
-        let mut body = openai_build_chat_completions_body(data, &self.model);
-        self.patch_request_body(&mut body);
-
-        let chat_endpoint = self
-            .config
-            .chat_endpoint
-            .as_deref()
-            .unwrap_or("/chat/completions");
-
-        let url = format!("{api_base}{chat_endpoint}");
-
-        debug!("OpenAICompatible Request: {url} {body}");
-
-        let mut builder = client.post(url).json(&body);
-        if let Some(api_key) = api_key {
-            builder = builder.bearer_auth(api_key);
-        }
-
-        Ok(builder)
+        Ok(api_base)
     }
 }
 
 impl_client_trait!(
     OpenAICompatibleClient,
-    crate::client::openai::openai_chat_completions,
-    crate::client::openai::openai_chat_completions_streaming
+    openai_chat_completions,
+    openai_chat_completions_streaming,
+    openai_embeddings
 );

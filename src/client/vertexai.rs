@@ -1,8 +1,5 @@
-use super::{
-    access_token::*, catch_error, json_stream, message::*, patch_system_message,
-    ChatCompletionsData, ChatCompletionsOutput, Client, ExtraConfig, Model, ModelData,
-    ModelPatches, PromptAction, PromptKind, SseHandler, ToolCall, VertexAIClient,
-};
+use super::*;
+use super::access_token::*;
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
@@ -51,9 +48,37 @@ impl VertexAIClient {
         let url = format!("{base_url}/google/models/{}:{func}", self.model.name());
 
         let mut body = gemini_build_chat_completions_body(data, &self.model)?;
-        self.patch_request_body(&mut body);
+        self.patch_chat_completions_body(&mut body);
 
-        debug!("VertexAI Request: {url} {body}");
+        debug!("VertexAI Chat Completions Request: {url} {body}");
+
+        let builder = client.post(url).bearer_auth(access_token).json(&body);
+
+        Ok(builder)
+    }
+
+    fn embeddings_builder(
+        &self,
+        client: &ReqwestClient,
+        data: EmbeddingsData,
+    ) -> Result<RequestBuilder> {
+        let project_id = self.get_project_id()?;
+        let location = self.get_location()?;
+        let access_token = get_access_token(self.name())?;
+
+        let base_url = format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers");
+        let url = format!("{base_url}/google/models/{}:predict", self.model.name());
+
+        let task_type = match data.query {
+            true => "RETRIEVAL_DOCUMENT",
+            false => "QUESTION_ANSWERING",
+        };
+        let instances: Vec<_> = data.texts.into_iter().map(|v| json!({"task_type": task_type, "content": v})).collect();
+        let body = json!({
+            "instances": instances,
+        });
+
+        debug!("VertexAI Embeddings Request: {url} {body}");
 
         let builder = client.post(url).bearer_auth(access_token).json(&body);
 
@@ -84,6 +109,16 @@ impl Client for VertexAIClient {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let builder = self.chat_completions_builder(client, data)?;
         gemini_chat_completions_streaming(builder, handler).await
+    }
+
+    async fn embeddings_inner(
+        &self,
+        client: &ReqwestClient,
+        data: EmbeddingsData,
+    ) -> Result<Vec<Vec<f32>>> {
+        prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
+        let builder = self.embeddings_builder(client, data)?;
+        embeddings(builder).await
     }
 }
 
@@ -138,6 +173,34 @@ pub async fn gemini_chat_completions_streaming(
     Ok(())
 }
 
+async fn embeddings(builder: RequestBuilder) -> Result<EmbeddingsOutput> {
+    let res = builder.send().await?;
+    let status = res.status();
+    let data: Value = res.json().await?;
+    if !status.is_success() {
+        catch_error(&data, status.as_u16())?;
+    }
+    let res_body: EmbeddingsResBody =
+        serde_json::from_value(data).context("Invalid request data")?;
+    let output = res_body.predictions.into_iter().map(|v| v.embeddings.values).collect();
+    Ok(output)
+}
+
+#[derive(Deserialize)]
+struct EmbeddingsResBody {
+    predictions: Vec<EmbeddingsResBodyPrediction>,
+}
+
+#[derive(Deserialize)]
+struct EmbeddingsResBodyPrediction {
+    embeddings: EmbeddingsResBodyPredictionEmbeddings,
+}
+
+#[derive(Deserialize)]
+struct EmbeddingsResBodyPredictionEmbeddings {
+    values: Vec<f32>
+}
+
 fn gemini_extract_chat_completions_text(data: &Value) -> Result<ChatCompletionsOutput> {
     let text = data["candidates"][0]["content"]["parts"][0]["text"]
         .as_str()
@@ -179,7 +242,7 @@ fn gemini_extract_chat_completions_text(data: &Value) -> Result<ChatCompletionsO
     Ok(output)
 }
 
-pub(crate) fn gemini_build_chat_completions_body(
+pub fn gemini_build_chat_completions_body(
     data: ChatCompletionsData,
     model: &Model,
 ) -> Result<Value> {

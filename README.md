@@ -16,6 +16,7 @@ AIChat is an all-in-one AI CLI tool that accesses 100+ LLMs across 20+ AI platfo
 - **Chat-REPL**: Powerful and feature-rich interactive chat interface.
 - **Custom Roles**: Tailor LLM behavior with customizable roles.
 - **Unlimited Sessions**: Automatic message compression for endless conversations.
+- **RAG Retrieval**: Get answer enhanced by your knowledge base..
 - **Function Calling**: Connect LLMs to external tools seamlessly.
 - **Execute Commands**: Use natural language to run shell commands.
 - **Shell Auto-Completion**: AI-based auto-completion for shell commands.
@@ -25,22 +26,22 @@ AIChat is an all-in-one AI CLI tool that accesses 100+ LLMs across 20+ AI platfo
 
 ## Supported AI Platforms
 
-- OpenAI GPT-3.5/GPT-4 (paid, vision, function-calling)
-- Gemini: Gemini-1.0/Gemini-1.5 (free, paid, vision, function-calling)
+- OpenAI GPT-3.5/GPT-4 (paid, vision, embedding, function-calling)
+- Gemini: Gemini-1.0/Gemini-1.5 (free, paid, vision, embedding, function-calling)
 - Claude: Claude-3 (vision, paid, function-calling)
-- Mistral (paid, function-calling)
-- Cohere: Command-R/Command-R+ (paid, function-calling)
+- Mistral (paid, embedding, function-calling)
+- Cohere: Command-R/Command-R+ (paid, embedding, function-calling)
 - Perplexity: Llama-3/Mixtral (paid)
 - Groq: Llama-3/Mixtral/Gemma (free)
-- Ollama (free, local)
-- Azure OpenAI (paid)
-- VertexAI: Gemini-1.0/Gemini-1.5 (paid, vision, function-calling)
+- Ollama (free, local, embedding)
+- Azure OpenAI (paid, vision, embedding, function-calling)
+- VertexAI: Gemini-1.0/Gemini-1.5 (paid, vision, embedding, function-calling)
 - VertexAI-Claude: Claude-3 (paid, vision)
 - Bedrock: Llama-3/Claude-3/Mistral (paid, vision)
 - Cloudflare (free, paid, vision)
 - Replicate (paid)
 - Ernie (paid)
-- Qianwen (paid, vision)
+- Qianwen (paid, vision, embedding)
 - Moonshot (paid)
 - ZhipuAI: GLM-3.5/GLM-4 (paid, vision)
 - Deepseek (paid)
@@ -68,7 +69,7 @@ Upon first launch, AIChat will guide you through the configuration process.
 > No config file, create a new one? Yes
 > AI Platform: openai
 > API Key: <your_api_key_here>
-✨ Saved config file to <config-dir>/aichat/config.yaml
+✨ Saved config file to '<user-config-dir>/aichat/config.yaml'
 ```
 
 Feel free to adjust the configuration according to your needs.
@@ -340,12 +341,27 @@ Usage: .file <file>... [-- text...]
 
 > The capability to process images through `.file` command depends on the current model’s vision support.
 
+### `.rag` - chat with your documents and knowledge bases.
+
+```
+> .rag test1
+> Select embedding model: openai:text-embedding-3-small
+> Set chunk size: 2000
+> Add document paths: tmp/files/paul_graham_essay.txt
+✨ Saved rag to '<user-config-dir>/aichat/rags/test5.bin'
+
+#test1> What did the author do growing up?
+The author mainly focused on writing and programming growing up ...
+```
+
 ### `.set` - adjust settings (non-persistent)
 
 ```
 .set max_output_tokens 4096
 .set temperature 1.2
 .set top_p 0.8
+.set rag_top_k 4
+.set function_calling true
 .set compress_threshold 1000
 .set dry_run true
 ```

@@ -1,8 +1,5 @@
-use super::{
-    catch_error, prompt_format::*, sse_stream, ChatCompletionsData, ChatCompletionsOutput, Client,
-    ExtraConfig, Model, ModelData, ModelPatches, PromptAction, PromptKind, ReplicateClient,
-    SseHandler, SseMmessage,
-};
+use super::*;
+use super::prompt_format::*;
 
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
@@ -36,7 +33,7 @@ impl ReplicateClient {
         api_key: &str,
     ) -> Result<RequestBuilder> {
         let mut body = build_chat_completions_body(data, &self.model)?;
-        self.patch_request_body(&mut body);
+        self.patch_chat_completions_body(&mut body);
 
         let url = format!("{API_BASE}/models/{}/predictions", self.model.name());
 

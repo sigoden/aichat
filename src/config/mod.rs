@@ -7,14 +7,15 @@ pub use self::role::{Role, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE};
 use self::session::{Session, TEMP_SESSION_NAME};
 
 use crate::client::{
-    create_client_config, list_client_types, list_models, ClientConfig, Model,
+    create_client_config, list_chat_models, list_client_types, ClientConfig, Model,
     OPENAI_COMPATIBLE_PLATFORMS,
 };
 use crate::function::{Function, ToolCallResult};
+use crate::rag::{Rag, TEMP_RAG_NAME};
 use crate::render::{MarkdownRender, RenderOptions};
 use crate::utils::{
     format_option_value, fuzzy_match, get_env_name, light_theme_from_colorfgbg, now, render_prompt,
-    set_text,
+    set_text, AbortSignal,
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -42,6 +43,7 @@ const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
 const MESSAGES_FILE_NAME: &str = "messages.md";
 const SESSIONS_DIR_NAME: &str = "sessions";
+const RAGS_DIR_NAME: &str = "rags";
 const FUNCTIONS_DIR_NAME: &str = "functions";
 
 const CLIENTS_FIELD: &str = "clients";
@@ -49,7 +51,16 @@ const CLIENTS_FIELD: &str = "clients";
 const SUMMARIZE_PROMPT: &str =
     "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.";
 const SUMMARY_PROMPT: &str = "This is a summary of the chat history as a recap: ";
-const LEFT_PROMPT: &str = "{color.green}{?session {session}{?role /}}{role}{color.cyan}{?session )}{!session >}{color.reset} ";
+
+const RAG_TEMPLATE: &str = r#"Answer the following question based only on the provided context:
+<context>
+__CONTEXT__
+</context>
+
+Question: __INPUT__
+"#;
+
+const LEFT_PROMPT: &str = "{color.green}{?session {session}{?role /}}{role}{?rag #{rag}}{color.cyan}{?session )}{!session >}{color.reset} ";
 const RIGHT_PROMPT: &str = "{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}";
 
 #[derive(Debug, Clone, Deserialize)]
@@ -71,6 +82,9 @@ pub struct Config {
     pub keybindings: Keybindings,
     pub prelude: Option<String>,
     pub buffer_editor: Option<String>,
+    pub embedding_model: Option<String>,
+    pub rag_top_k: usize,
+    pub rag_template: Option<String>,
     pub function_calling: bool,
     pub compress_threshold: usize,
     pub summarize_prompt: Option<String>,
@@ -84,6 +98,8 @@ pub struct Config {
     pub role: Option<Role>,
     #[serde(skip)]
     pub session: Option<Session>,
+    #[serde(skip)]
+    pub rag: Option<Arc<Rag>>,
     #[serde(skip)]
     pub model: Model,
     #[serde(skip)]
@@ -111,6 +127,9 @@ impl Default for Config {
             keybindings: Default::default(),
             prelude: None,
             buffer_editor: None,
+            embedding_model: None,
+            rag_top_k: 4,
+            rag_template: None,
             function_calling: false,
             compress_threshold: 4000,
             summarize_prompt: None,
@@ -121,6 +140,7 @@ impl Default for Config {
             roles: vec![],
             role: None,
             session: None,
+            rag: None,
             model: Default::default(),
             function: Default::default(),
             working_mode: WorkingMode::Command,
@@ -170,12 +190,12 @@ impl Config {
         match prelude.split_once(':') {
             Some(("role", name)) => {
                 if self.role.is_none() && self.session.is_none() {
-                    self.set_role(name).with_context(err_msg)?;
+                    self.use_role(name).with_context(err_msg)?;
                 }
             }
             Some(("session", name)) => {
                 if self.session.is_none() {
-                    self.start_session(Some(name)).with_context(err_msg)?;
+                    self.use_session(Some(name)).with_context(err_msg)?;
                 }
             }
             _ => {
@@ -223,10 +243,11 @@ impl Config {
 
     pub fn save_message(
         &mut self,
-        input: &Input,
+        input: &mut Input,
         output: &str,
         tool_call_results: &[ToolCallResult],
     ) -> Result<()> {
+        input.clear_patch_text();
         self.last_message = Some((input.clone(), output.to_string()));
 
         if self.dry_run || output.is_empty() || !tool_call_results.is_empty() {
@@ -248,17 +269,13 @@ impl Config {
         let timestamp = now();
         let summary = input.summary();
         let input_markdown = input.render();
-        let output = match input.role() {
-            None => {
-                format!("# CHAT: {summary} [{timestamp}]\n{input_markdown}\n--------\n{output}\n--------\n\n",)
-            }
-            Some(v) => {
-                format!(
-                    "# CHAT: {summary} [{timestamp}] ({})\n{input_markdown}\n--------\n{output}\n--------\n\n",
-                    v.name,
-                )
-            }
+        let scope = match (input.role().map(|v| v.name.as_str()), input.rag()) {
+            (Some(role), Some(rag)) => format!(" ({role}#{rag})"),
+            (Some(role), _) => format!(" ({role})"),
+            (None, Some(rag)) => format!(" (#{rag})"),
+            _ => String::new(),
         };
+        let output = format!("# CHAT: {summary} [{timestamp}]{scope}\n{input_markdown}\n--------\n{output}\n--------\n\n",);
         file.write_all(output.as_bytes())
             .with_context(|| "Failed to save message")
     }
@@ -289,6 +306,10 @@ impl Config {
         Self::local_path(SESSIONS_DIR_NAME)
     }
 
+    pub fn rags_dir() -> Result<PathBuf> {
+        Self::local_path(RAGS_DIR_NAME)
+    }
+
     pub fn functions_dir() -> Result<PathBuf> {
         Self::local_path(FUNCTIONS_DIR_NAME)
     }
@@ -299,17 +320,23 @@ impl Config {
         Ok(path)
     }
 
-    pub fn set_prompt(&mut self, prompt: &str) -> Result<()> {
+    pub fn rag_file(name: &str) -> Result<PathBuf> {
+        let mut path = Self::rags_dir()?;
+        path.push(&format!("{name}.bin"));
+        Ok(path)
+    }
+
+    pub fn use_prompt(&mut self, prompt: &str) -> Result<()> {
         let role = Role::temp(prompt);
-        self.set_role_obj(role)
+        self.use_role_obj(role)
     }
 
-    pub fn set_role(&mut self, name: &str) -> Result<()> {
+    pub fn use_role(&mut self, name: &str) -> Result<()> {
         let role = self.retrieve_role(name)?;
-        self.set_role_obj(role)
+        self.use_role_obj(role)
     }
 
-    pub fn set_role_obj(&mut self, role: Role) -> Result<()> {
+    pub fn use_role_obj(&mut self, role: Role) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
             session.guard_empty()?;
             session.set_role_properties(&role);
@@ -321,7 +348,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn clear_role(&mut self) -> Result<()> {
+    pub fn exit_role(&mut self) -> Result<()> {
         self.role = None;
         self.restore_model()?;
         Ok(())
@@ -337,7 +364,10 @@ impl Config {
             }
         }
         if self.role.is_some() {
-            flags |= StateFlags::ROLE
+            flags |= StateFlags::ROLE;
+        }
+        if self.rag.is_some() {
+            flags |= StateFlags::RAG;
         }
         flags
     }
@@ -393,7 +423,7 @@ impl Config {
     }
 
     pub fn set_model(&mut self, value: &str) -> Result<()> {
-        let models = list_models(self);
+        let models = list_chat_models(self);
         let model = Model::find(&models, value);
         match model {
             None => bail!("No model '{}'", value),
@@ -442,6 +472,7 @@ impl Config {
             ),
             ("temperature", format_option_value(&temperature)),
             ("top_p", format_option_value(&top_p)),
+            ("rag_top_k", self.rag_top_k.to_string()),
             ("function_calling", self.function_calling.to_string()),
             ("compress_threshold", self.compress_threshold.to_string()),
             ("dry_run", self.dry_run.to_string()),
@@ -458,6 +489,7 @@ impl Config {
             ("roles_file", display_path(&Self::roles_file()?)),
             ("messages_file", display_path(&Self::messages_file()?)),
             ("sessions_dir", display_path(&Self::sessions_dir()?)),
+            ("rags_dir", display_path(&Self::rags_dir()?)),
             ("functions_dir", display_path(&Self::functions_dir()?)),
         ];
         let output = items
@@ -486,11 +518,21 @@ impl Config {
         }
     }
 
+    pub fn rag_info(&self) -> Result<String> {
+        if let Some(rag) = &self.rag {
+            rag.export()
+        } else {
+            bail!("No rag")
+        }
+    }
+
     pub fn info(&self) -> Result<String> {
         if let Some(session) = &self.session {
             session.export()
         } else if let Some(role) = &self.role {
             role.export()
+        } else if let Some(rag) = &self.rag {
+            rag.export()
         } else {
             self.system_info()
         }
@@ -511,7 +553,7 @@ impl Config {
                     .iter()
                     .map(|v| (v.name.clone(), String::new()))
                     .collect(),
-                ".model" => list_models(self)
+                ".model" => list_chat_models(self)
                     .into_iter()
                     .map(|v| (v.id(), v.description()))
                     .collect(),
@@ -520,10 +562,16 @@ impl Config {
                     .into_iter()
                     .map(|v| (v.clone(), String::new()))
                     .collect(),
+                ".rag" => self
+                    .list_rags()
+                    .into_iter()
+                    .map(|v| (v.clone(), String::new()))
+                    .collect(),
                 ".set" => vec![
                     "max_output_tokens",
                     "temperature",
                     "top_p",
+                    "rag_top_k",
                     "function_calling",
                     "compress_threshold",
                     "save",
@@ -592,6 +640,11 @@ impl Config {
                 let value = parse_value(value)?;
                 self.set_top_p(value);
             }
+            "rag_top_k" => {
+                if let Some(value) = parse_value(value)? {
+                    self.rag_top_k = value;
+                }
+            }
             "function_calling" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.function_calling = value;
@@ -625,7 +678,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn start_session(&mut self, session: Option<&str>) -> Result<()> {
+    pub fn use_session(&mut self, session: Option<&str>) -> Result<()> {
         if self.session.is_some() {
             bail!(
                 "Already in a session, please run '.exit session' first to exit the current session."
@@ -671,7 +724,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn end_session(&mut self) -> Result<()> {
+    pub fn exit_session(&mut self) -> Result<()> {
         if let Some(mut session) = self.session.take() {
             self.last_message = None;
             let save_session = session.save_session();
@@ -767,6 +820,74 @@ impl Config {
         }
     }
 
+    pub async fn use_rag(
+        config: &GlobalConfig,
+        rag: Option<&str>,
+        abort_signal: AbortSignal,
+    ) -> Result<()> {
+        if config.read().rag.is_some() {
+            bail!("Already in a rag, please run '.exit rag' first to exit the current rag.");
+        }
+        let rag = match rag {
+            None => {
+                let rag_path = Self::rag_file(TEMP_RAG_NAME)?;
+                if rag_path.exists() {
+                    remove_file(&rag_path).with_context(|| {
+                        format!("Failed to cleanup previous '{TEMP_RAG_NAME}' rag")
+                    })?;
+                }
+                Rag::init(config, TEMP_RAG_NAME, &rag_path, abort_signal).await?
+            }
+            Some(name) => {
+                let rag_path = Self::rag_file(name)?;
+                if !rag_path.exists() {
+                    Rag::init(config, name, &rag_path, abort_signal).await?
+                } else {
+                    Rag::load(config, name, &rag_path)?
+                }
+            }
+        };
+        config.write().rag = Some(Arc::new(rag));
+        Ok(())
+    }
+
+    pub fn exit_rag(&mut self) -> Result<()> {
+        self.rag.take();
+        Ok(())
+    }
+
+    pub fn list_rags(&self) -> Vec<String> {
+        let rags_dir = match Self::rags_dir() {
+            Ok(dir) => dir,
+            Err(_) => return vec![],
+        };
+        match read_dir(rags_dir) {
+            Ok(rd) => {
+                let mut names = vec![];
+                for entry in rd.flatten() {
+                    let name = entry.file_name();
+                    if let Some(name) = name.to_string_lossy().strip_suffix(".bin") {
+                        names.push(name.to_string());
+                    }
+                }
+                names.sort_unstable();
+                names
+            }
+            Err(_) => vec![],
+        }
+    }
+
+    pub fn rag_template(&self, embeddings: &str, text: &str) -> String {
+        if embeddings.is_empty() {
+            return text.to_string();
+        }
+        self.rag_template
+            .as_deref()
+            .unwrap_or(RAG_TEMPLATE)
+            .replace("__CONTEXT__", embeddings)
+            .replace("__INPUT__", text)
+    }
+
     pub fn get_render_options(&self) -> Result<RenderOptions> {
         let theme = if self.highlight {
             let theme_mode = if self.light_theme { "light" } else { "dark" };
@@ -857,6 +978,9 @@ impl Config {
             output.insert("consume_tokens", tokens.to_string());
             output.insert("consume_percent", percent.to_string());
             output.insert("user_messages_len", session.user_messages_len().to_string());
+        }
+        if let Some(rag) = &self.rag {
+            output.insert("rag", rag.name().to_string());
         }
 
         if self.highlight {
@@ -974,7 +1098,7 @@ impl Config {
 
     fn setup_model(&mut self) -> Result<()> {
         let model_id = if self.model_id.is_empty() {
-            let models = list_models(self);
+            let models = list_chat_models(self);
             if models.is_empty() {
                 bail!("No available model");
             }
@@ -1049,6 +1173,7 @@ bitflags::bitflags! {
         const ROLE = 1 << 0;
         const SESSION_EMPTY = 1 << 1;
         const SESSION = 1 << 2;
+        const RAG = 1 << 3;
     }
 }
 
@@ -1090,12 +1215,12 @@ fn create_config_file(config_path: &Path) -> Result<()> {
         std::fs::set_permissions(config_path, perms)?;
     }
 
-    println!("✨ Saved config file to {}\n", config_path.display());
+    println!("✨ Saved config file to '{}'\n", config_path.display());
 
     Ok(())
 }
 
-fn ensure_parent_exists(path: &Path) -> Result<()> {
+pub(crate) fn ensure_parent_exists(path: &Path) -> Result<()> {
     if path.exists() {
         return Ok(());
     }

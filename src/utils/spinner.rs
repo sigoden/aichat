@@ -4,7 +4,10 @@ use std::{
     io::{stdout, Stdout, Write},
     time::Duration,
 };
-use tokio::{sync::oneshot, time::interval};
+use tokio::{
+    sync::{mpsc, oneshot},
+    time::interval,
+};
 
 pub struct Spinner {
     index: usize,
@@ -21,6 +24,10 @@ impl Spinner {
             message: message.to_string(),
             stopped: false,
         }
+    }
+
+    pub fn set_message(&mut self, message: &str) {
+        self.message = format!(" {message}");
     }
 
     pub fn step(&mut self, writer: &mut Stdout) -> Result<()> {
@@ -55,18 +62,38 @@ impl Spinner {
     }
 }
 
-pub async fn run_spinner(message: &str, rx: oneshot::Receiver<()>) -> Result<()> {
+pub async fn run_spinner(message: &str) -> (oneshot::Sender<()>, mpsc::UnboundedSender<String>) {
+    let message = format!(" {message}");
+    let (stop_tx, stop_rx) = oneshot::channel();
+    let (message_tx, message_rx) = mpsc::unbounded_channel();
+    tokio::spawn(run_spinner_inner(message, stop_rx, message_rx));
+    (stop_tx, message_tx)
+}
+
+async fn run_spinner_inner(
+    message: String,
+    stop_rx: oneshot::Receiver<()>,
+    mut message_rx: mpsc::UnboundedReceiver<String>,
+) -> Result<()> {
     let mut writer = stdout();
-    let mut spinner = Spinner::new(message);
+    let mut spinner = Spinner::new(&message);
     let mut interval = interval(Duration::from_millis(50));
     tokio::select! {
         _ = async {
             loop {
-                interval.tick().await;
-                let _ = spinner.step(&mut writer);
+                tokio::select! {
+                    _ = interval.tick() => {
+                        let _ = spinner.step(&mut writer);
+                    }
+                    message = message_rx.recv() => {
+                        if let Some(message) = message {
+                            spinner.set_message(&message);
+                        }
+                    }
+                }
             }
         } => {}
-        _ = rx => {
+        _ = stop_rx => {
             spinner.stop(&mut writer)?;
         }
     }
