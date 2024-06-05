@@ -5,7 +5,7 @@ use crate::client::{
     MessageContentPart, MessageRole, Model,
 };
 use crate::function::{ToolCallResult, ToolResults};
-use crate::utils::{base64_encode, sha256, AbortSignal};
+use crate::utils::{base64_encode, sha256, warning_text, AbortSignal, IS_STDOUT_TERMINAL};
 
 use anyhow::{bail, Context, Result};
 use fancy_regex::Regex;
@@ -200,7 +200,7 @@ impl Input {
             (config.temperature, config.top_p)
         };
         let mut functions = None;
-        if self.config.read().function_calling && model.supports_function_calling() {
+        if self.config.read().function_calling {
             let config = self.config.read();
             let function_matcher = if let Some(session) = self.session(&config.session) {
                 session.function_matcher()
@@ -209,7 +209,15 @@ impl Input {
             } else {
                 None
             };
-            functions = config.function.select(function_matcher);
+            if let Some(function_matcher) = function_matcher {
+                functions = config.function.select(function_matcher);
+                if !model.supports_function_calling() {
+                    functions = None;
+                    if *IS_STDOUT_TERMINAL {
+                        eprintln!("{}", warning_text("WARNING: the role or session includes functions, but the model or client does not support function calling."));
+                    }
+                }
+            }
         };
         Ok(ChatCompletionsData {
             messages,
