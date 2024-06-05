@@ -140,16 +140,15 @@ pub async fn openai_chat_completions_streaming(
     sse_stream(builder, handle).await
 }
 
-pub async fn openai_embeddings(
-    builder: RequestBuilder,
-) -> Result<EmbeddingsOutput> {
+pub async fn openai_embeddings(builder: RequestBuilder) -> Result<EmbeddingsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
     if !status.is_success() {
         catch_error(&data, status.as_u16())?;
     }
-    let res_body: EmbeddingsResBody = serde_json::from_value(data).context("Invalid request data")?;
+    let res_body: EmbeddingsResBody =
+        serde_json::from_value(data).context("Invalid request data")?;
     let output = res_body.data.into_iter().map(|v| v.embedding).collect();
     Ok(output)
 }
@@ -239,7 +238,6 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
     }
     body
 }
-
 
 pub fn openai_build_embeddings_body(data: EmbeddingsData, model: &Model) -> Value {
     json!({

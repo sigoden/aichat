@@ -18,7 +18,7 @@ const CHAT_COMPLETIONS_API_URL: &str =
 const CHAT_COMPLETIONS_API_URL_VL: &str =
     "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
 
-const EMBEDDINGS_API_URL: &str = 
+const EMBEDDINGS_API_URL: &str =
     "https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding";
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -249,13 +249,17 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
     Ok((body, has_upload))
 }
 
-async fn embeddings(
-    builder: RequestBuilder,
-) -> Result<EmbeddingsOutput> {
+async fn embeddings(builder: RequestBuilder) -> Result<EmbeddingsOutput> {
     let data: Value = builder.send().await?.json().await?;
     maybe_catch_error(&data)?;
-    let res_body: EmbeddingsResBody = serde_json::from_value(data).context("Invalid request data")?;
-    let output = res_body.output.embeddings.into_iter().map(|v| v.embedding).collect();
+    let res_body: EmbeddingsResBody =
+        serde_json::from_value(data).context("Invalid request data")?;
+    let output = res_body
+        .output
+        .embeddings
+        .into_iter()
+        .map(|v| v.embedding)
+        .collect();
     Ok(output)
 }
 

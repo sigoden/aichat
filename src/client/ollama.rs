@@ -133,16 +133,15 @@ async fn chat_completions_streaming(
     Ok(())
 }
 
-async fn embeddings(
-    builder: RequestBuilder,
-) -> Result<EmbeddingsOutput> {
+async fn embeddings(builder: RequestBuilder) -> Result<EmbeddingsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data = res.json().await?;
     if !status.is_success() {
         catch_error(&data, status.as_u16())?;
     }
-    let res_body: EmbeddingsResBody = serde_json::from_value(data).context("Invalid request data")?;
+    let res_body: EmbeddingsResBody =
+        serde_json::from_value(data).context("Invalid request data")?;
     let output = vec![res_body.embedding];
     Ok(output)
 }

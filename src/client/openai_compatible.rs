@@ -1,5 +1,5 @@
-use super::*;
 use super::openai::*;
+use super::*;
 
 use anyhow::Result;
 use reqwest::{Client as ReqwestClient, RequestBuilder};

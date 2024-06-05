@@ -1,5 +1,5 @@
-use super::*;
 use super::access_token::*;
+use super::*;
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
@@ -73,7 +73,11 @@ impl VertexAIClient {
             true => "RETRIEVAL_DOCUMENT",
             false => "QUESTION_ANSWERING",
         };
-        let instances: Vec<_> = data.texts.into_iter().map(|v| json!({"task_type": task_type, "content": v})).collect();
+        let instances: Vec<_> = data
+            .texts
+            .into_iter()
+            .map(|v| json!({"task_type": task_type, "content": v}))
+            .collect();
         let body = json!({
             "instances": instances,
         });
@@ -182,7 +186,11 @@ async fn embeddings(builder: RequestBuilder) -> Result<EmbeddingsOutput> {
     }
     let res_body: EmbeddingsResBody =
         serde_json::from_value(data).context("Invalid request data")?;
-    let output = res_body.predictions.into_iter().map(|v| v.embeddings.values).collect();
+    let output = res_body
+        .predictions
+        .into_iter()
+        .map(|v| v.embeddings.values)
+        .collect();
     Ok(output)
 }
 
@@ -198,7 +206,7 @@ struct EmbeddingsResBodyPrediction {
 
 #[derive(Deserialize)]
 struct EmbeddingsResBodyPredictionEmbeddings {
-    values: Vec<f32>
+    values: Vec<f32>,
 }
 
 fn gemini_extract_chat_completions_text(data: &Value) -> Result<ChatCompletionsOutput> {
