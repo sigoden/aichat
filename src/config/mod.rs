@@ -155,7 +155,7 @@ impl Config {
         let config_path = Self::config_file()?;
 
         let platform = env::var(get_env_name("platform")).ok();
-        if working_mode != WorkingMode::Command && platform.is_none() && !config_path.exists() {
+        if *IS_STDOUT_TERMINAL && platform.is_none() && !config_path.exists() {
             create_config_file(&config_path)?;
         }
         let mut config = if platform.is_some() {
