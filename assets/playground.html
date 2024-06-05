@@ -1032,8 +1032,8 @@
               body[body_key || setting_key] = this.settings[setting_key];
             }
           });
-          const { max_output_token, pass_max_tokens } = this.currentModel;
-          if (!body["max_tokens"] && pass_max_tokens) {
+          const { max_output_token, require_max_tokens } = this.currentModel;
+          if (!body["max_tokens"] && require_max_tokens) {
             body["max_tokens"] = max_output_token;
           };
           return body;
@@ -1116,12 +1116,12 @@
       if (!model) return {};
       const max_output_token = model.max_output_tokens;
       const supports_vision = !!model.supports_vision;
-      const pass_max_tokens = !!model.pass_max_tokens;
+      const require_max_tokens = !!model.require_max_tokens;
       return {
         id,
         max_output_token,
         supports_vision,
-        pass_max_tokens,
+        require_max_tokens,
       }
     }
 

@@ -85,7 +85,7 @@ impl Server {
                 let ModelData {
                     max_input_tokens,
                     max_output_tokens,
-                    pass_max_tokens,
+                    require_max_tokens,
                     input_price,
                     output_price,
                     supports_vision,
@@ -96,7 +96,7 @@ impl Server {
                     "id": id,
                     "max_input_tokens": max_input_tokens,
                     "max_output_tokens": max_output_tokens,
-                    "pass_max_tokens": pass_max_tokens,
+                    "require_max_tokens": require_max_tokens,
                     "input_price": input_price,
                     "output_price": output_price,
                     "supports_vision": supports_vision,
