@@ -4,27 +4,27 @@
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 [![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/mr3ZZUB9hG)
 
-AIChat is an all-in-one AI CLI tool that accesses 100+ LLMs across 20+ AI platforms, with features including a chat REPL, custom roles, unlimited sessions, function calling, execute commands in natural language, a local api server, an LLM playground/arena, and more.
+AIChat is an all-in-one AI CLI tool featuring chat REPL, RAG, function calling, and more.
 
 ![AIChat Command](https://github.com/sigoden/aichat/assets/4012553/84ae8382-62be-41d0-a0f1-101b113c5bc7)
 
 ![AIChat Chat-REPL](https://github.com/sigoden/aichat/assets/4012553/13470451-9502-4b3e-b49a-e66aa7760208)
 
-## Features
+## Key Features
 
-- **Unified CLI**: Access 100+ LLMs across 20+ AI platforms effortlessly.
-- **Chat-REPL**: Powerful and feature-rich interactive chat interface.
-- **Custom Roles**: Tailor LLM behavior with customizable roles.
-- **Unlimited Sessions**: Automatic message compression for endless conversations.
-- **RAG Retrieval**: Get answer enhanced by your knowledge base..
+- **Unified LLM Client**: Access 100+ LLMs across 20+ AI platforms effortlessly.
+- **RAG Retrieval**: Get answer enhanced by your documents and knowledge  bases.
 - **Function Calling**: Connect LLMs to external tools seamlessly.
 - **Execute Commands**: Use natural language to run shell commands.
+- **Chat REPL**: Powerful and feature-rich interactive chat interface.
+- **Useful Roles**: Tailor LLM behavior with customizable roles.
+- **Unlimited Sessions**: Automatic message compression for endless conversations.
 - **Shell Auto-Completion**: AI-based auto-completion for shell commands.
 - **Highly Customizable**: Customize configurations and themes to your preferences.
 - **Local API Server**: Host a local server with OpenAI-compatible API.
 - **LLM Playground/Arena**: Experiment and compete LLMs in WebUI.
 
-## Supported AI Platforms
+## Supported LLMs
 
 - OpenAI GPT-3.5/GPT-4 (paid, vision, embedding, function-calling)
 - Gemini: Gemini-1.0/Gemini-1.5 (free, paid, vision, embedding, function-calling)
@@ -93,6 +93,11 @@ prelude: null                    # Set a default role or session to start with (
 # Command that will be used to edit the current line buffer with ctrl+o
 # if unset fallback to $EDITOR and $VISUAL
 buffer_editor: null
+
+# Specifies the embedding model to use
+embedding_model: null
+# Determines how many relevant documents are retrieved
+rag_top_k: 4
 
 # Compress session when token count reaches or exceeds this threshold (must be at least 1000)
 compress_threshold: 4000
@@ -366,7 +371,7 @@ The author mainly focused on writing and programming growing up ...
 .set dry_run true
 ```
 
-## Server
+## Local Server
 
 AIChat comes with a built-in lightweight web server.
 
@@ -397,13 +402,13 @@ curl -X POST -H "Content-Type: application/json" -d '{
 
 The LLM Playground is a webapp that allows you to interact with any LLM supported by AIChat directly in your browser.
 
-![image](https://github.com/sigoden/aichat/assets/4012553/d2334c03-9a07-41a4-a326-e4ee37477ce3)
+![llm-playground](https://github.com/sigoden/aichat/assets/4012553/d2334c03-9a07-41a4-a326-e4ee37477ce3)
 
 ### LLM Arena
 
 The LLM Arena is a web-based platform where you can compare different LLMs side-by-side. 
 
-![image](https://github.com/sigoden/aichat/assets/4012553/7883a708-aa8d-417b-a82d-9b58cc73d91b)
+![llm-arena](https://github.com/sigoden/aichat/assets/4012553/eb1eab0c-4685-4142-89c6-089714b4822c)
 
 ## Function Calling
 
