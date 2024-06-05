@@ -5,10 +5,11 @@ use crate::client::{Message, MessageContent, MessageRole};
 use crate::render::MarkdownRender;
 
 use anyhow::{bail, Context, Result};
+use inquire::{Confirm, Text};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
-use std::fs::{self, read_to_string};
+use std::fs::{self, create_dir_all, read_to_string};
 use std::path::Path;
 
 pub const TEMP_SESSION_NAME: &str = "temp";
@@ -302,12 +303,40 @@ impl Session {
         self.dirty = true;
     }
 
-    pub fn save(&mut self, session_path: &Path) -> Result<()> {
+    pub fn exit(&mut self, sessions_dir: &Path, is_repl: bool) -> Result<()> {
+        let save_session = self.save_session();
+        if self.dirty && save_session != Some(false) {
+            if save_session.is_none() {
+                if !is_repl {
+                    return Ok(());
+                }
+                let ans = Confirm::new("Save session?").with_default(false).prompt()?;
+                if !ans {
+                    return Ok(());
+                }
+                while self.is_temp() {
+                    self.name = Text::new("Session name:").prompt()?;
+                }
+            }
+            self.save(sessions_dir)?;
+        }
+        Ok(())
+    }
+
+    pub fn save(&mut self, sessions_dir: &Path) -> Result<()> {
+        let mut session_path = sessions_dir.to_path_buf();
+        session_path.push(format!("{}.yaml", self.name()));
+        if !sessions_dir.exists() {
+            create_dir_all(sessions_dir).with_context(|| {
+                format!("Failed to create session_dir '{}'", sessions_dir.display())
+            })?;
+        }
+
         self.path = Some(session_path.display().to_string());
 
         let content = serde_yaml::to_string(&self)
             .with_context(|| format!("Failed to serde session {}", self.name))?;
-        fs::write(session_path, content).with_context(|| {
+        fs::write(&session_path, content).with_context(|| {
             format!(
                 "Failed to write session {} to {}",
                 self.name,

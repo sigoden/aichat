@@ -372,9 +372,8 @@ pub fn split_vector_id(value: VectorID) -> (usize, usize) {
 }
 
 fn retrieve_embedding_model(config: &Config, model_id: &str) -> Result<Model> {
-    let models = list_embedding_models(config);
-    let model =
-        Model::find(&models, model_id).ok_or_else(|| anyhow!("No embedding model '{model_id}'"))?;
+    let model = Model::find(&list_embedding_models(config), model_id)
+        .ok_or_else(|| anyhow!("No embedding model '{model_id}'"))?;
     Ok(model)
 }
 

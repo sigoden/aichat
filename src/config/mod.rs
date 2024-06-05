@@ -19,7 +19,7 @@ use crate::utils::{
 };
 
 use anyhow::{anyhow, bail, Context, Result};
-use inquire::{Confirm, Select, Text};
+use inquire::{Confirm, Select};
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use serde::Deserialize;
@@ -363,8 +363,10 @@ impl Config {
     }
 
     pub fn exit_role(&mut self) -> Result<()> {
+        if self.session.is_none() {
+            self.restore_model()?;
+        }
         self.role = None;
-        self.restore_model()?;
         Ok(())
     }
 
@@ -384,6 +386,10 @@ impl Config {
             flags |= StateFlags::RAG;
         }
         flags
+    }
+
+    pub fn has_role_or_session(&self) -> bool {
+        self.role.is_some() || self.session.is_some()
     }
 
     pub fn set_temperature(&mut self, value: Option<f64>) {
@@ -437,8 +443,7 @@ impl Config {
     }
 
     pub fn set_model(&mut self, value: &str) -> Result<()> {
-        let models = list_chat_models(self);
-        let model = Model::find(&models, value);
+        let model = Model::find(&list_chat_models(self), value);
         match model {
             None => bail!("No model '{}'", value),
             Some(model) => {
@@ -740,23 +745,10 @@ impl Config {
 
     pub fn exit_session(&mut self) -> Result<()> {
         if let Some(mut session) = self.session.take() {
+            let is_repl = self.working_mode == WorkingMode::Repl;
+            let sessions_dir = Self::sessions_dir()?;
+            session.exit(&sessions_dir, is_repl)?;
             self.last_message = None;
-            let save_session = session.save_session();
-            if session.dirty && save_session != Some(false) {
-                if save_session.is_none() {
-                    if self.working_mode != WorkingMode::Repl {
-                        return Ok(());
-                    }
-                    let ans = Confirm::new("Save session?").with_default(false).prompt()?;
-                    if !ans {
-                        return Ok(());
-                    }
-                    while session.is_temp() {
-                        session.name = Text::new("Session name:").prompt()?;
-                    }
-                }
-                Self::save_session_to_file(&mut session)?;
-            }
             self.restore_model()?;
         }
         Ok(())
@@ -767,7 +759,8 @@ impl Config {
             if !name.is_empty() {
                 session.name = name.to_string();
             }
-            Self::save_session_to_file(session)?;
+            let sessions_dir = Self::sessions_dir()?;
+            session.save(&sessions_dir)?;
         }
         Ok(())
     }
@@ -1032,20 +1025,6 @@ impl Config {
             .with_context(|| format!("Failed to create/append {}", path.display()))
     }
 
-    fn save_session_to_file(session: &mut Session) -> Result<()> {
-        let session_path = Self::session_file(session.name())?;
-        let sessions_dir = session_path
-            .parent()
-            .ok_or_else(|| anyhow!("Unable to save session file to {}", session_path.display()))?;
-        if !sessions_dir.exists() {
-            create_dir_all(sessions_dir).with_context(|| {
-                format!("Failed to create session_dir '{}'", sessions_dir.display())
-            })?;
-        }
-        session.save(&session_path)?;
-        Ok(())
-    }
-
     fn load_config_file(config_path: &Path) -> Result<Self> {
         let content = read_to_string(config_path)
             .with_context(|| format!("Failed to load config at {}", config_path.display()))?;
@@ -1117,13 +1096,12 @@ impl Config {
                 bail!("No available model");
             }
 
-            let model_id = models[0].id();
-            self.model_id.clone_from(&model_id);
-            model_id
+            models[0].id()
         } else {
             self.model_id.clone()
         };
         self.set_model(&model_id)?;
+        self.model_id = model_id;
         Ok(())
     }
 

@@ -1,7 +1,7 @@
-use super::Input;
+use super::{Config, Input};
 
 use crate::{
-    client::{Message, MessageContent, MessageRole, Model},
+    client::{list_chat_models, Message, MessageContent, MessageRole, Model},
     utils::{detect_os, detect_shell},
 };
 
@@ -97,6 +97,12 @@ async function timeout(ms) {
 
     pub fn embedded_prompt(&self) -> bool {
         self.prompt.contains(INPUT_PLACEHOLDER)
+    }
+
+    pub fn retrieve_model(&self, config: &Config) -> Option<Model> {
+        self.model_id
+            .as_ref()
+            .and_then(|model_id| Model::find(&list_chat_models(config), model_id))
     }
 
     pub fn set_model(&mut self, model: &Model) {
