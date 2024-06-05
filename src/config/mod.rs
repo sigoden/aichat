@@ -287,31 +287,45 @@ impl Config {
     }
 
     pub fn config_file() -> Result<PathBuf> {
-        Self::local_path(CONFIG_FILE_NAME)
+        match env::var(get_env_name("config_file")) {
+            Ok(value) => Ok(PathBuf::from(value)),
+            Err(_) => Self::local_path(CONFIG_FILE_NAME),
+        }
     }
 
     pub fn roles_file() -> Result<PathBuf> {
-        let env_name = get_env_name("roles_file");
-        env::var(env_name).map_or_else(
-            |_| Self::local_path(ROLES_FILE_NAME),
-            |value| Ok(PathBuf::from(value)),
-        )
+        match env::var(get_env_name("roles_file")) {
+            Ok(value) => Ok(PathBuf::from(value)),
+            Err(_) => Self::local_path(ROLES_FILE_NAME),
+        }
     }
 
     pub fn messages_file() -> Result<PathBuf> {
-        Self::local_path(MESSAGES_FILE_NAME)
+        match env::var(get_env_name("messages_file")) {
+            Ok(value) => Ok(PathBuf::from(value)),
+            Err(_) => Self::local_path(MESSAGES_FILE_NAME),
+        }
     }
 
     pub fn sessions_dir() -> Result<PathBuf> {
-        Self::local_path(SESSIONS_DIR_NAME)
+        match env::var(get_env_name("sessions_dir")) {
+            Ok(value) => Ok(PathBuf::from(value)),
+            Err(_) => Self::local_path(SESSIONS_DIR_NAME),
+        }
     }
 
     pub fn rags_dir() -> Result<PathBuf> {
-        Self::local_path(RAGS_DIR_NAME)
+        match env::var(get_env_name("rags_dir")) {
+            Ok(value) => Ok(PathBuf::from(value)),
+            Err(_) => Self::local_path(RAGS_DIR_NAME),
+        }
     }
 
     pub fn functions_dir() -> Result<PathBuf> {
-        Self::local_path(FUNCTIONS_DIR_NAME)
+        match env::var(get_env_name("functions_dir")) {
+            Ok(value) => Ok(PathBuf::from(value)),
+            Err(_) => Self::local_path(FUNCTIONS_DIR_NAME),
+        }
     }
 
     pub fn session_file(name: &str) -> Result<PathBuf> {
