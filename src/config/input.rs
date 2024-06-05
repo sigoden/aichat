@@ -189,7 +189,7 @@ impl Input {
         stream: bool,
     ) -> Result<ChatCompletionsData> {
         if !self.medias.is_empty() && !model.supports_vision() {
-            bail!("The current model does not support vision.");
+            bail!("The current model does not support vision. Is the model configured with `supports_vision: true`?");
         }
         let messages = self.build_messages()?;
         self.config.read().model.guard_max_input_tokens(&messages)?;
