@@ -182,11 +182,11 @@ impl Rag {
         for path in file_paths {
             let extension = Path::new(&path)
                 .extension()
-                .map(|v| v.to_string_lossy())
+                .map(|v| v.to_string_lossy().to_lowercase())
                 .unwrap_or_default();
             let separator = autodetect_separator(&extension);
             let splitter = Splitter::new(self.data.chunk_size, CHUNK_OVERLAP, separator);
-            let documents = load_text(&path)
+            let documents = load(&path, &extension)
                 .await
                 .with_context(|| format!("Failed to load text at '{path}'"))?;
             let documents =

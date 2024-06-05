@@ -1,12 +1,49 @@
 use super::RagDocument;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use async_recursion::async_recursion;
-use std::path::Path;
+use std::{path::Path, process::Command};
 use tokio::fs;
 
-pub async fn load_text(path: &str) -> Result<Vec<RagDocument>> {
+pub async fn load(path: &str, extension: &str) -> Result<Vec<RagDocument>> {
+    match extension {
+        "docx" | "epub" | "ipynb" => load_pandoc(path)
+            .await
+            .context("Failed to load with pandoc"),
+        "pdf" => load_pdf(path).await,
+        _ => load_plain(path).await,
+    }
+}
+
+async fn load_plain(path: &str) -> Result<Vec<RagDocument>> {
     let contents = fs::read_to_string(path).await?;
+    let document = RagDocument::new(contents);
+    Ok(vec![document])
+}
+
+async fn load_pdf(path: &str) -> Result<Vec<RagDocument>> {
+    let contents = pdf_extract::extract_text(path)?;
+    let document = RagDocument::new(contents);
+    Ok(vec![document])
+}
+
+async fn load_pandoc(path: &str) -> Result<Vec<RagDocument>> {
+    let output = Command::new("pandoc")
+        .arg("--to")
+        .arg("plain")
+        .arg(path)
+        .output()?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        bail!(
+            "Pandoc conversion failed with exit code {:?}: {}",
+            output.status.code(),
+            stderr
+        );
+    }
+
+    let contents = std::str::from_utf8(&output.stdout)?;
     let document = RagDocument::new(contents);
     Ok(vec![document])
 }

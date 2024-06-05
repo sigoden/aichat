@@ -34,11 +34,37 @@ pub const MARKDOWN_SEPARATES: [&str; 13] = [
     " ",
     "",
 ];
+pub const LATEX_SEPARATES: [&str; 19] = [
+    // First, try to split along Latex sections
+    "\n\\chapter{",
+    "\n\\section{",
+    "\n\\subsection{",
+    "\n\\subsubsection{",
+    // Now split by environments
+    "\n\\begin{enumerate}",
+    "\n\\begin{itemize}",
+    "\n\\begin{description}",
+    "\n\\begin{list}",
+    "\n\\begin{quote}",
+    "\n\\begin{quotation}",
+    "\n\\begin{verse}",
+    "\n\\begin{verbatim}",
+    // Now split by math environments
+    "\n\\begin{align}",
+    "$$",
+    "$",
+    // Now split by the normal type of lines
+    "\n\n",
+    "\n",
+    " ",
+    "",
+];
 
 pub fn autodetect_separator(extension: &str) -> &[&'static str] {
     match extension {
-        "md" => &MARKDOWN_SEPARATES,
+        "md" | "mkd" => &MARKDOWN_SEPARATES,
         "htm" | "html" => &HTML_SEPARATES,
+        "tex" => &LATEX_SEPARATES,
         _ => &DEFAULT_SEPARATES,
     }
 }
