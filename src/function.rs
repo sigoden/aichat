@@ -125,8 +125,7 @@ impl Function {
         })
     }
 
-    pub fn select(&self, matcher: Option<&str>) -> Option<Vec<FunctionDeclaration>> {
-        let matcher = matcher?;
+    pub fn select(&self, matcher: &str) -> Option<Vec<FunctionDeclaration>> {
         let regex = Regex::new(&format!("^({matcher})$")).ok()?;
         let output: Vec<FunctionDeclaration> = self
             .declarations
