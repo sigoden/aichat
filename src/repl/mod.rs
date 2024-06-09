@@ -34,9 +34,9 @@ const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
     static ref REPL_COMMANDS: [ReplCommand; 22] = [
-        ReplCommand::new(".help", "Show this help message", AssertState::any()),
-        ReplCommand::new(".info", "View system info", AssertState::any()),
-        ReplCommand::new(".model", "Change the current LLM", AssertState::any()),
+        ReplCommand::new(".help", "Show this help message", AssertState::pass()),
+        ReplCommand::new(".info", "View system info", AssertState::pass()),
+        ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
         ReplCommand::new(
             ".prompt",
             "Create a temporary role using a prompt",
@@ -95,9 +95,9 @@ lazy_static! {
         ReplCommand::new(
             ".exit rag",
             "Leave the rag",
-            AssertState::True(StateFlags::RAG)
+            AssertState::TrueFalse(StateFlags::RAG, StateFlags::BOT),
         ),
-        ReplCommand::new(".bot", "Use a bot", AssertState::Equal(StateFlags::empty())),
+        ReplCommand::new(".bot", "Use a bot", AssertState::bare()),
         ReplCommand::new(
             ".info bot",
             "View bot info",
@@ -111,11 +111,11 @@ lazy_static! {
         ReplCommand::new(
             ".file",
             "Include files with the message",
-            AssertState::any()
+            AssertState::pass()
         ),
-        ReplCommand::new(".set", "Adjust settings", AssertState::any()),
-        ReplCommand::new(".copy", "Copy the last response", AssertState::any()),
-        ReplCommand::new(".exit", "Exit the REPL", AssertState::any()),
+        ReplCommand::new(".set", "Adjust settings", AssertState::pass()),
+        ReplCommand::new(".copy", "Copy the last response", AssertState::pass()),
+        ReplCommand::new(".exit", "Exit the REPL", AssertState::pass()),
     ];
     static ref COMMAND_RE: Regex = Regex::new(r"^\s*(\.\S*)\s*").unwrap();
     static ref MULTILINE_RE: Regex = Regex::new(r"(?s)^\s*:::\s*(.*)\s*:::\s*$").unwrap();
@@ -429,8 +429,12 @@ impl ReplCommand {
 
     fn is_valid(&self, flags: StateFlags) -> bool {
         match self.state {
-            AssertState::True(check_flags) => check_flags & flags != StateFlags::empty(),
-            AssertState::False(check_flags) => check_flags & flags == StateFlags::empty(),
+            AssertState::True(true_flags) => true_flags & flags != StateFlags::empty(),
+            AssertState::False(false_flags) => false_flags & flags == StateFlags::empty(),
+            AssertState::TrueFalse(true_flags, false_flags) => {
+                (true_flags & flags != StateFlags::empty())
+                    && (false_flags & flags == StateFlags::empty())
+            }
             AssertState::Equal(check_flags) => check_flags == flags,
         }
     }

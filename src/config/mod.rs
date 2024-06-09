@@ -1333,12 +1333,16 @@ bitflags::bitflags! {
 pub enum AssertState {
     True(StateFlags),
     False(StateFlags),
+    TrueFalse(StateFlags, StateFlags),
     Equal(StateFlags),
 }
 
 impl AssertState {
-    pub fn any() -> Self {
+    pub fn pass() -> Self {
         AssertState::False(StateFlags::empty())
+    }
+    pub fn bare() -> Self {
+        AssertState::Equal(StateFlags::empty())
     }
 }
 
