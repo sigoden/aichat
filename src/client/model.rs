@@ -31,6 +31,13 @@ impl Model {
         }
     }
 
+    pub fn from_id(id: &str) -> Self {
+        match id.split_once(':') {
+            Some((client_name, name)) => Self::new(client_name, name),
+            None => Self::new(id, ""),
+        }
+    }
+
     pub fn from_config(client_name: &str, models: &[ModelData]) -> Vec<Self> {
         models
             .iter()
@@ -73,7 +80,11 @@ impl Model {
     }
 
     pub fn id(&self) -> String {
-        format!("{}:{}", self.client_name, self.data.name)
+        if self.data.name.is_empty() {
+            self.client_name.to_string()
+        } else {
+            format!("{}:{}", self.client_name, self.data.name)
+        }
     }
 
     pub fn client_name(&self) -> &str {

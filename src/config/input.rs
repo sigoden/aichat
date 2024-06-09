@@ -1,4 +1,4 @@
-use super::{role::Role, session::Session, GlobalConfig};
+use super::{bot::Bot, role::Role, session::Session, GlobalConfig};
 
 use crate::client::{
     init_client, ChatCompletionsData, Client, ImageUrl, Message, MessageContent,
@@ -29,7 +29,7 @@ lazy_static! {
 pub struct Input {
     config: GlobalConfig,
     text: String,
-    patch_text: Option<String>,
+    patched_text: Option<String>,
     medias: Vec<String>,
     data_urls: HashMap<String, String>,
     tool_call: Option<ToolResults>,
@@ -42,7 +42,7 @@ impl Input {
         Self {
             config: config.clone(),
             text: text.to_string(),
-            patch_text: None,
+            patched_text: None,
             medias: Default::default(),
             data_urls: Default::default(),
             tool_call: None,
@@ -96,7 +96,7 @@ impl Input {
         Ok(Self {
             config: config.clone(),
             text: texts.join("\n"),
-            patch_text: None,
+            patched_text: None,
             medias,
             data_urls,
             tool_call: Default::default(),
@@ -114,7 +114,7 @@ impl Input {
     }
 
     pub fn text(&self) -> String {
-        match self.patch_text.clone() {
+        match self.patched_text.clone() {
             Some(text) => text,
             None => self.text.clone(),
         }
@@ -134,7 +134,7 @@ impl Input {
                 let top_k = self.config.read().rag_top_k;
                 let embeddings = rag.search(&self.text, top_k, abort_signal).await?;
                 let text = self.config.read().rag_template(&embeddings, &self.text);
-                self.patch_text = Some(text);
+                self.patched_text = Some(text);
                 self.rag = Some(rag.name().to_string());
             }
         }
@@ -146,7 +146,7 @@ impl Input {
     }
 
     pub fn clear_patch_text(&mut self) {
-        self.patch_text.take();
+        self.patched_text.take();
     }
 
     pub fn merge_tool_call(
@@ -166,7 +166,9 @@ impl Input {
 
     pub fn model(&self) -> Model {
         if let Some(session) = self.session(&self.config.read().session) {
-            return session.model.clone();
+            return session.model().clone();
+        } else if let Some(bot) = self.bot(&self.config.read().bot) {
+            return bot.model().clone();
         } else if let Some(model) = self
             .role()
             .and_then(|v| v.retrieve_model(&self.config.read()))
@@ -193,6 +195,8 @@ impl Input {
         let (temperature, top_p) = if let Some(session) = self.session(&self.config.read().session)
         {
             (session.temperature(), session.top_p())
+        } else if let Some(bot) = self.bot(&self.config.read().bot) {
+            (bot.temperature(), bot.top_p())
         } else if let Some(role) = self.role() {
             (role.temperature, role.top_p)
         } else {
@@ -202,15 +206,23 @@ impl Input {
         let mut functions = None;
         if self.config.read().function_calling {
             let config = self.config.read();
-            let function_matcher = if let Some(session) = self.session(&config.session) {
+            let function_matcher = if let Some(bot) = self.bot(&config.bot) {
+                bot.function_matcher()
+            } else if let Some(session) = self.session(&config.session) {
                 session.function_matcher()
             } else if let Some(role) = self.role() {
                 role.function_matcher.as_deref()
             } else {
                 None
             };
-            if let Some(function_matcher) = function_matcher {
-                functions = config.function.select(function_matcher);
+            if let Some(matcher) = function_matcher {
+                functions = match &config.bot {
+                    Some(bot) => bot
+                        .functions()
+                        .map(|v| v.select(matcher))
+                        .unwrap_or_default(),
+                    None => config.functions.select(matcher),
+                };
                 if !model.supports_function_calling() {
                     functions = None;
                     if *IS_STDOUT_TERMINAL {
@@ -270,6 +282,14 @@ impl Input {
     pub fn session_mut<'a>(&self, session: &'a mut Option<Session>) -> Option<&'a mut Session> {
         if self.context.session {
             session.as_mut()
+        } else {
+            None
+        }
+    }
+
+    pub fn bot<'a>(&self, bot: &'a Option<Bot>) -> Option<&'a Bot> {
+        if self.context.bot {
+            bot.as_ref()
         } else {
             None
         }
@@ -341,22 +361,29 @@ impl Input {
 pub struct InputContext {
     role: Option<Role>,
     session: bool,
+    bot: bool,
 }
 
 impl InputContext {
-    pub fn new(role: Option<Role>, session: bool) -> Self {
-        Self { role, session }
+    pub fn new(role: Option<Role>, session: bool, bot: bool) -> Self {
+        Self { role, session, bot }
     }
 
     pub fn from_config(config: &GlobalConfig) -> Self {
         let config = config.read();
-        InputContext::new(config.role.clone(), config.session.is_some())
+        let session = config.session.is_some();
+        let (role, bot) = match &config.bot {
+            Some(bot) => (Some(bot.role().clone()), true),
+            None => (config.role.clone(), false),
+        };
+        InputContext::new(role, session, bot)
     }
 
     pub fn role(role: Role) -> Self {
         Self {
             role: Some(role),
             session: false,
+            bot: false,
         }
     }
 }

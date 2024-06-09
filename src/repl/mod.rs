@@ -33,19 +33,19 @@ lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 19] = [
+    static ref REPL_COMMANDS: [ReplCommand; 22] = [
         ReplCommand::new(".help", "Show this help message", AssertState::any()),
         ReplCommand::new(".info", "View system info", AssertState::any()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::any()),
         ReplCommand::new(
             ".prompt",
             "Create a temporary role using a prompt",
-            AssertState::False(StateFlags::SESSION)
+            AssertState::False(StateFlags::SESSION | StateFlags::BOT)
         ),
         ReplCommand::new(
             ".role",
             "Switch to a specific role",
-            AssertState::False(StateFlags::SESSION)
+            AssertState::False(StateFlags::SESSION | StateFlags::BOT)
         ),
         ReplCommand::new(
             ".info role",
@@ -82,7 +82,11 @@ lazy_static! {
             "End the current session",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
-        ReplCommand::new(".rag", "Init or use a rag", AssertState::any()),
+        ReplCommand::new(
+            ".rag",
+            "Init or use a rag",
+            AssertState::False(StateFlags::BOT)
+        ),
         ReplCommand::new(
             ".info rag",
             "View rag info",
@@ -92,6 +96,17 @@ lazy_static! {
             ".exit rag",
             "Leave the rag",
             AssertState::True(StateFlags::RAG)
+        ),
+        ReplCommand::new(".bot", "Use a bot", AssertState::Equal(StateFlags::empty())),
+        ReplCommand::new(
+            ".info bot",
+            "View bot info",
+            AssertState::True(StateFlags::BOT),
+        ),
+        ReplCommand::new(
+            ".exit bot",
+            "Leave the bot",
+            AssertState::True(StateFlags::BOT)
         ),
         ReplCommand::new(
             ".file",
@@ -191,17 +206,21 @@ impl Repl {
                         let info = self.config.read().rag_info()?;
                         println!("{}", info);
                     }
+                    Some("bot") => {
+                        let info = self.config.read().bot_info()?;
+                        println!("{}", info);
+                    }
                     Some(_) => unknown_command()?,
                     None => {
-                        let output = self.config.read().system_info()?;
+                        let output = self.config.read().sysinfo()?;
                         println!("{}", output);
                     }
                 },
                 ".model" => match args {
                     Some(name) => {
                         self.config.write().set_model(name)?;
-                        if !self.config.read().has_role_or_session() {
-                            self.config.write().set_model_id();
+                        if !self.config.read().has_role_session_bot() {
+                            self.config.write().update_model_id();
                         }
                     }
                     None => println!("Usage: .model <name>"),
@@ -235,6 +254,12 @@ impl Repl {
                 ".rag" => {
                     Config::use_rag(&self.config, args, self.abort_signal.clone()).await?;
                 }
+                ".bot" => match args {
+                    Some(name) => {
+                        Config::use_bot(&self.config, name, self.abort_signal.clone()).await?;
+                    }
+                    None => println!(r#"Usage: .bot <name>"#),
+                },
                 ".save" => {
                     match args.map(|v| match v.split_once(' ') {
                         Some((subcmd, args)) => (subcmd, args.trim()),
@@ -279,6 +304,9 @@ impl Repl {
                     }
                     Some("rag") => {
                         self.config.write().exit_rag()?;
+                    }
+                    Some("bot") => {
+                        self.config.write().exit_bot()?;
                     }
                     Some(_) => unknown_command()?,
                     None => {
@@ -410,6 +438,7 @@ impl ReplCommand {
         match self.state {
             AssertState::True(check_flags) => check_flags & flags != StateFlags::empty(),
             AssertState::False(check_flags) => check_flags & flags == StateFlags::empty(),
+            AssertState::Equal(check_flags) => check_flags == flags,
         }
     }
 }

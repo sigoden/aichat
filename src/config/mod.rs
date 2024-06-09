@@ -1,17 +1,19 @@
+mod bot;
 mod input;
 mod role;
 mod session;
 
+pub use self::bot::{list_bots, Bot};
 pub use self::input::{Input, InputContext};
 pub use self::role::{Role, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE};
-use self::session::{Session, TEMP_SESSION_NAME};
+use self::session::Session;
 
 use crate::client::{
     create_client_config, list_chat_models, list_client_types, ClientConfig, Model,
     OPENAI_COMPATIBLE_PLATFORMS,
 };
-use crate::function::{Function, ToolCallResult};
-use crate::rag::{Rag, TEMP_RAG_NAME};
+use crate::function::{Functions, ToolCallResult};
+use crate::rag::Rag;
 use crate::render::{MarkdownRender, RenderOptions};
 use crate::utils::{
     format_option_value, fuzzy_match, get_env_name, light_theme_from_colorfgbg, now, render_prompt,
@@ -44,6 +46,13 @@ const MESSAGES_FILE_NAME: &str = "messages.md";
 const SESSIONS_DIR_NAME: &str = "sessions";
 const RAGS_DIR_NAME: &str = "rags";
 const FUNCTIONS_DIR_NAME: &str = "functions";
+const FUNCTIONS_FILE_NAME: &str = "functions.json";
+const BOTS_DIR_NAME: &str = "bots";
+const BOT_DEFINITION_FILE_NAME: &str = "index.yaml";
+
+pub const TEMP_ROLE_NAME: &str = "%%";
+pub const TEMP_RAG_NAME: &str = "temp";
+pub const TEMP_SESSION_NAME: &str = "temp";
 
 const CLIENTS_FIELD: &str = "clients";
 
@@ -51,7 +60,7 @@ const SUMMARIZE_PROMPT: &str =
     "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.";
 const SUMMARY_PROMPT: &str = "This is a summary of the chat history as a recap: ";
 
-const RAG_TEMPLATE: &str = r#"Answer the following question based only on the provided context:
+const RAG_TEMPLATE: &str = r#"Answer the question based only on the provided context:
 <context>
 __CONTEXT__
 </context>
@@ -59,7 +68,7 @@ __CONTEXT__
 Question: __INPUT__
 "#;
 
-const LEFT_PROMPT: &str = "{color.green}{?session {session}{?role /}}{role}{?rag #{rag}}{color.cyan}{?session )}{!session >}{color.reset} ";
+const LEFT_PROMPT: &str = "{color.green}{?session {session}{?role /}{?bot /}}{role}{bot}{?rag #{rag}}{color.cyan}{?session )}{!session >}{color.reset} ";
 const RIGHT_PROMPT: &str = "{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}";
 
 #[derive(Debug, Clone, Deserialize)]
@@ -100,9 +109,11 @@ pub struct Config {
     #[serde(skip)]
     pub rag: Option<Arc<Rag>>,
     #[serde(skip)]
+    pub bot: Option<Bot>,
+    #[serde(skip)]
     pub model: Model,
     #[serde(skip)]
-    pub function: Function,
+    pub functions: Functions,
     #[serde(skip)]
     pub working_mode: WorkingMode,
     #[serde(skip)]
@@ -140,8 +151,9 @@ impl Default for Config {
             role: None,
             session: None,
             rag: None,
+            bot: None,
             model: Default::default(),
-            function: Default::default(),
+            functions: Default::default(),
             working_mode: WorkingMode::Command,
             last_message: None,
         }
@@ -168,7 +180,7 @@ impl Config {
             config.set_wrap(&wrap)?;
         }
 
-        config.function = Function::init(&Self::functions_dir()?)?;
+        config.functions = Functions::init(&Self::functions_file()?)?;
 
         config.working_mode = working_mode;
         config.load_roles()?;
@@ -306,10 +318,13 @@ impl Config {
         }
     }
 
-    pub fn sessions_dir() -> Result<PathBuf> {
-        match env::var(get_env_name("sessions_dir")) {
-            Ok(value) => Ok(PathBuf::from(value)),
-            Err(_) => Self::local_path(SESSIONS_DIR_NAME),
+    pub fn sessions_dir(&self) -> Result<PathBuf> {
+        match &self.bot {
+            None => match env::var(get_env_name("sessions_dir")) {
+                Ok(value) => Ok(PathBuf::from(value)),
+                Err(_) => Self::local_path(SESSIONS_DIR_NAME),
+            },
+            Some(bot) => Ok(Self::bot_config_dir(bot.name())?.join(SESSIONS_DIR_NAME)),
         }
     }
 
@@ -327,20 +342,62 @@ impl Config {
         }
     }
 
-    pub fn session_file(name: &str) -> Result<PathBuf> {
-        let mut path = Self::sessions_dir()?;
-        path.push(&format!("{name}.yaml"));
+    pub fn functions_file() -> Result<PathBuf> {
+        Ok(Self::functions_dir()?.join(FUNCTIONS_FILE_NAME))
+    }
+
+    pub fn functions_bin_dir() -> Result<PathBuf> {
+        Ok(Self::functions_dir()?.join("bin"))
+    }
+
+    pub fn session_file(&self, name: &str) -> Result<PathBuf> {
+        Ok(self.sessions_dir()?.join(format!("{name}.yaml")))
+    }
+
+    pub fn rag_file(&self, name: &str) -> Result<PathBuf> {
+        let path = if self.bot.is_none() {
+            Self::rags_dir()?.join(format!("{name}.bin"))
+        } else {
+            Self::rags_dir()?
+                .join(BOTS_DIR_NAME)
+                .join(format!("{name}.bin"))
+        };
         Ok(path)
     }
 
-    pub fn rag_file(name: &str) -> Result<PathBuf> {
-        let mut path = Self::rags_dir()?;
-        path.push(&format!("{name}.bin"));
-        Ok(path)
+    pub fn bots_dir() -> Result<PathBuf> {
+        match env::var(get_env_name("bots_config_dir")) {
+            Ok(value) => Ok(PathBuf::from(value)),
+            Err(_) => Self::local_path(BOTS_DIR_NAME),
+        }
+    }
+
+    pub fn bot_config_dir(name: &str) -> Result<PathBuf> {
+        Ok(Self::bots_dir()?.join(name))
+    }
+
+    pub fn bot_config_file(name: &str) -> Result<PathBuf> {
+        Ok(Self::bot_config_dir(name)?.join(CONFIG_FILE_NAME))
+    }
+
+    pub fn bots_functions_dir() -> Result<PathBuf> {
+        Ok(Self::functions_dir()?.join(BOTS_DIR_NAME))
+    }
+
+    pub fn bot_functions_dir(name: &str) -> Result<PathBuf> {
+        Ok(Self::bots_functions_dir()?.join(name))
+    }
+
+    pub fn bot_functions_file(name: &str) -> Result<PathBuf> {
+        Ok(Self::bot_functions_dir(name)?.join(FUNCTIONS_FILE_NAME))
+    }
+
+    pub fn bot_definition_file(name: &str) -> Result<PathBuf> {
+        Ok(Self::bot_functions_dir(name)?.join(BOT_DEFINITION_FILE_NAME))
     }
 
     pub fn use_prompt(&mut self, prompt: &str) -> Result<()> {
-        let role = Role::temp(prompt);
+        let role = Role::new(TEMP_ROLE_NAME, prompt);
         self.use_role_obj(role)
     }
 
@@ -350,6 +407,9 @@ impl Config {
     }
 
     pub fn use_role_obj(&mut self, role: Role) -> Result<()> {
+        if self.bot.is_some() {
+            bail!("Cannot perform this action because you are using a bot")
+        }
         if let Some(session) = self.session.as_mut() {
             session.guard_empty()?;
             session.set_role_properties(&role);
@@ -378,6 +438,9 @@ impl Config {
                 flags |= StateFlags::SESSION;
             }
         }
+        if self.bot.is_some() {
+            flags |= StateFlags::BOT;
+        }
         if self.role.is_some() {
             flags |= StateFlags::ROLE;
         }
@@ -387,13 +450,15 @@ impl Config {
         flags
     }
 
-    pub fn has_role_or_session(&self) -> bool {
-        self.role.is_some() || self.session.is_some()
+    pub fn has_role_session_bot(&self) -> bool {
+        self.session.is_some() || self.bot.is_some() || self.role.is_some()
     }
 
     pub fn set_temperature(&mut self, value: Option<f64>) {
         if let Some(session) = self.session.as_mut() {
             session.set_temperature(value);
+        } else if let Some(bot) = self.bot.as_mut() {
+            bot.set_temperature(value);
         } else if let Some(role) = self.role.as_mut() {
             role.set_temperature(value);
         } else {
@@ -404,6 +469,8 @@ impl Config {
     pub fn set_top_p(&mut self, value: Option<f64>) {
         if let Some(session) = self.session.as_mut() {
             session.set_top_p(value);
+        } else if let Some(bot) = self.bot.as_mut() {
+            bot.set_top_p(value);
         } else if let Some(role) = self.role.as_mut() {
             role.set_top_p(value);
         } else {
@@ -448,6 +515,8 @@ impl Config {
             Some(model) => {
                 if let Some(session) = self.session.as_mut() {
                     session.set_model(&model);
+                } else if let Some(bot) = self.bot.as_mut() {
+                    bot.set_model(&model);
                 } else if let Some(role) = self.role.as_mut() {
                     role.set_model(&model);
                 }
@@ -457,7 +526,7 @@ impl Config {
         }
     }
 
-    pub fn set_model_id(&mut self) {
+    pub fn update_model_id(&mut self) {
         self.model_id = self.model.id()
     }
 
@@ -466,7 +535,7 @@ impl Config {
         self.set_model(&origin_model_id)
     }
 
-    pub fn system_info(&self) -> Result<String> {
+    pub fn sysinfo(&self) -> Result<String> {
         let display_path = |path: &Path| path.display().to_string();
         let wrap = self
             .wrap
@@ -474,6 +543,8 @@ impl Config {
             .map_or_else(|| String::from("no"), |v| v.to_string());
         let (temperature, top_p) = if let Some(session) = &self.session {
             (session.temperature(), session.top_p())
+        } else if let Some(bot) = &self.bot {
+            (bot.temperature(), bot.top_p())
         } else if let Some(role) = &self.role {
             (role.temperature, role.top_p)
         } else {
@@ -505,10 +576,11 @@ impl Config {
             ("prelude", format_option_value(&self.prelude)),
             ("config_file", display_path(&Self::config_file()?)),
             ("roles_file", display_path(&Self::roles_file()?)),
-            ("messages_file", display_path(&Self::messages_file()?)),
-            ("sessions_dir", display_path(&Self::sessions_dir()?)),
-            ("rags_dir", display_path(&Self::rags_dir()?)),
             ("functions_dir", display_path(&Self::functions_dir()?)),
+            ("rags_dir", display_path(&Self::rags_dir()?)),
+            ("bots_dir", display_path(&Self::bots_dir()?)),
+            ("sessions_dir", display_path(&self.sessions_dir()?)),
+            ("messages_file", display_path(&Self::messages_file()?)),
         ];
         let output = items
             .iter()
@@ -544,6 +616,14 @@ impl Config {
         }
     }
 
+    pub fn bot_info(&self) -> Result<String> {
+        if let Some(bot) = &self.bot {
+            bot.export()
+        } else {
+            bail!("No rag")
+        }
+    }
+
     pub fn info(&self) -> Result<String> {
         if let Some(session) = &self.session {
             session.export()
@@ -552,7 +632,7 @@ impl Config {
         } else if let Some(rag) = &self.rag {
             rag.export()
         } else {
-            self.system_info()
+            self.sysinfo()
         }
     }
 
@@ -563,28 +643,21 @@ impl Config {
             .unwrap_or_default()
     }
 
-    pub fn repl_complete(&self, cmd: &str, args: &[&str]) -> Vec<(String, String)> {
+    pub fn repl_complete(&self, cmd: &str, args: &[&str]) -> Vec<(String, Option<String>)> {
         let (values, filter) = if args.len() == 1 {
             let values = match cmd {
-                ".role" => self
-                    .roles
-                    .iter()
-                    .map(|v| (v.name.clone(), String::new()))
-                    .collect(),
+                ".role" => self.roles.iter().map(|v| (v.name.clone(), None)).collect(),
                 ".model" => list_chat_models(self)
                     .into_iter()
-                    .map(|v| (v.id(), v.description()))
+                    .map(|v| (v.id(), Some(v.description())))
                     .collect(),
                 ".session" => self
                     .list_sessions()
                     .into_iter()
-                    .map(|v| (v.clone(), String::new()))
+                    .map(|v| (v, None))
                     .collect(),
-                ".rag" => self
-                    .list_rags()
-                    .into_iter()
-                    .map(|v| (v.clone(), String::new()))
-                    .collect(),
+                ".rag" => self.list_rags().into_iter().map(|v| (v, None)).collect(),
+                ".bot" => list_bots().into_iter().map(|v| (v, None)).collect(),
                 ".set" => vec![
                     "max_output_tokens",
                     "temperature",
@@ -599,7 +672,7 @@ impl Config {
                     "auto_copy",
                 ]
                 .into_iter()
-                .map(|v| (format!("{v} "), String::new()))
+                .map(|v| (format!("{v} "), None))
                 .collect(),
                 _ => vec![],
             };
@@ -625,10 +698,7 @@ impl Config {
                 "auto_copy" => complete_bool(self.auto_copy),
                 _ => vec![],
             };
-            (
-                values.into_iter().map(|v| (v, String::new())).collect(),
-                args[1],
-            )
+            (values.into_iter().map(|v| (v, None)).collect(), args[1])
         } else {
             return vec![];
         };
@@ -697,6 +767,11 @@ impl Config {
     }
 
     pub fn use_session(&mut self, session: Option<&str>) -> Result<()> {
+        if let (Some(name), Some(bot)) = (session, &self.bot) {
+            if name != bot.name() {
+                bail!("Cannot perform this action  the session is attached to a different bot.")
+            }
+        }
         if self.session.is_some() {
             bail!(
                 "Already in a session, please run '.exit session' first to exit the current session."
@@ -704,7 +779,7 @@ impl Config {
         }
         match session {
             None => {
-                let session_file = Self::session_file(TEMP_SESSION_NAME)?;
+                let session_file = self.session_file(TEMP_SESSION_NAME)?;
                 if session_file.exists() {
                     remove_file(session_file).with_context(|| {
                         format!("Failed to cleanup previous '{TEMP_SESSION_NAME}' session")
@@ -714,12 +789,12 @@ impl Config {
                 self.session = Some(session);
             }
             Some(name) => {
-                let session_path = Self::session_file(name)?;
+                let session_path = self.session_file(name)?;
                 if !session_path.exists() {
                     self.session = Some(Session::new(self, name));
                 } else {
                     let session = Session::load(name, &session_path)?;
-                    let model_id = session.model_id().to_string();
+                    let model_id = session.model().id();
                     self.session = Some(session);
                     self.set_model(&model_id)?;
                 }
@@ -745,7 +820,7 @@ impl Config {
     pub fn exit_session(&mut self) -> Result<()> {
         if let Some(mut session) = self.session.take() {
             let is_repl = self.working_mode == WorkingMode::Repl;
-            let sessions_dir = Self::sessions_dir()?;
+            let sessions_dir = self.sessions_dir()?;
             session.exit(&sessions_dir, is_repl)?;
             self.last_message = None;
             self.restore_model()?;
@@ -754,11 +829,11 @@ impl Config {
     }
 
     pub fn save_session(&mut self, name: &str) -> Result<()> {
+        let sessions_dir = self.sessions_dir()?;
         if let Some(session) = self.session.as_mut() {
             if !name.is_empty() {
-                session.name = name.to_string();
+                session.set_name(name);
             }
-            let sessions_dir = Self::sessions_dir()?;
             session.save(&sessions_dir)?;
         }
         Ok(())
@@ -772,7 +847,7 @@ impl Config {
     }
 
     pub fn list_sessions(&self) -> Vec<String> {
-        let sessions_dir = match Self::sessions_dir() {
+        let sessions_dir = match self.sessions_dir() {
             Ok(dir) => dir,
             Err(_) => return vec![],
         };
@@ -795,7 +870,7 @@ impl Config {
     pub fn should_compress_session(&mut self) -> bool {
         if let Some(session) = self.session.as_mut() {
             if session.need_compress(self.compress_threshold) {
-                session.compressing = true;
+                session.set_compressing(true);
                 return true;
             }
         }
@@ -816,13 +891,13 @@ impl Config {
     pub fn is_compressing_session(&self) -> bool {
         self.session
             .as_ref()
-            .map(|v| v.compressing)
+            .map(|v| v.compressing())
             .unwrap_or_default()
     }
 
     pub fn end_compressing_session(&mut self) {
         if let Some(session) = self.session.as_mut() {
-            session.compressing = false;
+            session.set_compressing(false);
         }
     }
 
@@ -831,23 +906,26 @@ impl Config {
         rag: Option<&str>,
         abort_signal: AbortSignal,
     ) -> Result<()> {
+        if config.read().bot.is_some() {
+            bail!("Cannot perform this action because you are using a bot")
+        }
         if config.read().rag.is_some() {
             bail!("Already in a rag, please run '.exit rag' first to exit the current rag.");
         }
         let rag = match rag {
             None => {
-                let rag_path = Self::rag_file(TEMP_RAG_NAME)?;
+                let rag_path = config.read().rag_file(TEMP_RAG_NAME)?;
                 if rag_path.exists() {
                     remove_file(&rag_path).with_context(|| {
                         format!("Failed to cleanup previous '{TEMP_RAG_NAME}' rag")
                     })?;
                 }
-                Rag::init(config, TEMP_RAG_NAME, &rag_path, abort_signal).await?
+                Rag::init(config, TEMP_RAG_NAME, &rag_path, &[], abort_signal).await?
             }
             Some(name) => {
-                let rag_path = Self::rag_file(name)?;
+                let rag_path = config.read().rag_file(name)?;
                 if !rag_path.exists() {
-                    Rag::init(config, name, &rag_path, abort_signal).await?
+                    Rag::init(config, name, &rag_path, &[], abort_signal).await?
                 } else {
                     Rag::load(config, name, &rag_path)?
                 }
@@ -892,6 +970,26 @@ impl Config {
             .unwrap_or(RAG_TEMPLATE)
             .replace("__CONTEXT__", embeddings)
             .replace("__INPUT__", text)
+    }
+
+    pub async fn use_bot(
+        config: &GlobalConfig,
+        name: &str,
+        _abort_signal: AbortSignal,
+    ) -> Result<()> {
+        if config.read().bot.is_some() {
+            bail!("Already in a bot, please run '.exit bot' first to exit the current bot.");
+        }
+        let bot = Bot::init(config, name)?;
+        let model_id = bot.model().id();
+        config.write().bot = Some(bot);
+        config.write().set_model(&model_id)?;
+        Ok(())
+    }
+
+    pub fn exit_bot(&mut self) -> Result<()> {
+        self.bot.take();
+        Ok(())
     }
 
     pub fn get_render_options(&self) -> Result<RenderOptions> {
@@ -979,7 +1077,7 @@ impl Config {
         }
         if let Some(session) = &self.session {
             output.insert("session", session.name().to_string());
-            output.insert("dirty", session.dirty.to_string());
+            output.insert("dirty", session.dirty().to_string());
             let (tokens, percent) = session.tokens_and_percent();
             output.insert("consume_tokens", tokens.to_string());
             output.insert("consume_percent", percent.to_string());
@@ -987,6 +1085,9 @@ impl Config {
         }
         if let Some(rag) = &self.rag {
             output.insert("rag", rag.name().to_string());
+        }
+        if let Some(bot) = &self.bot {
+            output.insert("bot", bot.name().to_string());
         }
 
         if self.highlight {
@@ -1165,6 +1266,7 @@ bitflags::bitflags! {
         const SESSION_EMPTY = 1 << 1;
         const SESSION = 1 << 2;
         const RAG = 1 << 3;
+        const BOT = 1 << 4;
     }
 }
 
@@ -1172,6 +1274,7 @@ bitflags::bitflags! {
 pub enum AssertState {
     True(StateFlags),
     False(StateFlags),
+    Equal(StateFlags),
 }
 
 impl AssertState {

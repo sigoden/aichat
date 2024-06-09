@@ -2,13 +2,13 @@ use super::{Config, Input};
 
 use crate::{
     client::{list_chat_models, Message, MessageContent, MessageRole, Model},
+    function::FUNCTION_ALL_MATCHER,
     utils::{detect_os, detect_shell},
 };
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-pub const TEMP_ROLE: &str = "%%";
 pub const SHELL_ROLE: &str = "%shell%";
 pub const EXPLAIN_SHELL_ROLE: &str = "%explain-shell%";
 pub const CODE_ROLE: &str = "%code%";
@@ -33,9 +33,9 @@ pub struct Role {
 }
 
 impl Role {
-    pub fn temp(prompt: &str) -> Self {
+    pub fn new(name: &str, prompt: &str) -> Self {
         Self {
-            name: TEMP_ROLE.into(),
+            name: name.into(),
             prompt: prompt.into(),
             temperature: None,
             model_id: None,
@@ -71,7 +71,11 @@ async function timeout(ms) {
                 .into(),
                 None,
             ),
-            ("%functions%", String::new(), Some(".*".into())),
+            (
+                "%functions%",
+                String::new(),
+                Some(FUNCTION_ALL_MATCHER.into()),
+            ),
         ]
         .into_iter()
         .map(|(name, prompt, function_matcher)| Self {

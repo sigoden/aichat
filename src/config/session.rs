@@ -1,5 +1,5 @@
-use super::input::resolve_data_url;
-use super::{Config, Input, Model, Role};
+use super::input::*;
+use super::*;
 
 use crate::client::{Message, MessageContent, MessageRole};
 use crate::render::MarkdownRender;
@@ -12,8 +12,6 @@ use std::collections::HashMap;
 use std::fs::{self, create_dir_all, read_to_string};
 use std::path::Path;
 
-pub const TEMP_SESSION_NAME: &str = "temp";
-
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct Session {
     #[serde(rename(serialize = "model", deserialize = "model"))]
@@ -25,6 +23,8 @@ pub struct Session {
     #[serde(skip_serializing_if = "Option::is_none")]
     function_matcher: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    bot: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     save_session: Option<bool>,
     messages: Vec<Message>,
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
@@ -34,24 +34,19 @@ pub struct Session {
     #[serde(skip_serializing_if = "Option::is_none")]
     compress_threshold: Option<usize>,
     #[serde(skip)]
-    pub name: String,
+    name: String,
     #[serde(skip)]
-    pub path: Option<String>,
+    path: Option<String>,
     #[serde(skip)]
-    pub dirty: bool,
+    dirty: bool,
     #[serde(skip)]
-    pub compressing: bool,
+    compressing: bool,
     #[serde(skip)]
-    pub model: Model,
+    model: Model,
 }
 
 impl Session {
     pub fn new(config: &Config, name: &str) -> Self {
-        let name = if name.is_empty() {
-            TEMP_SESSION_NAME
-        } else {
-            name
-        };
         let save_session = if name == TEMP_SESSION_NAME {
             None
         } else {
@@ -62,6 +57,7 @@ impl Session {
             temperature: config.temperature,
             top_p: config.top_p,
             function_matcher: None,
+            bot: None,
             save_session,
             messages: Default::default(),
             compressed_messages: Default::default(),
@@ -95,8 +91,12 @@ impl Session {
         &self.name
     }
 
-    pub fn model_id(&self) -> &str {
-        &self.model_id
+    pub fn dirty(&self) -> bool {
+        self.dirty
+    }
+
+    pub fn model(&self) -> &Model {
+        &self.model
     }
 
     pub fn temperature(&self) -> Option<f64> {
@@ -105,6 +105,10 @@ impl Session {
 
     pub fn top_p(&self) -> Option<f64> {
         self.top_p
+    }
+
+    pub fn compressing(&self) -> bool {
+        self.compressing
     }
 
     pub fn function_matcher(&self) -> Option<&str> {
@@ -137,7 +141,7 @@ impl Session {
         let (tokens, percent) = self.tokens_and_percent();
         let mut data = json!({
             "path": self.path,
-            "model": self.model_id(),
+            "model": self.model.id(),
         });
         if let Some(temperature) = self.temperature() {
             data["temperature"] = temperature.into();
@@ -244,6 +248,10 @@ impl Session {
         (tokens, percent)
     }
 
+    pub fn set_name(&mut self, name: &str) {
+        self.name = name.to_string();
+    }
+
     pub fn set_temperature(&mut self, value: Option<f64>) {
         if self.temperature != value {
             self.temperature = value;
@@ -283,6 +291,10 @@ impl Session {
             self.compress_threshold = value;
             self.dirty = true;
         }
+    }
+
+    pub fn set_compressing(&mut self, compressing: bool) {
+        self.compressing = compressing;
     }
 
     pub fn set_model(&mut self, model: &Model) {

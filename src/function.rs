@@ -1,5 +1,5 @@
 use crate::{
-    config::GlobalConfig,
+    config::{Config, GlobalConfig},
     utils::{
         dimmed_text, get_env_bool, indent_text, run_command, run_command_with_output, warning_text,
         IS_STDOUT_TERMINAL,
@@ -21,13 +21,11 @@ use std::{
 };
 use threadpool::ThreadPool;
 
-const BIN_DIR_NAME: &str = "bin";
-const DECLARATIONS_FILE_PATH: &str = "functions.json";
-
 lazy_static! {
     static ref THREAD_POOL: ThreadPool = ThreadPool::new(num_cpus::get());
 }
 
+pub const FUNCTION_ALL_MATCHER: &str = ".*";
 pub type ToolResults = (Vec<ToolCallResult>, String);
 
 pub fn eval_tool_calls(
@@ -82,33 +80,21 @@ impl ToolCallResult {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct Function {
+pub struct Functions {
     names: IndexSet<String>,
     declarations: Vec<FunctionDeclaration>,
-    #[cfg(windows)]
-    bin_dir: std::path::PathBuf,
-    env_path: Option<String>,
 }
 
-impl Function {
-    pub fn init(functions_dir: &Path) -> Result<Self> {
-        let bin_dir = functions_dir.join(BIN_DIR_NAME);
-        let env_path = if bin_dir.exists() {
-            prepend_env_path(&bin_dir).ok()
-        } else {
-            None
-        };
-
-        let declarations_file = functions_dir.join(DECLARATIONS_FILE_PATH);
-
-        let declarations: Vec<FunctionDeclaration> = if declarations_file.exists() {
+impl Functions {
+    pub fn init(declarations_path: &Path) -> Result<Self> {
+        let declarations: Vec<FunctionDeclaration> = if declarations_path.exists() {
             let ctx = || {
                 format!(
                     "Failed to load function declarations at {}",
-                    declarations_file.display()
+                    declarations_path.display()
                 )
             };
-            let content = fs::read_to_string(&declarations_file).with_context(ctx)?;
+            let content = fs::read_to_string(declarations_path).with_context(ctx)?;
             serde_json::from_str(&content).with_context(ctx)?
         } else {
             vec![]
@@ -119,9 +105,6 @@ impl Function {
         Ok(Self {
             names: func_names,
             declarations,
-            #[cfg(windows)]
-            bin_dir,
-            env_path,
         })
     }
 
@@ -138,6 +121,10 @@ impl Function {
         } else {
             Some(output)
         }
+    }
+
+    pub fn contains(&self, name: &str) -> bool {
+        self.names.contains(name)
     }
 }
 
@@ -205,29 +192,54 @@ impl ToolCall {
     }
 
     pub fn eval(&self, config: &GlobalConfig) -> Result<Value> {
-        let name = self.name.clone();
-        if !config.read().function.names.contains(&name) {
-            bail!("Unexpected call: {name} {}", self.arguments);
-        }
-        let arguments = if self.arguments.is_object() {
+        let function_name = self.name.clone();
+        let (call_name, cmd_name, mut cmd_args) = match &config.read().bot {
+            Some(bot) => {
+                if !bot.has_function(&function_name) {
+                    bail!(
+                        "Unexpected call: {} {function_name} {}",
+                        bot.name(),
+                        self.arguments
+                    );
+                }
+                (
+                    format!("{}:{}", bot.name(), function_name),
+                    bot.name().to_string(),
+                    vec![function_name],
+                )
+            }
+            None => {
+                if !config.read().functions.contains(&function_name) {
+                    bail!("Unexpected call: {function_name} {}", self.arguments);
+                }
+                (function_name.clone(), function_name, vec![])
+            }
+        };
+        let json_data = if self.arguments.is_object() {
             self.arguments.clone()
         } else if let Some(arguments) = self.arguments.as_str() {
-            let args: Value = serde_json::from_str(arguments)
-                .map_err(|_| anyhow!("The {name} call has invalid arguments: {arguments}"))?;
-            args
+            let arguments: Value = serde_json::from_str(arguments).map_err(|_| {
+                anyhow!("The call '{call_name}' has invalid arguments: {arguments}")
+            })?;
+            arguments
         } else {
-            bail!("The {name} call has invalid arguments: {}", self.arguments);
+            bail!(
+                "The call '{call_name}' has invalid arguments: {}",
+                self.arguments
+            );
         };
 
-        let arguments = arguments.to_string();
-        let prompt = format!("Call {name} '{arguments}'",);
+        cmd_args.push(json_data.to_string());
+        let prompt = format!("Call {cmd_name} {}", cmd_args.join(" "));
 
         let mut envs = HashMap::new();
-        if let Some(env_path) = config.read().function.env_path.clone() {
-            envs.insert("PATH".into(), env_path);
-        };
+        let bin_dir = Config::functions_bin_dir()?;
+        if bin_dir.exists() {
+            envs.insert("PATH".into(), prepend_env_path(&bin_dir)?);
+        }
+
         #[cfg(windows)]
-        let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
+        let name = polyfill_cmd_name(&cmd_name, &bin_dir);
 
         let output = if self.is_execute() {
             if *IS_STDOUT_TERMINAL {
@@ -243,13 +255,13 @@ impl ToolCall {
                     .prompt()?;
                 match answer.as_str() {
                     "1" => {
-                        let exit_code = run_command(&name, &[arguments], Some(envs))?;
+                        let exit_code = run_command(&cmd_name, &cmd_args, Some(envs))?;
                         if exit_code != 0 {
                             bail!("Exit {exit_code}");
                         }
                         Value::Null
                     }
-                    "2" => run_and_retrieve(&name, &arguments, envs, &prompt)?,
+                    "2" => run_and_retrieve(&cmd_name, &cmd_args, envs, &prompt)?,
                     _ => Value::Null,
                 }
             } else {
@@ -258,7 +270,7 @@ impl ToolCall {
             }
         } else {
             println!("{}", dimmed_text(&prompt));
-            run_and_retrieve(&name, &arguments, envs, &prompt)?
+            run_and_retrieve(&cmd_name, &cmd_args, envs, &prompt)?
         };
 
         Ok(output)
@@ -274,12 +286,12 @@ impl ToolCall {
 }
 
 fn run_and_retrieve(
-    name: &str,
-    arguments: &str,
+    cmd_name: &str,
+    cmd_args: &[String],
     envs: HashMap<String, String>,
     prompt: &str,
 ) -> Result<Value> {
-    let (success, stdout, stderr) = run_command_with_output(name, &[arguments], Some(envs))?;
+    let (success, stdout, stderr) = run_command_with_output(cmd_name, cmd_args, Some(envs))?;
 
     if success {
         if !stderr.is_empty() {

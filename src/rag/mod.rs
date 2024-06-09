@@ -20,7 +20,6 @@ use std::fmt::Debug;
 use std::{io::BufReader, path::Path};
 use tokio::sync::mpsc;
 
-pub const TEMP_RAG_NAME: &str = "temp";
 pub const CHUNK_OVERLAP: usize = 20;
 pub const SIMILARITY_THRESHOLD: f32 = 0.25;
 
@@ -48,7 +47,8 @@ impl Rag {
     pub async fn init(
         config: &GlobalConfig,
         name: &str,
-        path: &Path,
+        save_path: &Path,
+        doc_paths: &[String],
         abort_signal: AbortSignal,
     ) -> Result<Self> {
         debug!("init rag: {name}");
@@ -56,9 +56,12 @@ impl Rag {
         let chunk_size = model.default_chunk_size();
         let chunk_size = set_chunk_size(chunk_size)?;
         let data = RagData::new(&model.id(), chunk_size);
-        let mut rag = Self::create(config, name, path, data)?;
-        let paths = add_document_paths()?;
-        debug!("document paths: {paths:?}");
+        let mut rag = Self::create(config, name, save_path, data)?;
+        let mut paths = doc_paths.to_vec();
+        if paths.is_empty() {
+            paths = add_doc_paths()?;
+        };
+        debug!("doc paths: {paths:?}");
         let (stop_spinner_tx, set_spinner_message_tx) = run_spinner("Starting").await;
         tokio::select! {
             ret = rag.add_paths(&paths, Some(set_spinner_message_tx)) => {
@@ -71,8 +74,8 @@ impl Rag {
             },
         };
         if !rag.is_temp() {
-            rag.save(path)?;
-            println!("✨ Saved rag to '{}'", path.display());
+            rag.save(save_path)?;
+            println!("✨ Saved rag to '{}'", save_path.display());
         }
         Ok(rag)
     }
@@ -408,7 +411,7 @@ fn set_chunk_size(chunk_size: usize) -> Result<usize> {
     value.parse().map_err(|_| anyhow!("Invalid chunk_size"))
 }
 
-fn add_document_paths() -> Result<Vec<String>> {
+fn add_doc_paths() -> Result<Vec<String>> {
     let text = Text::new("Add document paths:")
         .with_validator(required!("This field is required"))
         .with_help_message("e.g. file1;dir2/;dir3/**/*.md")
