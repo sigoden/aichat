@@ -49,6 +49,8 @@ const FUNCTIONS_DIR_NAME: &str = "functions";
 const FUNCTIONS_FILE_NAME: &str = "functions.json";
 const BOTS_DIR_NAME: &str = "bots";
 const BOT_DEFINITION_FILE_NAME: &str = "index.yaml";
+const BOT_EMBEDDINGS_DIR: &str = "embeddings";
+const BOT_RAG_FILE_NAME: &str = "rag.bin";
 
 pub const TEMP_ROLE_NAME: &str = "%%";
 pub const TEMP_RAG_NAME: &str = "temp";
@@ -68,7 +70,7 @@ __CONTEXT__
 Question: __INPUT__
 "#;
 
-const LEFT_PROMPT: &str = "{color.green}{?session {session}{?role /}{?bot /}}{role}{bot}{?rag #{rag}}{color.cyan}{?session )}{!session >}{color.reset} ";
+const LEFT_PROMPT: &str = "{color.green}{?session {session}{?role /}{?bot /}}{role}{bot}{?rag @{rag}}{color.cyan}{?session )}{!session >}{color.reset} ";
 const RIGHT_PROMPT: &str = "{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}";
 
 #[derive(Debug, Clone, Deserialize)]
@@ -404,6 +406,10 @@ impl Config {
         Ok(Self::bot_config_dir(name)?.join(CONFIG_FILE_NAME))
     }
 
+    pub fn bot_rag_file(name: &str) -> Result<PathBuf> {
+        Ok(Self::bot_config_dir(name)?.join(BOT_RAG_FILE_NAME))
+    }
+
     pub fn bots_functions_dir() -> Result<PathBuf> {
         Ok(Self::functions_dir()?.join(BOTS_DIR_NAME))
     }
@@ -418,6 +424,10 @@ impl Config {
 
     pub fn bot_definition_file(name: &str) -> Result<PathBuf> {
         Ok(Self::bot_functions_dir(name)?.join(BOT_DEFINITION_FILE_NAME))
+    }
+
+    pub fn bot_embeddings_dir(name: &str) -> Result<PathBuf> {
+        Ok(Self::bot_functions_dir(name)?.join(BOT_EMBEDDINGS_DIR))
     }
 
     pub fn use_prompt(&mut self, prompt: &str) -> Result<()> {
@@ -1023,17 +1033,19 @@ impl Config {
     pub async fn use_bot(
         config: &GlobalConfig,
         name: &str,
-        _abort_signal: AbortSignal,
+        abort_signal: AbortSignal,
     ) -> Result<()> {
         if config.read().bot.is_some() {
             bail!("Already in a bot, please run '.exit bot' first to exit the current bot.");
         }
-        let bot = Bot::init(config, name)?;
+        let bot = Bot::init(config, name, abort_signal).await?;
+        config.write().rag = bot.rag();
         config.write().bot = Some(bot);
         Ok(())
     }
 
     pub fn exit_bot(&mut self) -> Result<()> {
+        self.rag.take();
         self.bot.take();
         Ok(())
     }

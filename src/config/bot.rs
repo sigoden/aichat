@@ -21,15 +21,23 @@ pub struct Bot {
     #[serde(skip)]
     functions: Functions,
     #[serde(skip)]
+    rag: Option<Arc<Rag>>,
+    #[serde(skip)]
     model: Model,
 }
 
 impl Bot {
-    pub fn init(config: &GlobalConfig, name: &str) -> Result<Self> {
+    pub async fn init(
+        config: &GlobalConfig,
+        name: &str,
+        abort_signal: AbortSignal,
+    ) -> Result<Self> {
         let config_path = Config::bot_config_file(name)?;
         let definition_path = Config::bot_definition_file(name)?;
-        let definition = BotDefinition::load(&definition_path)?;
         let functions_path = Config::bot_functions_file(name)?;
+        let rag_path = Config::bot_rag_file(name)?;
+        let embeddings_dir = Config::bot_embeddings_dir(name)?;
+        let definition = BotDefinition::load(&definition_path)?;
         let functions = if functions_path.exists() {
             Functions::init(&functions_path)?
         } else {
@@ -43,12 +51,24 @@ impl Bot {
                 None => config.current_model().clone(),
             }
         };
+        let rag = if rag_path.exists() {
+            Some(Arc::new(Rag::load(config, "rag", &rag_path)?))
+        } else if embeddings_dir.is_dir() {
+            println!("The bot has an embeddings directory, RAG is initializing...");
+            let doc_path = embeddings_dir.display().to_string();
+            Some(Arc::new(
+                Rag::init(config, "rag", &rag_path, &[doc_path], abort_signal).await?,
+            ))
+        } else {
+            None
+        };
 
         Ok(Self {
             name: name.to_string(),
             config: bot_config,
             definition,
             functions,
+            rag,
             model,
         })
     }
@@ -77,6 +97,10 @@ impl Bot {
 
     pub fn definition(&self) -> &BotDefinition {
         &self.definition
+    }
+
+    pub fn rag(&self) -> Option<Arc<Rag>> {
+        self.rag.clone()
     }
 }
 

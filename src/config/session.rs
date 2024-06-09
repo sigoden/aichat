@@ -78,7 +78,7 @@ impl Session {
         session.path = Some(path.display().to_string());
 
         if let Some(bot) = &config.bot {
-            session.role_prompt = bot.definition().instructions.clone();
+            session.role_prompt.clone_from(&bot.definition().instructions);
         }
 
         Ok(session)
