@@ -5,7 +5,7 @@ use crate::client::{Message, MessageContent, MessageRole};
 use crate::render::MarkdownRender;
 
 use anyhow::{bail, Context, Result};
-use inquire::{Confirm, Text};
+use inquire::{required, Confirm, Text};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
@@ -294,8 +294,10 @@ impl Session {
                 if !ans {
                     return Ok(());
                 }
-                while self.is_temp() {
-                    self.name = Text::new("Session name:").prompt()?;
+                if self.is_temp() {
+                    self.name = Text::new("Session name:")
+                        .with_validator(required!("This field is required"))
+                        .prompt()?;
                 }
             }
             self.save(sessions_dir)?;
@@ -323,6 +325,8 @@ impl Session {
                 session_path.display()
             )
         })?;
+
+        println!("✨ Saved session to '{}'", session_path.display());
 
         self.dirty = false;
 
