@@ -1,4 +1,5 @@
-use super::{Config, GlobalConfig, Role};
+use super::*;
+
 use crate::{
     client::Model,
     function::{Functions, FUNCTION_ALL_MATCHER},
@@ -18,11 +19,9 @@ pub struct Bot {
     config: BotConfig,
     definition: BotDefinition,
     #[serde(skip)]
-    functions: Option<Functions>,
+    functions: Functions,
     #[serde(skip)]
     model: Model,
-    #[serde(skip)]
-    role: Role,
 }
 
 impl Bot {
@@ -32,23 +31,25 @@ impl Bot {
         let definition = BotDefinition::load(&definition_path)?;
         let functions_path = Config::bot_functions_file(name)?;
         let functions = if functions_path.exists() {
-            Some(Functions::init(&functions_path)?)
+            Functions::init(&functions_path)?
         } else {
-            None
+            Functions::default()
         };
         let bot_config = BotConfig::init(&config_path)?;
-        let model = match &bot_config.model_id {
-            Some(v) => Model::from_id(v),
-            None => config.read().model.clone(),
+        let model = {
+            let config = config.read();
+            match bot_config.model_id.as_ref() {
+                Some(model_id) => Model::retrieve(&config, model_id)?,
+                None => config.current_model().clone(),
+            }
         };
-        let role = Role::new(name, &definition.instructions);
+
         Ok(Self {
             name: name.to_string(),
             config: bot_config,
             definition,
             functions,
             model,
-            role,
         })
     }
 
@@ -66,55 +67,60 @@ impl Bot {
         Ok(data)
     }
 
-    pub fn set_model(&mut self, model: &Model) {
-        self.config.model_id = Some(model.id())
-    }
-
-    pub fn set_temperature(&mut self, value: Option<f64>) {
-        self.config.temperature = value;
-    }
-
-    pub fn set_top_p(&mut self, value: Option<f64>) {
-        self.config.top_p = value;
-    }
-
     pub fn name(&self) -> &str {
         &self.name
     }
 
-    pub fn functions(&self) -> Option<&Functions> {
-        self.functions.as_ref()
+    pub fn functions(&self) -> &Functions {
+        &self.functions
     }
 
-    pub fn has_function(&self, name: &str) -> bool {
-        match &self.functions {
-            Some(functions) => functions.contains(name),
-            None => false,
-        }
+    pub fn definition(&self) -> &BotDefinition {
+        &self.definition
+    }
+}
+
+impl RoleLike for Bot {
+    fn to_role(&self) -> Role {
+        let mut role = Role::new("", &self.definition.instructions);
+        role.sync(self);
+        role
     }
 
-    pub fn function_matcher(&self) -> Option<&str> {
-        match self.functions.is_some() {
-            true => Some(FUNCTION_ALL_MATCHER),
-            false => None,
-        }
-    }
-
-    pub fn role(&self) -> &Role {
-        &self.role
-    }
-
-    pub fn model(&self) -> &Model {
+    fn model(&self) -> &Model {
         &self.model
     }
 
-    pub fn temperature(&self) -> Option<f64> {
+    fn temperature(&self) -> Option<f64> {
         self.config.temperature
     }
 
-    pub fn top_p(&self) -> Option<f64> {
+    fn top_p(&self) -> Option<f64> {
         self.config.top_p
     }
+
+    fn function_matcher(&self) -> Option<String> {
+        if self.functions.is_empty() {
+            None
+        } else {
+            Some(FUNCTION_ALL_MATCHER.into())
+        }
+    }
+
+    fn set_model(&mut self, model: &Model) {
+        self.config.model_id = Some(model.id());
+        self.model = model.clone();
+    }
+
+    fn set_temperature(&mut self, value: Option<f64>) {
+        self.config.temperature = value;
+    }
+
+    fn set_top_p(&mut self, value: Option<f64>) {
+        self.config.top_p = value;
+    }
+
+    fn set_function_matcher(&mut self, _value: Option<String>) {}
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -144,14 +150,14 @@ impl BotConfig {
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct BotDefinition {
-    name: String,
+    pub name: String,
     #[serde(default)]
-    description: String,
+    pub description: String,
     #[serde(default)]
-    version: String,
-    instructions: String,
+    pub version: String,
+    pub instructions: String,
     #[serde(default)]
-    conversation_starters: Vec<String>,
+    pub conversation_starters: Vec<String>,
 }
 
 impl BotDefinition {

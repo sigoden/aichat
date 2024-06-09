@@ -7,7 +7,7 @@ use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
 use crate::client::send_stream;
-use crate::config::{AssertState, Config, GlobalConfig, Input, InputContext, StateFlags};
+use crate::config::{AssertState, Config, GlobalConfig, Input, StateFlags};
 use crate::function::need_send_call_results;
 use crate::render::render_error;
 use crate::utils::{create_abort_signal, set_text, AbortSignal};
@@ -219,9 +219,6 @@ impl Repl {
                 ".model" => match args {
                     Some(name) => {
                         self.config.write().set_model(name)?;
-                        if !self.config.read().has_role_session_bot() {
-                            self.config.write().update_model_id();
-                        }
                     }
                     None => println!("Usage: .model <name>"),
                 },
@@ -235,11 +232,7 @@ impl Repl {
                     Some(args) => match args.split_once(|c| c == '\n' || c == ' ') {
                         Some((name, text)) => {
                             let role = self.config.read().retrieve_role(name.trim())?;
-                            let input = Input::from_str(
-                                &self.config,
-                                text.trim(),
-                                Some(InputContext::role(role)),
-                            );
+                            let input = Input::from_str(&self.config, text.trim(), Some(role));
                             ask(&self.config, self.abort_signal.clone(), input).await?;
                         }
                         None => {

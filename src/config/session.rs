@@ -23,16 +23,22 @@ pub struct Session {
     #[serde(skip_serializing_if = "Option::is_none")]
     function_matcher: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    bot: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     save_session: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    compress_threshold: Option<usize>,
+
     messages: Vec<Message>,
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     data_urls: HashMap<String, String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     compressed_messages: Vec<Message>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    compress_threshold: Option<usize>,
+
+    #[serde(skip)]
+    model: Model,
+    #[serde(skip)]
+    role_prompt: String,
+    #[serde(skip)]
+    role_name: String,
     #[serde(skip)]
     name: String,
     #[serde(skip)]
@@ -41,8 +47,6 @@ pub struct Session {
     dirty: bool,
     #[serde(skip)]
     compressing: bool,
-    #[serde(skip)]
-    model: Model,
 }
 
 impl Session {
@@ -52,37 +56,30 @@ impl Session {
         } else {
             config.save_session
         };
+        let role = config.extract_role();
         let mut session = Self {
-            model_id: config.model.id(),
-            temperature: config.temperature,
-            top_p: config.top_p,
-            function_matcher: None,
-            bot: None,
-            save_session,
-            messages: Default::default(),
-            compressed_messages: Default::default(),
-            compress_threshold: None,
-            data_urls: Default::default(),
             name: name.to_string(),
-            path: None,
-            dirty: false,
-            compressing: false,
-            model: config.model.clone(),
+            save_session,
+            ..Default::default()
         };
-        if let Some(role) = &config.role {
-            session.set_role_properties(role);
-        }
+        session.set_role(role);
+        session.dirty = false;
         session
     }
 
-    pub fn load(name: &str, path: &Path) -> Result<Self> {
+    pub fn load(config: &Config, name: &str, path: &Path) -> Result<Self> {
         let content = read_to_string(path)
             .with_context(|| format!("Failed to load session {} at {}", name, path.display()))?;
         let mut session: Self =
             serde_yaml::from_str(&content).with_context(|| format!("Invalid session {}", name))?;
 
+        session.model = Model::retrieve(config, &session.model_id)?;
         session.name = name.to_string();
         session.path = Some(path.display().to_string());
+
+        if let Some(bot) = &config.bot {
+            session.role_prompt = bot.definition().instructions.clone();
+        }
 
         Ok(session)
     }
@@ -95,24 +92,8 @@ impl Session {
         self.dirty
     }
 
-    pub fn model(&self) -> &Model {
-        &self.model
-    }
-
-    pub fn temperature(&self) -> Option<f64> {
-        self.temperature
-    }
-
-    pub fn top_p(&self) -> Option<f64> {
-        self.top_p
-    }
-
     pub fn compressing(&self) -> bool {
         self.compressing
-    }
-
-    pub fn function_matcher(&self) -> Option<&str> {
-        self.function_matcher.as_deref()
     }
 
     pub fn save_session(&self) -> Option<bool> {
@@ -127,7 +108,7 @@ impl Session {
     }
 
     pub fn tokens(&self) -> usize {
-        self.model.total_tokens(&self.messages)
+        self.model().total_tokens(&self.messages)
     }
 
     pub fn user_messages_len(&self) -> usize {
@@ -138,10 +119,9 @@ impl Session {
         if self.path.is_none() {
             bail!("Not found session '{}'", self.name)
         }
-        let (tokens, percent) = self.tokens_and_percent();
         let mut data = json!({
             "path": self.path,
-            "model": self.model.id(),
+            "model": self.model().id(),
         });
         if let Some(temperature) = self.temperature() {
             data["temperature"] = temperature.into();
@@ -155,8 +135,9 @@ impl Session {
         if let Some(save_session) = self.save_session() {
             data["save_session"] = save_session.into();
         }
+        let (tokens, percent) = self.tokens_usage();
         data["total_tokens"] = tokens.into();
-        if let Some(max_input_tokens) = self.model.max_input_tokens() {
+        if let Some(max_input_tokens) = self.model().max_input_tokens() {
             data["max_input_tokens"] = max_input_tokens.into();
         }
         if percent != 0.0 {
@@ -169,14 +150,14 @@ impl Session {
         Ok(output)
     }
 
-    pub fn info(&self, render: &mut MarkdownRender) -> Result<String> {
+    pub fn render(&self, render: &mut MarkdownRender) -> Result<String> {
         let mut items = vec![];
 
         if let Some(path) = &self.path {
             items.push(("path", path.to_string()));
         }
 
-        items.push(("model", self.model.id()));
+        items.push(("model", self.model().id()));
 
         if let Some(temperature) = self.temperature() {
             items.push(("temperature", temperature.to_string()));
@@ -186,7 +167,7 @@ impl Session {
         }
 
         if let Some(function_matcher) = self.function_matcher() {
-            items.push(("function_matcher", function_matcher.into()));
+            items.push(("function_matcher", function_matcher));
         }
 
         if let Some(save_session) = self.save_session() {
@@ -197,7 +178,7 @@ impl Session {
             items.push(("compress_threshold", compress_threshold.to_string()));
         }
 
-        if let Some(max_input_tokens) = self.model.max_input_tokens() {
+        if let Some(max_input_tokens) = self.model().max_input_tokens() {
             items.push(("max_input_tokens", max_input_tokens.to_string()));
         }
 
@@ -232,13 +213,17 @@ impl Session {
             }
         }
 
+        if lines.last() == Some(&String::new()) {
+            lines.pop();
+        }
+
         let output = lines.join("\n");
         Ok(output)
     }
 
-    pub fn tokens_and_percent(&self) -> (usize, f32) {
+    pub fn tokens_usage(&self) -> (usize, f32) {
         let tokens = self.tokens();
-        let max_input_tokens = self.model.max_input_tokens().unwrap_or_default();
+        let max_input_tokens = self.model().max_input_tokens().unwrap_or_default();
         let percent = if max_input_tokens == 0 {
             0.0
         } else {
@@ -252,28 +237,20 @@ impl Session {
         self.name = name.to_string();
     }
 
-    pub fn set_temperature(&mut self, value: Option<f64>) {
-        if self.temperature != value {
-            self.temperature = value;
-            self.dirty = true;
-        }
+    pub fn set_role(&mut self, role: Role) {
+        self.model_id = role.model().id();
+        self.temperature = role.temperature();
+        self.top_p = role.top_p();
+        self.function_matcher = role.function_matcher().map(|v| v.to_string());
+        self.model = role.model().clone();
+        self.role_name = role.name().to_string();
+        self.role_prompt = role.prompt().to_string();
+        self.dirty = true;
     }
 
-    pub fn set_top_p(&mut self, value: Option<f64>) {
-        if self.top_p != value {
-            self.top_p = value;
-            self.dirty = true;
-        }
-    }
-
-    pub fn set_function_matcher(&mut self, function_matcher: Option<&str>) {
-        self.function_matcher = function_matcher.map(|v| v.to_string());
-    }
-
-    pub fn set_role_properties(&mut self, role: &Role) {
-        self.set_temperature(role.temperature);
-        self.set_top_p(role.top_p);
-        self.set_function_matcher(role.function_matcher.as_deref());
+    pub fn clear_role(&mut self) {
+        self.role_name.clear();
+        self.role_prompt.clear();
     }
 
     pub fn set_save_session(&mut self, value: Option<bool>) {
@@ -295,15 +272,6 @@ impl Session {
 
     pub fn set_compressing(&mut self, compressing: bool) {
         self.compressing = compressing;
-    }
-
-    pub fn set_model(&mut self, model: &Model) {
-        let model_id = model.id();
-        if self.model_id != model_id {
-            self.model_id = model_id;
-            self.dirty = true;
-        }
-        self.model = model.clone();
     }
 
     pub fn compress(&mut self, prompt: String) {
@@ -379,10 +347,8 @@ impl Session {
     pub fn add_message(&mut self, input: &Input, output: &str) -> Result<()> {
         let mut need_add_msg = true;
         if self.messages.is_empty() {
-            if let Some(role) = input.role() {
-                self.messages.extend(role.build_messages(input));
-                need_add_msg = false;
-            }
+            self.messages.extend(input.role().build_messages(input));
+            need_add_msg = false;
         }
         if need_add_msg {
             self.messages
@@ -414,10 +380,8 @@ impl Session {
         let mut need_add_msg = true;
         let len = messages.len();
         if len == 0 {
-            if let Some(role) = input.role() {
-                messages = role.build_messages(input);
-                need_add_msg = false;
-            }
+            messages = input.role().build_messages(input);
+            need_add_msg = false;
         } else if len == 1 && self.compressed_messages.len() >= 2 {
             messages
                 .extend(self.compressed_messages[self.compressed_messages.len() - 2..].to_vec());
@@ -426,5 +390,58 @@ impl Session {
             messages.push(Message::new(MessageRole::User, input.message_content()));
         }
         messages
+    }
+}
+
+impl RoleLike for Session {
+    fn to_role(&self) -> Role {
+        let mut role = Role::new(&self.role_name, &self.role_prompt);
+        role.sync(self);
+        role
+    }
+
+    fn model(&self) -> &Model {
+        &self.model
+    }
+
+    fn temperature(&self) -> Option<f64> {
+        self.temperature
+    }
+
+    fn top_p(&self) -> Option<f64> {
+        self.top_p
+    }
+
+    fn function_matcher(&self) -> Option<String> {
+        self.function_matcher.clone()
+    }
+
+    fn set_model(&mut self, model: &Model) {
+        if self.model().id() != model.id() {
+            self.model_id = model.id();
+            self.model = model.clone();
+            self.dirty = true;
+        }
+    }
+
+    fn set_temperature(&mut self, value: Option<f64>) {
+        if self.temperature != value {
+            self.temperature = value;
+            self.dirty = true;
+        }
+    }
+
+    fn set_top_p(&mut self, value: Option<f64>) {
+        if self.top_p != value {
+            self.top_p = value;
+            self.dirty = true;
+        }
+    }
+
+    fn set_function_matcher(&mut self, value: Option<String>) {
+        if self.function_matcher != value {
+            self.function_matcher = value;
+            self.dirty = true;
+        }
     }
 }

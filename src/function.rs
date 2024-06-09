@@ -126,6 +126,10 @@ impl Functions {
     pub fn contains(&self, name: &str) -> bool {
         self.names.contains(name)
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.names.is_empty()
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -195,7 +199,7 @@ impl ToolCall {
         let function_name = self.name.clone();
         let (call_name, cmd_name, mut cmd_args) = match &config.read().bot {
             Some(bot) => {
-                if !bot.has_function(&function_name) {
+                if !bot.functions().contains(&function_name) {
                     bail!(
                         "Unexpected call: {} {function_name} {}",
                         bot.name(),
