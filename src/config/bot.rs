@@ -29,7 +29,6 @@ impl Bot {
         name: &str,
         abort_signal: AbortSignal,
     ) -> Result<Self> {
-        let config_path = Config::bot_config_file(name)?;
         let definition_path = Config::bot_definition_file(name)?;
         let functions_path = Config::bot_functions_file(name)?;
         let rag_path = Config::bot_rag_file(name)?;
@@ -40,7 +39,13 @@ impl Bot {
         } else {
             Functions::default()
         };
-        let bot_config = BotConfig::init(&config_path)?;
+        let bot_config = config
+            .read()
+            .bots
+            .iter()
+            .find(|v| v.name == name)
+            .cloned()
+            .unwrap_or_else(|| BotConfig::new(name));
         let model = {
             let config = config.read();
             match bot_config.model_id.as_ref() {
@@ -158,6 +163,7 @@ impl RoleLike for Bot {
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct BotConfig {
+    pub name: String,
     #[serde(rename(serialize = "model", deserialize = "model"))]
     pub model_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -167,16 +173,10 @@ pub struct BotConfig {
 }
 
 impl BotConfig {
-    pub fn init(path: &Path) -> Result<Self> {
-        if path.exists() {
-            let contents = read_to_string(path).with_context(|| {
-                format!("Failed to read bot config file at '{}'", path.display())
-            })?;
-            let config: Self = serde_yaml::from_str(&contents)
-                .with_context(|| format!("Failed to load bot config at '{}'", path.display()))?;
-            Ok(config)
-        } else {
-            Ok(BotConfig::default())
+    pub fn new(name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            ..Default::default()
         }
     }
 }

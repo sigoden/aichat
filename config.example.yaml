@@ -248,3 +248,9 @@ clients:
     name: together
     api_base: https://api.together.xyz/v1
     api_key: xxx                                      # ENV: {client}_API_KEY
+
+bots:
+  - name: todo-sh
+    model: null
+    temperature: null
+    top_p: null

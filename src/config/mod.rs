@@ -3,7 +3,7 @@ mod input;
 mod role;
 mod session;
 
-pub use self::bot::{list_bots, Bot};
+pub use self::bot::{list_bots, Bot, BotConfig};
 pub use self::input::Input;
 pub use self::role::{Role, RoleLike, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE};
 use self::session::Session;
@@ -102,6 +102,7 @@ pub struct Config {
     pub left_prompt: Option<String>,
     pub right_prompt: Option<String>,
     pub clients: Vec<ClientConfig>,
+    pub bots: Vec<BotConfig>,
     #[serde(skip)]
     pub roles: Vec<Role>,
     #[serde(skip)]
@@ -149,6 +150,7 @@ impl Default for Config {
             left_prompt: None,
             right_prompt: None,
             clients: vec![],
+            bots: vec![],
             roles: vec![],
             role: None,
             session: None,
@@ -400,10 +402,6 @@ impl Config {
 
     pub fn bot_config_dir(name: &str) -> Result<PathBuf> {
         Ok(Self::bots_dir()?.join(name))
-    }
-
-    pub fn bot_config_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::bot_config_dir(name)?.join(CONFIG_FILE_NAME))
     }
 
     pub fn bot_rag_file(name: &str) -> Result<PathBuf> {
