@@ -51,14 +51,25 @@ impl Bot {
                 None => config.current_model().clone(),
             }
         };
+
+
+        let render_options = config.read().get_render_options()?;
+        let mut markdown_render = MarkdownRender::init(render_options)?;
+        println!("{}", markdown_render.render(&definition.banner()));
+
         let rag = if rag_path.exists() {
             Some(Arc::new(Rag::load(config, "rag", &rag_path)?))
         } else if embeddings_dir.is_dir() {
             println!("The bot has an embeddings directory, RAG is initializing...");
-            let doc_path = embeddings_dir.display().to_string();
-            Some(Arc::new(
-                Rag::init(config, "rag", &rag_path, &[doc_path], abort_signal).await?,
-            ))
+            let ans = Confirm::new("The bot attached embeddings, init RAG?").with_default(true).prompt()?;
+            if ans {
+                let doc_path = embeddings_dir.display().to_string();
+                Some(Arc::new(
+                    Rag::init(config, "rag", &rag_path, &[doc_path], abort_signal).await?,
+                ))
+            } else {
+                None
+            }
         } else {
             None
         };
@@ -191,6 +202,29 @@ impl BotDefinition {
         let definition: Self = serde_yaml::from_str(&contents)
             .with_context(|| format!("Failed to load bot at '{}'", path.display()))?;
         Ok(definition)
+    }
+
+    fn banner(&self) -> String {
+        let BotDefinition {
+            name,
+            description,
+            version,
+            conversation_starters,
+            ..
+        } = self;
+        let starters = if conversation_starters.is_empty() {
+            String::new()
+        } else {
+            let starters = conversation_starters.iter().map(|v| format!("- {v}")).collect::<Vec<_>>().join("\n");
+            format!(r#"
+
+**Conversation Starters**
+{starters}"#)
+
+        };
+        format!(r#"# {name} {version}
+{description}{starters}
+"#)
     }
 }
 
