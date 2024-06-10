@@ -6,10 +6,7 @@ use crate::{
 };
 
 use anyhow::{Context, Result};
-use std::{
-    fs::{read_dir, read_to_string},
-    path::Path,
-};
+use std::{fs::read_to_string, path::Path};
 
 use serde::{Deserialize, Serialize};
 
@@ -52,7 +49,6 @@ impl Bot {
             }
         };
 
-
         let render_options = config.read().get_render_options()?;
         let mut markdown_render = MarkdownRender::init(render_options)?;
         println!("{}", markdown_render.render(&definition.banner()));
@@ -61,7 +57,9 @@ impl Bot {
             Some(Arc::new(Rag::load(config, "rag", &rag_path)?))
         } else if embeddings_dir.is_dir() {
             println!("The bot has an embeddings directory, RAG is initializing...");
-            let ans = Confirm::new("The bot attached embeddings, init RAG?").with_default(true).prompt()?;
+            let ans = Confirm::new("The bot attached embeddings, init RAG?")
+                .with_default(true)
+                .prompt()?;
             if ans {
                 let doc_path = embeddings_dir.display().to_string();
                 Some(Arc::new(
@@ -215,16 +213,23 @@ impl BotDefinition {
         let starters = if conversation_starters.is_empty() {
             String::new()
         } else {
-            let starters = conversation_starters.iter().map(|v| format!("- {v}")).collect::<Vec<_>>().join("\n");
-            format!(r#"
+            let starters = conversation_starters
+                .iter()
+                .map(|v| format!("- {v}"))
+                .collect::<Vec<_>>()
+                .join("\n");
+            format!(
+                r#"
 
 **Conversation Starters**
-{starters}"#)
-
+{starters}"#
+            )
         };
-        format!(r#"# {name} {version}
+        format!(
+            r#"# {name} {version}
 {description}{starters}
-"#)
+"#
+        )
     }
 }
 
@@ -233,16 +238,18 @@ pub fn list_bots() -> Vec<String> {
 }
 
 fn list_bots_impl() -> Result<Vec<String>> {
-    let base_dir = Config::bots_functions_dir()?;
-    let mut output = vec![];
-    for entry in read_dir(base_dir)? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.is_dir() {
-            if let Some(name) = path.file_name() {
-                output.push(name.to_string_lossy().to_string())
+    let base_dir = Config::functions_dir()?;
+    let contents = read_to_string(base_dir.join("bots.txt"))?;
+    let bots = contents
+        .split('\n')
+        .filter_map(|line| {
+            let line = line.trim();
+            if line.is_empty() {
+                None
+            } else {
+                Some(line.to_string())
             }
-        }
-    }
-    Ok(output)
+        })
+        .collect();
+    Ok(bots)
 }
