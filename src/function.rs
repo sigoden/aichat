@@ -243,7 +243,7 @@ impl ToolCall {
         }
 
         #[cfg(windows)]
-        let name = polyfill_cmd_name(&cmd_name, &bin_dir);
+        let cmd_name = polyfill_cmd_name(&cmd_name, &bin_dir);
 
         let output = if self.is_execute() {
             if *IS_STDOUT_TERMINAL {
@@ -338,16 +338,16 @@ fn prepend_env_path(bin_dir: &Path) -> Result<String> {
 }
 
 #[cfg(windows)]
-fn polyfill_cmd_name(name: &str, bin_dir: &std::path::Path) -> String {
-    let mut name = name.to_string();
+fn polyfill_cmd_name(cmd_name: &str, bin_dir: &std::path::Path) -> String {
+    let mut cmd_name = cmd_name.to_string();
     if let Ok(exts) = std::env::var("PATHEXT") {
         if let Some(cmd_path) = exts
             .split(';')
-            .map(|ext| bin_dir.join(format!("{}{}", name, ext)))
+            .map(|ext| bin_dir.join(format!("{}{}", cmd_name, ext)))
             .find(|path| path.exists())
         {
-            name = cmd_path.display().to_string();
+            cmd_name = cmd_path.display().to_string();
         }
     }
-    name
+    cmd_name
 }
