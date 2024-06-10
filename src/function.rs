@@ -10,20 +10,13 @@ use anyhow::{anyhow, bail, Context, Result};
 use fancy_regex::Regex;
 use indexmap::{IndexMap, IndexSet};
 use inquire::{validator::Validation, Text};
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{
     collections::{HashMap, HashSet},
     fs,
     path::Path,
-    sync::mpsc::channel,
 };
-use threadpool::ThreadPool;
-
-lazy_static! {
-    static ref THREAD_POOL: ThreadPool = ThreadPool::new(num_cpus::get());
-}
 
 pub const FUNCTION_ALL_MATCHER: &str = ".*";
 pub type ToolResults = (Vec<ToolCallResult>, String);
@@ -37,28 +30,9 @@ pub fn eval_tool_calls(
         return Ok(output);
     }
     calls = ToolCall::dedup(calls);
-    let parallel = calls.len() > 1 && calls.iter().all(|v| !v.is_execute());
-    if parallel {
-        let (tx, rx) = channel();
-        let calls_len = calls.len();
-        for (index, call) in calls.into_iter().enumerate() {
-            let tx = tx.clone();
-            let config = config.clone();
-            THREAD_POOL.execute(move || {
-                let result = call.eval(&config);
-                let _ = tx.send((index, call, result));
-            });
-        }
-        let mut list: Vec<(usize, ToolCall, Result<Value>)> = rx.iter().take(calls_len).collect();
-        list.sort_by_key(|v| v.0);
-        for (_, call, result) in list {
-            output.push(ToolCallResult::new(call, result?));
-        }
-    } else {
-        for call in calls {
-            let result = call.eval(config)?;
-            output.push(ToolCallResult::new(call, result));
-        }
+    for call in calls {
+        let result = call.eval(config)?;
+        output.push(ToolCallResult::new(call, result));
     }
     Ok(output)
 }
