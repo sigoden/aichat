@@ -1,8 +1,10 @@
 use super::{
+    list_chat_models,
     message::{Message, MessageContent},
     EmbeddingsData,
 };
 
+use crate::config::Config;
 use crate::utils::{estimate_token_length, format_option_value};
 
 use anyhow::{bail, Result};
@@ -41,9 +43,16 @@ impl Model {
             .collect()
     }
 
-    pub fn find(models: &[&Self], value: &str) -> Option<Self> {
+    pub fn retrieve(config: &Config, model_id: &str) -> Result<Self> {
+        match Self::find(&list_chat_models(config), model_id) {
+            Some(v) => Ok(v),
+            None => bail!("Invalid model '{model_id}'"),
+        }
+    }
+
+    pub fn find(models: &[&Self], model_id: &str) -> Option<Self> {
         let mut model = None;
-        let (client_name, model_name) = match value.split_once(':') {
+        let (client_name, model_name) = match model_id.split_once(':') {
             Some((client_name, model_name)) => {
                 if model_name.is_empty() {
                     (client_name, None)
@@ -51,11 +60,11 @@ impl Model {
                     (client_name, Some(model_name))
                 }
             }
-            None => (value, None),
+            None => (model_id, None),
         };
         match model_name {
             Some(model_name) => {
-                if let Some(found) = models.iter().find(|v| v.id() == value) {
+                if let Some(found) = models.iter().find(|v| v.id() == model_id) {
                     model = Some((*found).clone());
                 } else if let Some(found) = models.iter().find(|v| v.client_name == client_name) {
                     let mut found = (*found).clone();
@@ -73,7 +82,11 @@ impl Model {
     }
 
     pub fn id(&self) -> String {
-        format!("{}:{}", self.client_name, self.data.name)
+        if self.data.name.is_empty() {
+            self.client_name.to_string()
+        } else {
+            format!("{}:{}", self.client_name, self.data.name)
+        }
     }
 
     pub fn client_name(&self) -> &str {

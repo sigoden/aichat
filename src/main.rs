@@ -16,8 +16,7 @@ extern crate log;
 use crate::cli::Cli;
 use crate::client::{list_chat_models, send_stream, ChatCompletionsOutput};
 use crate::config::{
-    Config, GlobalConfig, Input, InputContext, WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE,
-    SHELL_ROLE,
+    Config, GlobalConfig, Input, WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE,
 };
 use crate::function::{eval_tool_calls, need_send_call_results};
 use crate::render::{render_error, MarkdownRender};
@@ -62,7 +61,7 @@ async fn main() -> Result<()> {
             .read()
             .roles
             .iter()
-            .for_each(|v| println!("{}", v.name));
+            .for_each(|v| println!("{}", v.name()));
         return Ok(());
     }
     if cli.list_models {
@@ -99,9 +98,8 @@ async fn main() -> Result<()> {
             .write()
             .use_session(session.as_ref().map(|v| v.as_str()))?;
     }
-    if let Some(model) = &cli.model {
-        config.write().set_model(model)?;
-        config.write().set_model_id();
+    if let Some(model_id) = &cli.model {
+        config.write().set_model(model_id)?;
     }
     if cli.save_session {
         config.write().set_save_session(Some(true));
@@ -241,7 +239,7 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
                 }
                 "📖 Explain" => {
                     let role = config.read().retrieve_role(EXPLAIN_SHELL_ROLE)?;
-                    let input = Input::from_str(config, &eval_str, Some(InputContext::role(role)));
+                    let input = Input::from_str(config, &eval_str, Some(role));
                     let abort = create_abort_signal();
                     send_stream(&input, client.as_ref(), config, abort).await?;
                     continue;

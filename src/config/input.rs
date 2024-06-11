@@ -1,11 +1,11 @@
-use super::{role::Role, session::Session, GlobalConfig};
+use super::*;
 
 use crate::client::{
     init_client, ChatCompletionsData, Client, ImageUrl, Message, MessageContent,
     MessageContentPart, MessageRole, Model,
 };
 use crate::function::{ToolCallResult, ToolResults};
-use crate::utils::{base64_encode, sha256, warning_text, AbortSignal, IS_STDOUT_TERMINAL};
+use crate::utils::{base64_encode, sha256, AbortSignal};
 
 use anyhow::{bail, Context, Result};
 use fancy_regex::Regex;
@@ -29,25 +29,28 @@ lazy_static! {
 pub struct Input {
     config: GlobalConfig,
     text: String,
-    patch_text: Option<String>,
+    patched_text: Option<String>,
     medias: Vec<String>,
     data_urls: HashMap<String, String>,
     tool_call: Option<ToolResults>,
-    rag: Option<String>,
-    context: InputContext,
+    rag_name: Option<String>,
+    role: Role,
+    with_session: bool,
 }
 
 impl Input {
-    pub fn from_str(config: &GlobalConfig, text: &str, context: Option<InputContext>) -> Self {
+    pub fn from_str(config: &GlobalConfig, text: &str, role: Option<Role>) -> Self {
+        let (role, with_session) = resolve_role(&config.read(), role);
         Self {
             config: config.clone(),
             text: text.to_string(),
-            patch_text: None,
+            patched_text: None,
             medias: Default::default(),
             data_urls: Default::default(),
             tool_call: None,
-            rag: None,
-            context: context.unwrap_or_else(|| InputContext::from_config(config)),
+            rag_name: None,
+            role,
+            with_session,
         }
     }
 
@@ -55,7 +58,7 @@ impl Input {
         config: &GlobalConfig,
         text: &str,
         files: Vec<String>,
-        context: Option<InputContext>,
+        role: Option<Role>,
     ) -> Result<Self> {
         let mut texts = vec![text.to_string()];
         let mut medias = vec![];
@@ -93,15 +96,17 @@ impl Input {
             }
         }
 
+        let (role, session) = resolve_role(&config.read(), role);
         Ok(Self {
             config: config.clone(),
             text: texts.join("\n"),
-            patch_text: None,
+            patched_text: None,
             medias,
             data_urls,
             tool_call: Default::default(),
-            rag: None,
-            context: context.unwrap_or_else(|| InputContext::from_config(config)),
+            rag_name: None,
+            role,
+            with_session: session,
         })
     }
 
@@ -114,7 +119,7 @@ impl Input {
     }
 
     pub fn text(&self) -> String {
-        match self.patch_text.clone() {
+        match self.patched_text.clone() {
             Some(text) => text,
             None => self.text.clone(),
         }
@@ -134,19 +139,19 @@ impl Input {
                 let top_k = self.config.read().rag_top_k;
                 let embeddings = rag.search(&self.text, top_k, abort_signal).await?;
                 let text = self.config.read().rag_template(&embeddings, &self.text);
-                self.patch_text = Some(text);
-                self.rag = Some(rag.name().to_string());
+                self.patched_text = Some(text);
+                self.rag_name = Some(rag.name().to_string());
             }
         }
         Ok(())
     }
 
-    pub fn rag(&self) -> Option<&str> {
-        self.rag.as_deref()
+    pub fn rag_name(&self) -> Option<&str> {
+        self.rag_name.as_deref()
     }
 
     pub fn clear_patch_text(&mut self) {
-        self.patch_text.take();
+        self.patched_text.take();
     }
 
     pub fn merge_tool_call(
@@ -164,20 +169,8 @@ impl Input {
         self
     }
 
-    pub fn model(&self) -> Model {
-        if let Some(session) = self.session(&self.config.read().session) {
-            return session.model.clone();
-        } else if let Some(model) = self
-            .role()
-            .and_then(|v| v.retrieve_model(&self.config.read()))
-        {
-            return model;
-        }
-        self.config.read().model.clone()
-    }
-
     pub fn create_client(&self) -> Result<Box<dyn Client>> {
-        init_client(&self.config, Some(self.model()))
+        init_client(&self.config, Some(self.role().model().clone()))
     }
 
     pub fn prepare_completion_data(
@@ -190,35 +183,9 @@ impl Input {
         }
         let messages = self.build_messages()?;
         self.config.read().model.guard_max_input_tokens(&messages)?;
-        let (temperature, top_p) = if let Some(session) = self.session(&self.config.read().session)
-        {
-            (session.temperature(), session.top_p())
-        } else if let Some(role) = self.role() {
-            (role.temperature, role.top_p)
-        } else {
-            let config = self.config.read();
-            (config.temperature, config.top_p)
-        };
-        let mut functions = None;
-        if self.config.read().function_calling {
-            let config = self.config.read();
-            let function_matcher = if let Some(session) = self.session(&config.session) {
-                session.function_matcher()
-            } else if let Some(role) = self.role() {
-                role.function_matcher.as_deref()
-            } else {
-                None
-            };
-            if let Some(function_matcher) = function_matcher {
-                functions = config.function.select(function_matcher);
-                if !model.supports_function_calling() {
-                    functions = None;
-                    if *IS_STDOUT_TERMINAL {
-                        eprintln!("{}", warning_text("WARNING: the role or session includes functions, but the model or client does not support function calling."));
-                    }
-                }
-            }
-        };
+        let temperature = self.role().temperature();
+        let top_p = self.role().top_p();
+        let functions = self.config.read().retrieve_functions(model, self.role());
         Ok(ChatCompletionsData {
             messages,
             temperature,
@@ -231,10 +198,8 @@ impl Input {
     pub fn build_messages(&self) -> Result<Vec<Message>> {
         let mut messages = if let Some(session) = self.session(&self.config.read().session) {
             session.build_messages(self)
-        } else if let Some(role) = self.role() {
-            role.build_messages(self)
         } else {
-            vec![Message::new(MessageRole::User, self.message_content())]
+            self.role().build_messages(self)
         };
         if let Some(tool_results) = &self.tool_call {
             messages.push(Message::new(
@@ -248,19 +213,17 @@ impl Input {
     pub fn echo_messages(&self) -> String {
         if let Some(session) = self.session(&self.config.read().session) {
             session.echo_messages(self)
-        } else if let Some(role) = self.role() {
-            role.echo_messages(self)
         } else {
-            self.render()
+            self.role().echo_messages(self)
         }
     }
 
-    pub fn role(&self) -> Option<&Role> {
-        self.context.role.as_ref()
+    pub fn role(&self) -> &Role {
+        &self.role
     }
 
     pub fn session<'a>(&self, session: &'a Option<Session>) -> Option<&'a Session> {
-        if self.context.session {
+        if self.with_session {
             session.as_ref()
         } else {
             None
@@ -268,7 +231,7 @@ impl Input {
     }
 
     pub fn session_mut<'a>(&self, session: &'a mut Option<Session>) -> Option<&'a mut Session> {
-        if self.context.session {
+        if self.with_session {
             session.as_mut()
         } else {
             None
@@ -337,27 +300,10 @@ impl Input {
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct InputContext {
-    role: Option<Role>,
-    session: bool,
-}
-
-impl InputContext {
-    pub fn new(role: Option<Role>, session: bool) -> Self {
-        Self { role, session }
-    }
-
-    pub fn from_config(config: &GlobalConfig) -> Self {
-        let config = config.read();
-        InputContext::new(config.role.clone(), config.session.is_some())
-    }
-
-    pub fn role(role: Role) -> Self {
-        Self {
-            role: Some(role),
-            session: false,
-        }
+fn resolve_role(config: &Config, role: Option<Role>) -> (Role, bool) {
+    match role {
+        Some(v) => (v, false),
+        None => (config.extract_role(), config.session.is_some()),
     }
 }
 

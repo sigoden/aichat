@@ -1,5 +1,5 @@
 use crate::{
-    config::GlobalConfig,
+    config::{Config, GlobalConfig},
     utils::{
         dimmed_text, get_env_bool, indent_text, run_command, run_command_with_output, warning_text,
         IS_STDOUT_TERMINAL,
@@ -10,24 +10,15 @@ use anyhow::{anyhow, bail, Context, Result};
 use fancy_regex::Regex;
 use indexmap::{IndexMap, IndexSet};
 use inquire::{validator::Validation, Text};
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{
     collections::{HashMap, HashSet},
     fs,
     path::Path,
-    sync::mpsc::channel,
 };
-use threadpool::ThreadPool;
 
-const BIN_DIR_NAME: &str = "bin";
-const DECLARATIONS_FILE_PATH: &str = "functions.json";
-
-lazy_static! {
-    static ref THREAD_POOL: ThreadPool = ThreadPool::new(num_cpus::get());
-}
-
+pub const FUNCTION_ALL_MATCHER: &str = ".*";
 pub type ToolResults = (Vec<ToolCallResult>, String);
 
 pub fn eval_tool_calls(
@@ -39,28 +30,9 @@ pub fn eval_tool_calls(
         return Ok(output);
     }
     calls = ToolCall::dedup(calls);
-    let parallel = calls.len() > 1 && calls.iter().all(|v| !v.is_execute());
-    if parallel {
-        let (tx, rx) = channel();
-        let calls_len = calls.len();
-        for (index, call) in calls.into_iter().enumerate() {
-            let tx = tx.clone();
-            let config = config.clone();
-            THREAD_POOL.execute(move || {
-                let result = call.eval(&config);
-                let _ = tx.send((index, call, result));
-            });
-        }
-        let mut list: Vec<(usize, ToolCall, Result<Value>)> = rx.iter().take(calls_len).collect();
-        list.sort_by_key(|v| v.0);
-        for (_, call, result) in list {
-            output.push(ToolCallResult::new(call, result?));
-        }
-    } else {
-        for call in calls {
-            let result = call.eval(config)?;
-            output.push(ToolCallResult::new(call, result));
-        }
+    for call in calls {
+        let result = call.eval(config)?;
+        output.push(ToolCallResult::new(call, result));
     }
     Ok(output)
 }
@@ -82,33 +54,21 @@ impl ToolCallResult {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct Function {
+pub struct Functions {
     names: IndexSet<String>,
     declarations: Vec<FunctionDeclaration>,
-    #[cfg(windows)]
-    bin_dir: std::path::PathBuf,
-    env_path: Option<String>,
 }
 
-impl Function {
-    pub fn init(functions_dir: &Path) -> Result<Self> {
-        let bin_dir = functions_dir.join(BIN_DIR_NAME);
-        let env_path = if bin_dir.exists() {
-            prepend_env_path(&bin_dir).ok()
-        } else {
-            None
-        };
-
-        let declarations_file = functions_dir.join(DECLARATIONS_FILE_PATH);
-
-        let declarations: Vec<FunctionDeclaration> = if declarations_file.exists() {
+impl Functions {
+    pub fn init(declarations_path: &Path) -> Result<Self> {
+        let declarations: Vec<FunctionDeclaration> = if declarations_path.exists() {
             let ctx = || {
                 format!(
                     "Failed to load function declarations at {}",
-                    declarations_file.display()
+                    declarations_path.display()
                 )
             };
-            let content = fs::read_to_string(&declarations_file).with_context(ctx)?;
+            let content = fs::read_to_string(declarations_path).with_context(ctx)?;
             serde_json::from_str(&content).with_context(ctx)?
         } else {
             vec![]
@@ -119,9 +79,6 @@ impl Function {
         Ok(Self {
             names: func_names,
             declarations,
-            #[cfg(windows)]
-            bin_dir,
-            env_path,
         })
     }
 
@@ -138,6 +95,14 @@ impl Function {
         } else {
             Some(output)
         }
+    }
+
+    pub fn contains(&self, name: &str) -> bool {
+        self.names.contains(name)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.names.is_empty()
     }
 }
 
@@ -205,29 +170,54 @@ impl ToolCall {
     }
 
     pub fn eval(&self, config: &GlobalConfig) -> Result<Value> {
-        let name = self.name.clone();
-        if !config.read().function.names.contains(&name) {
-            bail!("Unexpected call: {name} {}", self.arguments);
-        }
-        let arguments = if self.arguments.is_object() {
+        let function_name = self.name.clone();
+        let (call_name, cmd_name, mut cmd_args) = match &config.read().bot {
+            Some(bot) => {
+                if !bot.functions().contains(&function_name) {
+                    bail!(
+                        "Unexpected call: {} {function_name} {}",
+                        bot.name(),
+                        self.arguments
+                    );
+                }
+                (
+                    format!("{}:{}", bot.name(), function_name),
+                    bot.name().to_string(),
+                    vec![function_name],
+                )
+            }
+            None => {
+                if !config.read().functions.contains(&function_name) {
+                    bail!("Unexpected call: {function_name} {}", self.arguments);
+                }
+                (function_name.clone(), function_name, vec![])
+            }
+        };
+        let json_data = if self.arguments.is_object() {
             self.arguments.clone()
         } else if let Some(arguments) = self.arguments.as_str() {
-            let args: Value = serde_json::from_str(arguments)
-                .map_err(|_| anyhow!("The {name} call has invalid arguments: {arguments}"))?;
-            args
+            let arguments: Value = serde_json::from_str(arguments).map_err(|_| {
+                anyhow!("The call '{call_name}' has invalid arguments: {arguments}")
+            })?;
+            arguments
         } else {
-            bail!("The {name} call has invalid arguments: {}", self.arguments);
+            bail!(
+                "The call '{call_name}' has invalid arguments: {}",
+                self.arguments
+            );
         };
 
-        let arguments = arguments.to_string();
-        let prompt = format!("Call {name} '{arguments}'",);
+        cmd_args.push(json_data.to_string());
+        let prompt = format!("Call {cmd_name} {}", cmd_args.join(" "));
 
         let mut envs = HashMap::new();
-        if let Some(env_path) = config.read().function.env_path.clone() {
-            envs.insert("PATH".into(), env_path);
-        };
+        let bin_dir = Config::functions_bin_dir()?;
+        if bin_dir.exists() {
+            envs.insert("PATH".into(), prepend_env_path(&bin_dir)?);
+        }
+
         #[cfg(windows)]
-        let name = polyfill_cmd_name(&name, &config.read().function.bin_dir);
+        let cmd_name = polyfill_cmd_name(&cmd_name, &bin_dir);
 
         let output = if self.is_execute() {
             if *IS_STDOUT_TERMINAL {
@@ -243,13 +233,13 @@ impl ToolCall {
                     .prompt()?;
                 match answer.as_str() {
                     "1" => {
-                        let exit_code = run_command(&name, &[arguments], Some(envs))?;
+                        let exit_code = run_command(&cmd_name, &cmd_args, Some(envs))?;
                         if exit_code != 0 {
                             bail!("Exit {exit_code}");
                         }
                         Value::Null
                     }
-                    "2" => run_and_retrieve(&name, &arguments, envs, &prompt)?,
+                    "2" => run_and_retrieve(&cmd_name, &cmd_args, envs, &prompt)?,
                     _ => Value::Null,
                 }
             } else {
@@ -258,7 +248,7 @@ impl ToolCall {
             }
         } else {
             println!("{}", dimmed_text(&prompt));
-            run_and_retrieve(&name, &arguments, envs, &prompt)?
+            run_and_retrieve(&cmd_name, &cmd_args, envs, &prompt)?
         };
 
         Ok(output)
@@ -274,12 +264,12 @@ impl ToolCall {
 }
 
 fn run_and_retrieve(
-    name: &str,
-    arguments: &str,
+    cmd_name: &str,
+    cmd_args: &[String],
     envs: HashMap<String, String>,
     prompt: &str,
 ) -> Result<Value> {
-    let (success, stdout, stderr) = run_command_with_output(name, &[arguments], Some(envs))?;
+    let (success, stdout, stderr) = run_command_with_output(cmd_name, cmd_args, Some(envs))?;
 
     if success {
         if !stderr.is_empty() {
@@ -322,16 +312,16 @@ fn prepend_env_path(bin_dir: &Path) -> Result<String> {
 }
 
 #[cfg(windows)]
-fn polyfill_cmd_name(name: &str, bin_dir: &std::path::Path) -> String {
-    let mut name = name.to_string();
+fn polyfill_cmd_name(cmd_name: &str, bin_dir: &std::path::Path) -> String {
+    let mut cmd_name = cmd_name.to_string();
     if let Ok(exts) = std::env::var("PATHEXT") {
         if let Some(cmd_path) = exts
             .split(';')
-            .map(|ext| bin_dir.join(format!("{}{}", name, ext)))
+            .map(|ext| bin_dir.join(format!("{}{}", cmd_name, ext)))
             .find(|path| path.exists())
         {
-            name = cmd_path.display().to_string();
+            cmd_name = cmd_path.display().to_string();
         }
     }
-    name
+    cmd_name
 }
