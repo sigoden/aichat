@@ -20,11 +20,11 @@ pub trait RoleLike {
     fn model(&self) -> &Model;
     fn temperature(&self) -> Option<f64>;
     fn top_p(&self) -> Option<f64>;
-    fn selected_functions(&self) -> Option<FunctionsFilter>;
+    fn functions_filter(&self) -> Option<FunctionsFilter>;
     fn set_model(&mut self, model: &Model);
     fn set_temperature(&mut self, value: Option<f64>);
     fn set_top_p(&mut self, value: Option<f64>);
-    fn set_selected_functions(&mut self, value: Option<FunctionsFilter>);
+    fn set_functions_filter(&mut self, value: Option<FunctionsFilter>);
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -42,7 +42,7 @@ pub struct Role {
     #[serde(skip_serializing_if = "Option::is_none")]
     top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    selected_functions: Option<FunctionsFilter>,
+    functions_filter: Option<FunctionsFilter>,
 
     #[serde(skip)]
     model: Model,
@@ -91,10 +91,10 @@ async function timeout(ms) {
             ),
         ]
         .into_iter()
-        .map(|(name, prompt, selected_functions)| Self {
+        .map(|(name, prompt, functions_filter)| Self {
             name: name.into(),
             prompt,
-            selected_functions,
+            functions_filter,
             ..Default::default()
         })
         .collect()
@@ -110,8 +110,8 @@ async function timeout(ms) {
         let model = role_like.model();
         let temperature = role_like.temperature();
         let top_p = role_like.top_p();
-        let selected_functions = role_like.selected_functions();
-        self.batch_set(model, temperature, top_p, selected_functions);
+        let functions_filter = role_like.functions_filter();
+        self.batch_set(model, temperature, top_p, functions_filter);
     }
 
     pub fn batch_set(
@@ -119,7 +119,7 @@ async function timeout(ms) {
         model: &Model,
         temperature: Option<f64>,
         top_p: Option<f64>,
-        selected_functions: Option<FunctionsFilter>,
+        functions_filter: Option<FunctionsFilter>,
     ) {
         self.set_model(model);
         if temperature.is_some() {
@@ -128,8 +128,8 @@ async function timeout(ms) {
         if top_p.is_some() {
             self.set_top_p(top_p);
         }
-        if selected_functions.is_some() {
-            self.set_selected_functions(selected_functions);
+        if functions_filter.is_some() {
+            self.set_functions_filter(functions_filter);
         }
     }
 
@@ -230,8 +230,8 @@ impl RoleLike for Role {
         self.top_p
     }
 
-    fn selected_functions(&self) -> Option<FunctionsFilter> {
-        self.selected_functions.clone()
+    fn functions_filter(&self) -> Option<FunctionsFilter> {
+        self.functions_filter.clone()
     }
 
     fn set_model(&mut self, model: &Model) {
@@ -247,8 +247,8 @@ impl RoleLike for Role {
         self.top_p = value;
     }
 
-    fn set_selected_functions(&mut self, value: Option<FunctionsFilter>) {
-        self.selected_functions = value;
+    fn set_functions_filter(&mut self, value: Option<FunctionsFilter>) {
+        self.functions_filter = value;
     }
 }
 

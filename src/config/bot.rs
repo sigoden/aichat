@@ -141,7 +141,7 @@ impl RoleLike for Bot {
         self.config.top_p
     }
 
-    fn selected_functions(&self) -> Option<FunctionsFilter> {
+    fn functions_filter(&self) -> Option<FunctionsFilter> {
         if self.functions.is_empty() {
             None
         } else {
@@ -162,7 +162,7 @@ impl RoleLike for Bot {
         self.config.top_p = value;
     }
 
-    fn set_selected_functions(&mut self, _value: Option<FunctionsFilter>) {}
+    fn set_functions_filter(&mut self, _value: Option<FunctionsFilter>) {}
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -175,7 +175,7 @@ pub struct BotConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub dangerously_functions: Option<FunctionsFilter>,
+    pub dangerously_functions_filter: Option<FunctionsFilter>,
 }
 
 impl BotConfig {

@@ -23,7 +23,7 @@ function_calling: false
 # Regex for seletecting dangerous functions.
 # User confirmation is required when executing these functions. 
 # e.g. 'execute_command|execute_js_code' 'execute_.*'
-dangerously_functions: null
+dangerously_functions_filter: null
 
 bot_prelude: null               # Set a session to use when starting a bot.  (e.g. temp, default)
 
@@ -32,7 +32,7 @@ bots:
     model: null
     temperature: null
     top_p: null
-    dangerously_functions: null
+    dangerously_functions_filter: null
 
 # Specifies the embedding model to use
 embedding_model: null
