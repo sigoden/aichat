@@ -12,15 +12,13 @@ use crate::client::{
     create_client_config, list_chat_models, list_client_types, ClientConfig, Model,
     OPENAI_COMPATIBLE_PLATFORMS,
 };
-use crate::function::{FunctionDeclaration, Functions, ToolCallResult};
+use crate::function::{FunctionDeclaration, Functions, FunctionsFilter, ToolCallResult};
 use crate::rag::Rag;
 use crate::render::{MarkdownRender, RenderOptions};
-use crate::utils::{
-    format_option_value, fuzzy_match, get_env_name, light_theme_from_colorfgbg, now, render_prompt,
-    set_text, warning_text, AbortSignal, IS_STDOUT_TERMINAL,
-};
+use crate::utils::*;
 
 use anyhow::{anyhow, bail, Context, Result};
+use fancy_regex::Regex;
 use inquire::{Confirm, Select};
 use parking_lot::RwLock;
 use serde::Deserialize;
@@ -96,6 +94,7 @@ pub struct Config {
     pub rag_top_k: usize,
     pub rag_template: Option<String>,
     pub function_calling: bool,
+    pub dangerously_functions: Option<FunctionsFilter>,
     pub compress_threshold: usize,
     pub summarize_prompt: Option<String>,
     pub summary_prompt: Option<String>,
@@ -144,6 +143,7 @@ impl Default for Config {
             rag_top_k: 4,
             rag_template: None,
             function_calling: false,
+            dangerously_functions: None,
             compress_threshold: 4000,
             summarize_prompt: None,
             summary_prompt: None,
@@ -963,6 +963,26 @@ impl Config {
             }
         };
         functions
+    }
+
+    pub fn is_dangerously_function(&self, name: &str) -> bool {
+        if get_env_bool("no_dangerously_functions") {
+            return false;
+        }
+        let dangerously_functions = match &self.bot {
+            Some(bot) => bot.config().dangerously_functions.as_ref(),
+            None => self.dangerously_functions.as_ref(),
+        };
+        match dangerously_functions {
+            None => false,
+            Some(regex) => {
+                let regex = match Regex::new(&format!("^({regex})$")) {
+                    Ok(v) => v,
+                    Err(_) => return false,
+                };
+                regex.is_match(name).unwrap_or(false)
+            }
+        }
     }
 
     pub fn buffer_editor(&self) -> Option<String> {

@@ -151,14 +151,6 @@ pub fn dimmed_text(input: &str) -> String {
     nu_ansi_term::Style::new().dimmed().paint(input).to_string()
 }
 
-pub fn indent_text(text: &str, spaces: usize) -> String {
-    let indent_size = " ".repeat(spaces);
-    text.lines()
-        .map(|line| format!("{}{}", indent_size, line))
-        .collect::<Vec<String>>()
-        .join("\n")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
