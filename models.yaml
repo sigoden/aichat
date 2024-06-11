@@ -148,17 +148,14 @@
       max_input_tokens: 64000
       input_price: 2
       output_price: 6
-      supports_function_calling: true
     - name: mistral-small-latest
       max_input_tokens: 32000
       input_price: 1
       output_price: 3
-      supports_function_calling: true
     - name: mistral-large-latest
       max_input_tokens: 32000
       input_price: 4
       output_price: 12
-      supports_function_calling: true
     - name: codestral-latest
       max_input_tokens: 32000
       input_price: 1
@@ -515,16 +512,19 @@
       max_output_tokens: 1500
       input_price: 0.28
       output_price: 0.84
+      supports_function_calling: true
     - name: qwen-plus
       max_input_tokens: 30000
       max_output_tokens: 2000
       input_price: 0.56
       output_price: 1.68
+      supports_function_calling: true
     - name: qwen-max
       max_input_tokens: 6000
       max_output_tokens: 2000
       input_price: 5.6
       output_price: 16.8
+      supports_function_calling: true
     - name: qwen-max-longcontext
       input_price: 5.6
       output_price: 16.8
