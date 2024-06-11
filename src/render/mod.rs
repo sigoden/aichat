@@ -16,7 +16,7 @@ pub async fn render_stream(
     abort: AbortSignal,
 ) -> Result<()> {
     if *IS_STDOUT_TERMINAL {
-        let render_options = config.read().get_render_options()?;
+        let render_options = config.read().render_options()?;
         let mut render = MarkdownRender::init(render_options)?;
         markdown_stream(rx, &mut render, &abort).await
     } else {

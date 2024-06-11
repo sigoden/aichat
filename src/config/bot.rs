@@ -54,7 +54,7 @@ impl Bot {
             }
         };
 
-        let render_options = config.read().get_render_options()?;
+        let render_options = config.read().render_options()?;
         let mut markdown_render = MarkdownRender::init(render_options)?;
         println!("{}", markdown_render.render(&definition.banner()));
 

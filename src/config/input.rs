@@ -185,7 +185,7 @@ impl Input {
         self.config.read().model.guard_max_input_tokens(&messages)?;
         let temperature = self.role().temperature();
         let top_p = self.role().top_p();
-        let functions = self.config.read().retrieve_functions(model, self.role());
+        let functions = self.config.read().select_functions(model, self.role());
         Ok(ChatCompletionsData {
             messages,
             temperature,

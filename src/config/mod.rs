@@ -196,60 +196,6 @@ impl Config {
         Ok(config)
     }
 
-    pub fn apply_prelude(&mut self) -> Result<()> {
-        let prelude = self.prelude.clone().unwrap_or_default();
-        if prelude.is_empty() {
-            return Ok(());
-        }
-        let err_msg = || format!("Invalid prelude '{}", prelude);
-        match prelude.split_once(':') {
-            Some(("role", name)) => {
-                if self.role.is_none() && self.session.is_none() {
-                    self.use_role(name).with_context(err_msg)?;
-                }
-            }
-            Some(("session", name)) => {
-                if self.session.is_none() {
-                    self.use_session(Some(name)).with_context(err_msg)?;
-                }
-            }
-            _ => {
-                bail!("{}", err_msg())
-            }
-        }
-        Ok(())
-    }
-
-    pub fn buffer_editor(&self) -> Option<String> {
-        self.buffer_editor
-            .clone()
-            .or_else(|| env::var("VISUAL").ok().or_else(|| env::var("EDITOR").ok()))
-    }
-
-    pub fn retrieve_role(&self, name: &str) -> Result<Role> {
-        let mut role = self
-            .roles
-            .iter()
-            .find(|v| v.match_name(name))
-            .map(|v| {
-                let mut role = v.clone();
-                role.complete_prompt_args(name);
-                role
-            })
-            .ok_or_else(|| anyhow!("Unknown role `{name}`"))?;
-
-        match role.model_id() {
-            Some(model_id) => {
-                if self.model.id() != model_id {
-                    let model = Model::retrieve(self, model_id)?;
-                    role.set_model(&model);
-                }
-            }
-            None => role.set_model(&self.model),
-        }
-        Ok(role)
-    }
-
     pub fn config_dir() -> Result<PathBuf> {
         let env_name = get_env_name("config_dir");
         let path = if let Some(v) = env::var_os(env_name) {
@@ -428,39 +374,6 @@ impl Config {
         Ok(Self::bot_functions_dir(name)?.join(BOT_EMBEDDINGS_DIR))
     }
 
-    pub fn use_prompt(&mut self, prompt: &str) -> Result<()> {
-        let role = Role::new(TEMP_ROLE_NAME, prompt);
-        self.use_role_obj(role)
-    }
-
-    pub fn use_role(&mut self, name: &str) -> Result<()> {
-        let role = self.retrieve_role(name)?;
-        self.use_role_obj(role)
-    }
-
-    pub fn use_role_obj(&mut self, role: Role) -> Result<()> {
-        if self.bot.is_some() {
-            bail!("Cannot perform this action because you are using a bot")
-        }
-        if let Some(session) = self.session.as_mut() {
-            session.guard_empty()?;
-            session.set_role(role);
-        } else {
-            self.role = Some(role);
-        }
-        Ok(())
-    }
-
-    pub fn exit_role(&mut self) -> Result<()> {
-        if self.role.is_some() {
-            if let Some(session) = self.session.as_mut() {
-                session.clear_role();
-            }
-            self.role = None;
-        }
-        Ok(())
-    }
-
     pub fn state(&self) -> StateFlags {
         let mut flags = StateFlags::empty();
         if let Some(session) = &self.session {
@@ -494,6 +407,18 @@ impl Config {
         }
     }
 
+    pub fn role_like_mut(&mut self) -> Option<&mut dyn RoleLike> {
+        if let Some(session) = self.session.as_mut() {
+            Some(session)
+        } else if let Some(bot) = self.bot.as_mut() {
+            Some(bot)
+        } else if let Some(role) = self.role.as_mut() {
+            Some(role)
+        } else {
+            None
+        }
+    }
+
     pub fn extract_role(&self) -> Role {
         let mut role = if let Some(session) = self.session.as_ref() {
             session.to_role()
@@ -515,71 +440,16 @@ impl Config {
         role
     }
 
-    pub fn role_like_mut(&mut self) -> Option<&mut dyn RoleLike> {
-        if let Some(session) = self.session.as_mut() {
-            Some(session)
-        } else if let Some(bot) = self.bot.as_mut() {
-            Some(bot)
-        } else if let Some(role) = self.role.as_mut() {
-            Some(role)
+    pub fn info(&self) -> Result<String> {
+        if let Some(session) = &self.session {
+            session.export()
+        } else if let Some(role) = &self.role {
+            role.export()
+        } else if let Some(rag) = &self.rag {
+            rag.export()
         } else {
-            None
+            self.sysinfo()
         }
-    }
-
-    pub fn set_temperature(&mut self, value: Option<f64>) {
-        match self.role_like_mut() {
-            Some(role_like) => role_like.set_temperature(value),
-            None => self.temperature = value,
-        }
-    }
-
-    pub fn set_top_p(&mut self, value: Option<f64>) {
-        match self.role_like_mut() {
-            Some(role_like) => role_like.set_top_p(value),
-            None => self.top_p = value,
-        }
-    }
-
-    pub fn set_save_session(&mut self, value: Option<bool>) {
-        if let Some(session) = self.session.as_mut() {
-            session.set_save_session(value);
-        } else {
-            self.save_session = value;
-        }
-    }
-
-    pub fn set_compress_threshold(&mut self, value: Option<usize>) {
-        if let Some(session) = self.session.as_mut() {
-            session.set_compress_threshold(value);
-        } else {
-            self.compress_threshold = value.unwrap_or_default();
-        }
-    }
-
-    pub fn set_wrap(&mut self, value: &str) -> Result<()> {
-        if value == "no" {
-            self.wrap = None;
-        } else if value == "auto" {
-            self.wrap = Some(value.into());
-        } else {
-            value
-                .parse::<u16>()
-                .map_err(|_| anyhow!("Invalid wrap value"))?;
-            self.wrap = Some(value.into())
-        }
-        Ok(())
-    }
-
-    pub fn set_model(&mut self, model_id: &str) -> Result<()> {
-        let model = Model::retrieve(self, model_id)?;
-        match self.role_like_mut() {
-            Some(role_like) => role_like.set_model(&model),
-            None => {
-                self.model = model;
-            }
-        }
-        Ok(())
     }
 
     pub fn sysinfo(&self) -> Result<String> {
@@ -627,128 +497,6 @@ impl Config {
             .collect::<Vec<String>>()
             .join("\n");
         Ok(output)
-    }
-
-    pub fn role_info(&self) -> Result<String> {
-        if let Some(role) = &self.role {
-            role.export()
-        } else {
-            bail!("No role")
-        }
-    }
-
-    pub fn session_info(&self) -> Result<String> {
-        if let Some(session) = &self.session {
-            let render_options = self.get_render_options()?;
-            let mut markdown_render = MarkdownRender::init(render_options)?;
-            session.render(&mut markdown_render)
-        } else {
-            bail!("No session")
-        }
-    }
-
-    pub fn rag_info(&self) -> Result<String> {
-        if let Some(rag) = &self.rag {
-            rag.export()
-        } else {
-            bail!("No rag")
-        }
-    }
-
-    pub fn bot_info(&self) -> Result<String> {
-        if let Some(bot) = &self.bot {
-            bot.export()
-        } else {
-            bail!("No rag")
-        }
-    }
-
-    pub fn info(&self) -> Result<String> {
-        if let Some(session) = &self.session {
-            session.export()
-        } else if let Some(role) = &self.role {
-            role.export()
-        } else if let Some(rag) = &self.rag {
-            rag.export()
-        } else {
-            self.sysinfo()
-        }
-    }
-
-    pub fn last_reply(&self) -> &str {
-        self.last_message
-            .as_ref()
-            .map(|(_, reply)| reply.as_str())
-            .unwrap_or_default()
-    }
-
-    pub fn repl_complete(&self, cmd: &str, args: &[&str]) -> Vec<(String, Option<String>)> {
-        let (values, filter) = if args.len() == 1 {
-            let values = match cmd {
-                ".role" => self
-                    .roles
-                    .iter()
-                    .map(|v| (v.name().to_string(), None))
-                    .collect(),
-                ".model" => list_chat_models(self)
-                    .into_iter()
-                    .map(|v| (v.id(), Some(v.description())))
-                    .collect(),
-                ".session" => self
-                    .list_sessions()
-                    .into_iter()
-                    .map(|v| (v, None))
-                    .collect(),
-                ".rag" => self.list_rags().into_iter().map(|v| (v, None)).collect(),
-                ".bot" => list_bots().into_iter().map(|v| (v, None)).collect(),
-                ".set" => vec![
-                    "max_output_tokens",
-                    "temperature",
-                    "top_p",
-                    "rag_top_k",
-                    "function_calling",
-                    "compress_threshold",
-                    "save",
-                    "save_session",
-                    "highlight",
-                    "dry_run",
-                    "auto_copy",
-                ]
-                .into_iter()
-                .map(|v| (format!("{v} "), None))
-                .collect(),
-                _ => vec![],
-            };
-            (values, args[0])
-        } else if args.len() == 2 {
-            let values = match args[0] {
-                "max_output_tokens" => match self.model.max_output_tokens() {
-                    Some(v) => vec![v.to_string()],
-                    None => vec![],
-                },
-                "function_calling" => complete_bool(self.function_calling),
-                "save" => complete_bool(self.save),
-                "save_session" => {
-                    let save_session = if let Some(session) = &self.session {
-                        session.save_session()
-                    } else {
-                        self.save_session
-                    };
-                    complete_option_bool(save_session)
-                }
-                "highlight" => complete_bool(self.highlight),
-                "dry_run" => complete_bool(self.dry_run),
-                "auto_copy" => complete_bool(self.auto_copy),
-                _ => vec![],
-            };
-            (values.into_iter().map(|v| (v, None)).collect(), args[1])
-        } else {
-            return vec![];
-        };
-        values
-            .into_iter()
-            .filter(|(value, _)| fuzzy_match(value, filter))
-            .collect()
     }
 
     pub fn update(&mut self, data: &str) -> Result<()> {
@@ -809,28 +557,124 @@ impl Config {
         Ok(())
     }
 
-    pub fn retrieve_functions(
-        &self,
-        model: &Model,
-        role: &Role,
-    ) -> Option<Vec<FunctionDeclaration>> {
-        let mut functions = None;
-        if self.function_calling {
-            let function_matcher = role.function_matcher();
-            if let Some(matcher) = function_matcher {
-                functions = match &self.bot {
-                    Some(bot) => bot.functions().select(&matcher),
-                    None => self.functions.select(&matcher),
-                };
-                if !model.supports_function_calling() {
-                    functions = None;
-                    if *IS_STDOUT_TERMINAL {
-                        eprintln!("{}", warning_text("WARNING: the role or session includes functions, but the model or client does not support function calling."));
-                    }
+    pub fn set_temperature(&mut self, value: Option<f64>) {
+        match self.role_like_mut() {
+            Some(role_like) => role_like.set_temperature(value),
+            None => self.temperature = value,
+        }
+    }
+
+    pub fn set_top_p(&mut self, value: Option<f64>) {
+        match self.role_like_mut() {
+            Some(role_like) => role_like.set_top_p(value),
+            None => self.top_p = value,
+        }
+    }
+
+    pub fn set_save_session(&mut self, value: Option<bool>) {
+        if let Some(session) = self.session.as_mut() {
+            session.set_save_session(value);
+        } else {
+            self.save_session = value;
+        }
+    }
+
+    pub fn set_compress_threshold(&mut self, value: Option<usize>) {
+        if let Some(session) = self.session.as_mut() {
+            session.set_compress_threshold(value);
+        } else {
+            self.compress_threshold = value.unwrap_or_default();
+        }
+    }
+
+    pub fn set_wrap(&mut self, value: &str) -> Result<()> {
+        if value == "no" {
+            self.wrap = None;
+        } else if value == "auto" {
+            self.wrap = Some(value.into());
+        } else {
+            value
+                .parse::<u16>()
+                .map_err(|_| anyhow!("Invalid wrap value"))?;
+            self.wrap = Some(value.into())
+        }
+        Ok(())
+    }
+
+    pub fn set_model(&mut self, model_id: &str) -> Result<()> {
+        let model = Model::retrieve(self, model_id)?;
+        match self.role_like_mut() {
+            Some(role_like) => role_like.set_model(&model),
+            None => {
+                self.model = model;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn use_prompt(&mut self, prompt: &str) -> Result<()> {
+        let role = Role::new(TEMP_ROLE_NAME, prompt);
+        self.use_role_obj(role)
+    }
+
+    pub fn use_role(&mut self, name: &str) -> Result<()> {
+        let role = self.retrieve_role(name)?;
+        self.use_role_obj(role)
+    }
+
+    pub fn use_role_obj(&mut self, role: Role) -> Result<()> {
+        if self.bot.is_some() {
+            bail!("Cannot perform this action because you are using a bot")
+        }
+        if let Some(session) = self.session.as_mut() {
+            session.guard_empty()?;
+            session.set_role(role);
+        } else {
+            self.role = Some(role);
+        }
+        Ok(())
+    }
+
+    pub fn role_info(&self) -> Result<String> {
+        if let Some(role) = &self.role {
+            role.export()
+        } else {
+            bail!("No role")
+        }
+    }
+
+    pub fn exit_role(&mut self) -> Result<()> {
+        if self.role.is_some() {
+            if let Some(session) = self.session.as_mut() {
+                session.clear_role();
+            }
+            self.role = None;
+        }
+        Ok(())
+    }
+
+    pub fn retrieve_role(&self, name: &str) -> Result<Role> {
+        let mut role = self
+            .roles
+            .iter()
+            .find(|v| v.match_name(name))
+            .map(|v| {
+                let mut role = v.clone();
+                role.complete_prompt_args(name);
+                role
+            })
+            .ok_or_else(|| anyhow!("Unknown role `{name}`"))?;
+
+        match role.model_id() {
+            Some(model_id) => {
+                if self.model.id() != model_id {
+                    let model = Model::retrieve(self, model_id)?;
+                    role.set_model(&model);
                 }
             }
-        };
-        functions
+            None => role.set_model(&self.model),
+        }
+        Ok(role)
     }
 
     pub fn use_session(&mut self, session: Option<&str>) -> Result<()> {
@@ -875,6 +719,16 @@ impl Config {
             }
         }
         Ok(())
+    }
+
+    pub fn session_info(&self) -> Result<String> {
+        if let Some(session) = &self.session {
+            let render_options = self.render_options()?;
+            let mut markdown_render = MarkdownRender::init(render_options)?;
+            session.render(&mut markdown_render)
+        } else {
+            bail!("No session")
+        }
     }
 
     pub fn exit_session(&mut self) -> Result<()> {
@@ -991,6 +845,14 @@ impl Config {
         Ok(())
     }
 
+    pub fn rag_info(&self) -> Result<String> {
+        if let Some(rag) = &self.rag {
+            rag.export()
+        } else {
+            bail!("No rag")
+        }
+    }
+
     pub fn exit_rag(&mut self) -> Result<()> {
         self.rag.take();
         Ok(())
@@ -1045,13 +907,147 @@ impl Config {
         Ok(())
     }
 
+    pub fn bot_info(&self) -> Result<String> {
+        if let Some(bot) = &self.bot {
+            bot.export()
+        } else {
+            bail!("No rag")
+        }
+    }
+
     pub fn exit_bot(&mut self) -> Result<()> {
         self.rag.take();
         self.bot.take();
         Ok(())
     }
 
-    pub fn get_render_options(&self) -> Result<RenderOptions> {
+    pub fn apply_prelude(&mut self) -> Result<()> {
+        let prelude = self.prelude.clone().unwrap_or_default();
+        if prelude.is_empty() {
+            return Ok(());
+        }
+        let err_msg = || format!("Invalid prelude '{}", prelude);
+        match prelude.split_once(':') {
+            Some(("role", name)) => {
+                if self.role.is_none() && self.session.is_none() {
+                    self.use_role(name).with_context(err_msg)?;
+                }
+            }
+            Some(("session", name)) => {
+                if self.session.is_none() {
+                    self.use_session(Some(name)).with_context(err_msg)?;
+                }
+            }
+            _ => {
+                bail!("{}", err_msg())
+            }
+        }
+        Ok(())
+    }
+
+    pub fn select_functions(&self, model: &Model, role: &Role) -> Option<Vec<FunctionDeclaration>> {
+        let mut functions = None;
+        if self.function_calling {
+            let function_matcher = role.function_matcher();
+            if let Some(matcher) = function_matcher {
+                functions = match &self.bot {
+                    Some(bot) => bot.functions().select(&matcher),
+                    None => self.functions.select(&matcher),
+                };
+                if !model.supports_function_calling() {
+                    functions = None;
+                    if *IS_STDOUT_TERMINAL {
+                        eprintln!("{}", warning_text("WARNING: the role or session includes functions, but the model or client does not support function calling."));
+                    }
+                }
+            }
+        };
+        functions
+    }
+
+    pub fn buffer_editor(&self) -> Option<String> {
+        self.buffer_editor
+            .clone()
+            .or_else(|| env::var("VISUAL").ok().or_else(|| env::var("EDITOR").ok()))
+    }
+
+    pub fn repl_complete(&self, cmd: &str, args: &[&str]) -> Vec<(String, Option<String>)> {
+        let (values, filter) = if args.len() == 1 {
+            let values = match cmd {
+                ".role" => self
+                    .roles
+                    .iter()
+                    .map(|v| (v.name().to_string(), None))
+                    .collect(),
+                ".model" => list_chat_models(self)
+                    .into_iter()
+                    .map(|v| (v.id(), Some(v.description())))
+                    .collect(),
+                ".session" => self
+                    .list_sessions()
+                    .into_iter()
+                    .map(|v| (v, None))
+                    .collect(),
+                ".rag" => self.list_rags().into_iter().map(|v| (v, None)).collect(),
+                ".bot" => list_bots().into_iter().map(|v| (v, None)).collect(),
+                ".set" => vec![
+                    "max_output_tokens",
+                    "temperature",
+                    "top_p",
+                    "rag_top_k",
+                    "function_calling",
+                    "compress_threshold",
+                    "save",
+                    "save_session",
+                    "highlight",
+                    "dry_run",
+                    "auto_copy",
+                ]
+                .into_iter()
+                .map(|v| (format!("{v} "), None))
+                .collect(),
+                _ => vec![],
+            };
+            (values, args[0])
+        } else if args.len() == 2 {
+            let values = match args[0] {
+                "max_output_tokens" => match self.model.max_output_tokens() {
+                    Some(v) => vec![v.to_string()],
+                    None => vec![],
+                },
+                "function_calling" => complete_bool(self.function_calling),
+                "save" => complete_bool(self.save),
+                "save_session" => {
+                    let save_session = if let Some(session) = &self.session {
+                        session.save_session()
+                    } else {
+                        self.save_session
+                    };
+                    complete_option_bool(save_session)
+                }
+                "highlight" => complete_bool(self.highlight),
+                "dry_run" => complete_bool(self.dry_run),
+                "auto_copy" => complete_bool(self.auto_copy),
+                _ => vec![],
+            };
+            (values.into_iter().map(|v| (v, None)).collect(), args[1])
+        } else {
+            return vec![];
+        };
+        values
+            .into_iter()
+            .filter(|(value, _)| fuzzy_match(value, filter))
+            .collect()
+    }
+
+    pub fn last_reply(&self) -> &str {
+        self.last_message
+            .as_ref()
+            .map(|(_, reply)| reply.as_str())
+            .unwrap_or_default()
+    }
+
+    pub fn render_options(&self) -> Result<RenderOptions> {
         let theme = if self.highlight {
             let theme_mode = if self.light_theme { "light" } else { "dark" };
             let theme_filename = format!("{theme_mode}.tmTheme");

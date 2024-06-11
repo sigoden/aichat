@@ -158,7 +158,7 @@ async fn start_directive(
                 text.clone()
             };
             if *IS_STDOUT_TERMINAL {
-                let render_options = config.read().get_render_options()?;
+                let render_options = config.read().render_options()?;
                 let mut markdown_render = MarkdownRender::init(render_options)?;
                 println!("{}", markdown_render.render(&text).trim());
             } else {
@@ -209,7 +209,7 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
     }
     config.write().save_message(&mut input, &eval_str, &[])?;
     config.read().maybe_copy(&eval_str);
-    let render_options = config.read().get_render_options()?;
+    let render_options = config.read().render_options()?;
     let mut markdown_render = MarkdownRender::init(render_options)?;
     if config.read().dry_run {
         println!("{}", markdown_render.render(&eval_str).trim());
