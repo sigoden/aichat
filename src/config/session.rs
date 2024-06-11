@@ -86,6 +86,14 @@ impl Session {
         Ok(session)
     }
 
+    pub fn is_temp(&self) -> bool {
+        self.name == TEMP_SESSION_NAME
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.messages.is_empty() && self.compressed_messages.is_empty()
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -340,14 +348,6 @@ impl Session {
             bail!("Cannot perform this action in a session with messages")
         }
         Ok(())
-    }
-
-    pub fn is_temp(&self) -> bool {
-        self.name == TEMP_SESSION_NAME
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.messages.is_empty() && self.compressed_messages.is_empty()
     }
 
     pub fn add_message(&mut self, input: &Input, output: &str) -> Result<()> {
