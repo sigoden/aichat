@@ -92,7 +92,7 @@ pub struct Config {
     pub repl_prelude: Option<String>,
     pub buffer_editor: Option<String>,
     pub function_calling: bool,
-    pub dangerously_functions: Option<FunctionsFilter>,
+    pub dangerously_functions_filter: Option<FunctionsFilter>,
     pub bot_prelude: Option<String>,
     pub bots: Vec<BotConfig>,
     pub embedding_model: Option<String>,
@@ -143,7 +143,7 @@ impl Default for Config {
             repl_prelude: None,
             buffer_editor: None,
             function_calling: false,
-            dangerously_functions: None,
+            dangerously_functions_filter: None,
             bot_prelude: None,
             bots: vec![],
             embedding_model: None,
@@ -962,7 +962,7 @@ impl Config {
     pub fn select_functions(&self, model: &Model, role: &Role) -> Option<Vec<FunctionDeclaration>> {
         let mut functions = None;
         if self.function_calling {
-            let filter = role.selected_functions();
+            let filter = role.functions_filter();
             if let Some(filter) = filter {
                 functions = match &self.bot {
                     Some(bot) => bot.functions().select(&filter),
@@ -983,11 +983,11 @@ impl Config {
         if get_env_bool("no_dangerously_functions") {
             return false;
         }
-        let dangerously_functions = match &self.bot {
-            Some(bot) => bot.config().dangerously_functions.as_ref(),
-            None => self.dangerously_functions.as_ref(),
+        let dangerously_functions_filter = match &self.bot {
+            Some(bot) => bot.config().dangerously_functions_filter.as_ref(),
+            None => self.dangerously_functions_filter.as_ref(),
         };
-        match dangerously_functions {
+        match dangerously_functions_filter {
             None => false,
             Some(regex) => {
                 let regex = match Regex::new(&format!("^({regex})$")) {
