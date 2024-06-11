@@ -395,6 +395,51 @@ impl Config {
         flags
     }
 
+    pub fn current_model(&self) -> &Model {
+        if let Some(session) = self.session.as_ref() {
+            session.model()
+        } else if let Some(bot) = self.bot.as_ref() {
+            bot.model()
+        } else if let Some(role) = self.role.as_ref() {
+            role.model()
+        } else {
+            &self.model
+        }
+    }
+
+    pub fn role_like_mut(&mut self) -> Option<&mut dyn RoleLike> {
+        if let Some(session) = self.session.as_mut() {
+            Some(session)
+        } else if let Some(bot) = self.bot.as_mut() {
+            Some(bot)
+        } else if let Some(role) = self.role.as_mut() {
+            Some(role)
+        } else {
+            None
+        }
+    }
+
+    pub fn extract_role(&self) -> Role {
+        let mut role = if let Some(session) = self.session.as_ref() {
+            session.to_role()
+        } else if let Some(bot) = self.bot.as_ref() {
+            bot.to_role()
+        } else if let Some(role) = self.role.as_ref() {
+            role.clone()
+        } else {
+            let mut role = Role::default();
+            role.batch_set(&self.model, self.temperature, self.top_p, None);
+            role
+        };
+        if role.temperature().is_none() && self.temperature.is_some() {
+            role.set_temperature(self.temperature);
+        }
+        if role.top_p().is_none() && self.top_p.is_some() {
+            role.set_top_p(self.top_p);
+        }
+        role
+    }
+
     pub fn info(&self) -> Result<String> {
         if let Some(session) = &self.session {
             session.export()
@@ -876,51 +921,6 @@ impl Config {
         Ok(())
     }
 
-    pub fn current_model(&self) -> &Model {
-        if let Some(session) = self.session.as_ref() {
-            session.model()
-        } else if let Some(bot) = self.bot.as_ref() {
-            bot.model()
-        } else if let Some(role) = self.role.as_ref() {
-            role.model()
-        } else {
-            &self.model
-        }
-    }
-
-    pub fn role_like_mut(&mut self) -> Option<&mut dyn RoleLike> {
-        if let Some(session) = self.session.as_mut() {
-            Some(session)
-        } else if let Some(bot) = self.bot.as_mut() {
-            Some(bot)
-        } else if let Some(role) = self.role.as_mut() {
-            Some(role)
-        } else {
-            None
-        }
-    }
-
-    pub fn extract_role(&self) -> Role {
-        let mut role = if let Some(session) = self.session.as_ref() {
-            session.to_role()
-        } else if let Some(bot) = self.bot.as_ref() {
-            bot.to_role()
-        } else if let Some(role) = self.role.as_ref() {
-            role.clone()
-        } else {
-            let mut role = Role::default();
-            role.batch_set(&self.model, self.temperature, self.top_p, None);
-            role
-        };
-        if role.temperature().is_none() && self.temperature.is_some() {
-            role.set_temperature(self.temperature);
-        }
-        if role.top_p().is_none() && self.top_p.is_some() {
-            role.set_top_p(self.top_p);
-        }
-        role
-    }
-
     pub fn apply_prelude(&mut self) -> Result<()> {
         let prelude = self.prelude.clone().unwrap_or_default();
         if prelude.is_empty() {
@@ -945,11 +945,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn retrieve_functions(
-        &self,
-        model: &Model,
-        role: &Role,
-    ) -> Option<Vec<FunctionDeclaration>> {
+    pub fn select_functions(&self, model: &Model, role: &Role) -> Option<Vec<FunctionDeclaration>> {
         let mut functions = None;
         if self.function_calling {
             let function_matcher = role.function_matcher();
