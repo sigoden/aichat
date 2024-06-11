@@ -1033,6 +1033,9 @@ impl Config {
         name: &str,
         abort_signal: AbortSignal,
     ) -> Result<()> {
+        if !config.read().function_calling {
+            bail!("Before using the bot, please configure function calling first.");
+        }
         if config.read().bot.is_some() {
             bail!("Already in a bot, please run '.exit bot' first to exit the current bot.");
         }
