@@ -21,7 +21,7 @@ pub struct Session {
     #[serde(skip_serializing_if = "Option::is_none")]
     top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    function_matcher: Option<String>,
+    selected_functions: Option<FunctionsFilter>,
     #[serde(skip_serializing_if = "Option::is_none")]
     save_session: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -139,8 +139,8 @@ impl Session {
         if let Some(top_p) = self.top_p() {
             data["top_p"] = top_p.into();
         }
-        if let Some(function_matcher) = self.function_matcher() {
-            data["function_matcher"] = function_matcher.into();
+        if let Some(selected_functions) = self.selected_functions() {
+            data["selected_functions"] = selected_functions.into();
         }
         if let Some(save_session) = self.save_session() {
             data["save_session"] = save_session.into();
@@ -176,8 +176,8 @@ impl Session {
             items.push(("top_p", top_p.to_string()));
         }
 
-        if let Some(function_matcher) = self.function_matcher() {
-            items.push(("function_matcher", function_matcher));
+        if let Some(selected_functions) = self.selected_functions() {
+            items.push(("selected_functions", selected_functions));
         }
 
         if let Some(save_session) = self.save_session() {
@@ -251,7 +251,7 @@ impl Session {
         self.model_id = role.model().id();
         self.temperature = role.temperature();
         self.top_p = role.top_p();
-        self.function_matcher = role.function_matcher().map(|v| v.to_string());
+        self.selected_functions = role.selected_functions();
         self.model = role.model().clone();
         self.role_name = role.name().to_string();
         self.role_prompt = role.prompt().to_string();
@@ -418,8 +418,8 @@ impl RoleLike for Session {
         self.top_p
     }
 
-    fn function_matcher(&self) -> Option<String> {
-        self.function_matcher.clone()
+    fn selected_functions(&self) -> Option<FunctionsFilter> {
+        self.selected_functions.clone()
     }
 
     fn set_model(&mut self, model: &Model) {
@@ -444,9 +444,9 @@ impl RoleLike for Session {
         }
     }
 
-    fn set_function_matcher(&mut self, value: Option<String>) {
-        if self.function_matcher != value {
-            self.function_matcher = value;
+    fn set_selected_functions(&mut self, value: Option<FunctionsFilter>) {
+        if self.selected_functions != value {
+            self.selected_functions = value;
             self.dirty = true;
         }
     }

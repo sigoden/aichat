@@ -15,7 +15,7 @@ use std::{
     path::Path,
 };
 
-pub const FUNCTION_ALL_MATCHER: &str = ".*";
+pub const SELECTED_ALL_FUNCTIONS: &str = ".*";
 pub type ToolResults = (Vec<ToolCallResult>, String);
 pub type FunctionsFilter = String;
 
@@ -80,8 +80,8 @@ impl Functions {
         })
     }
 
-    pub fn select(&self, matcher: &str) -> Option<Vec<FunctionDeclaration>> {
-        let regex = Regex::new(&format!("^({matcher})$")).ok()?;
+    pub fn select(&self, filter: &FunctionsFilter) -> Option<Vec<FunctionDeclaration>> {
+        let regex = Regex::new(&format!("^({filter})$")).ok()?;
         let output: Vec<FunctionDeclaration> = self
             .declarations
             .iter()
