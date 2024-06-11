@@ -1,9 +1,6 @@
 use crate::{
     config::{Config, GlobalConfig},
-    utils::{
-        dimmed_text, get_env_bool, indent_text, run_command, run_command_with_output, warning_text,
-        IS_STDOUT_TERMINAL,
-    },
+    utils::*,
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -20,6 +17,7 @@ use std::{
 
 pub const FUNCTION_ALL_MATCHER: &str = ".*";
 pub type ToolResults = (Vec<ToolCallResult>, String);
+pub type FunctionsFilter = String;
 
 pub fn eval_tool_calls(
     config: &GlobalConfig,
@@ -171,6 +169,7 @@ impl ToolCall {
 
     pub fn eval(&self, config: &GlobalConfig) -> Result<Value> {
         let function_name = self.name.clone();
+        let is_dangerously = config.read().is_dangerously_function(&function_name);
         let (call_name, cmd_name, mut cmd_args) = match &config.read().bot {
             Some(bot) => {
                 if !bot.functions().contains(&function_name) {
@@ -219,11 +218,11 @@ impl ToolCall {
         #[cfg(windows)]
         let cmd_name = polyfill_cmd_name(&cmd_name, &bin_dir);
 
-        let output = if self.is_execute() {
+        let output = if is_dangerously {
             if *IS_STDOUT_TERMINAL {
                 println!("{prompt}");
                 let answer = Text::new("[1] Run, [2] Run & Retrieve, [3] Skip:")
-                    .with_default("1")
+                    .with_default("2")
                     .with_validator(|input: &str| match matches!(input, "1" | "2" | "3") {
                         true => Ok(Validation::Valid),
                         false => Ok(Validation::Invalid(
@@ -239,7 +238,7 @@ impl ToolCall {
                         }
                         Value::Null
                     }
-                    "2" => run_and_retrieve(&cmd_name, &cmd_args, envs, &prompt)?,
+                    "2" => run_and_retrieve(&cmd_name, &cmd_args, envs)?,
                     _ => Value::Null,
                 }
             } else {
@@ -248,18 +247,10 @@ impl ToolCall {
             }
         } else {
             println!("{}", dimmed_text(&prompt));
-            run_and_retrieve(&cmd_name, &cmd_args, envs, &prompt)?
+            run_and_retrieve(&cmd_name, &cmd_args, envs)?
         };
 
         Ok(output)
-    }
-
-    pub fn is_execute(&self) -> bool {
-        if get_env_bool("function_auto_execute") {
-            false
-        } else {
-            self.name.starts_with("may_") || self.name.contains("__may_")
-        }
     }
 }
 
@@ -267,16 +258,12 @@ fn run_and_retrieve(
     cmd_name: &str,
     cmd_args: &[String],
     envs: HashMap<String, String>,
-    prompt: &str,
 ) -> Result<Value> {
     let (success, stdout, stderr) = run_command_with_output(cmd_name, cmd_args, Some(envs))?;
 
     if success {
         if !stderr.is_empty() {
-            eprintln!(
-                "{}",
-                warning_text(&format!("{prompt}:\n{}", indent_text(&stderr, 4)))
-            );
+            eprintln!("{}", warning_text(&stderr));
         }
         let value = if !stdout.is_empty() {
             serde_json::from_str(&stdout)
@@ -296,7 +283,7 @@ fn run_and_retrieve(
         } else {
             &stderr
         };
-        bail!("{}", &format!("{prompt}:\n{}", indent_text(err, 4)));
+        bail!("{err}");
     }
 }
 

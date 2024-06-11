@@ -105,6 +105,10 @@ impl Bot {
         &self.name
     }
 
+    pub fn config(&self) -> &BotConfig {
+        &self.config
+    }
+
     pub fn functions(&self) -> &Functions {
         &self.functions
     }
@@ -170,6 +174,8 @@ pub struct BotConfig {
     pub temperature: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dangerously_functions: Option<FunctionsFilter>,
 }
 
 impl BotConfig {
