@@ -2,7 +2,7 @@ use super::*;
 
 use crate::{
     client::{Message, MessageContent, MessageRole, Model},
-    function::FUNCTION_ALL_MATCHER,
+    function::{FunctionsFilter, SELECTED_ALL_FUNCTIONS},
     utils::{detect_os, detect_shell},
 };
 
@@ -20,16 +20,17 @@ pub trait RoleLike {
     fn model(&self) -> &Model;
     fn temperature(&self) -> Option<f64>;
     fn top_p(&self) -> Option<f64>;
-    fn function_matcher(&self) -> Option<String>;
+    fn selected_functions(&self) -> Option<FunctionsFilter>;
     fn set_model(&mut self, model: &Model);
     fn set_temperature(&mut self, value: Option<f64>);
     fn set_top_p(&mut self, value: Option<f64>);
-    fn set_function_matcher(&mut self, value: Option<String>);
+    fn set_selected_functions(&mut self, value: Option<FunctionsFilter>);
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct Role {
     name: String,
+    #[serde(default)]
     prompt: String,
     #[serde(
         rename(serialize = "model", deserialize = "model"),
@@ -41,7 +42,7 @@ pub struct Role {
     #[serde(skip_serializing_if = "Option::is_none")]
     top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    function_matcher: Option<String>,
+    selected_functions: Option<FunctionsFilter>,
 
     #[serde(skip)]
     model: Model,
@@ -86,14 +87,14 @@ async function timeout(ms) {
             (
                 "%functions%",
                 String::new(),
-                Some(FUNCTION_ALL_MATCHER.into()),
+                Some(SELECTED_ALL_FUNCTIONS.into()),
             ),
         ]
         .into_iter()
-        .map(|(name, prompt, function_matcher)| Self {
+        .map(|(name, prompt, selected_functions)| Self {
             name: name.into(),
             prompt,
-            function_matcher,
+            selected_functions,
             ..Default::default()
         })
         .collect()
@@ -109,8 +110,8 @@ async function timeout(ms) {
         let model = role_like.model();
         let temperature = role_like.temperature();
         let top_p = role_like.top_p();
-        let function_matcher = role_like.function_matcher();
-        self.batch_set(model, temperature, top_p, function_matcher);
+        let selected_functions = role_like.selected_functions();
+        self.batch_set(model, temperature, top_p, selected_functions);
     }
 
     pub fn batch_set(
@@ -118,7 +119,7 @@ async function timeout(ms) {
         model: &Model,
         temperature: Option<f64>,
         top_p: Option<f64>,
-        function_matcher: Option<String>,
+        selected_functions: Option<FunctionsFilter>,
     ) {
         self.set_model(model);
         if temperature.is_some() {
@@ -127,8 +128,8 @@ async function timeout(ms) {
         if top_p.is_some() {
             self.set_top_p(top_p);
         }
-        if function_matcher.is_some() {
-            self.set_function_matcher(function_matcher);
+        if selected_functions.is_some() {
+            self.set_selected_functions(selected_functions);
         }
     }
 
@@ -229,8 +230,8 @@ impl RoleLike for Role {
         self.top_p
     }
 
-    fn function_matcher(&self) -> Option<String> {
-        self.function_matcher.clone()
+    fn selected_functions(&self) -> Option<FunctionsFilter> {
+        self.selected_functions.clone()
     }
 
     fn set_model(&mut self, model: &Model) {
@@ -246,8 +247,8 @@ impl RoleLike for Role {
         self.top_p = value;
     }
 
-    fn set_function_matcher(&mut self, matcher: Option<String>) {
-        self.function_matcher = matcher;
+    fn set_selected_functions(&mut self, value: Option<FunctionsFilter>) {
+        self.selected_functions = value;
     }
 }
 

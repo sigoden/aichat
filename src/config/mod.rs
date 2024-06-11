@@ -948,11 +948,11 @@ impl Config {
     pub fn select_functions(&self, model: &Model, role: &Role) -> Option<Vec<FunctionDeclaration>> {
         let mut functions = None;
         if self.function_calling {
-            let function_matcher = role.function_matcher();
-            if let Some(matcher) = function_matcher {
+            let filter = role.selected_functions();
+            if let Some(filter) = filter {
                 functions = match &self.bot {
-                    Some(bot) => bot.functions().select(&matcher),
-                    None => self.functions.select(&matcher),
+                    Some(bot) => bot.functions().select(&filter),
+                    None => self.functions.select(&filter),
                 };
                 if !model.supports_function_calling() {
                     functions = None;

@@ -2,7 +2,7 @@ use super::*;
 
 use crate::{
     client::Model,
-    function::{Functions, FUNCTION_ALL_MATCHER},
+    function::{Functions, FunctionsFilter, SELECTED_ALL_FUNCTIONS},
 };
 
 use anyhow::{Context, Result};
@@ -141,11 +141,11 @@ impl RoleLike for Bot {
         self.config.top_p
     }
 
-    fn function_matcher(&self) -> Option<String> {
+    fn selected_functions(&self) -> Option<FunctionsFilter> {
         if self.functions.is_empty() {
             None
         } else {
-            Some(FUNCTION_ALL_MATCHER.into())
+            Some(SELECTED_ALL_FUNCTIONS.into())
         }
     }
 
@@ -162,7 +162,7 @@ impl RoleLike for Bot {
         self.config.top_p = value;
     }
 
-    fn set_function_matcher(&mut self, _value: Option<String>) {}
+    fn set_selected_functions(&mut self, _value: Option<FunctionsFilter>) {}
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
