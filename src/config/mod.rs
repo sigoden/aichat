@@ -89,19 +89,21 @@ pub struct Config {
     pub auto_copy: bool,
     pub keybindings: Keybindings,
     pub prelude: Option<String>,
+    pub repl_prelude: Option<String>,
     pub buffer_editor: Option<String>,
+    pub function_calling: bool,
+    pub dangerously_functions: Option<FunctionsFilter>,
+    pub bot_prelude: Option<String>,
+    pub bots: Vec<BotConfig>,
     pub embedding_model: Option<String>,
     pub rag_top_k: usize,
     pub rag_template: Option<String>,
-    pub function_calling: bool,
-    pub dangerously_functions: Option<FunctionsFilter>,
     pub compress_threshold: usize,
     pub summarize_prompt: Option<String>,
     pub summary_prompt: Option<String>,
     pub left_prompt: Option<String>,
     pub right_prompt: Option<String>,
     pub clients: Vec<ClientConfig>,
-    pub bots: Vec<BotConfig>,
     #[serde(skip)]
     pub roles: Vec<Role>,
     #[serde(skip)]
@@ -138,19 +140,21 @@ impl Default for Config {
             auto_copy: false,
             keybindings: Default::default(),
             prelude: None,
+            repl_prelude: None,
             buffer_editor: None,
+            function_calling: false,
+            dangerously_functions: None,
+            bot_prelude: None,
+            bots: vec![],
             embedding_model: None,
             rag_top_k: 4,
             rag_template: None,
-            function_calling: false,
-            dangerously_functions: None,
             compress_threshold: 4000,
             summarize_prompt: None,
             summary_prompt: None,
             left_prompt: None,
             right_prompt: None,
             clients: vec![],
-            bots: vec![],
             roles: vec![],
             role: None,
             session: None,
@@ -901,9 +905,13 @@ impl Config {
         if config.read().bot.is_some() {
             bail!("Already in a bot, please run '.exit bot' first to exit the current bot.");
         }
+        let prelude = config.read().bot_prelude.clone();
         let bot = Bot::init(config, name, abort_signal).await?;
         config.write().rag = bot.rag();
         config.write().bot = Some(bot);
+        if let Some(session) = prelude {
+            config.write().use_session(Some(&session))?;
+        }
         Ok(())
     }
 
@@ -922,14 +930,20 @@ impl Config {
     }
 
     pub fn apply_prelude(&mut self) -> Result<()> {
-        let prelude = self.prelude.clone().unwrap_or_default();
-        if prelude.is_empty() {
-            return Ok(());
-        }
+        let prelude = match self.working_mode {
+            WorkingMode::Command => self.prelude.as_ref(),
+            WorkingMode::Repl => self.repl_prelude.as_ref().or(self.prelude.as_ref()),
+            WorkingMode::Serve => return Ok(()),
+        };
+        let prelude = match prelude {
+            Some(v) => v.to_string(),
+            None => return Ok(()),
+        };
+
         let err_msg = || format!("Invalid prelude '{}", prelude);
         match prelude.split_once(':') {
             Some(("role", name)) => {
-                if self.role.is_none() && self.session.is_none() {
+                if self.state().is_empty() {
                     self.use_role(name).with_context(err_msg)?;
                 }
             }
