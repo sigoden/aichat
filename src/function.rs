@@ -28,6 +28,9 @@ pub fn eval_tool_calls(
         return Ok(output);
     }
     calls = ToolCall::dedup(calls);
+    if calls.is_empty() {
+        bail!("The request was aborted because an infinite loop of function calls was detected.")
+    }
     for call in calls {
         let result = call.eval(config)?;
         output.push(ToolCallResult::new(call, result));
