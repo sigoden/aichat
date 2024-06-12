@@ -129,7 +129,7 @@ impl Input {
         self.text = text;
     }
 
-    pub async fn maybe_embeddings(&mut self, abort_signal: AbortSignal) -> Result<()> {
+    pub async fn use_embeddings(&mut self, abort_signal: AbortSignal) -> Result<()> {
         if self.text.is_empty() {
             return Ok(());
         }

@@ -33,7 +33,7 @@ lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 22] = [
+    static ref REPL_COMMANDS: [ReplCommand; 23] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
@@ -102,6 +102,11 @@ lazy_static! {
             ".info bot",
             "View bot info",
             AssertState::True(StateFlags::BOT),
+        ),
+        ReplCommand::new(
+            ".starter",
+            "Use converstaion starters",
+            AssertState::True(StateFlags::BOT)
         ),
         ReplCommand::new(
             ".exit bot",
@@ -233,7 +238,7 @@ impl Repl {
                         Some((name, text)) => {
                             let role = self.config.read().retrieve_role(name.trim())?;
                             let input = Input::from_str(&self.config, text.trim(), Some(role));
-                            ask(&self.config, self.abort_signal.clone(), input).await?;
+                            ask(&self.config, self.abort_signal.clone(), input, false).await?;
                         }
                         None => {
                             self.config.write().use_role(args)?;
@@ -252,6 +257,25 @@ impl Repl {
                         Config::use_bot(&self.config, name, self.abort_signal.clone()).await?;
                     }
                     None => println!(r#"Usage: .bot <name>"#),
+                },
+                ".starter" => match args {
+                    Some(value) => {
+                        let input = Input::from_str(&self.config, value, None);
+                        ask(&self.config, self.abort_signal.clone(), input, true).await?;
+                    }
+                    None => {
+                        let banner = self.config.read().bot_banner()?;
+                        let output = format!(
+                            r#"Usage: .starter <text>...
+
+Tips: use <tab> to autocomplete conversation starter text.
+---------------------------------------------------------
+
+{banner}"#
+                        );
+
+                        println!("{output}");
+                    }
                 },
                 ".save" => {
                     match args.map(|v| match v.split_once(' ') {
@@ -284,7 +308,7 @@ impl Repl {
                         let (files, text) = split_files_text(args);
                         let files = shell_words::split(files).with_context(|| "Invalid args")?;
                         let input = Input::new(&self.config, text, files, None)?;
-                        ask(&self.config, self.abort_signal.clone(), input).await?;
+                        ask(&self.config, self.abort_signal.clone(), input, true).await?;
                     }
                     None => println!("Usage: .file <files>... [-- <text>...]"),
                 },
@@ -315,9 +339,8 @@ impl Repl {
                 _ => unknown_command()?,
             },
             None => {
-                let mut input = Input::from_str(&self.config, line, None);
-                input.maybe_embeddings(self.abort_signal.clone()).await?;
-                ask(&self.config, self.abort_signal.clone(), input).await?;
+                let input = Input::from_str(&self.config, line, None);
+                ask(&self.config, self.abort_signal.clone(), input, true).await?;
             }
         }
 
@@ -455,16 +478,24 @@ impl Validator for ReplValidator {
 }
 
 #[async_recursion]
-async fn ask(config: &GlobalConfig, abort: AbortSignal, mut input: Input) -> Result<()> {
+async fn ask(
+    config: &GlobalConfig,
+    abort_signal: AbortSignal,
+    mut input: Input,
+    with_embeddings: bool,
+) -> Result<()> {
     if input.is_empty() {
         return Ok(());
+    }
+    if with_embeddings {
+        input.use_embeddings(abort_signal.clone()).await?;
     }
     while config.read().is_compressing_session() {
         std::thread::sleep(std::time::Duration::from_millis(100));
     }
     let client = input.create_client()?;
     let (output, tool_call_results) =
-        send_stream(&input, client.as_ref(), config, abort.clone()).await?;
+        send_stream(&input, client.as_ref(), config, abort_signal.clone()).await?;
 
     config
         .write()
@@ -493,8 +524,9 @@ async fn ask(config: &GlobalConfig, abort: AbortSignal, mut input: Input) -> Res
     if need_send_call_results(&tool_call_results) {
         ask(
             config,
-            abort,
+            abort_signal,
             input.merge_tool_call(output, tool_call_results),
+            false,
         )
         .await
     } else {

@@ -54,10 +54,6 @@ impl Bot {
             }
         };
 
-        let render_options = config.read().render_options()?;
-        let mut markdown_render = MarkdownRender::init(render_options)?;
-        println!("{}", markdown_render.render(&definition.banner()));
-
         let rag = if rag_path.exists() {
             Some(Arc::new(Rag::load(config, "rag", &rag_path)?))
         } else if embeddings_dir.is_dir() {
@@ -101,6 +97,10 @@ impl Bot {
         Ok(data)
     }
 
+    pub fn banner(&self) -> String {
+        self.definition.banner()
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -119,6 +119,10 @@ impl Bot {
 
     pub fn rag(&self) -> Option<Arc<Rag>> {
         self.rag.clone()
+    }
+
+    pub fn converstaion_staters(&self) -> &[String] {
+        &self.definition.conversation_starters
     }
 }
 
@@ -227,14 +231,13 @@ impl BotDefinition {
             format!(
                 r#"
 
-**Conversation Starters**
+## Conversation Starters
 {starters}"#
             )
         };
         format!(
             r#"# {name} {version}
-{description}{starters}
-"#
+{description}{starters}"#
         )
     }
 }
