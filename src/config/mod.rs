@@ -686,7 +686,7 @@ impl Config {
         }
         let mut session;
         match session_name {
-            None => {
+            None | Some(TEMP_SESSION_NAME) => {
                 let session_file = self.session_file(TEMP_SESSION_NAME)?;
                 if session_file.exists() {
                     remove_file(session_file).with_context(|| {

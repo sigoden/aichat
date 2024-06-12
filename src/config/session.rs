@@ -5,7 +5,7 @@ use crate::client::{Message, MessageContent, MessageRole};
 use crate::render::MarkdownRender;
 
 use anyhow::{bail, Context, Result};
-use inquire::{required, Confirm, Text};
+use inquire::{validator::Validation, Confirm, Text};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
@@ -306,7 +306,15 @@ impl Session {
                 }
                 if self.is_temp() {
                     self.name = Text::new("Session name:")
-                        .with_validator(required!("This field is required"))
+                        .with_validator(|input: &str| {
+                            if input == TEMP_SESSION_NAME {
+                                Ok(Validation::Invalid(format!("'{TEMP_SESSION_NAME}' is a reserved word and cannot be used as a session name").into()))
+                            } else if input.trim().is_empty() {
+                                Ok(Validation::Invalid("This field is required".into()))
+                            } else {
+                                Ok(Validation::Valid)
+                            }
+                        })
                         .prompt()?;
                 }
             }
