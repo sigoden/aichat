@@ -918,7 +918,15 @@ impl Config {
         if let Some(bot) = &self.bot {
             bot.export()
         } else {
-            bail!("No rag")
+            bail!("No bot")
+        }
+    }
+
+    pub fn bot_banner(&self) -> Result<String> {
+        if let Some(bot) = &self.bot {
+            Ok(bot.banner())
+        } else {
+            bail!("No bot")
         }
     }
 
@@ -1023,6 +1031,14 @@ impl Config {
                     .collect(),
                 ".rag" => self.list_rags().into_iter().map(|v| (v, None)).collect(),
                 ".bot" => list_bots().into_iter().map(|v| (v, None)).collect(),
+                ".starter" => match &self.bot {
+                    Some(bot) => bot
+                        .converstaion_staters()
+                        .iter()
+                        .map(|v| (v.clone(), None))
+                        .collect(),
+                    None => vec![],
+                },
                 ".set" => vec![
                     "max_output_tokens",
                     "temperature",
