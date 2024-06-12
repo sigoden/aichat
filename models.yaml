@@ -68,12 +68,12 @@
     - name: text-embedding-3-large
       mode: embedding
       max_input_tokens: 8191
-      default_chunk_size: 8000
+      default_chunk_size: 4000
       max_concurrent_chunks: 100
     - name: text-embedding-3-small
       mode: embedding
       max_input_tokens: 8191
-      default_chunk_size: 8000
+      default_chunk_size: 4000
       max_concurrent_chunks: 100
 
 - platform: gemini 
@@ -179,7 +179,7 @@
     - name: mistral-embed
       mode: embedding
       max_input_tokens: 8092
-      default_chunk_size: 8000
+      default_chunk_size: 4000
 
 - platform: cohere
   # docs:
@@ -204,12 +204,12 @@
     - name: embed-english-v3.0
       mode: embedding
       max_input_tokens: 512
-      default_chunk_size: 1000
+      default_chunk_size: 500
       max_concurrent_chunks: 96
     - name: embed-multilingual-v3.0
       mode: embedding
       max_input_tokens: 512
-      default_chunk_size: 1000
+      default_chunk_size: 500
       max_concurrent_chunks: 96
 
 - platform: perplexity
