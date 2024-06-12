@@ -122,7 +122,7 @@ pub struct Config {
     #[serde(skip)]
     pub working_mode: WorkingMode,
     #[serde(skip)]
-    pub last_message: Option<(Input, String)>,
+    pub last_message: Option<(Input, String, bool)>, // (input, output, is_bot)
 }
 
 impl Default for Config {
@@ -226,7 +226,7 @@ impl Config {
         tool_call_results: &[ToolCallResult],
     ) -> Result<()> {
         input.clear_patch_text();
-        self.last_message = Some((input.clone(), output.to_string()));
+        self.last_message = Some((input.clone(), output.to_string(), self.bot.is_some()));
 
         if self.dry_run || output.is_empty() || !tool_call_results.is_empty() {
             return Ok(());
@@ -678,13 +678,14 @@ impl Config {
         Ok(role)
     }
 
-    pub fn use_session(&mut self, session: Option<&str>) -> Result<()> {
+    pub fn use_session(&mut self, session_name: Option<&str>) -> Result<()> {
         if self.session.is_some() {
             bail!(
                 "Already in a session, please run '.exit session' first to exit the current session."
             );
         }
-        match session {
+        let mut session;
+        match session_name {
             None => {
                 let session_file = self.session_file(TEMP_SESSION_NAME)?;
                 if session_file.exists() {
@@ -692,33 +693,34 @@ impl Config {
                         format!("Failed to cleanup previous '{TEMP_SESSION_NAME}' session")
                     })?;
                 }
-                let session = Session::new(self, TEMP_SESSION_NAME);
-                self.session = Some(session);
+                session = Some(Session::new(self, TEMP_SESSION_NAME));
             }
             Some(name) => {
                 let session_path = self.session_file(name)?;
                 if !session_path.exists() {
-                    self.session = Some(Session::new(self, name));
+                    session = Some(Session::new(self, name));
                 } else {
-                    let session = Session::load(self, name, &session_path)?;
-                    self.session = Some(session);
+                    session = Some(Session::load(self, name, &session_path)?);
                 }
             }
         }
-        if let Some(session) = self.session.as_mut() {
+        if let Some(session) = session.as_mut() {
             if session.is_empty() {
-                if let Some((input, output)) = &self.last_message {
-                    let ans = Confirm::new(
-                        "Start a session that incorporates the last question and answer?",
-                    )
-                    .with_default(false)
-                    .prompt()?;
-                    if ans {
-                        session.add_message(input, output)?;
+                if let Some((input, output, is_bot)) = &self.last_message {
+                    if self.bot.is_some() == *is_bot {
+                        let ans = Confirm::new(
+                            "Start a session that incorporates the last question and answer?",
+                        )
+                        .with_default(false)
+                        .prompt()?;
+                        if ans {
+                            session.add_message(input, output)?;
+                        }
                     }
                 }
             }
         }
+        self.session = session;
         Ok(())
     }
 
@@ -1074,7 +1076,7 @@ impl Config {
     pub fn last_reply(&self) -> &str {
         self.last_message
             .as_ref()
-            .map(|(_, reply)| reply.as_str())
+            .map(|(_, reply, _)| reply.as_str())
             .unwrap_or_default()
     }
 
