@@ -1,82 +1,43 @@
+mod language;
+
+pub use self::language::*;
+
 use super::{RagDocument, RagMetadata};
 
 use std::cmp::Ordering;
 
 pub const DEFAULT_SEPARATES: [&str; 4] = ["\n\n", "\n", " ", ""];
-pub const HTML_SEPARATES: [&str; 28] = [
-    // First, try to split along HTML tags
-    "<body>", "<div>", "<p>", "<br>", "<li>", "<h1>", "<h2>", "<h3>", "<h4>", "<h5>", "<h6>",
-    "<span>", "<table>", "<tr>", "<td>", "<th>", "<ul>", "<ol>", "<header>", "<footer>", "<nav>",
-    // Head
-    "<head>", "<style>", "<script>", "<meta>", "<title>", // Normal type of lines
-    " ", "",
-];
-pub const MARKDOWN_SEPARATES: [&str; 13] = [
-    // First, try to split along Markdown headings (starting with level 2)
-    "\n## ",
-    "\n### ",
-    "\n#### ",
-    "\n##### ",
-    "\n###### ",
-    // Note the alternative syntax for headings (below) is not handled here
-    // Heading level 2
-    // ---------------
-    // End of code block
-    "```\n\n",
-    // Horizontal lines
-    "\n\n***\n\n",
-    "\n\n---\n\n",
-    "\n\n___\n\n",
-    // Note that this splitter doesn't handle horizontal lines defined
-    // by *three or more* of ***, ---, or ___, but this is not handled
-    "\n\n",
-    "\n",
-    " ",
-    "",
-];
-pub const LATEX_SEPARATES: [&str; 19] = [
-    // First, try to split along Latex sections
-    "\n\\chapter{",
-    "\n\\section{",
-    "\n\\subsection{",
-    "\n\\subsubsection{",
-    // Now split by environments
-    "\n\\begin{enumerate}",
-    "\n\\begin{itemize}",
-    "\n\\begin{description}",
-    "\n\\begin{list}",
-    "\n\\begin{quote}",
-    "\n\\begin{quotation}",
-    "\n\\begin{verse}",
-    "\n\\begin{verbatim}",
-    // Now split by math environments
-    "\n\\begin{align}",
-    "$$",
-    "$",
-    // Now split by the normal type of lines
-    "\n\n",
-    "\n",
-    " ",
-    "",
-];
 
-pub fn autodetect_separator(extension: &str) -> &[&'static str] {
+pub fn detect_separators(extension: &str) -> Vec<&'static str> {
     match extension {
-        "md" | "mkd" => &MARKDOWN_SEPARATES,
-        "htm" | "html" => &HTML_SEPARATES,
-        "tex" => &LATEX_SEPARATES,
-        _ => &DEFAULT_SEPARATES,
+        "c" | "cc" | "cpp" => Language::Cpp.separators(),
+        "go" => Language::Go.separators(),
+        "java" => Language::Java.separators(),
+        "js" | "mjs" | "cjs" => Language::Js.separators(),
+        "php" => Language::Php.separators(),
+        "proto" => Language::Proto.separators(),
+        "py" => Language::Python.separators(),
+        "rst" => Language::Rst.separators(),
+        "rb" => Language::Ruby.separators(),
+        "rs" => Language::Rust.separators(),
+        "scala" => Language::Scala.separators(),
+        "swift" => Language::Swift.separators(),
+        "md" | "mkd" => Language::Markdown.separators(),
+        "tex" => Language::Latex.separators(),
+        "htm" | "html" => Language::Html.separators(),
+        "sol" => Language::Sol.separators(),
+        _ => DEFAULT_SEPARATES.to_vec(),
     }
 }
 
-pub struct Splitter {
+pub struct RecursiveCharacterTextSplitter {
     pub chunk_size: usize,
     pub chunk_overlap: usize,
     pub separators: Vec<String>,
     pub length_function: Box<dyn Fn(&str) -> usize + Send + Sync>,
 }
 
-impl Default for Splitter {
+impl Default for RecursiveCharacterTextSplitter {
     fn default() -> Self {
         Self {
             chunk_size: 1000,
@@ -87,8 +48,7 @@ impl Default for Splitter {
     }
 }
 
-// Builder pattern for Options struct
-impl Splitter {
+impl RecursiveCharacterTextSplitter {
     pub fn new(chunk_size: usize, chunk_overlap: usize, separators: &[&str]) -> Self {
         Self::default()
             .with_chunk_size(chunk_size)
@@ -406,7 +366,7 @@ mod tests {
     }
     #[test]
     fn test_split_text() {
-        let splitter = Splitter {
+        let splitter = RecursiveCharacterTextSplitter {
             chunk_size: 7,
             chunk_overlap: 3,
             separators: vec![" ".into()],
@@ -418,7 +378,7 @@ mod tests {
 
     #[test]
     fn test_create_document() {
-        let splitter = Splitter::new(3, 0, &[" "]);
+        let splitter = RecursiveCharacterTextSplitter::new(3, 0, &[" "]);
         let chunk_header_options = SplitterChunkHeaderOptions::default();
         let mut metadata1 = IndexMap::new();
         metadata1.insert("source".into(), "1".into());
@@ -451,7 +411,7 @@ mod tests {
 
     #[test]
     fn test_chunk_header() {
-        let splitter = Splitter::new(3, 0, &[" "]);
+        let splitter = RecursiveCharacterTextSplitter::new(3, 0, &[" "]);
         let chunk_header_options = SplitterChunkHeaderOptions::default()
             .with_chunk_header("SOURCE NAME: testing\n-----\n")
             .with_append_chunk_overlap_header(true);
@@ -498,7 +458,8 @@ pip install langchain
 ```
 
 As an open source project in a rapidly developing field, we are extremely open to contributions."#;
-        let splitter = Splitter::new(100, 0, &MARKDOWN_SEPARATES);
+        let splitter =
+            RecursiveCharacterTextSplitter::new(100, 0, &Language::Markdown.separators());
         let output = splitter.split_text(text);
         let expected_output = vec![
             "# 🦜️🔗 LangChain\n\n⚡ Building applications with LLMs through composability ⚡",
@@ -534,7 +495,7 @@ As an open source project in a rapidly developing field, we are extremely open t
     </div>
   </body>
 </html>"#;
-        let splitter = Splitter::new(175, 20, &HTML_SEPARATES);
+        let splitter = RecursiveCharacterTextSplitter::new(175, 20, &Language::Html.separators());
         let output = splitter.split_text(text);
         let expected_output = vec![
             "<!DOCTYPE html>\n<html>",

@@ -186,8 +186,12 @@ impl Rag {
                 .extension()
                 .map(|v| v.to_string_lossy().to_lowercase())
                 .unwrap_or_default();
-            let separator = autodetect_separator(&extension);
-            let splitter = Splitter::new(self.data.chunk_size, self.data.chunk_overlap, separator);
+            let separator = detect_separators(&extension);
+            let splitter = RecursiveCharacterTextSplitter::new(
+                self.data.chunk_size,
+                self.data.chunk_overlap,
+                &separator,
+            );
             let documents = load(&path, &extension)
                 .with_context(|| format!("Failed to load file at '{path}'"))?;
             let documents =
@@ -207,9 +211,9 @@ impl Rag {
         let mut vector_ids = vec![];
         let mut texts = vec![];
         for (file_index, file) in rag_files.iter().enumerate() {
-            for (document_index, doc) in file.documents.iter().enumerate() {
+            for (document_index, document) in file.documents.iter().enumerate() {
                 vector_ids.push(combine_vector_id(file_index, document_index));
-                texts.push(doc.page_content.clone())
+                texts.push(document_text(&file.path, document))
             }
         }
 
@@ -226,7 +230,7 @@ impl Rag {
     }
 
     async fn search_impl(&self, text: &str, top_k: usize) -> Result<Vec<String>> {
-        let splitter = Splitter::new(
+        let splitter = RecursiveCharacterTextSplitter::new(
             self.data.chunk_size,
             self.data.chunk_overlap,
             &DEFAULT_SEPARATES,
@@ -245,10 +249,9 @@ impl Rag {
                             return None;
                         }
                         let (file_index, document_index) = split_vector_id(v.d_id);
-                        let text = self.data.files[file_index].documents[document_index]
-                            .page_content
-                            .clone();
-                        Some(text)
+                        let file = self.data.files.get(file_index)?;
+                        let document = file.documents.get(document_index)?;
+                        Some(document_text(&file.path, document))
                     })
                     .collect::<Vec<_>>()
             })
@@ -376,6 +379,14 @@ pub fn split_vector_id(value: VectorID) -> (usize, usize) {
     let low = value & low_mask;
     let high = value >> (usize::BITS / 2);
     (high, low)
+}
+
+fn document_text(file_path: &str, document: &RagDocument) -> String {
+    format!(
+        "file_path: {}\n\n{}",
+        shell_words::quote(file_path),
+        document.page_content
+    )
 }
 
 fn retrieve_embedding_model(config: &Config, model_id: &str) -> Result<Model> {
