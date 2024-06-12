@@ -89,7 +89,7 @@ impl Bot {
 
     pub fn export(&self) -> Result<String> {
         let mut value = serde_json::json!(self);
-        value["functions_dir"] = Config::bot_functions_dir(&self.name)?
+        value["functions_dir"] = Config::bot_source_dir(&self.name)?
             .display()
             .to_string()
             .into();

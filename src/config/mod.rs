@@ -45,6 +45,7 @@ const SESSIONS_DIR_NAME: &str = "sessions";
 const RAGS_DIR_NAME: &str = "rags";
 const FUNCTIONS_DIR_NAME: &str = "functions";
 const FUNCTIONS_FILE_NAME: &str = "functions.json";
+const FUNCTIONS_BIN_DIR_NAME: &str = "bin";
 const BOTS_DIR_NAME: &str = "bots";
 const BOT_DEFINITION_FILE_NAME: &str = "index.yaml";
 const BOT_EMBEDDINGS_DIR: &str = "embeddings";
@@ -325,7 +326,7 @@ impl Config {
     }
 
     pub fn functions_bin_dir() -> Result<PathBuf> {
-        Ok(Self::functions_dir()?.join("bin"))
+        Ok(Self::functions_dir()?.join(FUNCTIONS_BIN_DIR_NAME))
     }
 
     pub fn session_file(&self, name: &str) -> Result<PathBuf> {
@@ -344,7 +345,7 @@ impl Config {
     }
 
     pub fn bots_dir() -> Result<PathBuf> {
-        match env::var(get_env_name("bots_config_dir")) {
+        match env::var(get_env_name("bots_dir")) {
             Ok(value) => Ok(PathBuf::from(value)),
             Err(_) => Self::local_path(BOTS_DIR_NAME),
         }
@@ -358,24 +359,20 @@ impl Config {
         Ok(Self::bot_config_dir(name)?.join(BOT_RAG_FILE_NAME))
     }
 
-    pub fn bots_functions_dir() -> Result<PathBuf> {
-        Ok(Self::functions_dir()?.join(BOTS_DIR_NAME))
-    }
-
-    pub fn bot_functions_dir(name: &str) -> Result<PathBuf> {
-        Ok(Self::bots_functions_dir()?.join(name))
+    pub fn bot_source_dir(name: &str) -> Result<PathBuf> {
+        Ok(Self::functions_dir()?.join(BOTS_DIR_NAME).join(name))
     }
 
     pub fn bot_functions_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::bot_functions_dir(name)?.join(FUNCTIONS_FILE_NAME))
+        Ok(Self::bot_source_dir(name)?.join(FUNCTIONS_FILE_NAME))
     }
 
     pub fn bot_definition_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::bot_functions_dir(name)?.join(BOT_DEFINITION_FILE_NAME))
+        Ok(Self::bot_source_dir(name)?.join(BOT_DEFINITION_FILE_NAME))
     }
 
     pub fn bot_embeddings_dir(name: &str) -> Result<PathBuf> {
-        Ok(Self::bot_functions_dir(name)?.join(BOT_EMBEDDINGS_DIR))
+        Ok(Self::bot_source_dir(name)?.join(BOT_EMBEDDINGS_DIR))
     }
 
     pub fn state(&self) -> StateFlags {
