@@ -1,49 +1,44 @@
-use super::RagDocument;
+use super::*;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use async_recursion::async_recursion;
-use std::{path::Path, process::Command};
-use tokio::fs;
+use lazy_static::lazy_static;
+use std::{fs::read_to_string, path::Path};
+use which::which;
 
-pub async fn load(path: &str, extension: &str) -> Result<Vec<RagDocument>> {
+lazy_static! {
+    static ref EXIST_PANDOC: bool = which("pandoc").is_ok();
+    static ref EXIST_PDFTOTEXT: bool = which("pdftotext").is_ok();
+}
+
+pub fn load(path: &str, extension: &str) -> Result<Vec<RagDocument>> {
     match extension {
-        "docx" | "epub" | "ipynb" => load_pandoc(path)
-            .await
-            .context("Failed to load with pandoc"),
-        "pdf" => load_pdf(path).await,
-        _ => load_plain(path).await,
+        "docx" | "epub" => load_with_pandoc(path),
+        "pdf" => load_with_pdftotext(path),
+        _ => load_plain(path),
     }
 }
 
-async fn load_plain(path: &str) -> Result<Vec<RagDocument>> {
-    let contents = fs::read_to_string(path).await?;
+fn load_plain(path: &str) -> Result<Vec<RagDocument>> {
+    let contents = read_to_string(path)?;
     let document = RagDocument::new(contents);
     Ok(vec![document])
 }
 
-async fn load_pdf(path: &str) -> Result<Vec<RagDocument>> {
-    let contents = pdf_extract::extract_text(path)?;
+fn load_with_pdftotext(path: &str) -> Result<Vec<RagDocument>> {
+    if !*EXIST_PDFTOTEXT {
+        bail!("Need to install pdftotext (part of the poppler package) to load the file.")
+    }
+    let contents = run_external_tool("pdftotext", &[path, "-"])?;
     let document = RagDocument::new(contents);
     Ok(vec![document])
 }
 
-async fn load_pandoc(path: &str) -> Result<Vec<RagDocument>> {
-    let output = Command::new("pandoc")
-        .arg("--to")
-        .arg("plain")
-        .arg(path)
-        .output()?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        bail!(
-            "Pandoc conversion failed with exit code {:?}: {}",
-            output.status.code(),
-            stderr
-        );
+fn load_with_pandoc(path: &str) -> Result<Vec<RagDocument>> {
+    if !*EXIST_PANDOC {
+        bail!("Need to install pandoc to load the file.")
     }
-
-    let contents = std::str::from_utf8(&output.stdout)?;
+    let contents = run_external_tool("pandoc", &["--to", "plain", path])?;
     let document = RagDocument::new(contents);
     Ok(vec![document])
 }
@@ -89,7 +84,7 @@ pub async fn list_files(
     if !entry_path.is_dir() {
         bail!("Not a directory: {:?}", entry_path);
     }
-    let mut reader = fs::read_dir(entry_path).await?;
+    let mut reader = tokio::fs::read_dir(entry_path).await?;
     while let Some(entry) = reader.next_entry().await? {
         let path = entry.path();
         if path.is_file() {
@@ -117,6 +112,19 @@ fn is_valid_extension(suffixes: Option<&Vec<String>>, path: &Path) -> bool {
         }
     }
     true
+}
+
+fn run_external_tool(cmd: &str, args: &[&str]) -> Result<String> {
+    let (success, stdout, stderr) = run_command_with_output(cmd, args, None)?;
+    if success {
+        return Ok(stdout);
+    }
+    let err = if !stderr.is_empty() {
+        stderr
+    } else {
+        format!("`{cmd}` exited with non-zero.")
+    };
+    bail!("{err}")
 }
 
 #[cfg(test)]

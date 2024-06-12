@@ -189,8 +189,7 @@ impl Rag {
             let separator = autodetect_separator(&extension);
             let splitter = Splitter::new(self.data.chunk_size, self.data.chunk_overlap, separator);
             let documents = load(&path, &extension)
-                .await
-                .with_context(|| format!("Failed to load text at '{path}'"))?;
+                .with_context(|| format!("Failed to load file at '{path}'"))?;
             let documents =
                 splitter.split_documents(&documents, &SplitterChunkHeaderOptions::default());
             rag_files.push(RagFile { path, documents });
