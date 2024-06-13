@@ -113,7 +113,7 @@ impl Bot {
         self.rag.clone()
     }
 
-    pub fn converstaion_staters(&self) -> &[String] {
+    pub fn conversation_staters(&self) -> &[String] {
         &self.definition.conversation_starters
     }
 }

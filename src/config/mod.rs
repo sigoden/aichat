@@ -1049,7 +1049,7 @@ impl Config {
                 ".bot" => list_bots().into_iter().map(|v| (v, None)).collect(),
                 ".starter" => match &self.bot {
                     Some(bot) => bot
-                        .converstaion_staters()
+                        .conversation_staters()
                         .iter()
                         .map(|v| (v.clone(), None))
                         .collect(),

@@ -105,7 +105,7 @@ lazy_static! {
         ),
         ReplCommand::new(
             ".starter",
-            "Use the converstaion starter",
+            "Use the conversation starter",
             AssertState::True(StateFlags::BOT)
         ),
         ReplCommand::new(
