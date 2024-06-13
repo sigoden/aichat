@@ -54,9 +54,9 @@ impl AbortSignalInner {
     }
 }
 
-pub async fn watch_abort_signal(abort: AbortSignal) {
+pub async fn watch_abort_signal(abort_signal: AbortSignal) {
     loop {
-        if abort.aborted() {
+        if abort_signal.aborted() {
             break;
         }
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;

@@ -53,22 +53,14 @@ impl Bot {
                 None => config.current_model().clone(),
             }
         };
-
         let rag = if rag_path.exists() {
             Some(Arc::new(Rag::load(config, "rag", &rag_path)?))
         } else if embeddings_dir.is_dir() {
-            println!("The bot has an embeddings directory, RAG is initializing...");
-            let ans = Confirm::new("The bot attached embeddings, init RAG?")
-                .with_default(true)
-                .prompt()?;
-            if ans {
-                let doc_path = embeddings_dir.display().to_string();
-                Some(Arc::new(
-                    Rag::init(config, "rag", &rag_path, &[doc_path], abort_signal).await?,
-                ))
-            } else {
-                None
-            }
+            println!("The bot uses an embeddings directory, initializing RAG...");
+            let doc_path = embeddings_dir.display().to_string();
+            Some(Arc::new(
+                Rag::init(config, "rag", &rag_path, &[doc_path], abort_signal).await?,
+            ))
         } else {
             None
         };
@@ -121,7 +113,7 @@ impl Bot {
         self.rag.clone()
     }
 
-    pub fn converstaion_staters(&self) -> &[String] {
+    pub fn conversation_staters(&self) -> &[String] {
         &self.definition.conversation_starters
     }
 }

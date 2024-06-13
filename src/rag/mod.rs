@@ -50,6 +50,9 @@ impl Rag {
         doc_paths: &[String],
         abort_signal: AbortSignal,
     ) -> Result<Self> {
+        if !*IS_STDOUT_TERMINAL {
+            bail!("An interactive shell is required to initialize rag.")
+        }
         debug!("init rag: {name}");
         let model = select_embedding_model(config)?;
         let chunk_size = set_chunk_size(&model)?;

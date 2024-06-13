@@ -442,7 +442,20 @@ impl Config {
     }
 
     pub fn info(&self) -> Result<String> {
-        if let Some(session) = &self.session {
+        if let Some(bot) = &self.bot {
+            let output = bot.export()?;
+            if let Some(session) = &self.session {
+                let session = session
+                    .export()?
+                    .split('\n')
+                    .map(|v| format!("  {v}"))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                Ok(format!("{output}session:\n{session}"))
+            } else {
+                Ok(output)
+            }
+        } else if let Some(session) = &self.session {
             session.export()
         } else if let Some(role) = &self.role {
             role.export()
@@ -896,6 +909,7 @@ impl Config {
     pub async fn use_bot(
         config: &GlobalConfig,
         name: &str,
+        session: Option<&str>,
         abort_signal: AbortSignal,
     ) -> Result<()> {
         if !config.read().function_calling {
@@ -904,11 +918,13 @@ impl Config {
         if config.read().bot.is_some() {
             bail!("Already in a bot, please run '.exit bot' first to exit the current bot.");
         }
-        let prelude = config.read().bot_prelude.clone();
         let bot = Bot::init(config, name, abort_signal).await?;
         config.write().rag = bot.rag();
         config.write().bot = Some(bot);
-        if let Some(session) = prelude {
+        let session = session
+            .map(|v| v.to_string())
+            .or_else(|| config.read().bot_prelude.clone());
+        if let Some(session) = session {
             config.write().use_session(Some(&session))?;
         }
         Ok(())
@@ -1033,7 +1049,7 @@ impl Config {
                 ".bot" => list_bots().into_iter().map(|v| (v, None)).collect(),
                 ".starter" => match &self.bot {
                     Some(bot) => bot
-                        .converstaion_staters()
+                        .conversation_staters()
                         .iter()
                         .map(|v| (v.clone(), None))
                         .collect(),
