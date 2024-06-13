@@ -16,15 +16,13 @@ extern crate log;
 use crate::cli::Cli;
 use crate::client::{list_chat_models, send_stream, ChatCompletionsOutput};
 use crate::config::{
-    Config, GlobalConfig, Input, WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE,
+    list_bots, Config, GlobalConfig, Input, WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE,
+    TEMP_SESSION_NAME,
 };
 use crate::function::{eval_tool_calls, need_send_call_results};
 use crate::render::{render_error, MarkdownRender};
 use crate::repl::Repl;
-use crate::utils::{
-    create_abort_signal, detect_shell, extract_block, run_command, run_spinner, Shell,
-    CODE_BLOCK_RE, IS_STDOUT_TERMINAL,
-};
+use crate::utils::*;
 
 use anyhow::{bail, Result};
 use async_recursion::async_recursion;
@@ -53,8 +51,16 @@ async fn main() -> Result<()> {
     crate::logger::setup_logger(working_mode)?;
     let config = Arc::new(RwLock::new(Config::init(working_mode)?));
 
+    let abort_signal = create_abort_signal();
+
     if let Some(addr) = cli.serve {
         return serve::run(config, addr).await;
+    }
+    if cli.list_models {
+        for model in list_chat_models(&config.read()) {
+            println!("{}", model.id());
+        }
+        return Ok(());
     }
     if cli.list_roles {
         config
@@ -64,15 +70,14 @@ async fn main() -> Result<()> {
             .for_each(|v| println!("{}", v.name()));
         return Ok(());
     }
-    if cli.list_models {
-        for model in list_chat_models(&config.read()) {
-            println!("{}", model.id());
-        }
+    if cli.list_bots {
+        let bots = list_bots().join("\n");
+        println!("{bots}");
         return Ok(());
     }
-    if cli.list_sessions {
-        let sessions = config.read().list_sessions().join("\n");
-        println!("{sessions}");
+    if cli.list_rags {
+        let rags = config.read().list_rags().join("\n");
+        println!("{rags}");
         return Ok(());
     }
     if let Some(wrap) = &cli.wrap {
@@ -84,19 +89,36 @@ async fn main() -> Result<()> {
     if cli.dry_run {
         config.write().dry_run = true;
     }
-    if let Some(prompt) = &cli.prompt {
-        config.write().use_prompt(prompt)?;
-    } else if let Some(name) = &cli.role {
-        config.write().use_role(name)?;
-    } else if cli.execute {
-        config.write().use_role(SHELL_ROLE)?;
-    } else if cli.code {
-        config.write().use_role(CODE_ROLE)?;
+
+    if let Some(bot) = &cli.bot {
+        let session = cli.session.as_ref().map(|v| match v {
+            Some(v) => v.as_str(),
+            None => TEMP_SESSION_NAME,
+        });
+        Config::use_bot(&config, bot, session, abort_signal.clone()).await?
+    } else {
+        if let Some(prompt) = &cli.prompt {
+            config.write().use_prompt(prompt)?;
+        } else if let Some(name) = &cli.role {
+            config.write().use_role(name)?;
+        } else if cli.execute {
+            config.write().use_role(SHELL_ROLE)?;
+        } else if cli.code {
+            config.write().use_role(CODE_ROLE)?;
+        }
+        if let Some(session) = &cli.session {
+            config
+                .write()
+                .use_session(session.as_ref().map(|v| v.as_str()))?;
+        }
+        if let Some(rag) = &cli.rag {
+            Config::use_rag(&config, Some(rag), abort_signal.clone()).await?;
+        }
     }
-    if let Some(session) = &cli.session {
-        config
-            .write()
-            .use_session(session.as_ref().map(|v| v.as_str()))?;
+    if cli.list_sessions {
+        let sessions = config.read().list_sessions().join("\n");
+        println!("{sessions}");
+        return Ok(());
     }
     if let Some(model_id) = &cli.model {
         config.write().set_model(model_id)?;
@@ -124,8 +146,9 @@ async fn main() -> Result<()> {
     config.write().apply_prelude()?;
     if let Err(err) = match no_input {
         false => {
-            let input = create_input(&config, text, file)?;
-            start_directive(&config, input, cli.no_stream, cli.code).await
+            let mut input = create_input(&config, text, file)?;
+            input.use_embeddings(abort_signal.clone()).await?;
+            start_directive(&config, input, cli.no_stream, cli.code, abort_signal).await
         }
         true => start_interactive(&config).await,
     } {
@@ -142,6 +165,7 @@ async fn start_directive(
     mut input: Input,
     no_stream: bool,
     code_mode: bool,
+    abort_signal: AbortSignal,
 ) -> Result<()> {
     let client = input.create_client()?;
     let extract_code = !*IS_STDOUT_TERMINAL && code_mode;
@@ -167,8 +191,7 @@ async fn start_directive(
             (text, vec![])
         }
     } else {
-        let abort = create_abort_signal();
-        send_stream(&input, client.as_ref(), config, abort).await?
+        send_stream(&input, client.as_ref(), config, abort_signal.clone()).await?
     };
     config
         .write()
@@ -180,6 +203,7 @@ async fn start_directive(
             input.merge_tool_call(output, tool_call_results),
             no_stream,
             code_mode,
+            abort_signal,
         )
         .await
     } else {

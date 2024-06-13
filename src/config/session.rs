@@ -126,9 +126,6 @@ impl Session {
     }
 
     pub fn export(&self) -> Result<String> {
-        if self.path.is_none() {
-            bail!("Not found session '{}'", self.name)
-        }
         let mut data = json!({
             "path": self.path,
             "model": self.model().id(),

@@ -18,6 +18,12 @@ pub struct Cli {
     /// Forces the session to be saved
     #[clap(long)]
     pub save_session: bool,
+    /// Start a bot
+    #[clap(short = 'b', long)]
+    pub bot: Option<String>,
+    /// Start a RAG
+    #[clap(long)]
+    pub rag: Option<String>,
     /// Serve the LLM API and WebAPP
     #[clap(long, value_name = "ADDRESS")]
     pub serve: Option<Option<String>>,
@@ -51,12 +57,18 @@ pub struct Cli {
     /// List all available models
     #[clap(long)]
     pub list_models: bool,
-    /// List all available roles
+    /// List all roles
     #[clap(long)]
     pub list_roles: bool,
-    /// List all available sessions
+    /// List all sessions
     #[clap(long)]
     pub list_sessions: bool,
+    /// List all bots
+    #[clap(long)]
+    pub list_bots: bool,
+    /// List all RAGs
+    #[clap(long)]
+    pub list_rags: bool,
     /// Input text
     #[clap(trailing_var_arg = true)]
     text: Vec<String>,

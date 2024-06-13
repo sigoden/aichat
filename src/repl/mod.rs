@@ -138,14 +138,13 @@ impl Repl {
         let editor = Self::create_editor(config)?;
 
         let prompt = ReplPrompt::new(config);
-
-        let abort = create_abort_signal();
+        let abort_signal = create_abort_signal();
 
         Ok(Self {
             config: config.clone(),
             editor,
             prompt,
-            abort_signal: abort,
+            abort_signal,
         })
     }
 
@@ -254,7 +253,8 @@ impl Repl {
                 }
                 ".bot" => match args {
                     Some(name) => {
-                        Config::use_bot(&self.config, name, self.abort_signal.clone()).await?;
+                        Config::use_bot(&self.config, name, None, self.abort_signal.clone())
+                            .await?;
                     }
                     None => println!(r#"Usage: .bot <name>"#),
                 },
