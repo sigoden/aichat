@@ -27,11 +27,14 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             [CompletionResult]::new('--role', '--role', [CompletionResultType]::ParameterName, 'Select a role')
             [CompletionResult]::new('-s', '-s', [CompletionResultType]::ParameterName, 'Start or join a session')
             [CompletionResult]::new('--session', '--session', [CompletionResultType]::ParameterName, 'Start or join a session')
+            [CompletionResult]::new('--save-session', '--save-session', [CompletionResultType]::ParameterName, 'Forces the session to be saved')
+            [CompletionResult]::new('-b', '-b', [CompletionResultType]::ParameterName, 'Start a bot')
+            [CompletionResult]::new('--bot', '--bot', [CompletionResultType]::ParameterName, 'Start a bot')
+            [CompletionResult]::new('--rag', '--rag', [CompletionResultType]::ParameterName, 'Start a RAG')
             [CompletionResult]::new('-f', '-f', [CompletionResultType]::ParameterName, 'Include files with the message')
             [CompletionResult]::new('--file', '--file', [CompletionResultType]::ParameterName, 'Include files with the message')
             [CompletionResult]::new('-w', '-w', [CompletionResultType]::ParameterName, 'Control text wrapping (no, auto, <max-width>)')
             [CompletionResult]::new('--wrap', '--wrap', [CompletionResultType]::ParameterName, 'Control text wrapping (no, auto, <max-width>)')
-            [CompletionResult]::new('--save-session', '--save-session', [CompletionResultType]::ParameterName, 'Forces the session to be saved')
             [CompletionResult]::new('--serve', '--serve', [CompletionResultType]::ParameterName, 'Serve the LLM API and WebAPP')
             [CompletionResult]::new('-e', '-e', [CompletionResultType]::ParameterName, 'Execute commands in natural language')
             [CompletionResult]::new('--execute', '--execute', [CompletionResultType]::ParameterName, 'Execute commands in natural language')
@@ -45,8 +48,10 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             [CompletionResult]::new('--dry-run', '--dry-run', [CompletionResultType]::ParameterName, 'Display the message without sending it')
             [CompletionResult]::new('--info', '--info', [CompletionResultType]::ParameterName, 'Display information')
             [CompletionResult]::new('--list-models', '--list-models', [CompletionResultType]::ParameterName, 'List all available models')
-            [CompletionResult]::new('--list-roles', '--list-roles', [CompletionResultType]::ParameterName, 'List all available roles')
-            [CompletionResult]::new('--list-sessions', '--list-sessions', [CompletionResultType]::ParameterName, 'List all available sessions')
+            [CompletionResult]::new('--list-roles', '--list-roles', [CompletionResultType]::ParameterName, 'List all roles')
+            [CompletionResult]::new('--list-sessions', '--list-sessions', [CompletionResultType]::ParameterName, 'List all sessions')
+            [CompletionResult]::new('--list-bots', '--list-bots', [CompletionResultType]::ParameterName, 'List all bots')
+            [CompletionResult]::new('--list-rags', '--list-rags', [CompletionResultType]::ParameterName, 'List all RAGs')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('-V', '-V', [CompletionResultType]::ParameterName, 'Print version')
@@ -71,6 +76,10 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             $completions = Get-AichatValues "--list-roles"
         } elseif ($flag -eq "-s" -or $flag -eq "--session") {
             $completions = Get-AichatValues "--list-sessions"
+        } elseif ($flag -eq "-b" -or $flag -eq "--bot") {
+            $completions = Get-AichatValues "--list-bots"
+        } elseif ($flag -eq "--rag") {
+            $completions = Get-AichatValues "--list-rags"
         } elseif ($flag -eq "-f" -or $flag -eq "--file") {
             $completions = @()
         }

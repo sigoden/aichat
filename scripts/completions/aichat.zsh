@@ -22,11 +22,14 @@ _aichat() {
 '--role=[Select a role]:ROLE:->roles' \
 '-s+[Start or join a session]:SESSION:->sessions' \
 '--session=[Start or join a session]:SESSION:->sessions' \
+'--save-session[Forces the session to be saved]' \
+'-b+[Start a bot]:BOT:->bots' \
+'--bot=[Start a bot]:BOT:->bots' \
+'--rag=[Start a RAG]:RAG:->rags' \
 '*-f+[Include files with the message]:FILE:_files' \
 '*--file=[Include files with the message]:FILE:_files' \
 '-w+[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
 '--wrap=[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
-'--save-session[Forces the session to be saved]' \
 '--serve[Serve the LLM API and WebAPP]' \
 '-e[Execute commands in natural language]' \
 '--execute[Execute commands in natural language]' \
@@ -40,8 +43,10 @@ _aichat() {
 '--dry-run[Display the message without sending it]' \
 '--info[Display information]' \
 '--list-models[List all available models]' \
-'--list-roles[List all available roles]' \
-'--list-sessions[List all available sessions]' \
+'--list-roles[List all roles]' \
+'--list-sessions[List all sessions]' \
+'--list-bots[List all bots]' \
+'--list-rags[List all RAGs]' \
 '-h[Print help]' \
 '--help[Print help]' \
 '-V[Print version]' \
@@ -53,7 +58,7 @@ _aichat() {
     _arguments "${_arguments_options[@]}" $common \
         && ret=0 
     case $state in
-        models|roles|sessions)
+        models|roles|sessions|bots|rags)
             local -a values expl
             values=( ${(f)"$(_call_program values aichat --list-$state)"} )
             _wanted values expl $state compadd -a values && ret=0
