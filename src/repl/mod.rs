@@ -79,7 +79,7 @@ lazy_static! {
         ),
         ReplCommand::new(
             ".exit session",
-            "End the current session",
+            "End the session",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
         ReplCommand::new(
@@ -105,7 +105,7 @@ lazy_static! {
         ),
         ReplCommand::new(
             ".starter",
-            "Use converstaion starters",
+            "Use the converstaion starter",
             AssertState::True(StateFlags::BOT)
         ),
         ReplCommand::new(
