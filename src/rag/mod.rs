@@ -140,7 +140,7 @@ impl Rag {
         top_k: usize,
         abort_signal: AbortSignal,
     ) -> Result<String> {
-        let (stop_spinner_tx, _) = run_spinner("Embedding").await;
+        let (stop_spinner_tx, _) = run_spinner("Searching").await;
         let ret = tokio::select! {
             ret = self.search_impl(text, top_k) => {
                 ret
