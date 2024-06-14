@@ -1,5 +1,5 @@
 use super::{
-    list_chat_models,
+    list_chat_models, list_embedding_models,
     message::{Message, MessageContent},
     EmbeddingsData,
 };
@@ -43,8 +43,15 @@ impl Model {
             .collect()
     }
 
-    pub fn retrieve(config: &Config, model_id: &str) -> Result<Self> {
+    pub fn retrieve_chat(config: &Config, model_id: &str) -> Result<Self> {
         match Self::find(&list_chat_models(config), model_id) {
+            Some(v) => Ok(v),
+            None => bail!("Invalid model '{model_id}'"),
+        }
+    }
+
+    pub fn retrieve_embedding(config: &Config, model_id: &str) -> Result<Self> {
+        match Self::find(&list_embedding_models(config), model_id) {
             Some(v) => Ok(v),
             None => bail!("Invalid model '{model_id}'"),
         }

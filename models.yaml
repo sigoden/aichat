@@ -204,12 +204,12 @@
     - name: embed-english-v3.0
       mode: embedding
       max_input_tokens: 512
-      default_chunk_size: 500
+      default_chunk_size: 1000
       max_concurrent_chunks: 96
     - name: embed-multilingual-v3.0
       mode: embedding
       max_input_tokens: 512
-      default_chunk_size: 500
+      default_chunk_size: 1000
       max_concurrent_chunks: 96
 
 - platform: perplexity

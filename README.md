@@ -94,11 +94,6 @@ prelude: null                    # Set a default role or session to start with (
 # if unset fallback to $EDITOR and $VISUAL
 buffer_editor: null
 
-# Specifies the embedding model to use
-embedding_model: null
-# Determines how many relevant documents are retrieved
-rag_top_k: 4
-
 # Compress session when token count reaches or exceeds this threshold (must be at least 1000)
 compress_threshold: 4000
 

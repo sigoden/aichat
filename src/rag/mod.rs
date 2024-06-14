@@ -50,13 +50,8 @@ impl Rag {
         doc_paths: &[String],
         abort_signal: AbortSignal,
     ) -> Result<Self> {
-        if !*IS_STDOUT_TERMINAL {
-            bail!("An interactive shell is required to initialize rag.")
-        }
         debug!("init rag: {name}");
-        let model = select_embedding_model(config)?;
-        let chunk_size = set_chunk_size(&model)?;
-        let chunk_overlap = chunk_size / 20;
+        let (model, chunk_size, chunk_overlap) = Self::config(config)?;
         let data = RagData::new(&model.id(), chunk_size, chunk_overlap);
         let mut rag = Self::create(config, name, save_path, data)?;
         let mut paths = doc_paths.to_vec();
@@ -92,7 +87,7 @@ impl Rag {
 
     pub fn create(config: &GlobalConfig, name: &str, path: &Path, data: RagData) -> Result<Self> {
         let hnsw = data.build_hnsw();
-        let model = retrieve_embedding_model(&config.read(), &data.model)?;
+        let model = Model::retrieve_embedding(&config.read(), &data.model)?;
         let client = init_client(config, Some(model.clone()))?;
         let rag = Rag {
             client,
@@ -103,6 +98,68 @@ impl Rag {
             hnsw,
         };
         Ok(rag)
+    }
+
+    pub fn config(config: &GlobalConfig) -> Result<(Model, usize, usize)> {
+        let (embedding_model, chunk_size, chunk_overlap) = {
+            let config = config.read();
+            (
+                config.rag_embedding_model.clone(),
+                config.rag_chunk_size,
+                config.rag_chunk_overlap,
+            )
+        };
+        let model_id = match embedding_model {
+            Some(value) => {
+                println!("Select embedding model: {value}");
+                value
+            }
+            None => {
+                let models = list_embedding_models(&config.read());
+                if models.is_empty() {
+                    bail!("No available embedding model");
+                }
+                if *IS_STDOUT_TERMINAL {
+                    select_embedding_model(&models)?
+                } else {
+                    let value = models[0].id();
+                    println!("Select embedding model: {value}");
+                    value
+                }
+            }
+        };
+        let model = Model::retrieve_embedding(&config.read(), &model_id)?;
+        let chunk_size = match chunk_size {
+            Some(value) => {
+                println!("Set chunk size: {value}");
+                value
+            }
+            None => {
+                if *IS_STDOUT_TERMINAL {
+                    set_chunk_size(&model)?
+                } else {
+                    let value = model.default_chunk_size();
+                    println!("Set chunk size: {value}");
+                    value
+                }
+            }
+        };
+        let chunk_overlap = match chunk_overlap {
+            Some(value) => {
+                println!("Set chunk overlay: {value}");
+                value
+            }
+            None => {
+                let value = chunk_size / 20;
+                if *IS_STDOUT_TERMINAL {
+                    set_chunk_overlay(value)?
+                } else {
+                    println!("Set chunk overlay: {value}");
+                    value
+                }
+            }
+        };
+        Ok((model, chunk_size, chunk_overlap))
     }
 
     pub fn save(&self, path: &Path) -> Result<()> {
@@ -392,27 +449,10 @@ fn document_text(file_path: &str, document: &RagDocument) -> String {
     )
 }
 
-fn retrieve_embedding_model(config: &Config, model_id: &str) -> Result<Model> {
-    let model = Model::find(&list_embedding_models(config), model_id)
-        .ok_or_else(|| anyhow!("No embedding model '{model_id}'"))?;
-    Ok(model)
-}
-
-fn select_embedding_model(config: &GlobalConfig) -> Result<Model> {
-    let config = config.read();
-    let model = match config.embedding_model.clone() {
-        Some(model_id) => retrieve_embedding_model(&config, &model_id)?,
-        None => {
-            let models = list_embedding_models(&config);
-            if models.is_empty() {
-                bail!("No embedding model");
-            }
-            let model_ids: Vec<_> = models.iter().map(|v| v.id()).collect();
-            let model_id = Select::new("Select embedding model:", model_ids).prompt()?;
-            retrieve_embedding_model(&config, &model_id)?
-        }
-    };
-    Ok(model)
+fn select_embedding_model(models: &[&Model]) -> Result<String> {
+    let model_ids: Vec<_> = models.iter().map(|v| v.id()).collect();
+    let model_id = Select::new("Select embedding model:", model_ids).prompt()?;
+    Ok(model_id)
 }
 
 fn set_chunk_size(model: &Model) -> Result<usize> {
@@ -435,6 +475,20 @@ fn set_chunk_size(model: &Model) -> Result<usize> {
     }
     let value = text.prompt()?;
     value.parse().map_err(|_| anyhow!("Invalid chunk_size"))
+}
+
+fn set_chunk_overlay(default_value: usize) -> Result<usize> {
+    let value = Text::new("Set chunk overlay:")
+        .with_default(&default_value.to_string())
+        .with_validator(move |text: &str| {
+            let out = match text.parse::<usize>() {
+                Ok(_) => Validation::Valid,
+                Err(_) => Validation::Invalid("Must be a integer".into()),
+            };
+            Ok(out)
+        })
+        .prompt()?;
+    value.parse().map_err(|_| anyhow!("Invalid chunk_overlay"))
 }
 
 fn add_doc_paths() -> Result<Vec<String>> {
