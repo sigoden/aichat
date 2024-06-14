@@ -51,18 +51,6 @@ macro_rules! register_client {
             Unknown,
         }
 
-        #[derive(Debug, Clone, serde::Deserialize)]
-        #[serde(tag = "type")]
-        pub enum ClientModel {
-            $(
-                #[serde(rename = $name)]
-                $config { models: Vec<ModelData> },
-            )+
-            #[serde(other)]
-            Unknown,
-        }
-
-
         $(
             #[derive(Debug)]
             pub struct $client {

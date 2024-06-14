@@ -107,13 +107,6 @@ impl Functions {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct FunctionConfig {
-    pub enable: bool,
-    pub declarations_file: String,
-    pub functions_dir: String,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FunctionDeclaration {
     pub name: String,
