@@ -73,7 +73,7 @@ impl Session {
         let mut session: Self =
             serde_yaml::from_str(&content).with_context(|| format!("Invalid session {}", name))?;
 
-        session.model = Model::retrieve(config, &session.model_id)?;
+        session.model = Model::retrieve_chat(config, &session.model_id)?;
         session.name = name.to_string();
         session.path = Some(path.display().to_string());
 

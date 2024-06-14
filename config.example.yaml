@@ -35,19 +35,29 @@ bots:
     dangerously_functions_filter: null
 
 # Specifies the embedding model to use
-embedding_model: null
-
+rag_embedding_model: null
+# Specifies the chunk size
+rag_chunk_size: null
+# Specifies the chunk overlap
+rag_chunk_overlap: null
 # Determines how many relevant documents are retrieved
 rag_top_k: 4
 
 # Defines the query structure using variables like __CONTEXT__ and __INPUT__ to tailor searches to specific needs
 rag_template: |
-  Answer the following question based only on the provided context:
+  Use the following context as your learned knowledge, inside <context></context> XML tags.
   <context>
-  __CONTEXT__
+      __CONTEXT__
   </context>
 
-  Question: __INPUT__
+  When answer to user:
+  - If you don't know, just say that you don't know.
+  - If you don't know when you are not sure, ask for clarification.
+  Avoid mentioning that you obtained the information from the context.
+  And answer according to the language of the user's question.
+
+  Given the context information, answer the query.
+  Query: __INPUT__
 
 # Compress session when token count reaches or exceeds this threshold (must be at least 1000)
 compress_threshold: 4000

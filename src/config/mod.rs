@@ -61,13 +61,19 @@ const SUMMARIZE_PROMPT: &str =
     "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.";
 const SUMMARY_PROMPT: &str = "This is a summary of the chat history as a recap: ";
 
-const RAG_TEMPLATE: &str = r#"Answer the question based only on the provided context:
-<context>
-__CONTEXT__
-</context>
+const RAG_TEMPLATE: &str = r#"Use the following context as your learned knowledge, inside <context></context> XML tags.
+  <context>
+      __CONTEXT__
+  </context>
 
-Question: __INPUT__
-"#;
+  When answer to user:
+  - If you don't know, just say that you don't know.
+  - If you don't know when you are not sure, ask for clarification.
+  Avoid mentioning that you obtained the information from the context.
+  And answer according to the language of the user's question.
+
+  Given the context information, answer the query.
+  Query: __INPUT__"#;
 
 const LEFT_PROMPT: &str = "{color.green}{?session {?bot {bot}#}{session}{?role /}}{!session {?bot {bot}}}{role}{?rag @{rag}}{color.cyan}{?session )}{!session >}{color.reset} ";
 const RIGHT_PROMPT: &str = "{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}";
@@ -96,7 +102,9 @@ pub struct Config {
     pub dangerously_functions_filter: Option<FunctionsFilter>,
     pub bot_prelude: Option<String>,
     pub bots: Vec<BotConfig>,
-    pub embedding_model: Option<String>,
+    pub rag_embedding_model: Option<String>,
+    pub rag_chunk_size: Option<usize>,
+    pub rag_chunk_overlap: Option<usize>,
     pub rag_top_k: usize,
     pub rag_template: Option<String>,
     pub compress_threshold: usize,
@@ -147,7 +155,9 @@ impl Default for Config {
             dangerously_functions_filter: None,
             bot_prelude: None,
             bots: vec![],
-            embedding_model: None,
+            rag_embedding_model: None,
+            rag_chunk_size: None,
+            rag_chunk_overlap: None,
             rag_top_k: 4,
             rag_template: None,
             compress_threshold: 4000,
@@ -616,7 +626,7 @@ impl Config {
     }
 
     pub fn set_model(&mut self, model_id: &str) -> Result<()> {
-        let model = Model::retrieve(self, model_id)?;
+        let model = Model::retrieve_chat(self, model_id)?;
         match self.role_like_mut() {
             Some(role_like) => role_like.set_model(&model),
             None => {
@@ -682,7 +692,7 @@ impl Config {
         match role.model_id() {
             Some(model_id) => {
                 if self.model.id() != model_id {
-                    let model = Model::retrieve(self, model_id)?;
+                    let model = Model::retrieve_chat(self, model_id)?;
                     role.set_model(&model);
                 }
             }

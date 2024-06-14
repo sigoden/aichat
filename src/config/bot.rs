@@ -49,7 +49,7 @@ impl Bot {
         let model = {
             let config = config.read();
             match bot_config.model_id.as_ref() {
-                Some(model_id) => Model::retrieve(&config, model_id)?,
+                Some(model_id) => Model::retrieve_chat(&config, model_id)?,
                 None => config.current_model().clone(),
             }
         };
