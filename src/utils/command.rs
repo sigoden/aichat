@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, ffi::OsStr, process::Command};
+use std::{collections::HashMap, env, ffi::OsStr, path::Path, process::Command};
 
 use anyhow::{Context, Result};
 
@@ -89,4 +89,10 @@ pub fn run_command_with_output<T: AsRef<OsStr>>(
     let stdout = std::str::from_utf8(&output.stdout).context("Invalid UTF-8 in stdout")?;
     let stderr = std::str::from_utf8(&output.stderr).context("Invalid UTF-8 in stderr")?;
     Ok((status.success(), stdout.to_string(), stderr.to_string()))
+}
+
+pub fn edit_file(editor: &str, path: &Path) -> Result<()> {
+    let mut child = Command::new(editor).arg(path).spawn()?;
+    child.wait()?;
+    Ok(())
 }

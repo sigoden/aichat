@@ -33,7 +33,7 @@ lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 23] = [
+    static ref REPL_COMMANDS: [ReplCommand; 24] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
@@ -70,6 +70,11 @@ lazy_static! {
         ReplCommand::new(
             ".save session",
             "Save the chat to file",
+            AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
+        ),
+        ReplCommand::new(
+            ".edit session",
+            "Edit the current session",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
         ReplCommand::new(
@@ -279,14 +284,27 @@ Tips: use <tab> to autocomplete conversation starter text.
                 },
                 ".save" => {
                     match args.map(|v| match v.split_once(' ') {
-                        Some((subcmd, args)) => (subcmd, args.trim()),
-                        None => (v, ""),
+                        Some((subcmd, args)) => (subcmd, Some(args.trim())),
+                        None => (v, None),
                     }) {
                         Some(("session", name)) => {
                             self.config.write().save_session(name)?;
                         }
                         _ => {
                             println!(r#"Usage: .save session [name]"#)
+                        }
+                    }
+                }
+                ".edit" => {
+                    match args.map(|v| match v.split_once(' ') {
+                        Some((subcmd, args)) => (subcmd, Some(args.trim())),
+                        None => (v, None),
+                    }) {
+                        Some(("session", _)) => {
+                            self.config.write().edit_session()?;
+                        }
+                        _ => {
+                            println!(r#"Usage: .edit session"#)
                         }
                     }
                 }
