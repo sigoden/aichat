@@ -86,7 +86,6 @@ highlight: true                  # Controls syntax highlighting
 light_theme: false               # Activates a light color theme when true
 wrap: no                         # Controls text wrapping (no, auto, <max-width>)
 wrap_code: false                 # Enables or disables wrapping of code blocks
-auto_copy: false                 # Enables or disables automatic copying the last LLM response to the clipboard 
 keybindings: emacs               # Choose keybinding style (emacs, vi)
 prelude: null                    # Set a default role or session to start with (role:<name>, session:<name>)
 
