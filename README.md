@@ -140,7 +140,7 @@ Options:
       --light-theme          Use light theme
       --dry-run              Display the message without sending it
       --info                 Display information
-      --list-models          List all available models
+      --list-models          List all available chat models
       --list-roles           List all available roles
       --list-sessions        List all available sessions
   -h, --help                 Print help

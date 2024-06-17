@@ -53,7 +53,7 @@ module completions {
     --light-theme                                     # Use light theme
     --dry-run                                         # Display the message without sending it
     --info                                            # Display information
-    --list-models                                     # List all available models
+    --list-models                                     # List all available chat models
     --list-roles                                      # List all roles
     --list-sessions                                   # List all sessions
     --list-bots                                       # List all bots

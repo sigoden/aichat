@@ -47,7 +47,7 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             [CompletionResult]::new('--light-theme', '--light-theme', [CompletionResultType]::ParameterName, 'Use light theme')
             [CompletionResult]::new('--dry-run', '--dry-run', [CompletionResultType]::ParameterName, 'Display the message without sending it')
             [CompletionResult]::new('--info', '--info', [CompletionResultType]::ParameterName, 'Display information')
-            [CompletionResult]::new('--list-models', '--list-models', [CompletionResultType]::ParameterName, 'List all available models')
+            [CompletionResult]::new('--list-models', '--list-models', [CompletionResultType]::ParameterName, 'List all available chat models')
             [CompletionResult]::new('--list-roles', '--list-roles', [CompletionResultType]::ParameterName, 'List all roles')
             [CompletionResult]::new('--list-sessions', '--list-sessions', [CompletionResultType]::ParameterName, 'List all sessions')
             [CompletionResult]::new('--list-bots', '--list-bots', [CompletionResultType]::ParameterName, 'List all bots')
