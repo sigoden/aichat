@@ -12,7 +12,7 @@ use crate::client::{
     create_client_config, list_chat_models, list_client_types, ClientConfig, Model,
     OPENAI_COMPATIBLE_PLATFORMS,
 };
-use crate::function::{FunctionDeclaration, Functions, FunctionsFilter, ToolCallResult};
+use crate::function::{FunctionDeclaration, Functions, FunctionsFilter, ToolResult};
 use crate::rag::Rag;
 use crate::render::{MarkdownRender, RenderOptions};
 use crate::utils::*;
@@ -1202,7 +1202,7 @@ impl Config {
         &mut self,
         input: &mut Input,
         output: &str,
-        tool_results: &[ToolCallResult],
+        tool_results: &[ToolResult],
     ) -> Result<()> {
         self.last_message = Some((input.clone(), output.to_string(), self.bot.is_some()));
         input.clear_patch_text();
@@ -1215,7 +1215,7 @@ impl Config {
         &mut self,
         input: &mut Input,
         output: &str,
-        tool_results: &[ToolCallResult],
+        tool_results: &[ToolResult],
     ) -> Result<()> {
         if self.dry_run || output.is_empty() || !tool_results.is_empty() {
             return Ok(());

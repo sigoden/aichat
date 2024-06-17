@@ -4,7 +4,7 @@ use crate::client::{
     init_client, ChatCompletionsData, Client, ImageUrl, Message, MessageContent,
     MessageContentPart, MessageRole, Model,
 };
-use crate::function::{ToolCallResult, ToolResults};
+use crate::function::{ToolResult, ToolResults};
 use crate::utils::{base64_encode, sha256, AbortSignal};
 
 use anyhow::{bail, Context, Result};
@@ -154,11 +154,7 @@ impl Input {
         self.patched_text.take();
     }
 
-    pub fn merge_tool_call(
-        mut self,
-        output: String,
-        tool_call_results: Vec<ToolCallResult>,
-    ) -> Self {
+    pub fn merge_tool_call(mut self, output: String, tool_call_results: Vec<ToolResult>) -> Self {
         match self.tool_call.as_mut() {
             Some(exist_tool_call_results) => {
                 exist_tool_call_results.0.extend(tool_call_results);
