@@ -207,25 +207,6 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
         "message": message,
     });
 
-    if let Some(tool_results) = tool_results {
-        let tool_results: Vec<_> = tool_results
-            .into_iter()
-            .map(|tool_call_result| {
-                json!({
-                    "call": {
-                        "name": tool_call_result.call.name,
-                        "parameters": tool_call_result.call.arguments,
-                    },
-                    "outputs": [
-                        tool_call_result.output,
-                    ]
-
-                })
-            })
-            .collect();
-        body["tool_results"] = json!(tool_results);
-    }
-
     if let Some(v) = system_message {
         body["preamble"] = v.into();
     }
@@ -245,6 +226,29 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
     }
     if stream {
         body["stream"] = true.into();
+    }
+
+    if let Some(tool_results) = tool_results {
+        let tool_results: Vec<_> = tool_results
+            .into_iter()
+            .map(|tool_call_result| {
+                json!({
+                    "call": {
+                        "name": tool_call_result.call.name,
+                        "parameters": tool_call_result.call.arguments,
+                    },
+                    "outputs": [
+                        tool_call_result.output,
+                    ]
+
+                })
+            })
+            .collect();
+        body["tool_results"] = json!(tool_results);
+        if let Some(object) = body.as_object_mut() {
+            object.remove("chat_history");
+            object.remove("message");
+        }
     }
 
     if let Some(functions) = functions {
