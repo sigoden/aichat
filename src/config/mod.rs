@@ -713,14 +713,39 @@ impl Config {
         Ok(())
     }
 
-    pub fn save_session(&mut self, name: &str) -> Result<()> {
-        let sessions_dir = self.sessions_dir()?;
+    pub fn save_session(&mut self, name: Option<&str>) -> Result<()> {
+        let name = match &self.session {
+            Some(session) => match name {
+                Some(v) => v.to_string(),
+                None => session.name().to_string(),
+            },
+            None => bail!("No session"),
+        };
+        let session_path = self.session_file(&name)?;
         if let Some(session) = self.session.as_mut() {
-            if !name.is_empty() {
-                session.set_name(name);
-            }
-            session.save(&sessions_dir)?;
+            session.save(&session_path)?;
         }
+        Ok(())
+    }
+
+    pub fn edit_session(&mut self) -> Result<()> {
+        let name = match &self.session {
+            Some(session) => session.name().to_string(),
+            None => bail!("No session"),
+        };
+        let editor = match self.buffer_editor() {
+            Some(editor) => editor,
+            None => bail!("No editor, please set $EDITOR/$VISUAL."),
+        };
+        let session_path = self.session_file(&name)?;
+        self.save_session(Some(&name))?;
+        edit_file(&editor, &session_path).with_context(|| {
+            format!(
+                "Failed to edit '{}' with '{editor}'",
+                session_path.display()
+            )
+        })?;
+        self.session = Some(Session::load(self, &name, &session_path)?);
         Ok(())
     }
 

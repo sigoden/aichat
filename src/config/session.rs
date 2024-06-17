@@ -240,10 +240,6 @@ impl Session {
         (tokens, percent)
     }
 
-    pub fn set_name(&mut self, name: &str) {
-        self.name = name.to_string();
-    }
-
     pub fn set_role(&mut self, role: Role) {
         self.model_id = role.model().id();
         self.temperature = role.temperature();
@@ -290,7 +286,7 @@ impl Session {
         self.dirty = true;
     }
 
-    pub fn exit(&mut self, sessions_dir: &Path, is_repl: bool) -> Result<()> {
+    pub fn exit(&mut self, session_dir: &Path, is_repl: bool) -> Result<()> {
         let save_session = self.save_session();
         if self.dirty && save_session != Some(false) {
             if save_session.is_none() {
@@ -315,25 +311,26 @@ impl Session {
                         .prompt()?;
                 }
             }
-            self.save(sessions_dir)?;
+            let session_path = session_dir.join(format!("{}.yaml", self.name()));
+            self.save(&session_path)?;
         }
         Ok(())
     }
 
-    pub fn save(&mut self, sessions_dir: &Path) -> Result<()> {
-        let mut session_path = sessions_dir.to_path_buf();
-        session_path.push(format!("{}.yaml", self.name()));
-        if !sessions_dir.exists() {
-            create_dir_all(sessions_dir).with_context(|| {
-                format!("Failed to create session_dir '{}'", sessions_dir.display())
-            })?;
+    pub fn save(&mut self, session_path: &Path) -> Result<()> {
+        if let Some(sessions_dir) = session_path.parent() {
+            if !sessions_dir.exists() {
+                create_dir_all(sessions_dir).with_context(|| {
+                    format!("Failed to create session_dir '{}'", sessions_dir.display())
+                })?;
+            }
         }
 
         self.path = Some(session_path.display().to_string());
 
         let content = serde_yaml::to_string(&self)
             .with_context(|| format!("Failed to serde session {}", self.name))?;
-        fs::write(&session_path, content).with_context(|| {
+        fs::write(session_path, content).with_context(|| {
             format!(
                 "Failed to write session {} to {}",
                 self.name,
