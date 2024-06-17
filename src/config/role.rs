@@ -18,6 +18,7 @@ pub const INPUT_PLACEHOLDER: &str = "__INPUT__";
 pub trait RoleLike {
     fn to_role(&self) -> Role;
     fn model(&self) -> &Model;
+    fn model_mut(&mut self) -> &mut Model;
     fn temperature(&self) -> Option<f64>;
     fn top_p(&self) -> Option<f64>;
     fn functions_filter(&self) -> Option<FunctionsFilter>;
@@ -227,6 +228,10 @@ impl RoleLike for Role {
 
     fn model(&self) -> &Model {
         &self.model
+    }
+
+    fn model_mut(&mut self) -> &mut Model {
+        &mut self.model
     }
 
     fn temperature(&self) -> Option<f64> {
