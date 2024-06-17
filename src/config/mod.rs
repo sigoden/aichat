@@ -583,7 +583,8 @@ impl Config {
     }
 
     pub fn use_prompt(&mut self, prompt: &str) -> Result<()> {
-        let role = Role::new(TEMP_ROLE_NAME, prompt);
+        let mut role = Role::new(TEMP_ROLE_NAME, prompt);
+        role.set_model(&self.model);
         self.use_role_obj(role)
     }
 
@@ -705,9 +706,8 @@ impl Config {
 
     pub fn exit_session(&mut self) -> Result<()> {
         if let Some(mut session) = self.session.take() {
-            let is_repl = self.working_mode == WorkingMode::Repl;
             let sessions_dir = self.sessions_dir()?;
-            session.exit(&sessions_dir, is_repl)?;
+            session.exit(&sessions_dir, self.working_mode.is_repl())?;
             self.last_message = None;
         }
         Ok(())
@@ -723,7 +723,7 @@ impl Config {
         };
         let session_path = self.session_file(&name)?;
         if let Some(session) = self.session.as_mut() {
-            session.save(&session_path)?;
+            session.save(&session_path, self.working_mode.is_repl())?;
         }
         Ok(())
     }
@@ -933,8 +933,8 @@ impl Config {
     }
 
     pub fn exit_bot(&mut self) -> Result<()> {
+        self.exit_session()?;
         if self.bot.take().is_some() {
-            self.exit_session()?;
             self.rag.take();
             self.last_message = None;
         }
@@ -1418,6 +1418,12 @@ pub enum WorkingMode {
     Command,
     Repl,
     Serve,
+}
+
+impl WorkingMode {
+    pub fn is_repl(&self) -> bool {
+        *self == WorkingMode::Repl
+    }
 }
 
 bitflags::bitflags! {

@@ -312,12 +312,12 @@ impl Session {
                 }
             }
             let session_path = session_dir.join(format!("{}.yaml", self.name()));
-            self.save(&session_path)?;
+            self.save(&session_path, is_repl)?;
         }
         Ok(())
     }
 
-    pub fn save(&mut self, session_path: &Path) -> Result<()> {
+    pub fn save(&mut self, session_path: &Path, is_repl: bool) -> Result<()> {
         if let Some(sessions_dir) = session_path.parent() {
             if !sessions_dir.exists() {
                 create_dir_all(sessions_dir).with_context(|| {
@@ -338,7 +338,9 @@ impl Session {
             )
         })?;
 
-        println!("✨ Saved session to '{}'", session_path.display());
+        if is_repl {
+            println!("✨ Saved session to '{}'", session_path.display());
+        }
 
         self.dirty = false;
 

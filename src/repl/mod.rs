@@ -350,7 +350,7 @@ Tips: use <tab> to autocomplete conversation starter text.
                 ".copy" => {
                     let config = self.config.read();
                     self.copy(config.last_reply())
-                        .with_context(|| "Failed to copy the last output")?;
+                        .with_context(|| "Failed to copy the last response")?;
                 }
                 ".exit" => match args {
                     Some("role") => {

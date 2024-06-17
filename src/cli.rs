@@ -54,7 +54,7 @@ pub struct Cli {
     /// Display information
     #[clap(long)]
     pub info: bool,
-    /// List all available models
+    /// List all available chat models
     #[clap(long)]
     pub list_models: bool,
     /// List all roles
