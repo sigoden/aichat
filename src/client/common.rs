@@ -2,7 +2,7 @@ use super::*;
 
 use crate::{
     config::{GlobalConfig, Input},
-    function::{eval_tool_calls, FunctionDeclaration, ToolCall, ToolCallResult},
+    function::{eval_tool_calls, FunctionDeclaration, ToolCall, ToolResult},
     render::{render_error, render_stream},
     utils::{
         prompt_input_integer, prompt_input_string, tokenize, watch_abort_signal, AbortSignal,
@@ -505,12 +505,12 @@ pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(St
     }
 }
 
-pub async fn send_stream(
+pub async fn chat_completion_streaming(
     input: &Input,
     client: &dyn Client,
     config: &GlobalConfig,
     abort: AbortSignal,
-) -> Result<(String, Vec<ToolCallResult>)> {
+) -> Result<(String, Vec<ToolResult>)> {
     let (tx, rx) = unbounded_channel();
     let mut handler = SseHandler::new(tx, abort.clone());
 

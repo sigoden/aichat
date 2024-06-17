@@ -6,9 +6,9 @@ use self::completer::ReplCompleter;
 use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
-use crate::client::send_stream;
+use crate::client::chat_completion_streaming;
 use crate::config::{AssertState, Config, GlobalConfig, Input, StateFlags};
-use crate::function::need_send_call_results;
+use crate::function::need_send_tool_results;
 use crate::render::render_error;
 use crate::utils::{create_abort_signal, set_text, AbortSignal};
 
@@ -491,16 +491,17 @@ async fn ask(
         input.use_embeddings(abort_signal.clone()).await?;
     }
     while config.read().is_compressing_session() {
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     }
-    let client = input.create_client()?;
-    let (output, tool_call_results) =
-        send_stream(&input, client.as_ref(), config, abort_signal.clone()).await?;
 
+    let client = input.create_client()?;
+    config.write().before_chat_completion(&input)?;
+    let (output, tool_results) =
+        chat_completion_streaming(&input, client.as_ref(), config, abort_signal.clone()).await?;
     config
         .write()
-        .save_message(&mut input, &output, &tool_call_results)?;
-    config.read().maybe_copy(&output);
+        .after_chat_completion(&mut input, &output, &tool_results)?;
+
     if config.write().should_compress_session() {
         let config = config.clone();
         let color = if config.read().light_theme {
@@ -521,11 +522,11 @@ async fn ask(
             config.write().end_compressing_session();
         });
     }
-    if need_send_call_results(&tool_call_results) {
+    if need_send_tool_results(&tool_results) {
         ask(
             config,
             abort_signal,
-            input.merge_tool_call(output, tool_call_results),
+            input.merge_tool_call(output, tool_results),
             false,
         )
         .await

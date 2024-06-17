@@ -16,13 +16,10 @@ use std::{
 };
 
 pub const SELECTED_ALL_FUNCTIONS: &str = ".*";
-pub type ToolResults = (Vec<ToolCallResult>, String);
+pub type ToolResults = (Vec<ToolResult>, String);
 pub type FunctionsFilter = String;
 
-pub fn eval_tool_calls(
-    config: &GlobalConfig,
-    mut calls: Vec<ToolCall>,
-) -> Result<Vec<ToolCallResult>> {
+pub fn eval_tool_calls(config: &GlobalConfig, mut calls: Vec<ToolCall>) -> Result<Vec<ToolResult>> {
     let mut output = vec![];
     if calls.is_empty() {
         return Ok(output);
@@ -33,22 +30,22 @@ pub fn eval_tool_calls(
     }
     for call in calls {
         let result = call.eval(config)?;
-        output.push(ToolCallResult::new(call, result));
+        output.push(ToolResult::new(call, result));
     }
     Ok(output)
 }
 
-pub fn need_send_call_results(arr: &[ToolCallResult]) -> bool {
+pub fn need_send_tool_results(arr: &[ToolResult]) -> bool {
     arr.iter().any(|v| !v.output.is_null())
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct ToolCallResult {
+pub struct ToolResult {
     pub call: ToolCall,
     pub output: Value,
 }
 
-impl ToolCallResult {
+impl ToolResult {
     pub fn new(call: ToolCall, output: Value) -> Self {
         Self { call, output }
     }
