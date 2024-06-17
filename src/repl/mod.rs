@@ -33,7 +33,7 @@ lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 25] = [
+    static ref REPL_COMMANDS: [ReplCommand; 26] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
@@ -124,6 +124,11 @@ lazy_static! {
             AssertState::pass()
         ),
         ReplCommand::new(".continue", "Continue response", AssertState::pass()),
+        ReplCommand::new(
+            ".regenerate",
+            "Regenerate the last response",
+            AssertState::pass()
+        ),
         ReplCommand::new(".set", "Adjust settings", AssertState::pass()),
         ReplCommand::new(".copy", "Copy the last response", AssertState::pass()),
         ReplCommand::new(".exit", "Exit the REPL", AssertState::pass()),
@@ -321,9 +326,17 @@ Tips: use <tab> to autocomplete conversation starter text.
                 ".continue" => {
                     let (mut input, output) = match self.config.read().last_message.clone() {
                         Some(v) => v,
-                        None => bail!("No incomplete response."),
+                        None => bail!("Unable to continue response"),
                     };
                     input.set_continue_output(&output);
+                    ask(&self.config, self.abort_signal.clone(), input, true).await?;
+                }
+                ".regenerate" => {
+                    let (mut input, _) = match self.config.read().last_message.clone() {
+                        Some(v) => v,
+                        None => bail!("Unable to regenerate the last response"),
+                    };
+                    input.set_regenerate();
                     ask(&self.config, self.abort_signal.clone(), input, true).await?;
                 }
                 ".set" => match args {
