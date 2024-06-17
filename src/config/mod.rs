@@ -933,8 +933,11 @@ impl Config {
     }
 
     pub fn exit_bot(&mut self) -> Result<()> {
-        self.rag.take();
-        self.bot.take();
+        if self.bot.take().is_some() {
+            self.exit_session()?;
+            self.rag.take();
+            self.last_message = None;
+        }
         Ok(())
     }
 
