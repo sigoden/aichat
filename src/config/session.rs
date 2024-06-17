@@ -353,20 +353,31 @@ impl Session {
     }
 
     pub fn add_message(&mut self, input: &Input, output: &str) -> Result<()> {
-        let mut need_add_msg = true;
-        if self.messages.is_empty() {
-            self.messages.extend(input.role().build_messages(input));
-            need_add_msg = false;
+        match input.continue_output() {
+            Some(_) => {
+                if let Some(message) = self.messages.last_mut() {
+                    if let MessageContent::Text(text) = &mut message.content {
+                        *text = format!("{text}{output}");
+                    }
+                }
+            }
+            None => {
+                let mut need_add_msg = true;
+                if self.messages.is_empty() {
+                    self.messages.extend(input.role().build_messages(input));
+                    need_add_msg = false;
+                }
+                if need_add_msg {
+                    self.messages
+                        .push(Message::new(MessageRole::User, input.message_content()));
+                }
+                self.data_urls.extend(input.data_urls());
+                self.messages.push(Message::new(
+                    MessageRole::Assistant,
+                    MessageContent::Text(output.to_string()),
+                ));
+            }
         }
-        if need_add_msg {
-            self.messages
-                .push(Message::new(MessageRole::User, input.message_content()));
-        }
-        self.data_urls.extend(input.data_urls());
-        self.messages.push(Message::new(
-            MessageRole::Assistant,
-            MessageContent::Text(output.to_string()),
-        ));
         self.dirty = true;
         Ok(())
     }
@@ -385,6 +396,9 @@ impl Session {
 
     pub fn build_messages(&self, input: &Input) -> Vec<Message> {
         let mut messages = self.messages.clone();
+        if input.continue_output().is_some() {
+            return messages;
+        }
         let mut need_add_msg = true;
         let len = messages.len();
         if len == 0 {

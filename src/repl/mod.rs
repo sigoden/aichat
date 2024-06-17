@@ -33,7 +33,7 @@ lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 24] = [
+    static ref REPL_COMMANDS: [ReplCommand; 25] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
@@ -123,6 +123,7 @@ lazy_static! {
             "Include files with the message",
             AssertState::pass()
         ),
+        ReplCommand::new(".continue", "Continue response", AssertState::pass()),
         ReplCommand::new(".set", "Adjust settings", AssertState::pass()),
         ReplCommand::new(".copy", "Copy the last response", AssertState::pass()),
         ReplCommand::new(".exit", "Exit the REPL", AssertState::pass()),
@@ -308,6 +309,23 @@ Tips: use <tab> to autocomplete conversation starter text.
                         }
                     }
                 }
+                ".file" => match args {
+                    Some(args) => {
+                        let (files, text) = split_files_text(args);
+                        let files = shell_words::split(files).with_context(|| "Invalid args")?;
+                        let input = Input::new(&self.config, text, files, None)?;
+                        ask(&self.config, self.abort_signal.clone(), input, true).await?;
+                    }
+                    None => println!("Usage: .file <files>... [-- <text>...]"),
+                },
+                ".continue" => {
+                    let (mut input, output) = match self.config.read().last_message.clone() {
+                        Some(v) => v,
+                        None => bail!("No incomplete response."),
+                    };
+                    input.set_continue_output(&output);
+                    ask(&self.config, self.abort_signal.clone(), input, true).await?;
+                }
                 ".set" => match args {
                     Some(args) => {
                         self.config.write().update(args)?;
@@ -321,15 +339,6 @@ Tips: use <tab> to autocomplete conversation starter text.
                     self.copy(config.last_reply())
                         .with_context(|| "Failed to copy the last output")?;
                 }
-                ".file" => match args {
-                    Some(args) => {
-                        let (files, text) = split_files_text(args);
-                        let files = shell_words::split(files).with_context(|| "Invalid args")?;
-                        let input = Input::new(&self.config, text, files, None)?;
-                        ask(&self.config, self.abort_signal.clone(), input, true).await?;
-                    }
-                    None => println!("Usage: .file <files>... [-- <text>...]"),
-                },
                 ".exit" => match args {
                     Some("role") => {
                         self.config.write().exit_role()?;
