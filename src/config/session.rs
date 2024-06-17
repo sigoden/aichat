@@ -240,10 +240,6 @@ impl Session {
         (tokens, percent)
     }
 
-    pub fn set_name(&mut self, name: &str) {
-        self.name = name.to_string();
-    }
-
     pub fn set_role(&mut self, role: Role) {
         self.model_id = role.model().id();
         self.temperature = role.temperature();

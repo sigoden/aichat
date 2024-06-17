@@ -723,7 +723,6 @@ impl Config {
         };
         let session_path = self.session_file(&name)?;
         if let Some(session) = self.session.as_mut() {
-            session.set_name(&name);
             session.save(&session_path)?;
         }
         Ok(())
