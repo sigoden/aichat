@@ -1204,8 +1204,8 @@ impl Config {
         output: &str,
         tool_results: &[ToolResult],
     ) -> Result<()> {
-        self.last_message = Some((input.clone(), output.to_string(), self.bot.is_some()));
         input.clear_patch_text();
+        self.last_message = Some((input.clone(), output.to_string(), self.bot.is_some()));
         self.save_message(input, output, tool_results)?;
         self.maybe_copy(output);
         Ok(())
