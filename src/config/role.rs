@@ -185,7 +185,7 @@ async function timeout(ms) {
 
     pub fn build_messages(&self, input: &Input) -> Vec<Message> {
         let mut content = input.message_content();
-        if self.is_empty_prompt() {
+        let mut messages = if self.is_empty_prompt() {
             vec![Message::new(MessageRole::User, content)]
         } else if self.is_embedded_prompt() {
             content.merge_prompt(|v: &str| self.prompt.replace(INPUT_PLACEHOLDER, v));
@@ -209,7 +209,14 @@ async function timeout(ms) {
             }
             messages.push(Message::new(MessageRole::User, content));
             messages
+        };
+        if let Some(text) = input.continue_output() {
+            messages.push(Message::new(
+                MessageRole::Assistant,
+                MessageContent::Text(text.into()),
+            ));
         }
+        messages
     }
 }
 

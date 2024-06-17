@@ -129,7 +129,7 @@ pub struct Config {
     #[serde(skip)]
     pub working_mode: WorkingMode,
     #[serde(skip)]
-    pub last_message: Option<(Input, String, bool)>, // (input, output, is_bot)
+    pub last_message: Option<(Input, String)>,
 }
 
 impl Default for Config {
@@ -668,8 +668,8 @@ impl Config {
         }
         if let Some(session) = session.as_mut() {
             if session.is_empty() {
-                if let Some((input, output, is_bot)) = &self.last_message {
-                    if self.bot.is_some() == *is_bot {
+                if let Some((input, output)) = &self.last_message {
+                    if self.bot.is_some() == input.with_bot() {
                         let ans = Confirm::new(
                             "Start a session that incorporates the last question and answer?",
                         )
@@ -739,13 +739,17 @@ impl Config {
             )
         })?;
         self.session = Some(Session::load(self, &name, &session_path)?);
+        self.last_message = None;
         Ok(())
     }
 
     pub fn clear_session_messages(&mut self) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
             session.clear_messages();
+        } else {
+            bail!("No session")
         }
+        self.last_message = None;
         Ok(())
     }
 
@@ -1081,7 +1085,7 @@ impl Config {
     pub fn last_reply(&self) -> &str {
         self.last_message
             .as_ref()
-            .map(|(_, reply, _)| reply.as_str())
+            .map(|(_, reply)| reply.as_str())
             .unwrap_or_default()
     }
 
@@ -1207,7 +1211,7 @@ impl Config {
     }
 
     pub fn before_chat_completion(&mut self, input: &Input) -> Result<()> {
-        self.last_message = Some((input.clone(), String::new(), self.bot.is_some()));
+        self.last_message = Some((input.clone(), String::new()));
         Ok(())
     }
 
@@ -1217,22 +1221,16 @@ impl Config {
         output: &str,
         tool_results: &[ToolResult],
     ) -> Result<()> {
-        input.clear_patch_text();
-        self.last_message = Some((input.clone(), output.to_string(), self.bot.is_some()));
-        self.save_message(input, output, tool_results)?;
+        if self.dry_run || output.is_empty() || !tool_results.is_empty() {
+            self.last_message = None;
+            return Ok(());
+        }
+        self.last_message = Some((input.clone(), output.to_string()));
+        self.save_message(input, output)?;
         Ok(())
     }
 
-    fn save_message(
-        &mut self,
-        input: &mut Input,
-        output: &str,
-        tool_results: &[ToolResult],
-    ) -> Result<()> {
-        if self.dry_run || output.is_empty() || !tool_results.is_empty() {
-            return Ok(());
-        }
-
+    fn save_message(&mut self, input: &mut Input, output: &str) -> Result<()> {
         if let Some(session) = input.session_mut(&mut self.session) {
             session.add_message(input, output)?;
             return Ok(());

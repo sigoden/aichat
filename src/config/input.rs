@@ -30,27 +30,31 @@ pub struct Input {
     config: GlobalConfig,
     text: String,
     patched_text: Option<String>,
+    continue_output: Option<String>,
     medias: Vec<String>,
     data_urls: HashMap<String, String>,
     tool_call: Option<ToolResults>,
     rag_name: Option<String>,
     role: Role,
     with_session: bool,
+    with_bot: bool,
 }
 
 impl Input {
     pub fn from_str(config: &GlobalConfig, text: &str, role: Option<Role>) -> Self {
-        let (role, with_session) = resolve_role(&config.read(), role);
+        let (role, with_session, with_bot) = resolve_role(&config.read(), role);
         Self {
             config: config.clone(),
             text: text.to_string(),
             patched_text: None,
+            continue_output: None,
             medias: Default::default(),
             data_urls: Default::default(),
             tool_call: None,
             rag_name: None,
             role,
             with_session,
+            with_bot,
         }
     }
 
@@ -96,17 +100,19 @@ impl Input {
             }
         }
 
-        let (role, session) = resolve_role(&config.read(), role);
+        let (role, with_session, with_bot) = resolve_role(&config.read(), role);
         Ok(Self {
             config: config.clone(),
             text: texts.join("\n"),
             patched_text: None,
+            continue_output: None,
             medias,
             data_urls,
             tool_call: Default::default(),
             rag_name: None,
             role,
-            with_session: session,
+            with_session,
+            with_bot,
         })
     }
 
@@ -129,6 +135,18 @@ impl Input {
         self.text = text;
     }
 
+    pub fn continue_output(&self) -> Option<&str> {
+        self.continue_output.as_deref()
+    }
+
+    pub fn set_continue_output(&mut self, output: &str) {
+        let output = match &self.continue_output {
+            Some(v) => format!("{v}{output}"),
+            None => output.to_string(),
+        };
+        self.continue_output = Some(output);
+    }
+
     pub async fn use_embeddings(&mut self, abort_signal: AbortSignal) -> Result<()> {
         if self.text.is_empty() {
             return Ok(());
@@ -148,10 +166,6 @@ impl Input {
 
     pub fn rag_name(&self) -> Option<&str> {
         self.rag_name.as_deref()
-    }
-
-    pub fn clear_patch_text(&mut self) {
-        self.patched_text.take();
     }
 
     pub fn merge_tool_call(mut self, output: String, tool_call_results: Vec<ToolResult>) -> Self {
@@ -234,6 +248,10 @@ impl Input {
         }
     }
 
+    pub fn with_bot(&self) -> bool {
+        self.with_bot
+    }
+
     pub fn summary(&self) -> String {
         let text: String = self
             .text
@@ -296,10 +314,14 @@ impl Input {
     }
 }
 
-fn resolve_role(config: &Config, role: Option<Role>) -> (Role, bool) {
+fn resolve_role(config: &Config, role: Option<Role>) -> (Role, bool, bool) {
     match role {
-        Some(v) => (v, false),
-        None => (config.extract_role(), config.session.is_some()),
+        Some(v) => (v, false, false),
+        None => (
+            config.extract_role(),
+            config.session.is_some(),
+            config.bot.is_some(),
+        ),
     }
 }
 
