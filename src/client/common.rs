@@ -505,7 +505,7 @@ pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(St
     }
 }
 
-pub async fn send_stream(
+pub async fn chat_completion_streaming(
     input: &Input,
     client: &dyn Client,
     config: &GlobalConfig,

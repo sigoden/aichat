@@ -38,7 +38,7 @@ pub fn eval_tool_calls(
     Ok(output)
 }
 
-pub fn need_send_call_results(arr: &[ToolCallResult]) -> bool {
+pub fn need_send_tool_results(arr: &[ToolCallResult]) -> bool {
     arr.iter().any(|v| !v.output.is_null())
 }
 

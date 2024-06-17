@@ -229,60 +229,6 @@ impl Config {
         Ok(path)
     }
 
-    pub fn save_message(
-        &mut self,
-        input: &mut Input,
-        output: &str,
-        tool_call_results: &[ToolCallResult],
-    ) -> Result<()> {
-        input.clear_patch_text();
-        self.last_message = Some((input.clone(), output.to_string(), self.bot.is_some()));
-
-        if self.dry_run || output.is_empty() || !tool_call_results.is_empty() {
-            return Ok(());
-        }
-
-        if let Some(session) = input.session_mut(&mut self.session) {
-            session.add_message(input, output)?;
-            return Ok(());
-        }
-
-        if !self.save {
-            return Ok(());
-        }
-        let mut file = self.open_message_file()?;
-        if output.is_empty() || !self.save {
-            return Ok(());
-        }
-        let timestamp = now();
-        let summary = input.summary();
-        let input_markdown = input.render();
-        let scope = if self.bot.is_none() {
-            let role_name = if input.role().is_derived() {
-                None
-            } else {
-                Some(input.role().name())
-            };
-            match (role_name, input.rag_name()) {
-                (Some(role), Some(rag_name)) => format!(" ({role}#{rag_name})"),
-                (Some(role), _) => format!(" ({role})"),
-                (None, Some(rag_name)) => format!(" (#{rag_name})"),
-                _ => String::new(),
-            }
-        } else {
-            String::new()
-        };
-        let output = format!("# CHAT: {summary} [{timestamp}]{scope}\n{input_markdown}\n--------\n{output}\n--------\n\n",);
-        file.write_all(output.as_bytes())
-            .with_context(|| "Failed to save message")
-    }
-
-    pub fn maybe_copy(&self, text: &str) {
-        if self.auto_copy {
-            let _ = set_text(text);
-        }
-    }
-
     pub fn config_file() -> Result<PathBuf> {
         match env::var(get_env_name("config_file")) {
             Ok(value) => Ok(PathBuf::from(value)),
@@ -838,6 +784,7 @@ impl Config {
         if let Some(session) = self.session.as_mut() {
             session.set_compressing(false);
         }
+        self.last_message = None;
     }
 
     pub async fn use_rag(
@@ -1244,6 +1191,75 @@ impl Config {
         }
 
         output
+    }
+
+    pub fn before_chat_completion(&mut self, input: &Input) -> Result<()> {
+        self.last_message = Some((input.clone(), String::new(), self.bot.is_some()));
+        Ok(())
+    }
+
+    pub fn after_chat_completion(
+        &mut self,
+        input: &mut Input,
+        output: &str,
+        tool_results: &[ToolCallResult],
+    ) -> Result<()> {
+        self.last_message = Some((input.clone(), output.to_string(), self.bot.is_some()));
+        input.clear_patch_text();
+        self.save_message(input, output, tool_results)?;
+        self.maybe_copy(output);
+        Ok(())
+    }
+
+    fn save_message(
+        &mut self,
+        input: &mut Input,
+        output: &str,
+        tool_results: &[ToolCallResult],
+    ) -> Result<()> {
+        if self.dry_run || output.is_empty() || !tool_results.is_empty() {
+            return Ok(());
+        }
+
+        if let Some(session) = input.session_mut(&mut self.session) {
+            session.add_message(input, output)?;
+            return Ok(());
+        }
+
+        if !self.save {
+            return Ok(());
+        }
+        let mut file = self.open_message_file()?;
+        if output.is_empty() || !self.save {
+            return Ok(());
+        }
+        let timestamp = now();
+        let summary = input.summary();
+        let input_markdown = input.render();
+        let scope = if self.bot.is_none() {
+            let role_name = if input.role().is_derived() {
+                None
+            } else {
+                Some(input.role().name())
+            };
+            match (role_name, input.rag_name()) {
+                (Some(role), Some(rag_name)) => format!(" ({role}#{rag_name})"),
+                (Some(role), _) => format!(" ({role})"),
+                (None, Some(rag_name)) => format!(" (#{rag_name})"),
+                _ => String::new(),
+            }
+        } else {
+            String::new()
+        };
+        let output = format!("# CHAT: {summary} [{timestamp}]{scope}\n{input_markdown}\n--------\n{output}\n--------\n\n",);
+        file.write_all(output.as_bytes())
+            .with_context(|| "Failed to save message")
+    }
+
+    fn maybe_copy(&self, text: &str) {
+        if self.auto_copy {
+            let _ = set_text(text);
+        }
     }
 
     fn open_message_file(&self) -> Result<File> {
