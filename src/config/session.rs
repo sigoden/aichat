@@ -426,6 +426,10 @@ impl RoleLike for Session {
         &self.model
     }
 
+    fn model_mut(&mut self) -> &mut Model {
+        &mut self.model
+    }
+
     fn temperature(&self) -> Option<f64> {
         self.temperature
     }

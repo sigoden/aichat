@@ -476,7 +476,7 @@ impl Config {
         match key {
             "max_output_tokens" => {
                 let value = parse_value(value)?;
-                self.model.set_max_tokens(value, true);
+                self.set_max_output_tokens(value);
             }
             "temperature" => {
                 let value = parse_value(value)?;
@@ -562,6 +562,13 @@ impl Config {
             self.wrap = Some(value.into())
         }
         Ok(())
+    }
+
+    pub fn set_max_output_tokens(&mut self, value: Option<isize>) {
+        match self.role_like_mut() {
+            Some(role_like) => role_like.model_mut().set_max_tokens(value, true),
+            None => self.model.set_max_tokens(value, true),
+        };
     }
 
     pub fn set_model(&mut self, model_id: &str) -> Result<()> {

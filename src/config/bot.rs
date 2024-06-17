@@ -129,6 +129,10 @@ impl RoleLike for Bot {
         &self.model
     }
 
+    fn model_mut(&mut self) -> &mut Model {
+        &mut self.model
+    }
+
     fn temperature(&self) -> Option<f64> {
         self.config.temperature
     }
