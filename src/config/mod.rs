@@ -93,7 +93,6 @@ pub struct Config {
     pub light_theme: bool,
     pub wrap: Option<String>,
     pub wrap_code: bool,
-    pub auto_copy: bool,
     pub keybindings: Keybindings,
     pub prelude: Option<String>,
     pub repl_prelude: Option<String>,
@@ -146,7 +145,6 @@ impl Default for Config {
             light_theme: false,
             wrap: None,
             wrap_code: false,
-            auto_copy: false,
             keybindings: Default::default(),
             prelude: None,
             repl_prelude: None,
@@ -450,7 +448,6 @@ impl Config {
             ("light_theme", self.light_theme.to_string()),
             ("wrap", wrap),
             ("wrap_code", self.wrap_code.to_string()),
-            ("auto_copy", self.auto_copy.to_string()),
             ("keybindings", self.keybindings.stringify().into()),
             ("prelude", format_option_value(&self.prelude)),
             ("config_file", display_path(&Self::config_file()?)),
@@ -517,10 +514,6 @@ impl Config {
             "dry_run" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.dry_run = value;
-            }
-            "auto_copy" => {
-                let value = value.parse().with_context(|| "Invalid value")?;
-                self.auto_copy = value;
             }
             _ => bail!("Unknown key `{key}`"),
         }
@@ -1048,7 +1041,6 @@ impl Config {
                     "save_session",
                     "highlight",
                     "dry_run",
-                    "auto_copy",
                 ]
                 .into_iter()
                 .map(|v| (format!("{v} "), None))
@@ -1074,7 +1066,6 @@ impl Config {
                 }
                 "highlight" => complete_bool(self.highlight),
                 "dry_run" => complete_bool(self.dry_run),
-                "auto_copy" => complete_bool(self.auto_copy),
                 _ => vec![],
             };
             (values.into_iter().map(|v| (v, None)).collect(), args[1])
@@ -1172,9 +1163,6 @@ impl Config {
                 output.insert("wrap", wrap.clone());
             }
         }
-        if self.auto_copy {
-            output.insert("auto_copy", "true".to_string());
-        }
         if !role.is_derived() {
             output.insert("role", role.name().to_string());
         }
@@ -1232,7 +1220,6 @@ impl Config {
         input.clear_patch_text();
         self.last_message = Some((input.clone(), output.to_string(), self.bot.is_some()));
         self.save_message(input, output, tool_results)?;
-        self.maybe_copy(output);
         Ok(())
     }
 
@@ -1279,12 +1266,6 @@ impl Config {
         let output = format!("# CHAT: {summary} [{timestamp}]{scope}\n{input_markdown}\n--------\n{output}\n--------\n\n",);
         file.write_all(output.as_bytes())
             .with_context(|| "Failed to save message")
-    }
-
-    fn maybe_copy(&self, text: &str) {
-        if self.auto_copy {
-            let _ = set_text(text);
-        }
     }
 
     fn open_message_file(&self) -> Result<File> {
