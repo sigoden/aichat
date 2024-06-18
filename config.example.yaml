@@ -137,6 +137,10 @@ clients:
   - type: cohere
     api_key: xxx                                      # ENV: {client}_API_KEY
 
+  # See https://docs.reka.ai/quick-start
+  - type: reka
+    api_key: xxx                                      # ENV: {client}_API_KEY
+
   # See https://docs.perplexity.ai/docs/getting-started
   - type: openai-compatible
     name: perplexity
@@ -236,6 +240,11 @@ clients:
   # See https://open.bigmodel.cn/dev/howuse/introduction
   - type: openai-compatible
     name: zhipuai
+    api_key: xxx                                      # ENV: {client}_API_KEY
+
+  # See https://platform.lingyiwanwu.com/docs
+  - type: openai-compatible
+    name: lingyiwanwu
     api_key: xxx                                      # ENV: {client}_API_KEY
 
   # See https://docs.endpoints.anyscale.com/

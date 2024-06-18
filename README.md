@@ -31,6 +31,7 @@ AIChat is an all-in-one AI CLI tool featuring chat REPL, RAG, function calling, 
 - Claude: Claude-3 (vision, paid, function-calling)
 - Mistral (paid, embedding, function-calling)
 - Cohere: Command-R/Command-R+ (paid, embedding, function-calling)
+- Reka (paid, vision)
 - Perplexity: Llama-3/Mixtral (paid)
 - Groq: Llama-3/Mixtral/Gemma (free)
 - Ollama (free, local, embedding)
@@ -43,8 +44,9 @@ AIChat is an all-in-one AI CLI tool featuring chat REPL, RAG, function calling, 
 - Ernie (paid)
 - Qianwen (paid, vision, embedding)
 - Moonshot (paid)
-- ZhipuAI: GLM-3.5/GLM-4 (paid, vision)
 - Deepseek (paid)
+- ZhipuAI: GLM-3.5/GLM-4 (paid, vision)
+- LingYiWanWu (paid)
 - Other openAI-compatible platforms
 
 ## Install
