@@ -112,7 +112,7 @@ clients:
     api_key: xxx                                      # ENV: {client}_API_KEY
     patches:
       '.*':                                           
-        chat_completions_body:                        # Override safetySettings for all models
+        chat_completions_body:
           safetySettings:
             - category: HARM_CATEGORY_HARASSMENT
               threshold: BLOCK_NONE
@@ -178,7 +178,7 @@ clients:
     adc_file: <path-to/gcloud/application_default_credentials.json> 
     patches:
       'gemini-.*':
-        chat_completions_body:                        # Override safetySettings for all gemini models
+        chat_completions_body:
           safetySettings:
             - category: HARM_CATEGORY_HARASSMENT
               threshold: BLOCK_ONLY_HIGH
