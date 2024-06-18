@@ -199,6 +199,28 @@
       default_chunk_size: 1000
       max_concurrent_chunks: 96
 
+- platform: reka
+  docs:
+    # - https://www.reka.ai/ourmodels
+    # - https://www.reka.ai/reka-deploy
+    # - https://docs.reka.ai/api-reference/chat/create
+  models:
+    - name: reka-core
+      max_input_tokens: 128000
+      input_price: 10
+      output_price: 25
+      supports_vision: true
+    - name: reka-flash
+      max_input_tokens: 128000
+      input_price: 0.8
+      output_price: 2
+      supports_vision: true
+    - name: reka-edge
+      max_input_tokens: 128000
+      input_price: 0.4
+      output_price: 1
+      supports_vision: true
+
 - platform: perplexity
   # docs:
   #   - https://docs.perplexity.ai/docs/model-cards

@@ -229,6 +229,27 @@ models-cohere() {
 
 }
 
+# @cmd Chat with reka api
+# @env REKA_API_KEY!
+# @option -m --model=reka-flash $REKA_MODEL
+# @flag -S --no-stream
+# @arg text~
+chat-reka() {
+    _wrapper curl -i https://api.reka.ai/v1/chat \
+-X POST \
+-H 'Content-Type: application/json' \
+-H "X-Api-Key: $REKA_API_KEY" \
+-d "$(_build_body reka "$@")"
+}
+
+# @cmd List reka models
+# @env REKA_API_KEY!
+models-reka() {
+    _wrapper curl https://api.reka.ai/v1/models \
+-H "X-Api-Key: $REKA_API_KEY" \
+
+}
+
 # @cmd Chat with ollama api
 # @option -m --model=codegemma $OLLAMA_MODEL
 # @flag -S --no-stream
@@ -470,6 +491,18 @@ _build_body() {
             echo '{
   "model": "'$argc_model'",
   "message": "'"$*"'",
+  "stream": '$stream'
+}'
+            ;;
+        reka)
+            echo '{
+  "model": "'$argc_model'",
+  "messages": [
+        {
+            "role": "user",
+            "content": "'"$*"'"
+        }
+  ],
   "stream": '$stream'
 }'
             ;;
