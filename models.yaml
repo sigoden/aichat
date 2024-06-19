@@ -62,6 +62,11 @@
       max_input_tokens: 8191
       default_chunk_size: 4000
       max_concurrent_chunks: 100
+    - name: text-embedding-ada-002
+      mode: embedding
+      max_input_tokens: 8191
+      default_chunk_size: 4000
+      max_concurrent_chunks: 100
 
 - platform: gemini 
   # docs:
@@ -609,6 +614,10 @@
       input_price: 7
       output_price: 7
       supports_vision: true
+    - name: embedding-2
+      mode: embedding
+      max_input_tokens: 2048
+      default_chunk_size: 2000
 
 - platform: lingyiwanwu
   # docs:

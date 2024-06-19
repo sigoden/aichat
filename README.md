@@ -362,6 +362,7 @@ The author mainly focused on writing and programming growing up ...
 .set temperature 1.2
 .set top_p 0.8
 .set rag_top_k 4
+.set rag_minimum_score 0
 .set function_calling true
 .set compress_threshold 1000
 .set dry_run true

@@ -241,8 +241,7 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
 pub fn openai_build_embeddings_body(data: EmbeddingsData, model: &Model) -> Value {
     json!({
         "input": data.texts,
-        "model": model.name(),
-        "encoding_format": "float",
+        "model": model.name()
     })
 }
 
