@@ -169,8 +169,13 @@ impl Input {
         if !self.text.is_empty() {
             let rag = self.config.read().rag.clone();
             if let Some(rag) = rag {
-                let top_k = self.config.read().rag_top_k;
-                let embeddings = rag.search(&self.text, top_k, abort_signal).await?;
+                let (top_k, minimum_score) = {
+                    let config = self.config.read();
+                    (config.rag_top_k, config.rag_minimum_score)
+                };
+                let embeddings = rag
+                    .search(&self.text, top_k, minimum_score, abort_signal)
+                    .await?;
                 let text = self.config.read().rag_template(&embeddings, &self.text);
                 self.patched_text = Some(text);
                 self.rag_name = Some(rag.name().to_string());

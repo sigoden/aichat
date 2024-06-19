@@ -39,8 +39,10 @@ rag_embedding_model: null
 rag_chunk_size: null
 # Specifies the chunk overlap
 rag_chunk_overlap: null
-# Determines how many relevant documents are retrieved
+# Specifies the number of documents to retrieve
 rag_top_k: 4
+# Specifies the minimum relevance score for retrieved documents
+rag_minimum_score: 0
 
 # Defines the query structure using variables like __CONTEXT__ and __INPUT__ to tailor searches to specific needs
 rag_template: |

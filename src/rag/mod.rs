@@ -20,8 +20,6 @@ use std::fmt::Debug;
 use std::{io::BufReader, path::Path};
 use tokio::sync::mpsc;
 
-pub const SIMILARITY_THRESHOLD: f32 = 0.25;
-
 pub struct Rag {
     client: Box<dyn Client>,
     name: String,
@@ -176,6 +174,7 @@ impl Rag {
             "path": self.path,
             "model": self.model.id(),
             "chunk_size": self.data.chunk_size,
+            "chunk_overlap": self.data.chunk_overlap,
             "files": files,
         });
         let output = serde_yaml::to_string(&data)
@@ -195,11 +194,12 @@ impl Rag {
         &self,
         text: &str,
         top_k: usize,
+        minimum_score: f32,
         abort_signal: AbortSignal,
     ) -> Result<String> {
         let (stop_spinner_tx, _) = run_spinner("Searching").await;
         let ret = tokio::select! {
-            ret = self.search_impl(text, top_k) => {
+            ret = self.search_impl(text, top_k, minimum_score) => {
                 ret
             }
             _ = watch_abort_signal(abort_signal) => {
@@ -273,7 +273,7 @@ impl Rag {
         for (file_index, file) in rag_files.iter().enumerate() {
             for (document_index, document) in file.documents.iter().enumerate() {
                 vector_ids.push(combine_vector_id(file_index, document_index));
-                texts.push(document_text(&file.path, document))
+                texts.push(document.page_content.clone())
             }
         }
 
@@ -289,7 +289,12 @@ impl Rag {
         Ok(())
     }
 
-    async fn search_impl(&self, text: &str, top_k: usize) -> Result<Vec<String>> {
+    async fn search_impl(
+        &self,
+        text: &str,
+        top_k: usize,
+        minimum_score: f32,
+    ) -> Result<Vec<String>> {
         let splitter = RecursiveCharacterTextSplitter::new(
             self.data.chunk_size,
             self.data.chunk_overlap,
@@ -305,13 +310,13 @@ impl Rag {
             .flat_map(|list| {
                 list.into_iter()
                     .filter_map(|v| {
-                        if v.distance < SIMILARITY_THRESHOLD {
+                        if v.distance < minimum_score {
                             return None;
                         }
                         let (file_index, document_index) = split_vector_id(v.d_id);
                         let file = self.data.files.get(file_index)?;
                         let document = file.documents.get(document_index)?;
-                        Some(document_text(&file.path, document))
+                        Some(document.page_content.clone())
                     })
                     .collect::<Vec<_>>()
             })
@@ -439,14 +444,6 @@ pub fn split_vector_id(value: VectorID) -> (usize, usize) {
     let low = value & low_mask;
     let high = value >> (usize::BITS / 2);
     (high, low)
-}
-
-fn document_text(file_path: &str, document: &RagDocument) -> String {
-    format!(
-        "file_path: {}\n\n{}",
-        shell_words::quote(file_path),
-        document.page_content
-    )
 }
 
 fn select_embedding_model(models: &[&Model]) -> Result<String> {
