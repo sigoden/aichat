@@ -108,6 +108,14 @@
   # notes:
   #   - get max_output_tokens info from models doc
   models:
+    - name: claude-3-5-sonnet-20240620
+      max_input_tokens: 200000
+      max_output_tokens: 4096
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
     - name: claude-3-opus-20240229
       max_input_tokens: 200000
       max_output_tokens: 4096
@@ -334,6 +342,14 @@
   #   - get max_output_tokens info from models doc
   #   - claude models have not been tested
   models:
+    - name: claude-3-5-sonnet@20240620
+      max_input_tokens: 200000
+      max_output_tokens: 4096
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
     - name: claude-3-opus@20240229
       max_input_tokens: 200000
       max_output_tokens: 4096
@@ -367,6 +383,14 @@
   #   - get max_output_tokens info from playground
   #   - claude/llama models have not been tested
   models:
+    - name: anthropic.claude-3-5-sonnet-20240620-v1:0
+      max_input_tokens: 200000
+      max_output_tokens: 4096
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
     - name: anthropic.claude-3-opus-20240229-v1:0
       max_input_tokens: 200000
       max_output_tokens: 4096
