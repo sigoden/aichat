@@ -1,6 +1,7 @@
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::f64;
+use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug, Clone)]
 pub struct BM25Options {
@@ -147,12 +148,34 @@ impl<T: Clone> BM25<T> {
 }
 
 fn tokenize(text: &str) -> Vec<String> {
-    text.split(' ').map(|v| v.to_string()).collect()
+    text.unicode_words()
+        .filter_map(|v| {
+            if [
+                "a", "an", "and", "are", "as", "at", "be", "but", "by", "for", "if", "in", "into",
+                "is", "it", "no", "not", "of", "on", "or", "such", "that", "the", "their", "then",
+                "there", "these", "they", "this", "to", "was", "will", "with",
+            ]
+            .contains(&v)
+            {
+                None
+            } else {
+                Some(v.to_string())
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_tokenize() {
+        assert_eq!(
+            tokenize("a quick fox jumps over the lazy dog"),
+            vec!["quick", "fox", "jumps", "over", "lazy", "dog"]
+        );
+    }
 
     #[test]
     fn test_bm25() {

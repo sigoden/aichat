@@ -169,12 +169,12 @@ impl Input {
         if !self.text.is_empty() {
             let rag = self.config.read().rag.clone();
             if let Some(rag) = rag {
-                let (top_k, min_score_vector_search, min_score_fulltext_search) = {
+                let (top_k, min_score_vector_search, min_score_keyword_search) = {
                     let config = self.config.read();
                     (
                         config.rag_top_k,
                         config.rag_min_score_vector_search,
-                        config.rag_min_score_fulltext_search,
+                        config.rag_min_score_keyword_search,
                     )
                 };
                 let rerank = match self.config.read().rag_rerank_model.clone() {
@@ -192,7 +192,7 @@ impl Input {
                         &self.text,
                         top_k,
                         min_score_vector_search,
-                        min_score_fulltext_search,
+                        min_score_keyword_search,
                         rerank,
                         abort_signal,
                     )
