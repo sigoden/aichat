@@ -43,10 +43,10 @@ rag_chunk_size: null
 rag_chunk_overlap: null
 # Specifies the number of documents to retrieve
 rag_top_k: 4
-# Specifies the minimum relevance score for vector searching
+# Specifies the minimum relevance score for vector-based searching
 rag_min_score_vector_search: 0
-# Specifies the minimum relevance score for full-text searching
-rag_min_score_fulltext_search: 0
+# Specifies the minimum relevance score for keyword-based searching
+rag_min_score_keyword_search: 0
 # Specifies the minimum relevance score for reranking
 rag_min_score_rerank: 0
 
