@@ -43,11 +43,7 @@ impl RekaClient {
     }
 }
 
-impl_client_trait!(
-    RekaClient,
-    chat_completions,
-    chat_completions_streaming
-);
+impl_client_trait!(RekaClient, chat_completions, chat_completions_streaming);
 
 async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
@@ -113,7 +109,9 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Valu
 }
 
 fn extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
-    let text = data["responses"][0]["message"]["content"].as_str().ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
+    let text = data["responses"][0]["message"]["content"]
+        .as_str()
+        .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
 
     let output = ChatCompletionsOutput {
         text: text.to_string(),

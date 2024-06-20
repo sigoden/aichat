@@ -185,7 +185,7 @@ async fn embeddings(builder: RequestBuilder) -> Result<EmbeddingsOutput> {
         catch_error(&data, status.as_u16())?;
     }
     let res_body: EmbeddingsResBody =
-        serde_json::from_value(data).context("Invalid request data")?;
+        serde_json::from_value(data).context("Invalid embeddings data")?;
     let output = res_body
         .predictions
         .into_iter()
