@@ -77,6 +77,7 @@ dependencies = [
  "path-absolutize",
  "pretty_assertions",
  "rand",
+ "rayon",
  "reedline",
  "reqwest",
  "reqwest-eventsource",

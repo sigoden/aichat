@@ -41,8 +41,10 @@ rag_chunk_size: null
 rag_chunk_overlap: null
 # Specifies the number of documents to retrieve
 rag_top_k: 4
-# Specifies the minimum relevance score for retrieved documents
-rag_minimum_score: 0
+# Specifies the minimum relevance score for vector search
+rag_min_score_vector: 0
+# Specifies the minimum relevance score for full-text search
+rag_min_score_text: 0
 
 # Defines the query structure using variables like __CONTEXT__ and __INPUT__ to tailor searches to specific needs
 rag_template: |

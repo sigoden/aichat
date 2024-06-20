@@ -1,5 +1,6 @@
 use anyhow::Result;
 use crossterm::{cursor, queue, style, terminal};
+use is_terminal::IsTerminal;
 use std::{
     io::{stdout, Stdout, Write},
     time::Duration,
@@ -76,6 +77,7 @@ async fn run_spinner_inner(
     mut message_rx: mpsc::UnboundedReceiver<String>,
 ) -> Result<()> {
     let mut writer = stdout();
+    let is_stdout_terminal = stdout().is_terminal();
     let mut spinner = Spinner::new(&message);
     let mut interval = interval(Duration::from_millis(50));
     tokio::select! {
@@ -83,7 +85,9 @@ async fn run_spinner_inner(
             loop {
                 tokio::select! {
                     _ = interval.tick() => {
-                        let _ = spinner.step(&mut writer);
+                        if is_stdout_terminal {
+                            let _ = spinner.step(&mut writer);
+                        }
                     }
                     message = message_rx.recv() => {
                         if let Some(message) = message {
@@ -94,7 +98,9 @@ async fn run_spinner_inner(
             }
         } => {}
         _ = stop_rx => {
-            spinner.stop(&mut writer)?;
+            if is_stdout_terminal {
+                spinner.stop(&mut writer)?;
+            }
         }
     }
     Ok(())
