@@ -9,8 +9,8 @@ pub use self::role::{Role, RoleLike, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE};
 use self::session::Session;
 
 use crate::client::{
-    create_client_config, list_chat_models, list_client_types, ClientConfig, Model,
-    OPENAI_COMPATIBLE_PLATFORMS,
+    create_client_config, list_chat_models, list_client_types, list_rerank_models, ClientConfig,
+    Model, OPENAI_COMPATIBLE_PLATFORMS,
 };
 use crate::function::{FunctionDeclaration, Functions, FunctionsFilter, ToolResult};
 use crate::rag::Rag;
@@ -102,11 +102,13 @@ pub struct Config {
     pub bot_prelude: Option<String>,
     pub bots: Vec<BotConfig>,
     pub rag_embedding_model: Option<String>,
+    pub rag_rerank_model: Option<String>,
     pub rag_chunk_size: Option<usize>,
     pub rag_chunk_overlap: Option<usize>,
     pub rag_top_k: usize,
-    pub rag_min_score_vector: f32,
-    pub rag_min_score_text: f32,
+    pub rag_min_score_vector_search: f32,
+    pub rag_min_score_fulltext_search: f32,
+    pub rag_min_score_rerank: f32,
     pub rag_template: Option<String>,
     pub compress_threshold: usize,
     pub summarize_prompt: Option<String>,
@@ -156,11 +158,13 @@ impl Default for Config {
             bot_prelude: None,
             bots: vec![],
             rag_embedding_model: None,
+            rag_rerank_model: None,
             rag_chunk_size: None,
             rag_chunk_overlap: None,
             rag_top_k: 4,
-            rag_min_score_vector: 0.0,
-            rag_min_score_text: 0.0,
+            rag_min_score_vector_search: 0.0,
+            rag_min_score_fulltext_search: 0.0,
+            rag_min_score_rerank: 0.0,
             rag_template: None,
             compress_threshold: 4000,
             summarize_prompt: None,
@@ -442,6 +446,10 @@ impl Config {
             ),
             ("temperature", format_option_value(&role.temperature())),
             ("top_p", format_option_value(&role.top_p())),
+            (
+                "rag_rerank_model",
+                format_option_value(&self.rag_rerank_model),
+            ),
             ("rag_top_k", self.rag_top_k.to_string()),
             ("function_calling", self.function_calling.to_string()),
             ("compress_threshold", self.compress_threshold.to_string()),
@@ -489,6 +497,13 @@ impl Config {
             "top_p" => {
                 let value = parse_value(value)?;
                 self.set_top_p(value);
+            }
+            "rag_rerank_model" => {
+                self.rag_rerank_model = if value == "null" {
+                    None
+                } else {
+                    Some(value.to_string())
+                }
             }
             "rag_top_k" => {
                 if let Some(value) = parse_value(value)? {
@@ -1052,6 +1067,7 @@ impl Config {
                     "max_output_tokens",
                     "temperature",
                     "top_p",
+                    "rag_rerank_model",
                     "rag_top_k",
                     "function_calling",
                     "compress_threshold",
@@ -1072,6 +1088,7 @@ impl Config {
                     Some(v) => vec![v.to_string()],
                     None => vec![],
                 },
+                "rag_rerank_model" => list_rerank_models(self).iter().map(|v| v.id()).collect(),
                 "function_calling" => complete_bool(self.function_calling),
                 "save" => complete_bool(self.save),
                 "save_session" => {

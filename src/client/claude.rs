@@ -38,8 +38,7 @@ impl ClaudeClient {
         debug!("Claude Request: {url} {body}");
 
         let mut builder = client.post(url).json(&body);
-        builder = builder
-            .header("anthropic-version", "2023-06-01");
+        builder = builder.header("anthropic-version", "2023-06-01");
         if let Some(api_key) = api_key {
             builder = builder.header("x-api-key", api_key)
         }

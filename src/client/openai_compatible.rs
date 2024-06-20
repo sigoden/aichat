@@ -1,3 +1,4 @@
+use super::cohere::*;
 use super::openai::*;
 use super::*;
 
@@ -68,7 +69,7 @@ impl OpenAICompatibleClient {
         client: &ReqwestClient,
         data: EmbeddingsData,
     ) -> Result<RequestBuilder> {
-        let api_key = self.get_api_key()?;
+        let api_key = self.get_api_key().ok();
         let api_base = self.get_api_base_ext()?;
 
         let body = openai_build_embeddings_body(data, &self.model);
@@ -77,7 +78,28 @@ impl OpenAICompatibleClient {
 
         debug!("OpenAICompatible Embeddings Request: {url} {body}");
 
-        let builder = client.post(url).bearer_auth(api_key).json(&body);
+        let mut builder = client.post(url).json(&body);
+        if let Some(api_key) = api_key {
+            builder = builder.bearer_auth(api_key);
+        }
+
+        Ok(builder)
+    }
+
+    fn rerank_builder(&self, client: &ReqwestClient, data: RerankData) -> Result<RequestBuilder> {
+        let api_key = self.get_api_key().ok();
+        let api_base = self.get_api_base_ext()?;
+
+        let body = cohere_build_rerank_body(data, &self.model);
+
+        let url = format!("{api_base}/rerank");
+
+        debug!("OpenAICompatible Rerank Request: {url} {body}");
+
+        let mut builder = client.post(url).json(&body);
+        if let Some(api_key) = api_key {
+            builder = builder.bearer_auth(api_key);
+        }
 
         Ok(builder)
     }
@@ -108,5 +130,6 @@ impl_client_trait!(
     OpenAICompatibleClient,
     openai_chat_completions,
     openai_chat_completions_streaming,
-    openai_embeddings
+    openai_embeddings,
+    cohere_rerank
 );

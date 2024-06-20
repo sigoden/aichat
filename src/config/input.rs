@@ -169,20 +169,31 @@ impl Input {
         if !self.text.is_empty() {
             let rag = self.config.read().rag.clone();
             if let Some(rag) = rag {
-                let (top_k, min_score_vector, min_score_text) = {
+                let (top_k, min_score_vector_search, min_score_fulltext_search) = {
                     let config = self.config.read();
                     (
                         config.rag_top_k,
-                        config.rag_min_score_vector,
-                        config.rag_min_score_text,
+                        config.rag_min_score_vector_search,
+                        config.rag_min_score_fulltext_search,
                     )
+                };
+                let rerank = match self.config.read().rag_rerank_model.clone() {
+                    Some(rerank_model_id) => {
+                        let min_score = self.config.read().rag_min_score_rerank;
+                        let rerank_model =
+                            Model::retrieve_rerank(&self.config.read(), &rerank_model_id)?;
+                        let rerank_client = init_client(&self.config, Some(rerank_model))?;
+                        Some((rerank_client, min_score))
+                    }
+                    None => None,
                 };
                 let embeddings = rag
                     .search(
                         &self.text,
                         top_k,
-                        min_score_vector,
-                        min_score_text,
+                        min_score_vector_search,
+                        min_score_fulltext_search,
+                        rerank,
                         abort_signal,
                     )
                     .await?;

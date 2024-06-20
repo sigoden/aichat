@@ -326,7 +326,7 @@ async fn embeddings(builder: RequestBuilder) -> Result<EmbeddingsOutput> {
     let data: Value = builder.send().await?.json().await?;
     maybe_catch_error(&data)?;
     let res_body: EmbeddingsResBody =
-        serde_json::from_value(data).context("Invalid request data")?;
+        serde_json::from_value(data).context("Invalid embeddings data")?;
     let output = res_body
         .output
         .embeddings
