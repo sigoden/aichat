@@ -1,3 +1,4 @@
+use self::bm25::*;
 use self::loader::*;
 use self::splitter::*;
 
@@ -5,6 +6,7 @@ use crate::client::*;
 use crate::config::*;
 use crate::utils::*;
 
+mod bm25;
 mod loader;
 mod splitter;
 
@@ -16,8 +18,7 @@ use inquire::{required, validator::Validation, Select, Text};
 use path_absolutize::Absolutize;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::fmt::Debug;
-use std::{io::BufReader, path::Path};
+use std::{collections::HashMap, fmt::Debug, io::BufReader, path::Path};
 use tokio::sync::mpsc;
 
 pub struct Rag {
@@ -26,6 +27,7 @@ pub struct Rag {
     path: String,
     model: Model,
     hnsw: Hnsw<'static, f32, DistCosine>,
+    bm25: BM25<VectorID>,
     data: RagData,
 }
 
@@ -85,6 +87,7 @@ impl Rag {
 
     pub fn create(config: &GlobalConfig, name: &str, path: &Path, data: RagData) -> Result<Self> {
         let hnsw = data.build_hnsw();
+        let bm25 = data.build_bm25();
         let model = Model::retrieve_embedding(&config.read(), &data.model)?;
         let client = init_client(config, Some(model.clone()))?;
         let rag = Rag {
@@ -94,6 +97,7 @@ impl Rag {
             data,
             model,
             hnsw,
+            bm25,
         };
         Ok(rag)
     }
@@ -194,12 +198,13 @@ impl Rag {
         &self,
         text: &str,
         top_k: usize,
-        minimum_score: f32,
+        min_score_vector: f32,
+        min_score_text: f32,
         abort_signal: AbortSignal,
     ) -> Result<String> {
         let (stop_spinner_tx, _) = run_spinner("Searching").await;
         let ret = tokio::select! {
-            ret = self.search_impl(text, top_k, minimum_score) => {
+            ret = self.hybird_search(text, top_k, min_score_vector, min_score_text) => {
                 ret
             }
             _ = watch_abort_signal(abort_signal) => {
@@ -289,18 +294,44 @@ impl Rag {
         Ok(())
     }
 
-    async fn search_impl(
+    async fn hybird_search(
         &self,
-        text: &str,
+        query: &str,
         top_k: usize,
-        minimum_score: f32,
+        min_score_vector: f32,
+        min_score_text: f32,
     ) -> Result<Vec<String>> {
+        let (vector_search_result, text_search_result) = tokio::join!(
+            self.vector_search(query, top_k, min_score_vector),
+            self.text_search(query, top_k, min_score_text)
+        );
+        let vector_search_ids = vector_search_result?;
+        let text_search_ids = text_search_result?;
+        let ids = reciprocal_rank_fusion(vector_search_ids, text_search_ids, 1.0, 1.0, top_k);
+        let output: Vec<_> = ids
+            .into_iter()
+            .filter_map(|id| {
+                let (file_index, document_index) = split_vector_id(id);
+                let file = self.data.files.get(file_index)?;
+                let document = file.documents.get(document_index)?;
+                Some(document.page_content.clone())
+            })
+            .collect();
+        Ok(output)
+    }
+
+    async fn vector_search(
+        &self,
+        query: &str,
+        top_k: usize,
+        min_score: f32,
+    ) -> Result<Vec<VectorID>> {
         let splitter = RecursiveCharacterTextSplitter::new(
             self.data.chunk_size,
             self.data.chunk_overlap,
             &DEFAULT_SEPARATES,
         );
-        let texts = splitter.split_text(text);
+        let texts = splitter.split_text(query);
         let embeddings_data = EmbeddingsData::new(texts, true);
         let embeddings = self.create_embeddings(embeddings_data, None).await?;
         let output = self
@@ -310,17 +341,24 @@ impl Rag {
             .flat_map(|list| {
                 list.into_iter()
                     .filter_map(|v| {
-                        if v.distance < minimum_score {
+                        if v.distance < min_score {
                             return None;
                         }
-                        let (file_index, document_index) = split_vector_id(v.d_id);
-                        let file = self.data.files.get(file_index)?;
-                        let document = file.documents.get(document_index)?;
-                        Some(document.page_content.clone())
+                        Some(v.d_id)
                     })
                     .collect::<Vec<_>>()
             })
             .collect();
+        Ok(output)
+    }
+
+    async fn text_search(
+        &self,
+        query: &str,
+        top_k: usize,
+        min_score: f32,
+    ) -> Result<Vec<VectorID>> {
+        let output = self.bm25.search(query, top_k, Some(min_score as f64));
         Ok(output)
     }
 
@@ -392,6 +430,17 @@ impl RagData {
         let list: Vec<_> = self.vectors.iter().map(|(k, v)| (v, *k)).collect();
         hnsw.parallel_insert(&list);
         hnsw
+    }
+
+    pub fn build_bm25(&self) -> BM25<VectorID> {
+        let mut corpus = vec![];
+        for (file_index, file) in self.files.iter().enumerate() {
+            for (document_index, document) in file.documents.iter().enumerate() {
+                let id = combine_vector_id(file_index, document_index);
+                corpus.push((id, document.page_content.clone()));
+            }
+        }
+        BM25::new(corpus, BM25Options::default())
     }
 }
 
@@ -501,4 +550,30 @@ fn progress(spinner_message_tx: &Option<mpsc::UnboundedSender<String>>, message:
     if let Some(tx) = spinner_message_tx {
         let _ = tx.send(message);
     }
+}
+
+fn reciprocal_rank_fusion(
+    vector_search_ids: Vec<VectorID>,
+    text_search_ids: Vec<VectorID>,
+    vector_search_weight: f32,
+    text_search_weight: f32,
+    top_k: usize,
+) -> Vec<VectorID> {
+    let rrf_k = top_k * 2;
+    let mut map: HashMap<VectorID, f32> = HashMap::new();
+    for (index, &item) in vector_search_ids.iter().enumerate() {
+        *map.entry(item).or_default() +=
+            (1.0 / ((rrf_k + index + 1) as f32)) * vector_search_weight;
+    }
+    for (index, &item) in text_search_ids.iter().enumerate() {
+        *map.entry(item).or_default() += (1.0 / ((rrf_k + index + 1) as f32)) * text_search_weight;
+    }
+    let mut sorted_items: Vec<(VectorID, f32)> = map.into_iter().collect();
+    sorted_items.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+
+    sorted_items
+        .into_iter()
+        .take(top_k)
+        .map(|(v, _)| v)
+        .collect()
 }

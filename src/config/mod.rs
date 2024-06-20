@@ -105,7 +105,8 @@ pub struct Config {
     pub rag_chunk_size: Option<usize>,
     pub rag_chunk_overlap: Option<usize>,
     pub rag_top_k: usize,
-    pub rag_minimum_score: f32,
+    pub rag_min_score_vector: f32,
+    pub rag_min_score_text: f32,
     pub rag_template: Option<String>,
     pub compress_threshold: usize,
     pub summarize_prompt: Option<String>,
@@ -158,7 +159,8 @@ impl Default for Config {
             rag_chunk_size: None,
             rag_chunk_overlap: None,
             rag_top_k: 4,
-            rag_minimum_score: 0.0,
+            rag_min_score_vector: 0.0,
+            rag_min_score_text: 0.0,
             rag_template: None,
             compress_threshold: 4000,
             summarize_prompt: None,
@@ -441,7 +443,6 @@ impl Config {
             ("temperature", format_option_value(&role.temperature())),
             ("top_p", format_option_value(&role.top_p())),
             ("rag_top_k", self.rag_top_k.to_string()),
-            ("rag_minimum_score", self.rag_minimum_score.to_string()),
             ("function_calling", self.function_calling.to_string()),
             ("compress_threshold", self.compress_threshold.to_string()),
             ("dry_run", self.dry_run.to_string()),
@@ -492,11 +493,6 @@ impl Config {
             "rag_top_k" => {
                 if let Some(value) = parse_value(value)? {
                     self.rag_top_k = value;
-                }
-            }
-            "rag_minimum_score" => {
-                if let Some(value) = parse_value(value)? {
-                    self.rag_minimum_score = value;
                 }
             }
             "function_calling" => {
@@ -1057,7 +1053,6 @@ impl Config {
                     "temperature",
                     "top_p",
                     "rag_top_k",
-                    "rag_minimum_score",
                     "function_calling",
                     "compress_threshold",
                     "save",
