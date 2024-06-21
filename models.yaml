@@ -77,6 +77,7 @@
       mode: embedding
       max_input_tokens: 2048
       default_chunk_size: 1500
+      max_concurrent_chunks: 5
 
 - platform: claude
   # docs:
@@ -455,6 +456,16 @@
       require_max_tokens: true
       input_price: 0
       output_price: 0
+    - name: '@cf/baai/bge-base-en-v1.5'
+      mode: embedding
+      max_input_tokens: 512
+      default_chunk_size: 1000
+      max_concurrent_chunks: 100
+    - name: '@cf/baai/bge-large-en-v1.5'
+      mode: embedding
+      max_input_tokens: 512
+      default_chunk_size: 1000
+      max_concurrent_chunks: 100
 
 - platform: replicate
   # docs:
@@ -567,7 +578,7 @@
       mode: embedding
       max_input_tokens: 2048
       default_chunk_size: 1500
-      max_concurrent_chunks: 5
+      max_concurrent_chunks: 25
 
 - platform: moonshot
   # docs:
@@ -710,10 +721,12 @@
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 30
     - name: thenlper/gte-large
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 30
 
 - platform: deepinfra
   # docs:
@@ -760,42 +773,52 @@
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
     - name: BAAI/bge-base-en-v1.5
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
     - name: BAAI/bge-m3
       mode: embedding
       max_input_tokens: 8192
       default_chunk_size: 2000
+      max_concurrent_chunks: 100
     - name: intfloat/e5-base-v2
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
     - name: intfloat/e5-large-v2
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
     - name: intfloat/multilingual-e5-large
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
     - name: sentence-transformers/all-MiniLM-L6-v2
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
     - name: sentence-transformers/paraphrase-MiniLM-L6-v2
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
     - name: thenlper/gte-base
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
     - name: thenlper/gte-large
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
 
 - platform: fireworks
   # docs:
@@ -853,18 +876,22 @@
       mode: embedding
       max_input_tokens: 8192
       default_chunk_size: 1500
+      max_concurrent_chunks: 100
     - name: WhereIsAI/UAE-Large-V1
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
     - name: thenlper/gte-large
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
     - name: thenlper/gte-base
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
 
 - platform: openrouter
   # docs:
@@ -1045,6 +1072,7 @@
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
 
 - platform: together
   # docs:
@@ -1080,27 +1108,19 @@
       max_input_tokens: 32768
       input_price: 0.9
       output_price: 0.9
-    - name: togethercomputer/m2-bert-80M-2k-retrieval
-      mode: embedding
-      max_input_tokens: 2048
-      default_chunk_size: 1500
-    - name: togethercomputer/m2-bert-80M-8k-retrieval
-      mode: embedding
-      max_input_tokens: 8192
-      default_chunk_size: 1500
-    - name: togethercomputer/m2-bert-80M-32k-retrieval
-      mode: embedding
-      max_input_tokens: 8192
-      default_chunk_size: 1500
+      max_concurrent_chunks: 100
     - name: WhereIsAI/UAE-Large-V1
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
     - name: BAAI/bge-large-en-v1.5
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
     - name: BAAI/bge-base-en-v1.5
       mode: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
+      max_concurrent_chunks: 100
