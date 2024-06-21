@@ -1445,6 +1445,9 @@ impl WorkingMode {
     pub fn is_repl(&self) -> bool {
         *self == WorkingMode::Repl
     }
+    pub fn is_serve(&self) -> bool {
+        *self == WorkingMode::Serve
+    }
 }
 
 bitflags::bitflags! {

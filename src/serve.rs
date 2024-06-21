@@ -49,6 +49,7 @@ pub async fn run(config: GlobalConfig, addr: Option<String>) -> Result<()> {
     let listener = TcpListener::bind(&addr).await?;
     let stop_server = server.run(listener).await?;
     println!("Chat Completions API: http://{addr}/v1/chat/completions");
+    println!("Embeddings API:       http://{addr}/v1/embeddings");
     println!("LLM Playground:       http://{addr}/playground");
     println!("LLM Arena:            http://{addr}/arena");
     shutdown_signal().await;
@@ -69,7 +70,7 @@ impl Server {
         let clients = config.clients.clone();
         let model = config.model.clone();
         let roles = config.roles.clone();
-        let mut models = list_chat_models(&config);
+        let mut models = list_models(&config);
         let mut default_model = model.clone();
         default_model.data_mut().name = DEFAULT_MODEL_NAME.into();
         models.insert(0, &default_model);
@@ -82,26 +83,14 @@ impl Server {
                 } else {
                     model.id()
                 };
-                let ModelData {
-                    max_input_tokens,
-                    max_output_tokens,
-                    require_max_tokens,
-                    input_price,
-                    output_price,
-                    supports_vision,
-                    supports_function_calling,
-                    ..
-                } = model.data();
-                json!({
-                    "id": id,
-                    "max_input_tokens": max_input_tokens,
-                    "max_output_tokens": max_output_tokens,
-                    "require_max_tokens": require_max_tokens,
-                    "input_price": input_price,
-                    "output_price": output_price,
-                    "supports_vision": supports_vision,
-                    "supports_function_calling": supports_function_calling,
-                })
+                let mut value = json!(model.data());
+                if let Some(value_obj) = value.as_object_mut() {
+                    value_obj.insert("id".into(), id.into());
+                    value_obj.insert("object".into(), "model".into());
+                    value_obj.insert("owned_by".into(), model.client_name().into());
+                    value_obj.remove("name");
+                }
+                value
             })
             .collect();
         Self {
@@ -161,7 +150,9 @@ impl Server {
 
         let mut status = StatusCode::OK;
         let res = if path == "/v1/chat/completions" {
-            self.chat_completion(req).await
+            self.chat_completions(req).await
+        } else if path == "/v1/embeddings" {
+            self.embeddings(req).await
         } else if path == "/v1/models" {
             self.list_models()
         } else if path == "/v1/roles" {
@@ -220,12 +211,16 @@ impl Server {
         Ok(res)
     }
 
-    async fn chat_completion(&self, req: hyper::Request<Incoming>) -> Result<AppResponse> {
+    async fn chat_completions(&self, req: hyper::Request<Incoming>) -> Result<AppResponse> {
         let req_body = req.collect().await?.to_bytes();
-        let req_body: ChatCompletionReqBody = serde_json::from_slice(&req_body)
-            .map_err(|err| anyhow!("Invalid request body, {err}"))?;
+        let req_body: Value = serde_json::from_slice(&req_body)
+            .map_err(|err| anyhow!("Invalid request json, {err}"))?;
 
-        let ChatCompletionReqBody {
+        debug!("chat completions request: {req_body}");
+        let req_body = serde_json::from_value(req_body)
+            .map_err(|err| anyhow!("Invalid requst body, {err}"))?;
+
+        let ChatCompletionsReqBody {
             model,
             messages,
             temperature,
@@ -358,10 +353,68 @@ impl Server {
             Ok(res)
         }
     }
+
+    async fn embeddings(&self, req: hyper::Request<Incoming>) -> Result<AppResponse> {
+        let req_body = req.collect().await?.to_bytes();
+        let req_body: Value = serde_json::from_slice(&req_body)
+            .map_err(|err| anyhow!("Invalid request json, {err}"))?;
+
+        debug!("embeddings request: {req_body}");
+        let req_body = serde_json::from_value(req_body)
+            .map_err(|err| anyhow!("Invalid requst body, {err}"))?;
+
+        let EmbeddingsReqBody {
+            input,
+            model: embedding_model_id,
+        } = req_body;
+
+        let config = Config {
+            clients: self.clients.to_vec(),
+            ..Default::default()
+        };
+        let config = Arc::new(RwLock::new(config));
+        let embedding_model = Model::retrieve_embedding(&config.read(), &embedding_model_id)?;
+
+        let texts = match input {
+            EmbeddingsReqBodyInput::Single(v) => vec![v],
+            EmbeddingsReqBodyInput::Multiple(v) => v,
+        };
+        let client = init_client(&config, Some(embedding_model))?;
+        let data = client
+            .embeddings(EmbeddingsData {
+                query: false,
+                texts,
+            })
+            .await?;
+        let data: Vec<_> = data
+            .into_iter()
+            .enumerate()
+            .map(|(i, v)| {
+                json!({
+                        "object": "embedding",
+                        "embedding": v,
+                        "index": i,
+                })
+            })
+            .collect();
+        let output = json!({
+            "object": "list",
+            "data": data,
+            "model": embedding_model_id,
+            "usage": {
+                "prompt_tokens": 0,
+                "total_tokens": 0,
+            }
+        });
+        let res = Response::builder()
+            .header("Content-Type", "application/json")
+            .body(Full::new(Bytes::from(output.to_string())).boxed())?;
+        Ok(res)
+    }
 }
 
 #[derive(Debug, Deserialize)]
-struct ChatCompletionReqBody {
+struct ChatCompletionsReqBody {
     model: String,
     messages: Vec<Message>,
     temperature: Option<f64>,
@@ -369,6 +422,19 @@ struct ChatCompletionReqBody {
     max_tokens: Option<isize>,
     #[serde(default)]
     stream: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct EmbeddingsReqBody {
+    pub input: EmbeddingsReqBodyInput,
+    pub model: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum EmbeddingsReqBodyInput {
+    Single(String),
+    Multiple(Vec<String>),
 }
 
 #[derive(Debug)]
