@@ -175,8 +175,8 @@ impl Model {
         self.data.default_chunk_size.unwrap_or(1000)
     }
 
-    pub fn max_concurrent_chunks(&self) -> usize {
-        self.data.max_concurrent_chunks.unwrap_or(1)
+    pub fn max_batch_size(&self) -> usize {
+        self.data.max_batch_size.unwrap_or(1)
     }
 
     pub fn max_tokens_param(&self) -> Option<isize> {
@@ -234,9 +234,9 @@ impl Model {
         Ok(())
     }
 
-    pub fn guard_max_concurrent_chunks(&self, data: &EmbeddingsData) -> Result<()> {
-        if data.texts.len() > self.max_concurrent_chunks() {
-            bail!("Exceed max_concurrent_chunks limit");
+    pub fn guard_max_batch_size(&self, data: &EmbeddingsData) -> Result<()> {
+        if data.texts.len() > self.max_batch_size() {
+            bail!("Exceed max_batch_size limit");
         }
         Ok(())
     }
@@ -262,7 +262,7 @@ pub struct ModelData {
 
     // embedding-only properties
     pub default_chunk_size: Option<usize>,
-    pub max_concurrent_chunks: Option<usize>,
+    pub max_batch_size: Option<usize>,
 }
 
 impl ModelData {

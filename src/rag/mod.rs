@@ -414,13 +414,13 @@ impl Rag {
     ) -> Result<EmbeddingsOutput> {
         let EmbeddingsData { texts, query } = data;
         let mut output = vec![];
-        let chunks = texts.chunks(self.embedding_model.max_concurrent_chunks());
-        let chunks_len = chunks.len();
+        let batch_chunks = texts.chunks(self.embedding_model.max_batch_size());
+        let batch_chunks_len = batch_chunks.len();
         progress(
             &progress_tx,
-            format!("Creating embeddings [1/{chunks_len}]"),
+            format!("Creating embeddings [1/{batch_chunks_len}]"),
         );
-        for (index, texts) in chunks.enumerate() {
+        for (index, texts) in batch_chunks.enumerate() {
             let chunk_data = EmbeddingsData {
                 texts: texts.to_vec(),
                 query,
@@ -433,7 +433,7 @@ impl Rag {
             output.extend(chunk_output);
             progress(
                 &progress_tx,
-                format!("Creating embeddings [{}/{chunks_len}]", index + 1),
+                format!("Creating embeddings [{}/{batch_chunks_len}]", index + 1),
             );
         }
         Ok(output)
