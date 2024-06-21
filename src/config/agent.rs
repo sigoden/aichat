@@ -77,7 +77,7 @@ impl Agent {
 
     pub fn export(&self) -> Result<String> {
         let mut value = serde_json::json!(self);
-        value["functions_dir"] = Config::agent_source_dir(&self.name)?
+        value["functions_dir"] = Config::agent_functions_dir(&self.name)?
             .display()
             .to_string()
             .into();
