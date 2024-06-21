@@ -1,6 +1,6 @@
 use super::*;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -43,7 +43,31 @@ impl CloudflareClient {
             self.model.name()
         );
 
-        debug!("Cloudflare Request: {url} {body}");
+        debug!("Cloudflare Chat Completions Request: {url} {body}");
+
+        let builder = client.post(url).bearer_auth(api_key).json(&body);
+
+        Ok(builder)
+    }
+
+    fn embeddings_builder(
+        &self,
+        client: &ReqwestClient,
+        data: EmbeddingsData,
+    ) -> Result<RequestBuilder> {
+        let account_id = self.get_account_id()?;
+        let api_key = self.get_api_key()?;
+
+        let body = json!({
+            "text": data.texts,
+        });
+
+        let url = format!(
+            "{API_BASE}/accounts/{account_id}/ai/run/{}",
+            self.model.name()
+        );
+
+        debug!("Cloudflare Embeddings Request: {url} {body}");
 
         let builder = client.post(url).bearer_auth(api_key).json(&body);
 
@@ -54,7 +78,8 @@ impl CloudflareClient {
 impl_client_trait!(
     CloudflareClient,
     chat_completions,
-    chat_completions_streaming
+    chat_completions_streaming,
+    embeddings
 );
 
 async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
@@ -85,6 +110,28 @@ async fn chat_completions_streaming(
         Ok(false)
     };
     sse_stream(builder, handle).await
+}
+
+async fn embeddings(builder: RequestBuilder) -> Result<EmbeddingsOutput> {
+    let res = builder.send().await?;
+    let status = res.status();
+    let data: Value = res.json().await?;
+    if !status.is_success() {
+        catch_error(&data, status.as_u16())?;
+    }
+    let res_body: EmbeddingsResBody =
+        serde_json::from_value(data).context("Invalid embeddings data")?;
+    Ok(res_body.result.data)
+}
+
+#[derive(Deserialize)]
+struct EmbeddingsResBody {
+    result: EmbeddingsResBodyResult,
+}
+
+#[derive(Deserialize)]
+struct EmbeddingsResBodyResult {
+    data: Vec<Vec<f32>>,
 }
 
 fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
