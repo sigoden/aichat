@@ -8,7 +8,7 @@ use crate::config::Config;
 use crate::utils::{estimate_token_length, format_option_value};
 
 use anyhow::{bail, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 const PER_MESSAGES_TOKENS: usize = 5;
 const BASIS_TOKENS: usize = 2;
@@ -242,7 +242,7 @@ impl Model {
     }
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ModelData {
     pub name: String,
     #[serde(default = "default_model_mode")]

@@ -565,7 +565,7 @@
         async init() {
           try {
             const models = await fetchJSON(MODELS_API);
-            this.models = models;
+            this.models = models.filter(v => !v.mode || v.mode === "chat");
           } catch (err) {
             toast("No available model");
             console.error("Failed to load models", err);
