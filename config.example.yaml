@@ -83,17 +83,16 @@ clients:
   #   name: xxxx                                      # Only use it to distinguish clients with the same client type. Optional
   #   models:
   #     - name: xxxx
-  #       mode: chat                                  # Chat model
   #       max_input_tokens: 100000
   #       supports_vision: true
   #       supports_function_calling: true
   #     - name: xxxx
-  #       mode: embedding                             # Embedding model
+  #       type: embedding                             # Embedding model
   #       max_input_tokens: 2048
   #       default_chunk_size: 2000                        
   #       max_concurrent_chunks: 100
   #     - name: xxxx
-  #       mode: rerank                                # Rerank model
+  #       type: rerank                                # Rerank model
   #       max_input_tokens: 2048
   #   patches: 
   #     <regex>:                                      # The regex to match model names, e.g. '.*' 'gpt-4o' 'gpt-4o|gpt-4-.*'
@@ -172,7 +171,7 @@ clients:
       - name: llama3
         max_input_tokens: 8192
       - name: all-minilm:l6-v2
-        mode: embedding
+        type: embedding
         max_chunk_size: 1000
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
