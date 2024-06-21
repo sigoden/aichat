@@ -163,18 +163,18 @@ impl ToolCall {
     pub fn eval(&self, config: &GlobalConfig) -> Result<Value> {
         let function_name = self.name.clone();
         let is_dangerously = config.read().is_dangerously_function(&function_name);
-        let (call_name, cmd_name, mut cmd_args) = match &config.read().bot {
-            Some(bot) => {
-                if !bot.functions().contains(&function_name) {
+        let (call_name, cmd_name, mut cmd_args) = match &config.read().agent {
+            Some(agent) => {
+                if !agent.functions().contains(&function_name) {
                     bail!(
                         "Unexpected call: {} {function_name} {}",
-                        bot.name(),
+                        agent.name(),
                         self.arguments
                     );
                 }
                 (
-                    format!("{}:{}", bot.name(), function_name),
-                    bot.name().to_string(),
+                    format!("{}:{}", agent.name(), function_name),
+                    agent.name().to_string(),
                     vec![function_name],
                 )
             }

@@ -18,9 +18,9 @@ pub struct Cli {
     /// Forces the session to be saved
     #[clap(long)]
     pub save_session: bool,
-    /// Start a bot
+    /// Start a agent
     #[clap(short = 'b', long)]
-    pub bot: Option<String>,
+    pub agent: Option<String>,
     /// Start a RAG
     #[clap(long)]
     pub rag: Option<String>,
@@ -63,9 +63,9 @@ pub struct Cli {
     /// List all sessions
     #[clap(long)]
     pub list_sessions: bool,
-    /// List all bots
+    /// List all agents
     #[clap(long)]
-    pub list_bots: bool,
+    pub list_agents: bool,
     /// List all RAGs
     #[clap(long)]
     pub list_rags: bool,

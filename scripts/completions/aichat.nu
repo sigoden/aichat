@@ -22,8 +22,8 @@ module completions {
     | parse "{value}" 
   }
 
-  def "nu-complete aichat bot" [] {
-    ^aichat --list-bots |
+  def "nu-complete aichat agent" [] {
+    ^aichat --list-agents |
     | lines 
     | parse "{value}" 
   }
@@ -41,7 +41,7 @@ module completions {
     --role(-r): string@"nu-complete aichat role"      # Select a role
     --session(-s): string@"nu-complete aichat role"   # Start or join a session
     --save-session                                    # Forces the session to be saved
-    --bot(-b): string@"nu-complete aichat bot"        # Start a bot
+    --agent(-b): string@"nu-complete aichat agent"        # Start a agent
     --rag: string@"nu-complete aichat rag"            # Start a RAG
     --serve                                           # Serve the LLM API and WebAPP
     --execute(-e)                                     # Execute commands in natural language
@@ -56,7 +56,7 @@ module completions {
     --list-models                                     # List all available chat models
     --list-roles                                      # List all roles
     --list-sessions                                   # List all sessions
-    --list-bots                                       # List all bots
+    --list-agents                                       # List all agents
     --list-rags                                       # List all RAGs
     ...text: string                                   # Input text
     --help(-h)                                        # Print help

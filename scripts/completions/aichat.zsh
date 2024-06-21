@@ -23,8 +23,8 @@ _aichat() {
 '-s+[Start or join a session]:SESSION:->sessions' \
 '--session=[Start or join a session]:SESSION:->sessions' \
 '--save-session[Forces the session to be saved]' \
-'-b+[Start a bot]:BOT:->bots' \
-'--bot=[Start a bot]:BOT:->bots' \
+'-b+[Start a agent]:BOT:->agents' \
+'--agent=[Start a agent]:BOT:->agents' \
 '--rag=[Start a RAG]:RAG:->rags' \
 '*-f+[Include files with the message]:FILE:_files' \
 '*--file=[Include files with the message]:FILE:_files' \
@@ -45,7 +45,7 @@ _aichat() {
 '--list-models[List all available chat models]' \
 '--list-roles[List all roles]' \
 '--list-sessions[List all sessions]' \
-'--list-bots[List all bots]' \
+'--list-agents[List all agents]' \
 '--list-rags[List all RAGs]' \
 '-h[Print help]' \
 '--help[Print help]' \
@@ -58,7 +58,7 @@ _aichat() {
     _arguments "${_arguments_options[@]}" $common \
         && ret=0 
     case $state in
-        models|roles|sessions|bots|rags)
+        models|roles|sessions|agents|rags)
             local -a values expl
             values=( ${(f)"$(_call_program values aichat --list-$state)"} )
             _wanted values expl $state compadd -a values && ret=0

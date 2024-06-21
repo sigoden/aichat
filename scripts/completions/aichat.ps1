@@ -28,8 +28,8 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             [CompletionResult]::new('-s', '-s', [CompletionResultType]::ParameterName, 'Start or join a session')
             [CompletionResult]::new('--session', '--session', [CompletionResultType]::ParameterName, 'Start or join a session')
             [CompletionResult]::new('--save-session', '--save-session', [CompletionResultType]::ParameterName, 'Forces the session to be saved')
-            [CompletionResult]::new('-b', '-b', [CompletionResultType]::ParameterName, 'Start a bot')
-            [CompletionResult]::new('--bot', '--bot', [CompletionResultType]::ParameterName, 'Start a bot')
+            [CompletionResult]::new('-b', '-b', [CompletionResultType]::ParameterName, 'Start a agent')
+            [CompletionResult]::new('--agent', '--agent', [CompletionResultType]::ParameterName, 'Start a agent')
             [CompletionResult]::new('--rag', '--rag', [CompletionResultType]::ParameterName, 'Start a RAG')
             [CompletionResult]::new('-f', '-f', [CompletionResultType]::ParameterName, 'Include files with the message')
             [CompletionResult]::new('--file', '--file', [CompletionResultType]::ParameterName, 'Include files with the message')
@@ -50,7 +50,7 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             [CompletionResult]::new('--list-models', '--list-models', [CompletionResultType]::ParameterName, 'List all available chat models')
             [CompletionResult]::new('--list-roles', '--list-roles', [CompletionResultType]::ParameterName, 'List all roles')
             [CompletionResult]::new('--list-sessions', '--list-sessions', [CompletionResultType]::ParameterName, 'List all sessions')
-            [CompletionResult]::new('--list-bots', '--list-bots', [CompletionResultType]::ParameterName, 'List all bots')
+            [CompletionResult]::new('--list-agents', '--list-agents', [CompletionResultType]::ParameterName, 'List all agents')
             [CompletionResult]::new('--list-rags', '--list-rags', [CompletionResultType]::ParameterName, 'List all RAGs')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
@@ -76,8 +76,8 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             $completions = Get-AichatValues "--list-roles"
         } elseif ($flag -eq "-s" -or $flag -eq "--session") {
             $completions = Get-AichatValues "--list-sessions"
-        } elseif ($flag -eq "-b" -or $flag -eq "--bot") {
-            $completions = Get-AichatValues "--list-bots"
+        } elseif ($flag -eq "-b" -or $flag -eq "--agent") {
+            $completions = Get-AichatValues "--list-agents"
         } elseif ($flag -eq "--rag") {
             $completions = Get-AichatValues "--list-rags"
         } elseif ($flag -eq "-f" -or $flag -eq "--file") {
