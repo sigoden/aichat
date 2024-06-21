@@ -306,35 +306,42 @@ impl Config {
         Ok(path)
     }
 
-    pub fn agents_dir() -> Result<PathBuf> {
-        match env::var(get_env_name("agents_dir")) {
+    pub fn agents_config_dir() -> Result<PathBuf> {
+        match env::var(get_env_name("agents_config_dir")) {
             Ok(value) => Ok(PathBuf::from(value)),
             Err(_) => Self::local_path(BOTS_DIR_NAME),
         }
     }
 
     pub fn agent_config_dir(name: &str) -> Result<PathBuf> {
-        Ok(Self::agents_dir()?.join(name))
+        Ok(Self::agents_config_dir()?.join(name))
     }
 
     pub fn agent_rag_file(name: &str) -> Result<PathBuf> {
         Ok(Self::agent_config_dir(name)?.join(BOT_RAG_FILE_NAME))
     }
 
-    pub fn agent_source_dir(name: &str) -> Result<PathBuf> {
-        Ok(Self::functions_dir()?.join(BOTS_DIR_NAME).join(name))
+    pub fn agents_functions_dir() -> Result<PathBuf> {
+        match env::var(get_env_name("agents_functions_dir")) {
+            Ok(value) => Ok(PathBuf::from(value)),
+            Err(_) => Ok(Self::functions_dir()?.join(BOTS_DIR_NAME)),
+        }
+    }
+
+    pub fn agent_functions_dir(name: &str) -> Result<PathBuf> {
+        Ok(Self::agents_functions_dir()?.join(name))
     }
 
     pub fn agent_functions_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_source_dir(name)?.join(FUNCTIONS_FILE_NAME))
+        Ok(Self::agent_functions_dir(name)?.join(FUNCTIONS_FILE_NAME))
     }
 
     pub fn agent_definition_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_source_dir(name)?.join(BOT_DEFINITION_FILE_NAME))
+        Ok(Self::agent_functions_dir(name)?.join(BOT_DEFINITION_FILE_NAME))
     }
 
     pub fn agent_embeddings_dir(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_source_dir(name)?.join(BOT_EMBEDDINGS_DIR))
+        Ok(Self::agent_functions_dir(name)?.join(BOT_EMBEDDINGS_DIR))
     }
 
     pub fn state(&self) -> StateFlags {
@@ -465,14 +472,21 @@ impl Config {
             ("config_file", display_path(&Self::config_file()?)),
             ("roles_file", display_path(&Self::roles_file()?)),
             ("functions_dir", display_path(&Self::functions_dir()?)),
+            (
+                "agents_functions_dir",
+                display_path(&Self::agents_functions_dir()?),
+            ),
+            (
+                "agents_config_dir",
+                display_path(&Self::agents_config_dir()?),
+            ),
             ("rags_dir", display_path(&Self::rags_dir()?)),
-            ("agents_dir", display_path(&Self::agents_dir()?)),
             ("sessions_dir", display_path(&self.sessions_dir()?)),
             ("messages_file", display_path(&self.messages_file()?)),
         ];
         let output = items
             .iter()
-            .map(|(name, value)| format!("{name:<20}{value}"))
+            .map(|(name, value)| format!("{name:<24}{value}"))
             .collect::<Vec<String>>()
             .join("\n");
         Ok(output)
