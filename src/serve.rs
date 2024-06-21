@@ -51,7 +51,7 @@ pub async fn run(config: GlobalConfig, addr: Option<String>) -> Result<()> {
     println!("Chat Completions API: http://{addr}/v1/chat/completions");
     println!("Embeddings API:       http://{addr}/v1/embeddings");
     println!("LLM Playground:       http://{addr}/playground");
-    println!("LLM Arena:            http://{addr}/arena");
+    println!("LLM Arena:            http://{addr}/arena?num=2");
     shutdown_signal().await;
     let _ = stop_server.send(());
     Ok(())
