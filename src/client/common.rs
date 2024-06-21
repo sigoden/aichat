@@ -145,15 +145,15 @@ macro_rules! register_client {
         }
 
         pub fn list_chat_models(config: &$crate::config::Config) -> Vec<&'static $crate::client::Model> {
-            list_models(config).into_iter().filter(|v| v.mode() == "chat").collect()
+            list_models(config).into_iter().filter(|v| v.model_type() == "chat").collect()
         }
 
         pub fn list_embedding_models(config: &$crate::config::Config) -> Vec<&'static $crate::client::Model> {
-            list_models(config).into_iter().filter(|v| v.mode() == "embedding").collect()
+            list_models(config).into_iter().filter(|v| v.model_type() == "embedding").collect()
         }
 
         pub fn list_rerank_models(config: &$crate::config::Config) -> Vec<&'static $crate::client::Model> {
-            list_models(config).into_iter().filter(|v| v.mode() == "rerank").collect()
+            list_models(config).into_iter().filter(|v| v.model_type() == "rerank").collect()
         }
     };
 }

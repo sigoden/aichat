@@ -30,17 +30,17 @@
       output_price: 1.5
       supports_function_calling: true
     - name: text-embedding-3-large
-      mode: embedding
+      type: embedding
       max_input_tokens: 8191
       default_chunk_size: 3000
       max_concurrent_chunks: 100
     - name: text-embedding-3-small
-      mode: embedding
+      type: embedding
       max_input_tokens: 8191
       default_chunk_size: 3000
       max_concurrent_chunks: 100
     - name: text-embedding-ada-002
-      mode: embedding
+      type: embedding
       max_input_tokens: 8191
       default_chunk_size: 3000
       max_concurrent_chunks: 100
@@ -74,7 +74,7 @@
       output_price: 1.5
       supports_function_calling: true
     - name: text-embedding-004
-      mode: embedding
+      type: embedding
       max_input_tokens: 2048
       default_chunk_size: 1500
       max_concurrent_chunks: 5
@@ -152,7 +152,7 @@
       input_price: 1
       output_price: 3
     - name: mistral-embed
-      mode: embedding
+      type: embedding
       max_input_tokens: 8092
       default_chunk_size: 2000
 
@@ -173,20 +173,20 @@
       output_price: 15
       supports_function_calling: true
     - name: embed-english-v3.0
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 96
     - name: embed-multilingual-v3.0
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 96
     - name: rerank-english-v3.0
-      mode: rerank
+      type: rerank
       max_input_tokens: 4096
     - name: rerank-multilingual-v3.0
-      mode: rerank
+      type: rerank
       max_input_tokens: 4096
 
 - platform: reka
@@ -304,12 +304,12 @@
       output_price: 0.375
       supports_function_calling: true
     - name: text-embedding-004
-      mode: embedding
+      type: embedding
       max_input_tokens: 3072
       default_chunk_size: 2000
       max_concurrent_chunks: 5
     - name: text-multilingual-embedding-002
-      mode: embedding
+      type: embedding
       max_input_tokens: 3072
       default_chunk_size: 2000
       max_concurrent_chunks: 5
@@ -457,12 +457,12 @@
       input_price: 0
       output_price: 0
     - name: '@cf/baai/bge-base-en-v1.5'
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
     - name: '@cf/baai/bge-large-en-v1.5'
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
@@ -575,7 +575,7 @@
       output_price: 2.8
       supports_vision: true
     - name: text-embedding-v2
-      mode: embedding
+      type: embedding
       max_input_tokens: 2048
       default_chunk_size: 1500
       max_concurrent_chunks: 25
@@ -649,7 +649,7 @@
       output_price: 7
       supports_vision: true
     - name: embedding-2
-      mode: embedding
+      type: embedding
       max_input_tokens: 2048
       default_chunk_size: 1500
 
@@ -718,12 +718,12 @@
       input_price: 0.15
       output_price: 0.15
     - name: BAAI/bge-large-en-v1.5
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 30
     - name: thenlper/gte-large
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 30
@@ -770,52 +770,52 @@
       input_price: 0.14
       output_price: 0.14
     - name: BAAI/bge-large-en-v1.5
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
     - name: BAAI/bge-base-en-v1.5
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
     - name: BAAI/bge-m3
-      mode: embedding
+      type: embedding
       max_input_tokens: 8192
       default_chunk_size: 2000
       max_concurrent_chunks: 100
     - name: intfloat/e5-base-v2
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
     - name: intfloat/e5-large-v2
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
     - name: intfloat/multilingual-e5-large
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
     - name: sentence-transformers/all-MiniLM-L6-v2
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
     - name: sentence-transformers/paraphrase-MiniLM-L6-v2
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
     - name: thenlper/gte-base
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
     - name: thenlper/gte-large
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
@@ -873,22 +873,22 @@
       output_price: 0.2
       supports_vision: true
     - name: nomic-ai/nomic-embed-text-v1.5
-      mode: embedding
+      type: embedding
       max_input_tokens: 8192
       default_chunk_size: 1500
       max_concurrent_chunks: 100
     - name: WhereIsAI/UAE-Large-V1
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
     - name: thenlper/gte-large
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
     - name: thenlper/gte-base
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
@@ -1069,7 +1069,7 @@
       input_price: 0.86
       output_price: 0.86
     - name: thenlper/gte-large
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
@@ -1110,17 +1110,17 @@
       output_price: 0.9
       max_concurrent_chunks: 100
     - name: WhereIsAI/UAE-Large-V1
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
     - name: BAAI/bge-large-en-v1.5
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100
     - name: BAAI/bge-base-en-v1.5
-      mode: embedding
+      type: embedding
       max_input_tokens: 512
       default_chunk_size: 1000
       max_concurrent_chunks: 100

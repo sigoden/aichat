@@ -741,7 +741,7 @@
         async init() {
           await Promise.all([
             fetchJSON(MODELS_API).then(models => {
-              this.models = models.filter(v => !v.mode || v.mode === "chat");
+              this.models = models.filter(v => !v.type || v.type === "chat");
             }).catch(err => {
               toast("No model available");
               console.error("Failed to load models", err);

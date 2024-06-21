@@ -111,8 +111,8 @@ impl Model {
         &self.data.name
     }
 
-    pub fn mode(&self) -> &str {
-        &self.data.mode
+    pub fn model_type(&self) -> &str {
+        &self.data.model_type
     }
 
     pub fn data(&self) -> &ModelData {
@@ -245,8 +245,8 @@ impl Model {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ModelData {
     pub name: String,
-    #[serde(default = "default_model_mode")]
-    pub mode: String,
+    #[serde(default = "default_model_type", rename = "type")]
+    pub model_type: String,
     pub max_input_tokens: Option<usize>,
     pub input_price: Option<f64>,
     pub output_price: Option<f64>,
@@ -280,6 +280,6 @@ pub struct BuiltinModels {
     pub models: Vec<ModelData>,
 }
 
-fn default_model_mode() -> String {
+fn default_model_type() -> String {
     "chat".into()
 }
