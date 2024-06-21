@@ -355,7 +355,7 @@ pub trait Client: Sync + Send {
         let data = input.prepare_completion_data(self.model(), false)?;
         self.chat_completions_inner(&client, data)
             .await
-            .with_context(|| "Failed to fetch chat completions")
+            .with_context(|| "Failed to call chat completions api")
     }
 
     async fn chat_completions_streaming(
@@ -381,7 +381,7 @@ pub trait Client: Sync + Send {
                 self.chat_completions_streaming_inner(&client, handler, data).await
             } => {
                 handler.done()?;
-                ret.with_context(|| "Failed to fetch chat completions")
+                ret.with_context(|| "Failed to call chat completions api")
             }
             _ = watch_abort_signal(abort_signal) => {
                 handler.done()?;
@@ -395,14 +395,14 @@ pub trait Client: Sync + Send {
         self.model().guard_max_batch_size(&data)?;
         self.embeddings_inner(&client, data)
             .await
-            .context("Failed to fetch embeddings")
+            .context("Failed to call embeddings api")
     }
 
     async fn rerank(&self, data: RerankData) -> Result<RerankOutput> {
         let client = self.build_client()?;
         self.rerank_inner(&client, data)
             .await
-            .context("Failed to fetch rerank")
+            .context("Failed to call rerank api")
     }
 
     fn patch_chat_completions_body(&self, body: &mut Value) {
