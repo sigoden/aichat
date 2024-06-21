@@ -77,10 +77,10 @@ impl Session {
         session.name = name.to_string();
         session.path = Some(path.display().to_string());
 
-        if let Some(bot) = &config.bot {
+        if let Some(agent) = &config.agent {
             session
                 .role_prompt
-                .clone_from(&bot.definition().instructions);
+                .clone_from(&agent.definition().instructions);
         }
 
         Ok(session)

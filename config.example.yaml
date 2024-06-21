@@ -24,9 +24,9 @@ function_calling: false
 # e.g. 'execute_command|execute_js_code' 'execute_.*'
 dangerously_functions_filter: null
 
-bot_prelude: null               # Set a session to use when starting a bot.  (e.g. temp, default)
+agent_prelude: null               # Set a session to use when starting a agent.  (e.g. temp, default)
 
-bots:
+agents:
   - name: todo-sh
     model: null
     temperature: null
@@ -74,7 +74,7 @@ summarize_prompt: 'Summarize the discussion briefly in 200 words or less to use 
 summary_prompt: 'This is a summary of the chat history as a recap: '
 
 # Custom REPL prompt, see https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt
-left_prompt: '{color.green}{?session {?bot {bot}#}{session}{?role /}}{!session {?bot {bot}}}{role}{?rag @{rag}}{color.cyan}{?session )}{!session >}{color.reset} '
+left_prompt: '{color.green}{?session {?agent {agent}#}{session}{?role /}}{!session {?agent {agent}}}{role}{?rag @{rag}}{color.cyan}{?session )}{!session >}{color.reset} '
 right_prompt: '{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}'
 
 clients:

@@ -19,7 +19,7 @@ _aichat() {
 
     case "${cmd}" in
         aichat)
-            opts="-m -r -s -b -e -c -f -H -S -w -h -V --model --prompt --role --session --save-session --bot --rag --serve --execute --code --file --no-highlight --no-stream --wrap --light-theme --dry-run --info --list-models --list-roles --list-sessions --list-bots --list-rags --help --version"
+            opts="-m -r -s -b -e -c -f -H -S -w -h -V --model --prompt --role --session --save-session --agent --rag --serve --execute --code --file --no-highlight --no-stream --wrap --light-theme --dry-run --info --list-models --list-roles --list-sessions --list-agents --list-rags --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -61,8 +61,8 @@ _aichat() {
                     COMPREPLY=($(compgen -W "$("$1" --list-sessions)" -- "${cur}"))
                     return 0
                     ;;
-                -b|--bot)
-                    COMPREPLY=($(compgen -W "$("$1" --list-bots)" -- "${cur}"))
+                -b|--agent)
+                    COMPREPLY=($(compgen -W "$("$1" --list-agents)" -- "${cur}"))
                     return 0
                     ;;
                 --rag)

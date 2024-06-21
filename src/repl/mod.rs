@@ -102,10 +102,10 @@ lazy_static! {
             "Leave the rag",
             AssertState::TrueFalse(StateFlags::RAG, StateFlags::BOT),
         ),
-        ReplCommand::new(".bot", "Use a bot", AssertState::bare()),
+        ReplCommand::new(".agent", "Use a agent", AssertState::bare()),
         ReplCommand::new(
-            ".info bot",
-            "View bot info",
+            ".info agent",
+            "View agent info",
             AssertState::True(StateFlags::BOT),
         ),
         ReplCommand::new(
@@ -114,8 +114,8 @@ lazy_static! {
             AssertState::True(StateFlags::BOT)
         ),
         ReplCommand::new(
-            ".exit bot",
-            "Leave the bot",
+            ".exit agent",
+            "Leave the agent",
             AssertState::True(StateFlags::BOT)
         ),
         ReplCommand::new(
@@ -221,8 +221,8 @@ impl Repl {
                         let info = self.config.read().rag_info()?;
                         println!("{}", info);
                     }
-                    Some("bot") => {
-                        let info = self.config.read().bot_info()?;
+                    Some("agent") => {
+                        let info = self.config.read().agent_info()?;
                         println!("{}", info);
                     }
                     Some(_) => unknown_command()?,
@@ -262,12 +262,12 @@ impl Repl {
                 ".rag" => {
                     Config::use_rag(&self.config, args, self.abort_signal.clone()).await?;
                 }
-                ".bot" => match args {
+                ".agent" => match args {
                     Some(name) => {
-                        Config::use_bot(&self.config, name, None, self.abort_signal.clone())
+                        Config::use_agent(&self.config, name, None, self.abort_signal.clone())
                             .await?;
                     }
-                    None => println!(r#"Usage: .bot <name>"#),
+                    None => println!(r#"Usage: .agent <name>"#),
                 },
                 ".starter" => match args {
                     Some(value) => {
@@ -275,7 +275,7 @@ impl Repl {
                         ask(&self.config, self.abort_signal.clone(), input, true).await?;
                     }
                     None => {
-                        let banner = self.config.read().bot_banner()?;
+                        let banner = self.config.read().agent_banner()?;
                         let output = format!(
                             r#"Usage: .starter <text>...
 
@@ -362,8 +362,8 @@ Tips: use <tab> to autocomplete conversation starter text.
                     Some("rag") => {
                         self.config.write().exit_rag()?;
                     }
-                    Some("bot") => {
-                        self.config.write().exit_bot()?;
+                    Some("agent") => {
+                        self.config.write().exit_agent()?;
                     }
                     Some(_) => unknown_command()?,
                     None => {

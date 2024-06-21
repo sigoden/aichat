@@ -38,12 +38,12 @@ pub struct Input {
     rag_name: Option<String>,
     role: Role,
     with_session: bool,
-    with_bot: bool,
+    with_agent: bool,
 }
 
 impl Input {
     pub fn from_str(config: &GlobalConfig, text: &str, role: Option<Role>) -> Self {
-        let (role, with_session, with_bot) = resolve_role(&config.read(), role);
+        let (role, with_session, with_agent) = resolve_role(&config.read(), role);
         Self {
             config: config.clone(),
             text: text.to_string(),
@@ -56,7 +56,7 @@ impl Input {
             rag_name: None,
             role,
             with_session,
-            with_bot,
+            with_agent,
         }
     }
 
@@ -102,7 +102,7 @@ impl Input {
             }
         }
 
-        let (role, with_session, with_bot) = resolve_role(&config.read(), role);
+        let (role, with_session, with_agent) = resolve_role(&config.read(), role);
         Ok(Self {
             config: config.clone(),
             text: texts.join("\n"),
@@ -115,7 +115,7 @@ impl Input {
             rag_name: None,
             role,
             with_session,
-            with_bot,
+            with_agent,
         })
     }
 
@@ -289,8 +289,8 @@ impl Input {
         }
     }
 
-    pub fn with_bot(&self) -> bool {
-        self.with_bot
+    pub fn with_agent(&self) -> bool {
+        self.with_agent
     }
 
     pub fn summary(&self) -> String {
@@ -361,7 +361,7 @@ fn resolve_role(config: &Config, role: Option<Role>) -> (Role, bool, bool) {
         None => (
             config.extract_role(),
             config.session.is_some(),
-            config.bot.is_some(),
+            config.agent.is_some(),
         ),
     }
 }

@@ -16,8 +16,8 @@ extern crate log;
 use crate::cli::Cli;
 use crate::client::{chat_completion_streaming, list_chat_models, ChatCompletionsOutput};
 use crate::config::{
-    list_bots, Config, GlobalConfig, Input, WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE,
-    TEMP_SESSION_NAME,
+    list_agents, Config, GlobalConfig, Input, WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE,
+    SHELL_ROLE, TEMP_SESSION_NAME,
 };
 use crate::function::{eval_tool_calls, need_send_tool_results};
 use crate::render::{render_error, MarkdownRender};
@@ -70,9 +70,9 @@ async fn main() -> Result<()> {
             .for_each(|v| println!("{}", v.name()));
         return Ok(());
     }
-    if cli.list_bots {
-        let bots = list_bots().join("\n");
-        println!("{bots}");
+    if cli.list_agents {
+        let agents = list_agents().join("\n");
+        println!("{agents}");
         return Ok(());
     }
     if cli.list_rags {
@@ -90,12 +90,12 @@ async fn main() -> Result<()> {
         config.write().dry_run = true;
     }
 
-    if let Some(bot) = &cli.bot {
+    if let Some(agent) = &cli.agent {
         let session = cli.session.as_ref().map(|v| match v {
             Some(v) => v.as_str(),
             None => TEMP_SESSION_NAME,
         });
-        Config::use_bot(&config, bot, session, abort_signal.clone()).await?
+        Config::use_agent(&config, agent, session, abort_signal.clone()).await?
     } else {
         if let Some(prompt) = &cli.prompt {
             config.write().use_prompt(prompt)?;

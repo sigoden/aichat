@@ -1,9 +1,9 @@
-mod bot;
+mod agent;
 mod input;
 mod role;
 mod session;
 
-pub use self::bot::{list_bots, Bot, BotConfig};
+pub use self::agent::{list_agents, Agent, AgentConfig};
 pub use self::input::Input;
 pub use self::role::{Role, RoleLike, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE};
 use self::session::Session;
@@ -46,7 +46,7 @@ const RAGS_DIR_NAME: &str = "rags";
 const FUNCTIONS_DIR_NAME: &str = "functions";
 const FUNCTIONS_FILE_NAME: &str = "functions.json";
 const FUNCTIONS_BIN_DIR_NAME: &str = "bin";
-const BOTS_DIR_NAME: &str = "bots";
+const BOTS_DIR_NAME: &str = "agents";
 const BOT_DEFINITION_FILE_NAME: &str = "index.yaml";
 const BOT_EMBEDDINGS_DIR: &str = "embeddings";
 const BOT_RAG_FILE_NAME: &str = "rag.bin";
@@ -75,7 +75,7 @@ And answer according to the language of the user's question.
 Given the context information, answer the query.
 Query: __INPUT__"#;
 
-const LEFT_PROMPT: &str = "{color.green}{?session {?bot {bot}#}{session}{?role /}}{!session {?bot {bot}}}{role}{?rag @{rag}}{color.cyan}{?session )}{!session >}{color.reset} ";
+const LEFT_PROMPT: &str = "{color.green}{?session {?agent {agent}#}{session}{?role /}}{!session {?agent {agent}}}{role}{?rag @{rag}}{color.cyan}{?session )}{!session >}{color.reset} ";
 const RIGHT_PROMPT: &str = "{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}";
 
 #[derive(Debug, Clone, Deserialize)]
@@ -99,8 +99,8 @@ pub struct Config {
     pub buffer_editor: Option<String>,
     pub function_calling: bool,
     pub dangerously_functions_filter: Option<FunctionsFilter>,
-    pub bot_prelude: Option<String>,
-    pub bots: Vec<BotConfig>,
+    pub agent_prelude: Option<String>,
+    pub agents: Vec<AgentConfig>,
     pub rag_embedding_model: Option<String>,
     pub rag_rerank_model: Option<String>,
     pub rag_chunk_size: Option<usize>,
@@ -125,7 +125,7 @@ pub struct Config {
     #[serde(skip)]
     pub rag: Option<Arc<Rag>>,
     #[serde(skip)]
-    pub bot: Option<Bot>,
+    pub agent: Option<Agent>,
     #[serde(skip)]
     pub model: Model,
     #[serde(skip)]
@@ -155,8 +155,8 @@ impl Default for Config {
             buffer_editor: None,
             function_calling: false,
             dangerously_functions_filter: None,
-            bot_prelude: None,
-            bots: vec![],
+            agent_prelude: None,
+            agents: vec![],
             rag_embedding_model: None,
             rag_rerank_model: None,
             rag_chunk_size: None,
@@ -176,7 +176,7 @@ impl Default for Config {
             role: None,
             session: None,
             rag: None,
-            bot: None,
+            agent: None,
             model: Default::default(),
             functions: Default::default(),
             working_mode: WorkingMode::Command,
@@ -250,22 +250,22 @@ impl Config {
     }
 
     pub fn messages_file(&self) -> Result<PathBuf> {
-        match &self.bot {
+        match &self.agent {
             None => match env::var(get_env_name("messages_file")) {
                 Ok(value) => Ok(PathBuf::from(value)),
                 Err(_) => Self::local_path(MESSAGES_FILE_NAME),
             },
-            Some(bot) => Ok(Self::bot_config_dir(bot.name())?.join(MESSAGES_FILE_NAME)),
+            Some(agent) => Ok(Self::agent_config_dir(agent.name())?.join(MESSAGES_FILE_NAME)),
         }
     }
 
     pub fn sessions_dir(&self) -> Result<PathBuf> {
-        match &self.bot {
+        match &self.agent {
             None => match env::var(get_env_name("sessions_dir")) {
                 Ok(value) => Ok(PathBuf::from(value)),
                 Err(_) => Self::local_path(SESSIONS_DIR_NAME),
             },
-            Some(bot) => Ok(Self::bot_config_dir(bot.name())?.join(SESSIONS_DIR_NAME)),
+            Some(agent) => Ok(Self::agent_config_dir(agent.name())?.join(SESSIONS_DIR_NAME)),
         }
     }
 
@@ -296,7 +296,7 @@ impl Config {
     }
 
     pub fn rag_file(&self, name: &str) -> Result<PathBuf> {
-        let path = if self.bot.is_none() {
+        let path = if self.agent.is_none() {
             Self::rags_dir()?.join(format!("{name}.bin"))
         } else {
             Self::rags_dir()?
@@ -306,35 +306,35 @@ impl Config {
         Ok(path)
     }
 
-    pub fn bots_dir() -> Result<PathBuf> {
-        match env::var(get_env_name("bots_dir")) {
+    pub fn agents_dir() -> Result<PathBuf> {
+        match env::var(get_env_name("agents_dir")) {
             Ok(value) => Ok(PathBuf::from(value)),
             Err(_) => Self::local_path(BOTS_DIR_NAME),
         }
     }
 
-    pub fn bot_config_dir(name: &str) -> Result<PathBuf> {
-        Ok(Self::bots_dir()?.join(name))
+    pub fn agent_config_dir(name: &str) -> Result<PathBuf> {
+        Ok(Self::agents_dir()?.join(name))
     }
 
-    pub fn bot_rag_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::bot_config_dir(name)?.join(BOT_RAG_FILE_NAME))
+    pub fn agent_rag_file(name: &str) -> Result<PathBuf> {
+        Ok(Self::agent_config_dir(name)?.join(BOT_RAG_FILE_NAME))
     }
 
-    pub fn bot_source_dir(name: &str) -> Result<PathBuf> {
+    pub fn agent_source_dir(name: &str) -> Result<PathBuf> {
         Ok(Self::functions_dir()?.join(BOTS_DIR_NAME).join(name))
     }
 
-    pub fn bot_functions_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::bot_source_dir(name)?.join(FUNCTIONS_FILE_NAME))
+    pub fn agent_functions_file(name: &str) -> Result<PathBuf> {
+        Ok(Self::agent_source_dir(name)?.join(FUNCTIONS_FILE_NAME))
     }
 
-    pub fn bot_definition_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::bot_source_dir(name)?.join(BOT_DEFINITION_FILE_NAME))
+    pub fn agent_definition_file(name: &str) -> Result<PathBuf> {
+        Ok(Self::agent_source_dir(name)?.join(BOT_DEFINITION_FILE_NAME))
     }
 
-    pub fn bot_embeddings_dir(name: &str) -> Result<PathBuf> {
-        Ok(Self::bot_source_dir(name)?.join(BOT_EMBEDDINGS_DIR))
+    pub fn agent_embeddings_dir(name: &str) -> Result<PathBuf> {
+        Ok(Self::agent_source_dir(name)?.join(BOT_EMBEDDINGS_DIR))
     }
 
     pub fn state(&self) -> StateFlags {
@@ -346,7 +346,7 @@ impl Config {
                 flags |= StateFlags::SESSION;
             }
         }
-        if self.bot.is_some() {
+        if self.agent.is_some() {
             flags |= StateFlags::BOT;
         }
         if self.role.is_some() {
@@ -361,8 +361,8 @@ impl Config {
     pub fn current_model(&self) -> &Model {
         if let Some(session) = self.session.as_ref() {
             session.model()
-        } else if let Some(bot) = self.bot.as_ref() {
-            bot.model()
+        } else if let Some(agent) = self.agent.as_ref() {
+            agent.model()
         } else if let Some(role) = self.role.as_ref() {
             role.model()
         } else {
@@ -373,8 +373,8 @@ impl Config {
     pub fn role_like_mut(&mut self) -> Option<&mut dyn RoleLike> {
         if let Some(session) = self.session.as_mut() {
             Some(session)
-        } else if let Some(bot) = self.bot.as_mut() {
-            Some(bot)
+        } else if let Some(agent) = self.agent.as_mut() {
+            Some(agent)
         } else if let Some(role) = self.role.as_mut() {
             Some(role)
         } else {
@@ -385,8 +385,8 @@ impl Config {
     pub fn extract_role(&self) -> Role {
         let mut role = if let Some(session) = self.session.as_ref() {
             session.to_role()
-        } else if let Some(bot) = self.bot.as_ref() {
-            bot.to_role()
+        } else if let Some(agent) = self.agent.as_ref() {
+            agent.to_role()
         } else if let Some(role) = self.role.as_ref() {
             role.clone()
         } else {
@@ -404,8 +404,8 @@ impl Config {
     }
 
     pub fn info(&self) -> Result<String> {
-        if let Some(bot) = &self.bot {
-            let output = bot.export()?;
+        if let Some(agent) = &self.agent {
+            let output = agent.export()?;
             if let Some(session) = &self.session {
                 let session = session
                     .export()?
@@ -466,7 +466,7 @@ impl Config {
             ("roles_file", display_path(&Self::roles_file()?)),
             ("functions_dir", display_path(&Self::functions_dir()?)),
             ("rags_dir", display_path(&Self::rags_dir()?)),
-            ("bots_dir", display_path(&Self::bots_dir()?)),
+            ("agents_dir", display_path(&Self::agents_dir()?)),
             ("sessions_dir", display_path(&self.sessions_dir()?)),
             ("messages_file", display_path(&self.messages_file()?)),
         ];
@@ -613,8 +613,8 @@ impl Config {
     }
 
     pub fn use_role_obj(&mut self, role: Role) -> Result<()> {
-        if self.bot.is_some() {
-            bail!("Cannot perform this action because you are using a bot")
+        if self.agent.is_some() {
+            bail!("Cannot perform this action because you are using a agent")
         }
         if let Some(session) = self.session.as_mut() {
             session.guard_empty()?;
@@ -696,7 +696,7 @@ impl Config {
         if let Some(session) = session.as_mut() {
             if session.is_empty() {
                 if let Some((input, output)) = &self.last_message {
-                    if self.bot.is_some() == input.with_bot() {
+                    if self.agent.is_some() == input.with_agent() {
                         let ans = Confirm::new(
                             "Start a session that incorporates the last question and answer?",
                         )
@@ -840,8 +840,8 @@ impl Config {
         rag: Option<&str>,
         abort_signal: AbortSignal,
     ) -> Result<()> {
-        if config.read().bot.is_some() {
-            bail!("Cannot perform this action because you are using a bot")
+        if config.read().agent.is_some() {
+            bail!("Cannot perform this action because you are using a agent")
         }
         let rag = match rag {
             None => {
@@ -911,49 +911,49 @@ impl Config {
             .replace("__INPUT__", text)
     }
 
-    pub async fn use_bot(
+    pub async fn use_agent(
         config: &GlobalConfig,
         name: &str,
         session: Option<&str>,
         abort_signal: AbortSignal,
     ) -> Result<()> {
         if !config.read().function_calling {
-            bail!("Before using the bot, please configure function calling first.");
+            bail!("Before using the agent, please configure function calling first.");
         }
-        if config.read().bot.is_some() {
-            bail!("Already in a bot, please run '.exit bot' first to exit the current bot.");
+        if config.read().agent.is_some() {
+            bail!("Already in a agent, please run '.exit agent' first to exit the current agent.");
         }
-        let bot = Bot::init(config, name, abort_signal).await?;
-        config.write().rag = bot.rag();
-        config.write().bot = Some(bot);
+        let agent = Agent::init(config, name, abort_signal).await?;
+        config.write().rag = agent.rag();
+        config.write().agent = Some(agent);
         let session = session
             .map(|v| v.to_string())
-            .or_else(|| config.read().bot_prelude.clone());
+            .or_else(|| config.read().agent_prelude.clone());
         if let Some(session) = session {
             config.write().use_session(Some(&session))?;
         }
         Ok(())
     }
 
-    pub fn bot_info(&self) -> Result<String> {
-        if let Some(bot) = &self.bot {
-            bot.export()
+    pub fn agent_info(&self) -> Result<String> {
+        if let Some(agent) = &self.agent {
+            agent.export()
         } else {
-            bail!("No bot")
+            bail!("No agent")
         }
     }
 
-    pub fn bot_banner(&self) -> Result<String> {
-        if let Some(bot) = &self.bot {
-            Ok(bot.banner())
+    pub fn agent_banner(&self) -> Result<String> {
+        if let Some(agent) = &self.agent {
+            Ok(agent.banner())
         } else {
-            bail!("No bot")
+            bail!("No agent")
         }
     }
 
-    pub fn exit_bot(&mut self) -> Result<()> {
+    pub fn exit_agent(&mut self) -> Result<()> {
         self.exit_session()?;
-        if self.bot.take().is_some() {
+        if self.agent.take().is_some() {
             self.rag.take();
             self.last_message = None;
         }
@@ -995,8 +995,8 @@ impl Config {
         if self.function_calling {
             let filter = role.functions_filter();
             if let Some(filter) = filter {
-                functions = match &self.bot {
-                    Some(bot) => bot.functions().select(&filter),
+                functions = match &self.agent {
+                    Some(agent) => agent.functions().select(&filter),
                     None => self.functions.select(&filter),
                 };
                 if !model.supports_function_calling() {
@@ -1014,8 +1014,8 @@ impl Config {
         if get_env_bool("no_dangerously_functions") {
             return false;
         }
-        let dangerously_functions_filter = match &self.bot {
-            Some(bot) => bot.config().dangerously_functions_filter.as_ref(),
+        let dangerously_functions_filter = match &self.agent {
+            Some(agent) => agent.config().dangerously_functions_filter.as_ref(),
             None => self.dangerously_functions_filter.as_ref(),
         };
         match dangerously_functions_filter {
@@ -1054,9 +1054,9 @@ impl Config {
                     .map(|v| (v, None))
                     .collect(),
                 ".rag" => self.list_rags().into_iter().map(|v| (v, None)).collect(),
-                ".bot" => list_bots().into_iter().map(|v| (v, None)).collect(),
-                ".starter" => match &self.bot {
-                    Some(bot) => bot
+                ".agent" => list_agents().into_iter().map(|v| (v, None)).collect(),
+                ".starter" => match &self.agent {
+                    Some(agent) => agent
                         .conversation_staters()
                         .iter()
                         .map(|v| (v.clone(), None))
@@ -1212,8 +1212,8 @@ impl Config {
         if let Some(rag) = &self.rag {
             output.insert("rag", rag.name().to_string());
         }
-        if let Some(bot) = &self.bot {
-            output.insert("bot", bot.name().to_string());
+        if let Some(agent) = &self.agent {
+            output.insert("agent", agent.name().to_string());
         }
 
         if self.highlight {
@@ -1277,7 +1277,7 @@ impl Config {
         let timestamp = now();
         let summary = input.summary();
         let input_markdown = input.render();
-        let scope = if self.bot.is_none() {
+        let scope = if self.agent.is_none() {
             let role_name = if input.role().is_derived() {
                 None
             } else {
