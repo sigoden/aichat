@@ -90,7 +90,7 @@ clients:
   #       type: embedding                             # Embedding model
   #       max_input_tokens: 2048
   #       default_chunk_size: 2000                        
-  #       max_concurrent_chunks: 100
+  #       max_batch_size: 100
   #     - name: xxxx
   #       type: rerank                                # Rerank model
   #       max_input_tokens: 2048
