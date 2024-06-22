@@ -31,7 +31,6 @@ AIChat is an all-in-one AI CLI tool featuring Chat-REPL, RAG, Function Calling, 
 - Claude: Claude-3.5/Claude-3 (paid, vision, function-calling)
 - Mistral (paid, embedding, function-calling)
 - Cohere: Command-R/Command-R+ (paid, embedding, rerank, function-calling)
-- Reka (paid, vision)
 - Perplexity: Llama-3/Mixtral (paid)
 - Groq: Llama-3/Mixtral/Gemma (free, function-calling)
 - Ollama (free, local, embedding)

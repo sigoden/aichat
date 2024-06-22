@@ -24,7 +24,6 @@ register_client!(
     (gemini, "gemini", GeminiConfig, GeminiClient),
     (claude, "claude", ClaudeConfig, ClaudeClient),
     (cohere, "cohere", CohereConfig, CohereClient),
-    (reka, "reka", RekaConfig, RekaClient),
     (ollama, "ollama", OllamaConfig, OllamaClient),
     (
         azure_openai,
