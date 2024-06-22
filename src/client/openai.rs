@@ -177,26 +177,26 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
         .flat_map(|message| {
             let Message { role, content } = message;
             match content {
-                MessageContent::ToolResults((tool_call_results, text)) => {
-                    let tool_calls: Vec<_> = tool_call_results.iter().map(|tool_call_result| {
+                MessageContent::ToolResults((tool_results, text)) => {
+                    let tool_calls: Vec<_> = tool_results.iter().map(|tool_result| {
                         json!({
-                            "id": tool_call_result.call.id,
+                            "id": tool_result.call.id,
                             "type": "function",
                             "function": {
-                                "name": tool_call_result.call.name,
-                                "arguments": tool_call_result.call.arguments,
+                                "name": tool_result.call.name,
+                                "arguments": tool_result.call.arguments,
                             },
                         })
                     }).collect();
                     let mut messages = vec![
                         json!({ "role": MessageRole::Assistant, "content": text, "tool_calls": tool_calls })
                     ];
-                    for tool_call_result in tool_call_results {
+                    for tool_result in tool_results {
                         messages.push(
                             json!({
                                 "role": "tool",
-                                "content": tool_call_result.output.to_string(),
-                                "tool_call_id": tool_call_result.call.id,
+                                "content": tool_result.output.to_string(),
+                                "tool_call_id": tool_result.call.id,
                             })
                         );
                     }
@@ -251,8 +251,8 @@ pub fn openai_extract_chat_completions(data: &Value) -> Result<ChatCompletionsOu
         .unwrap_or_default();
 
     let mut tool_calls = vec![];
-    if let Some(tools_call) = data["choices"][0]["message"]["tool_calls"].as_array() {
-        tool_calls = tools_call
+    if let Some(calls) = data["choices"][0]["message"]["tool_calls"].as_array() {
+        tool_calls = calls
             .iter()
             .filter_map(|call| {
                 if let (Some(name), Some(arguments), Some(id)) = (

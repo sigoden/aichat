@@ -188,36 +188,36 @@ pub fn claude_build_chat_completions_body(
                         "content": content,
                     })]
                 }
-                MessageContent::ToolResults((tool_call_results, text)) => {
-                    let mut tool_call = vec![];
-                    let mut tool_result = vec![];
+                MessageContent::ToolResults((tool_results, text)) => {
+                    let mut assistant_parts = vec![];
+                    let mut user_parts = vec![];
                     if !text.is_empty() {
-                        tool_call.push(json!({
+                        assistant_parts.push(json!({
                             "type": "text",
                             "text": text,
                         }))
                     }
-                    for tool_call_result in tool_call_results {
-                        tool_call.push(json!({
+                    for tool_result in tool_results {
+                        assistant_parts.push(json!({
                             "type": "tool_use",
-                            "id": tool_call_result.call.id,
-                            "name": tool_call_result.call.name,
-                            "input": tool_call_result.call.arguments,
+                            "id": tool_result.call.id,
+                            "name": tool_result.call.name,
+                            "input": tool_result.call.arguments,
                         }));
-                        tool_result.push(json!({
+                        user_parts.push(json!({
                             "type": "tool_result",
-                            "tool_use_id": tool_call_result.call.id,
-                            "content": tool_call_result.output.to_string(),
+                            "tool_use_id": tool_result.call.id,
+                            "content": tool_result.output.to_string(),
                         }));
                     }
                     vec![
                         json!({
                             "role": "assistant",
-                            "content": tool_call,
+                            "content": assistant_parts,
                         }),
                         json!({
                             "role": "user",
-                            "content": tool_result,
+                            "content": user_parts,
                         }),
                     ]
                 }

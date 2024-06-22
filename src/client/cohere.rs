@@ -220,8 +220,8 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
                         .collect();
                     Some(json!({ "role": role, "message": list.join("\n\n") }))
                 }
-                MessageContent::ToolResults((tool_call_results, _)) => {
-                    tool_results = Some(tool_call_results);
+                MessageContent::ToolResults((results, _)) => {
+                    tool_results = Some(results);
                     None
                 }
             }
@@ -263,14 +263,14 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
     if let Some(tool_results) = tool_results {
         let tool_results: Vec<_> = tool_results
             .into_iter()
-            .map(|tool_call_result| {
+            .map(|tool_result| {
                 json!({
                     "call": {
-                        "name": tool_call_result.call.name,
-                        "parameters": tool_call_result.call.arguments,
+                        "name": tool_result.call.name,
+                        "parameters": tool_result.call.arguments,
                     },
                     "outputs": [
-                        tool_call_result.output,
+                        tool_result.output,
                     ]
 
                 })
