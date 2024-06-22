@@ -124,35 +124,56 @@ impl Model {
     }
 
     pub fn description(&self) -> String {
-        let ModelData {
-            max_input_tokens,
-            max_output_tokens,
-            input_price,
-            output_price,
-            supports_vision,
-            supports_function_calling,
-            ..
-        } = &self.data;
-        let max_input_tokens = format_option_value(max_input_tokens);
-        let max_output_tokens = format_option_value(max_output_tokens);
-        let input_price = format_option_value(input_price);
-        let output_price = format_option_value(output_price);
-        let mut capabilities = vec![];
-        if *supports_vision {
-            capabilities.push('👁');
-        };
-        if *supports_function_calling {
-            capabilities.push('⚒');
-        };
-        let capabilities: String = capabilities
-            .into_iter()
-            .map(|v| format!("{v} "))
-            .collect::<Vec<String>>()
-            .join("");
-        format!(
-            "{:>8} / {:>8}  |  {:>6} / {:>6}  {:>6}",
-            max_input_tokens, max_output_tokens, input_price, output_price, capabilities
-        )
+        match self.model_type() {
+            "chat" => {
+                let ModelData {
+                    max_input_tokens,
+                    max_output_tokens,
+                    input_price,
+                    output_price,
+                    supports_vision,
+                    supports_function_calling,
+                    ..
+                } = &self.data;
+                let max_input_tokens = format_option_value(max_input_tokens);
+                let max_output_tokens = format_option_value(max_output_tokens);
+                let input_price = format_option_value(input_price);
+                let output_price = format_option_value(output_price);
+                let mut capabilities = vec![];
+                if *supports_vision {
+                    capabilities.push('👁');
+                };
+                if *supports_function_calling {
+                    capabilities.push('⚒');
+                };
+                let capabilities: String = capabilities
+                    .into_iter()
+                    .map(|v| format!("{v} "))
+                    .collect::<Vec<String>>()
+                    .join("");
+                format!(
+                    "{:>8} / {:>8}  |  {:>6} / {:>6}  {:>6}",
+                    max_input_tokens, max_output_tokens, input_price, output_price, capabilities
+                )
+            }
+            "embedding" => {
+                let ModelData {
+                    max_input_tokens,
+                    input_price,
+                    output_vector_size,
+                    max_batch_size,
+                    ..
+                } = &self.data;
+                let dimension = format_option_value(output_vector_size);
+                let max_tokens = format_option_value(max_input_tokens);
+                let price = format_option_value(input_price);
+                let batch = format_option_value(max_batch_size);
+                format!(
+                    "dimension:{dimension}; max-tokens:{max_tokens}; price:{price}; batch:{batch}"
+                )
+            }
+            _ => String::new(),
+        }
     }
 
     pub fn max_input_tokens(&self) -> Option<usize> {
@@ -261,6 +282,7 @@ pub struct ModelData {
     pub supports_function_calling: bool,
 
     // embedding-only properties
+    pub output_vector_size: Option<usize>,
     pub default_chunk_size: Option<usize>,
     pub max_batch_size: Option<usize>,
 }

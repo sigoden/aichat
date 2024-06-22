@@ -54,3 +54,21 @@ fn validate_integer(text: &str) -> Validation {
         Validation::Valid
     }
 }
+
+#[derive(Debug)]
+pub struct SelectOption {
+    pub value: String,
+    pub description: String,
+}
+
+impl SelectOption {
+    pub fn new(value: String, description: String) -> Self {
+        Self { value, description }
+    }
+}
+
+impl std::fmt::Display for SelectOption {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} ({})", self.value, self.description)
+    }
+}
