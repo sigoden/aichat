@@ -238,7 +238,7 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Valu
         stream,
     } = data;
 
-    patch_system_message(&mut messages);
+    let system_message = extract_system_message(&mut messages);
 
     let messages: Vec<Value> = messages
         .into_iter()
@@ -268,6 +268,10 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Valu
     let mut body = json!({
         "messages": messages,
     });
+
+    if let Some(v) = system_message {
+        body["system"] = v.into();
+    }
 
     if let Some(v) = model.max_tokens_param() {
         body["max_output_tokens"] = v.into();

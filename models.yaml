@@ -507,14 +507,13 @@
       input_price: 1.68
       output_price: 1.68
       supports_function_calling: true
+    - name: ernie-3.5-128k
+      max_input_tokens: 8192
+      input_price: 6.72
+      output_price: 13.44
+      supports_function_calling: true
     - name: ernie-speed-128k
       max_input_tokens: 128000
-      input_price: 0
-      output_price: 0
-    - name: ernie-lite-8k
-      max_input_tokens: 8192
-      max_output_tokens: 2048
-      require_max_tokens: true
       input_price: 0
       output_price: 0
     - name: embedding-v1

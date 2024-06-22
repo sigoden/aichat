@@ -21,6 +21,30 @@ impl Message {
     pub fn new(role: MessageRole, content: MessageContent) -> Self {
         Self { role, content }
     }
+
+    pub fn merge_system(&mut self, system: &str) {
+        match &mut self.content {
+            MessageContent::Text(text) => {
+                self.content = MessageContent::Array(vec![
+                    MessageContentPart::Text {
+                        text: system.to_string(),
+                    },
+                    MessageContentPart::Text {
+                        text: text.to_string(),
+                    },
+                ]);
+            }
+            MessageContent::Array(list) => {
+                list.insert(
+                    0,
+                    MessageContentPart::Text {
+                        text: system.to_string(),
+                    },
+                );
+            }
+            _ => {}
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
@@ -124,12 +148,10 @@ pub struct ImageUrl {
 pub fn patch_system_message(messages: &mut Vec<Message>) {
     if messages[0].role.is_system() {
         let system_message = messages.remove(0);
-        if let (Some(message), MessageContent::Text(system_text)) =
+        if let (Some(message), MessageContent::Text(system)) =
             (messages.get_mut(0), system_message.content)
         {
-            if let MessageContent::Text(text) = message.content.clone() {
-                message.content = MessageContent::Text(format!("{}\n\n{}", system_text, text))
-            }
+            message.merge_system(&system);
         }
     }
 }
