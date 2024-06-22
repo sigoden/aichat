@@ -218,7 +218,7 @@ impl Server {
 
         debug!("chat completions request: {req_body}");
         let req_body = serde_json::from_value(req_body)
-            .map_err(|err| anyhow!("Invalid requst body, {err}"))?;
+            .map_err(|err| anyhow!("Invalid request body, {err}"))?;
 
         let ChatCompletionsReqBody {
             model,
@@ -361,7 +361,7 @@ impl Server {
 
         debug!("embeddings request: {req_body}");
         let req_body = serde_json::from_value(req_body)
-            .map_err(|err| anyhow!("Invalid requst body, {err}"))?;
+            .map_err(|err| anyhow!("Invalid request body, {err}"))?;
 
         let EmbeddingsReqBody {
             input,

@@ -4,7 +4,7 @@
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 [![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/mr3ZZUB9hG)
 
-AIChat is an all-in-one AI CLI tool featuring chat REPL, RAG, function calling, and more.
+AIChat is an all-in-one AI CLI tool featuring chat REPL, RAG, function calling, agents, and more.
 
 ![AIChat Command](https://github.com/sigoden/aichat/assets/4012553/84ae8382-62be-41d0-a0f1-101b113c5bc7)
 
@@ -26,27 +26,27 @@ AIChat is an all-in-one AI CLI tool featuring chat REPL, RAG, function calling, 
 
 ## Supported LLMs
 
-- OpenAI GPT-3.5/GPT-4 (paid, vision, embedding, function-calling)
-- Gemini: Gemini-1.0/Gemini-1.5 (free, paid, vision, embedding, function-calling)
-- Claude: Claude-3 (vision, paid, function-calling)
+- OpenAI: GPT-4/GPT-3.5 (paid, vision, embedding, function-calling)
+- Gemini: Gemini-1.5/Gemini-1.0 (free, paid, vision, embedding, function-calling)
+- Claude: Claude-3.5/Claude-3 (paid, vision, function-calling)
 - Mistral (paid, embedding, function-calling)
-- Cohere: Command-R/Command-R+ (paid, embedding, function-calling)
+- Cohere: Command-R/Command-R+ (paid, embedding, rerank, function-calling)
 - Reka (paid, vision)
 - Perplexity: Llama-3/Mixtral (paid)
-- Groq: Llama-3/Mixtral/Gemma (free)
+- Groq: Llama-3/Mixtral/Gemma (free, function-calling)
 - Ollama (free, local, embedding)
 - Azure OpenAI (paid, vision, embedding, function-calling)
-- VertexAI: Gemini-1.0/Gemini-1.5 (paid, vision, embedding, function-calling)
-- VertexAI-Claude: Claude-3 (paid, vision)
-- Bedrock: Llama-3/Claude-3/Mistral (paid, vision)
-- Cloudflare (free, paid, vision)
+- VertexAI: Gemini-1.5/Gemini-1.0 (paid, vision, embedding, function-calling)
+- VertexAI-Claude: Claude-3.5/Claude-3 (paid, vision)
+- Bedrock: Llama-3/Claude-3.5/Claude-3/Mistral (paid, vision)
+- Cloudflare (free, vision, embedding)
 - Replicate (paid)
 - Ernie (paid)
-- Qianwen (paid, vision, embedding)
-- Moonshot (paid)
+- Qianwen: Qwen (paid, vision, embedding, function-calling)
+- Moonshot (paid, function-calling)
 - Deepseek (paid)
-- ZhipuAI: GLM-3.5/GLM-4 (paid, vision)
-- LingYiWanWu (paid)
+- ZhipuAI: GLM-4 (paid, vision, function-calling)
+- LingYiWanWu: Yi-Large (paid, vision)
 - Other openAI-compatible platforms
 
 ## Install
@@ -410,11 +410,22 @@ The LLM Arena is a web-based platform where you can compare different LLMs side-
 
 Function calling supercharges LLMs by connecting them to external tools and data sources. This unlocks a world of possibilities, enabling LLMs to go beyond their core capabilities and tackle a wider range of tasks.
 
-We have created a new repository to help you make the most of this feature: [https://github.com/sigoden/llm-functions](https://github.com/sigoden/llm-functions)
+We have created a new repository [https://github.com/sigoden/llm-functions](https://github.com/sigoden/llm-functions) to help you make the most of this feature 
 
 Here's a glimpse of what function calling can do for you:
 
 ![image](https://github.com/sigoden/aichat/assets/4012553/c1b6b136-bbd3-4028-9b01-7d728390c0bf)
+
+## AI Agents
+
+Agent = Prompt (Role) + Tools (Function Callings) + Knowndge (RAG). It's also known as OpenAI's GPTs.
+
+The repository [https://github.com/sigoden/llm-functions](https://github.com/sigoden/llm-functions) provides utilities for developing agents and shares agents developed by the community.
+
+Here's a glimpse of what function calling can do for you:
+
+![image](https://github.com/sigoden/aichat/assets/4012553/d544f00d-5303-4393-a9fb-5e3f20f88412)
+
 
 ## Wikis
 

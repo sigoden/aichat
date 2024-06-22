@@ -268,12 +268,10 @@
       max_input_tokens: 32768
       input_price: 0.24
       output_price: 0.24
-      supports_function_calling: true
     - name: gemma-7b-it
       max_input_tokens: 8192
       input_price: 0.07
       output_price: 0.07
-      supports_function_calling: true
 
 - platform: vertexai
   # docs:
@@ -319,7 +317,6 @@
   #   - https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-claude
   # notes:
   #   - get max_output_tokens info from models doc
-  #   - claude models have not been tested
   models:
     - name: claude-3-5-sonnet@20240620
       max_input_tokens: 200000
@@ -360,7 +357,6 @@
   #   - https://aws.amazon.com/bedrock/pricing/
   # notes:
   #   - get max_output_tokens info from playground
-  #   - claude/llama models have not been tested
   models:
     - name: anthropic.claude-3-5-sonnet-20240620-v1:0
       max_input_tokens: 200000
@@ -429,8 +425,6 @@
   # docs:
   #   - https://developers.cloudflare.com/workers-ai/models/
   #   - https://developers.cloudflare.com/workers-ai/platform/pricing/
-  # notes:
-  #   - get max_output_tokens from playground
   models:
     - name: '@cf/meta/llama-3-8b-instruct'
       max_input_tokens: 6144
@@ -472,8 +466,6 @@
   #   - https://replicate.com/explore
   #   - https://replicate.com/pricing
   #   - https://replicate.com/docs/reference/http
-  # notes:
-  #   - max_output_tokens is required but unknown
   models:
     - name: meta/meta-llama-3-70b-instruct
       max_input_tokens: 8192
@@ -504,29 +496,21 @@
   # docs:
   #   - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu
   #   - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7
-  # notes:
-  #   - get max_output_tokens info from models doc
   models:
     - name: ernie-4.0-8k-0613
-      max_input_tokens: 5120
-      max_output_tokens: 2048
-      require_max_tokens: true
+      max_input_tokens: 8192
       input_price: 16.8
       output_price: 16.8
     - name: ernie-3.5-8k-0613
-      max_input_tokens: 5120
-      max_output_tokens: 2048
-      require_max_tokens: true
+      max_input_tokens: 8192
       input_price: 1.68
       output_price: 1.68
     - name: ernie-speed-128k
-      max_input_tokens: 124000
-      max_output_tokens: 4096
-      require_max_tokens: true
+      max_input_tokens: 128000
       input_price: 0
       output_price: 0
     - name: ernie-lite-8k
-      max_input_tokens: 7168
+      max_input_tokens: 8192
       max_output_tokens: 2048
       require_max_tokens: true
       input_price: 0
@@ -536,36 +520,30 @@
   # docs:
   #   - https://help.aliyun.com/zh/dashscope/developer-reference/tongyiqianwen-large-language-models/
   #   - https://help.aliyun.com/zh/dashscope/developer-reference/qwen-vl-plus/
-  # notes:
-  #   - get max_output_tokens info from models doc
   models:
     - name: qwen-long
       max_input_tokens: 1000000
       input_price: 0.07
       output_price: 0.28
     - name: qwen-turbo
-      max_input_tokens: 6000
-      max_output_tokens: 1500
+      max_input_tokens: 8000
       input_price: 0.28
       output_price: 0.84
       supports_function_calling: true
     - name: qwen-plus
-      max_input_tokens: 30000
-      max_output_tokens: 2000
+      max_input_tokens: 32000
       input_price: 0.56
       output_price: 1.68
       supports_function_calling: true
     - name: qwen-max
-      max_input_tokens: 6000
-      max_output_tokens: 2000
+      max_input_tokens: 8000
       input_price: 5.6
       output_price: 16.8
       supports_function_calling: true
     - name: qwen-max-longcontext
       input_price: 5.6
       output_price: 16.8
-      max_input_tokens: 28000
-      max_output_tokens: 2000
+      max_input_tokens: 30000
     - name: qwen-vl-plus
       input_price: 1.12
       output_price: 1.12
@@ -585,8 +563,6 @@
   #   - https://platform.moonshot.cn/docs/intro
   #   - https://platform.moonshot.cn/docs/pricing
   #   - https://platform.moonshot.cn/docs/api-reference
-  # notes:
-  #   - unable to get max_output_tokens info
   models:
     - name: moonshot-v1-8k
       max_input_tokens: 8000
@@ -662,15 +638,23 @@
     max_input_tokens: 32768
     input_price: 2.8
     output_price: 2.8
-  - name: yi-medium 
+  - name: yi-large-turbo
     max_input_tokens: 16384
-    input_price: 0.35
-    output_price: 0.35
+    input_price: 1.68
+    output_price: 1.68
+  - name: yi-large-rag
+    max_input_tokens: 16384
+    input_price: 3.5
+    output_price: 3.5
   - name: yi-vision
     max_input_tokens: 4096
     input_price: 0.84
     output_price: 0.84
     supports_vision: true
+  - name: yi-medium 
+    max_input_tokens: 16384
+    input_price: 0.35
+    output_price: 0.35
   - name: yi-medium-200k
     max_input_tokens: 200000
     input_price: 1.68
@@ -679,14 +663,6 @@
     max_input_tokens: 16384
     input_price: 0.14
     output_price: 0.14
-  - name: yi-large-rag
-    max_input_tokens: 16384
-    input_price: 3.5
-    output_price: 3.5
-  - name: yi-large-turbo
-    max_input_tokens: 16384
-    input_price: 1.68
-    output_price: 1.68
 
 - platform: anyscale
   # docs:
