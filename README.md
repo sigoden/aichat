@@ -41,7 +41,7 @@ AIChat is an all-in-one AI CLI tool featuring chat REPL, RAG, function calling, 
 - Bedrock: Llama-3/Claude-3.5/Claude-3/Mistral (paid, vision)
 - Cloudflare (free, vision, embedding)
 - Replicate (paid)
-- Ernie (paid)
+- Ernie (paid, embedding, rerank, function-calling)
 - Qianwen: Qwen (paid, vision, embedding, function-calling)
 - Moonshot (paid, function-calling)
 - Deepseek (paid)

@@ -501,10 +501,12 @@
       max_input_tokens: 8192
       input_price: 16.8
       output_price: 16.8
+      supports_function_calling: true
     - name: ernie-3.5-8k-0613
       max_input_tokens: 8192
       input_price: 1.68
       output_price: 1.68
+      supports_function_calling: true
     - name: ernie-speed-128k
       max_input_tokens: 128000
       input_price: 0
