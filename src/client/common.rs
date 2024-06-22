@@ -355,7 +355,7 @@ pub trait Client: Sync + Send {
         let data = input.prepare_completion_data(self.model(), false)?;
         self.chat_completions_inner(&client, data)
             .await
-            .with_context(|| "Failed to call chat completions api")
+            .with_context(|| "Failed to call chat-completions api")
     }
 
     async fn chat_completions_streaming(
@@ -381,7 +381,7 @@ pub trait Client: Sync + Send {
                 self.chat_completions_streaming_inner(&client, handler, data).await
             } => {
                 handler.done()?;
-                ret.with_context(|| "Failed to call chat completions api")
+                ret.with_context(|| "Failed to call chat-completions api")
             }
             _ = watch_abort_signal(abort_signal) => {
                 handler.done()?;

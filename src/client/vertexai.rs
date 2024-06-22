@@ -295,29 +295,29 @@ pub fn gemini_build_chat_completions_body(
                             .collect();
                         vec![json!({ "role": role, "parts": parts })]
                     },
-                    MessageContent::ToolResults((tool_call_results, _)) => {
-                        let function_call_parts: Vec<Value> = tool_call_results.iter().map(|tool_call_result| {
+                    MessageContent::ToolResults((tool_results, _)) => {
+                        let model_parts: Vec<Value> = tool_results.iter().map(|tool_result| {
                             json!({
                                 "functionCall": {
-                                    "name": tool_call_result.call.name,
-                                    "args": tool_call_result.call.arguments,
+                                    "name": tool_result.call.name,
+                                    "args": tool_result.call.arguments,
                                 }
                             })
                         }).collect();
-                        let function_response_parts: Vec<Value> = tool_call_results.into_iter().map(|tool_call_result| {
+                        let function_parts: Vec<Value> = tool_results.into_iter().map(|tool_result| {
                             json!({
                                 "functionResponse": {
-                                    "name": tool_call_result.call.name,
+                                    "name": tool_result.call.name,
                                     "response": {
-                                        "name": tool_call_result.call.name,
-                                        "content": tool_call_result.output,
+                                        "name": tool_result.call.name,
+                                        "content": tool_result.output,
                                     }
                                 }
                             })
                         }).collect();
                         vec![
-                            json!({ "role": "model", "parts": function_call_parts }),
-                            json!({ "role": "function", "parts": function_response_parts }),
+                            json!({ "role": "model", "parts": model_parts }),
+                            json!({ "role": "function", "parts": function_parts }),
                         ]
                     }
                 }
