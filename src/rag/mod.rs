@@ -548,9 +548,12 @@ pub fn split_document_id(value: DocumentId) -> (usize, usize) {
 }
 
 fn select_embedding_model(models: &[&Model]) -> Result<String> {
-    let model_ids: Vec<_> = models.iter().map(|v| v.id()).collect();
-    let model_id = Select::new("Select embedding model:", model_ids).prompt()?;
-    Ok(model_id)
+    let models: Vec<_> = models
+        .iter()
+        .map(|v| SelectOption::new(v.id(), v.description()))
+        .collect();
+    let result = Select::new("Select embedding model:", models).prompt()?;
+    Ok(result.value)
 }
 
 fn set_chunk_size(model: &Model) -> Result<usize> {

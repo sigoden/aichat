@@ -32,16 +32,15 @@
     - name: text-embedding-3-large
       type: embedding
       max_input_tokens: 8191
+      input_price: 0.13
+      output_vector_size: 3072
       default_chunk_size: 3000
       max_batch_size: 100
     - name: text-embedding-3-small
       type: embedding
       max_input_tokens: 8191
-      default_chunk_size: 3000
-      max_batch_size: 100
-    - name: text-embedding-ada-002
-      type: embedding
-      max_input_tokens: 8191
+      input_price: 0.02
+      output_vector_size: 1536
       default_chunk_size: 3000
       max_batch_size: 100
 
@@ -153,6 +152,8 @@
       output_price: 3
     - name: mistral-embed
       type: embedding
+      input_price: 0.1
+      output_vector_size: 1024
       max_input_tokens: 8092
       default_chunk_size: 2000
 
@@ -175,11 +176,15 @@
     - name: embed-english-v3.0
       type: embedding
       max_input_tokens: 512
+      input_price: 0.1
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 96
     - name: embed-multilingual-v3.0
       type: embedding
       max_input_tokens: 512
+      input_price: 0.1
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 96
     - name: rerank-english-v3.0
@@ -282,12 +287,16 @@
     - name: text-embedding-004
       type: embedding
       max_input_tokens: 3072
-      default_chunk_size: 2000
+      input_price: 0.025
+      output_vector_size: 768
+      default_chunk_size: 1500
       max_batch_size: 5
     - name: text-multilingual-embedding-002
       type: embedding
       max_input_tokens: 3072
-      default_chunk_size: 2000
+      input_price: 0.2
+      output_vector_size: 768
+      default_chunk_size: 1500
       max_batch_size: 5
 
 - platform: vertexai-claude
@@ -431,11 +440,15 @@
     - name: '@cf/baai/bge-base-en-v1.5'
       type: embedding
       max_input_tokens: 512
+      input_price: 0
+      output_vector_size: 768
       default_chunk_size: 1000
       max_batch_size: 100
     - name: '@cf/baai/bge-large-en-v1.5'
       type: embedding
       max_input_tokens: 512
+      input_price: 0
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 100
 
@@ -494,24 +507,25 @@
       max_input_tokens: 128000
       input_price: 0
       output_price: 0
-    - name: embedding-v1
-      type: embedding
-      max_input_tokens: 384
-      default_chunk_size: 700
-      max_batch_size: 16 
     - name: bge_large_zh
       type: embedding
       max_input_tokens: 512
+      input_price: 0.28
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 16
     - name: bge_large_en
       type: embedding
       max_input_tokens: 512
+      input_price: 0.28
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 16
     - name: tao_8k
       type: embedding
       max_input_tokens: 8192
+      input_price: 0.28
+      output_vector_size: 1024
       default_chunk_size: 2000
       max_batch_size: 1
     - name: bce_reranker_base
@@ -557,6 +571,8 @@
     - name: text-embedding-v2
       type: embedding
       max_input_tokens: 2048
+      input_price: 0.1
+      output_vector_size: 1536
       default_chunk_size: 1500
       max_batch_size: 25
 
@@ -628,8 +644,10 @@
       supports_vision: true
     - name: embedding-2
       type: embedding
-      max_input_tokens: 2048
-      default_chunk_size: 1500
+      max_input_tokens: 512
+      input_price: 0.07
+      output_vector_size: 1024
+      default_chunk_size: 1000
 
 - platform: lingyiwanwu
   # docs:
@@ -698,11 +716,15 @@
     - name: BAAI/bge-large-en-v1.5
       type: embedding
       max_input_tokens: 512
+      input_price: 0.05
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 30
     - name: thenlper/gte-large
       type: embedding
       max_input_tokens: 512
+      input_price: 0.05
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 30
 
@@ -750,51 +772,57 @@
     - name: BAAI/bge-large-en-v1.5
       type: embedding
       max_input_tokens: 512
+      input_price: 0.01
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 100
     - name: BAAI/bge-base-en-v1.5
       type: embedding
       max_input_tokens: 512
+      input_price: 0.005
+      output_vector_size: 768
       default_chunk_size: 1000
       max_batch_size: 100
     - name: BAAI/bge-m3
       type: embedding
       max_input_tokens: 8192
+      input_price: 0.01
+      output_vector_size: 1024
       default_chunk_size: 2000
       max_batch_size: 100
     - name: intfloat/e5-base-v2
       type: embedding
       max_input_tokens: 512
+      input_price: 0.005
+      output_vector_size: 768
       default_chunk_size: 1000
       max_batch_size: 100
     - name: intfloat/e5-large-v2
       type: embedding
       max_input_tokens: 512
+      input_price: 0.01
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 100
     - name: intfloat/multilingual-e5-large
       type: embedding
       max_input_tokens: 512
-      default_chunk_size: 1000
-      max_batch_size: 100
-    - name: sentence-transformers/all-MiniLM-L6-v2
-      type: embedding
-      max_input_tokens: 512
-      default_chunk_size: 1000
-      max_batch_size: 100
-    - name: sentence-transformers/paraphrase-MiniLM-L6-v2
-      type: embedding
-      max_input_tokens: 512
+      input_price: 0.01
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 100
     - name: thenlper/gte-base
       type: embedding
       max_input_tokens: 512
+      input_price: 0.005
+      output_vector_size: 768
       default_chunk_size: 1000
       max_batch_size: 100
     - name: thenlper/gte-large
       type: embedding
       max_input_tokens: 512
+      input_price: 0.01
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 100
 
@@ -853,21 +881,29 @@
     - name: nomic-ai/nomic-embed-text-v1.5
       type: embedding
       max_input_tokens: 8192
+      input_price: 0.008
+      output_vector_size: 768
       default_chunk_size: 1500
       max_batch_size: 100
     - name: WhereIsAI/UAE-Large-V1
       type: embedding
       max_input_tokens: 512
+      input_price: 0.016
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 100
     - name: thenlper/gte-large
       type: embedding
       max_input_tokens: 512
+      input_price: 0.016
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 100
     - name: thenlper/gte-base
       type: embedding
       max_input_tokens: 512
+      input_price: 0.008
+      output_vector_size: 768
       default_chunk_size: 1000
       max_batch_size: 100
 
@@ -1049,6 +1085,8 @@
     - name: thenlper/gte-large
       type: embedding
       max_input_tokens: 512
+      input_price: 0.05
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 100
 
@@ -1090,15 +1128,21 @@
     - name: WhereIsAI/UAE-Large-V1
       type: embedding
       max_input_tokens: 512
+      input_price: 0.016
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 100
     - name: BAAI/bge-large-en-v1.5
       type: embedding
       max_input_tokens: 512
+      input_price: 0.016
+      output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 100
     - name: BAAI/bge-base-en-v1.5
       type: embedding
       max_input_tokens: 512
+      input_price: 0.008
+      output_vector_size: 768
       default_chunk_size: 1000
       max_batch_size: 100
