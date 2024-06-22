@@ -515,6 +515,29 @@
       require_max_tokens: true
       input_price: 0
       output_price: 0
+    - name: embedding-v1
+      type: embedding
+      max_input_tokens: 384
+      default_chunk_size: 700
+      max_batch_size: 16 
+    - name: bge_large_zh
+      type: embedding
+      max_input_tokens: 512
+      default_chunk_size: 1000
+      max_batch_size: 16
+    - name: bge_large_en
+      type: embedding
+      max_input_tokens: 512
+      default_chunk_size: 1000
+      max_batch_size: 16
+    - name: tao_8k
+      type: embedding
+      max_input_tokens: 8192
+      default_chunk_size: 2000
+      max_batch_size: 1
+    - name: bce_reranker_base
+      type: rerank
+      max_input_tokens: 1024
 
 - platform: qianwen
   # docs:

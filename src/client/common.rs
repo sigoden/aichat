@@ -283,9 +283,9 @@ macro_rules! impl_client_trait {
 
             async fn rerank_inner(
                 &self,
-                client: &ReqwestClient,
-                data: RerankData,
-            ) -> Result<RerankOutput> {
+                client: &reqwest::Client,
+                data: $crate::client::RerankData,
+            ) -> Result<$crate::client::RerankOutput> {
                 let builder = self.rerank_builder(client, data)?;
                 $rerank(builder).await
             }
