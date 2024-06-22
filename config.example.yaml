@@ -1,31 +1,46 @@
+# ---- llm ----
 model: openai:gpt-3.5-turbo      # Specify the language model to use
 temperature: null                # Set default temperature parameter
 top_p: null                      # Set default top-p parameter
-save: true                       # Indicates whether to persist the message
-save_session: null               # Controls the persistence of the session, if null, asking the user
+
+# ----  apperence ----
 highlight: true                  # Controls syntax highlighting
 light_theme: false               # Activates a light color theme when true. ENV: AICHAT_LIGHT_THEME
+# Custom REPL prompt, see https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt for more detils
+left_prompt:
+  '{color.green}{?session {?agent {agent}#}{session}{?role /}}{!session {?agent {agent}}}{role}{?rag @{rag}}{color.cyan}{?session )}{!session >}{color.reset} '
+right_prompt:
+  '{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}'
+
+# ----  behavior ----
+save: true                       # Indicates whether to persist the message
 wrap: no                         # Controls text wrapping (no, auto, <max-width>)
 wrap_code: false                 # Enables or disables wrapping of code blocks
 keybindings: emacs               # Choose keybinding style (emacs, vi)
+buffer_editor: null              # Command used to edit the current input with Ctrl+O
 
+# ---- prelude ----
 prelude: null                    # Set a default role or session to start with (e.g. role:<name>, session:<name>)
-repl_prelude: null               # This overrides 'prelude' when using REPL
+repl_prelude: null               # Overrides the `prelude` setting specifically for conversations started in REPL
+agent_prelude: null              # Set a session to use when starting a agent. (e.g. temp, default)
 
-# Command that will be used to edit the current line buffer with ctrl+o
-# if unset fallback to $EDITOR and $VISUAL
-buffer_editor: null
+# ---- session ----
+# Controls the persistence of the session, if null, asking the user
+save_session: null
+# Compress session when token count reaches or exceeds this threshold (must be at least 1000)
+compress_threshold: 4000
+# Text prompt used for creating a concise summary of session message
+summarize_prompt: 'Summarize the discussion briefly in 200 words or less to use as a prompt for future context.'
+# Text prompt used for including the summary of the entire session
+summary_prompt: 'This is a summary of the chat history as a recap: '
 
+# ---- function-calling ----
 # Controls the function calling feature. For setup instructions, visit https://github.com/sigoden/llm-functions
 function_calling: false
-
 # Regex for seletecting dangerous functions.
 # User confirmation is required when executing these functions. 
 # e.g. 'execute_command|execute_js_code' 'execute_.*'
 dangerously_functions_filter: null
-
-agent_prelude: null               # Set a session to use when starting a agent.  (e.g. temp, default)
-
 agents:
   - name: todo-sh
     model: null
@@ -33,23 +48,15 @@ agents:
     top_p: null
     dangerously_functions_filter: null
 
-# Specifies the embedding model to use
-rag_embedding_model: null
-# Specifies the rerank model to use
-rag_rerank_model: null
-# Specifies the chunk size
-rag_chunk_size: null
-# Specifies the chunk overlap
-rag_chunk_overlap: null
-# Specifies the number of documents to retrieve
-rag_top_k: 4
-# Specifies the minimum relevance score for vector-based searching
-rag_min_score_vector_search: 0
-# Specifies the minimum relevance score for keyword-based searching
-rag_min_score_keyword_search: 0
-# Specifies the minimum relevance score for reranking
-rag_min_score_rerank: 0
-
+# ---- rag ----
+rag_embedding_model: null         # Specifies the embedding model to use
+rag_rerank_model: null            # Specifies the rerank model to use
+rag_chunk_size: null              # Specifies the chunk size
+rag_chunk_overlap: null           # Specifies the chunk overlap
+rag_top_k: 4                      # Specifies the number of documents to retrieve
+rag_min_score_vector_search: 0    # Specifies the minimum relevance score for vector-based searching
+rag_min_score_keyword_search: 0   # Specifies the minimum relevance score for keyword-based searching
+rag_min_score_rerank: 0           # Specifies the minimum relevance score for reranking
 # Defines the query structure using variables like __CONTEXT__ and __INPUT__ to tailor searches to specific needs
 rag_template: |
   Use the following context as your learned knowledge, inside <context></context> XML tags.
@@ -66,17 +73,7 @@ rag_template: |
   Given the context information, answer the query.
   Query: __INPUT__
 
-# Compress session when token count reaches or exceeds this threshold (must be at least 1000)
-compress_threshold: 4000
-# Text prompt used for creating a concise summary of session message
-summarize_prompt: 'Summarize the discussion briefly in 200 words or less to use as a prompt for future context.'
-# Text prompt used for including the summary of the entire session
-summary_prompt: 'This is a summary of the chat history as a recap: '
-
-# Custom REPL prompt, see https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt
-left_prompt: '{color.green}{?session {?agent {agent}#}{session}{?role /}}{!session {?agent {agent}}}{role}{?rag @{rag}}{color.cyan}{?session )}{!session >}{color.reset} '
-right_prompt: '{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}'
-
+# ---- clients ----
 clients:
   # All clients have the following configuration:
   # - type: xxxx

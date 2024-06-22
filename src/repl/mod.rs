@@ -59,7 +59,7 @@ lazy_static! {
         ),
         ReplCommand::new(
             ".session",
-            "Begin a chat session",
+            "Begin a session",
             AssertState::False(StateFlags::SESSION_EMPTY | StateFlags::SESSION),
         ),
         ReplCommand::new(
@@ -69,12 +69,12 @@ lazy_static! {
         ),
         ReplCommand::new(
             ".save session",
-            "Save the chat to file",
+            "Save the current session to file",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
         ReplCommand::new(
             ".edit session",
-            "Edit the current session",
+            "Edit the current session with an editor",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
         ReplCommand::new(
