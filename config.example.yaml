@@ -3,7 +3,7 @@ model: openai:gpt-3.5-turbo      # Specify the language model to use
 temperature: null                # Set default temperature parameter
 top_p: null                      # Set default top-p parameter
 
-# ----  apperence ----
+# ---- apperence ----
 highlight: true                  # Controls syntax highlighting
 light_theme: false               # Activates a light color theme when true. ENV: AICHAT_LIGHT_THEME
 # Custom REPL prompt, see https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt for more detils
@@ -12,7 +12,7 @@ left_prompt:
 right_prompt:
   '{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}'
 
-# ----  behavior ----
+# ---- behavior ----
 save: true                       # Indicates whether to persist the message
 wrap: no                         # Controls text wrapping (no, auto, <max-width>)
 wrap_code: false                 # Enables or disables wrapping of code blocks
@@ -61,7 +61,7 @@ rag_min_score_rerank: 0           # Specifies the minimum relevance score for re
 rag_template: |
   Use the following context as your learned knowledge, inside <context></context> XML tags.
   <context>
-      __CONTEXT__
+  __CONTEXT__
   </context>
 
   When answer to user:
@@ -73,7 +73,7 @@ rag_template: |
   Given the context information, answer the query.
   Query: __INPUT__
 
-# ---- clients ----
+# ---- client ----
 clients:
   # All clients have the following configuration:
   # - type: xxxx
