@@ -40,12 +40,12 @@ lazy_static! {
         ReplCommand::new(
             ".prompt",
             "Create a temporary role using a prompt",
-            AssertState::False(StateFlags::SESSION | StateFlags::BOT)
+            AssertState::False(StateFlags::SESSION | StateFlags::AGENT)
         ),
         ReplCommand::new(
             ".role",
             "Switch to a specific role",
-            AssertState::False(StateFlags::SESSION | StateFlags::BOT)
+            AssertState::False(StateFlags::SESSION | StateFlags::AGENT)
         ),
         ReplCommand::new(
             ".info role",
@@ -90,7 +90,7 @@ lazy_static! {
         ReplCommand::new(
             ".rag",
             "Init or use a rag",
-            AssertState::False(StateFlags::BOT)
+            AssertState::False(StateFlags::AGENT)
         ),
         ReplCommand::new(
             ".info rag",
@@ -100,23 +100,23 @@ lazy_static! {
         ReplCommand::new(
             ".exit rag",
             "Leave the rag",
-            AssertState::TrueFalse(StateFlags::RAG, StateFlags::BOT),
+            AssertState::TrueFalse(StateFlags::RAG, StateFlags::AGENT),
         ),
         ReplCommand::new(".agent", "Use a agent", AssertState::bare()),
         ReplCommand::new(
             ".info agent",
             "View agent info",
-            AssertState::True(StateFlags::BOT),
+            AssertState::True(StateFlags::AGENT),
         ),
         ReplCommand::new(
             ".starter",
             "Use the conversation starter",
-            AssertState::True(StateFlags::BOT)
+            AssertState::True(StateFlags::AGENT)
         ),
         ReplCommand::new(
             ".exit agent",
             "Leave the agent",
-            AssertState::True(StateFlags::BOT)
+            AssertState::True(StateFlags::AGENT)
         ),
         ReplCommand::new(
             ".file",

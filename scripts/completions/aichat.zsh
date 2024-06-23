@@ -14,22 +14,23 @@ _aichat() {
     fi
 
     local context curcontext="$curcontext" state line
-     local common=(
-'-m+[Select a LLM model]:MODEL:->models' \
-'--prompt=[Use the system prompt]:PROMPT: ' \
-'--model=[Select a LLM model]:MODEL:->models' \
-'-r+[Select a role]:ROLE:->roles' \
-'--role=[Select a role]:ROLE:->roles' \
-'-s+[Start or join a session]:SESSION:->sessions' \
-'--session=[Start or join a session]:SESSION:->sessions' \
+    local common=(
+'-m[Select a LLM model]:MODEL:->models' \
+'--model[Select a LLM model]:MODEL:->models' \
+'--prompt[Use the system prompt]:PROMPT: ' \
+'-r[Select a role]:ROLE:->roles' \
+'--role[Select a role]:ROLE:->roles' \
+'-s[Start or join a session]:SESSION:->sessions' \
+'--session[Start or join a session]:SESSION:->sessions' \
 '--save-session[Forces the session to be saved]' \
-'-b+[Start a agent]:BOT:->agents' \
-'--agent=[Start a agent]:BOT:->agents' \
-'--rag=[Start a RAG]:RAG:->rags' \
-'*-f+[Include files with the message]:FILE:_files' \
-'*--file=[Include files with the message]:FILE:_files' \
-'-w+[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
-'--wrap=[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
+'-a[Start a agent]:AGENT:->agents' \
+'--agent[Start a agent]:AGENT:->agents' \
+'-R[Start a RAG]:RAG:->rags' \
+'--rag[Start a RAG]:RAG:->rags' \
+'*-f[Include files with the message]:FILE:_files' \
+'*--file[Include files with the message]:FILE:_files' \
+'-w[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
+'--wrap[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
 '--serve[Serve the LLM API and WebAPP]' \
 '-e[Execute commands in natural language]' \
 '--execute[Execute commands in natural language]' \

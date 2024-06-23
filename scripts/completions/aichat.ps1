@@ -28,8 +28,9 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             [CompletionResult]::new('-s', '-s', [CompletionResultType]::ParameterName, 'Start or join a session')
             [CompletionResult]::new('--session', '--session', [CompletionResultType]::ParameterName, 'Start or join a session')
             [CompletionResult]::new('--save-session', '--save-session', [CompletionResultType]::ParameterName, 'Forces the session to be saved')
-            [CompletionResult]::new('-b', '-b', [CompletionResultType]::ParameterName, 'Start a agent')
+            [CompletionResult]::new('-a', '-a', [CompletionResultType]::ParameterName, 'Start a agent')
             [CompletionResult]::new('--agent', '--agent', [CompletionResultType]::ParameterName, 'Start a agent')
+            [CompletionResult]::new('-R', '-R', [CompletionResultType]::ParameterName, 'Start a RAG')
             [CompletionResult]::new('--rag', '--rag', [CompletionResultType]::ParameterName, 'Start a RAG')
             [CompletionResult]::new('-f', '-f', [CompletionResultType]::ParameterName, 'Include files with the message')
             [CompletionResult]::new('--file', '--file', [CompletionResultType]::ParameterName, 'Include files with the message')
@@ -70,17 +71,18 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             $offset=1
         }
         $flag = $commandElements[$commandElements.Count-$offset].ToString()
-        if ($flag -eq "-m" -or $flag -eq "--model") {
+        dump-args $flag ($flag -eq "-R") > /tmp/file1
+        if ($flag -ceq "-m" -or $flag -eq "--model") {
             $completions = Get-AichatValues "--list-models"
-        } elseif ($flag -eq "-r" -or $flag -eq "--role") {
+        } elseif ($flag -ceq "-r" -or $flag -eq "--role") {
             $completions = Get-AichatValues "--list-roles"
-        } elseif ($flag -eq "-s" -or $flag -eq "--session") {
+        } elseif ($flag -ceq "-s" -or $flag -eq "--session") {
             $completions = Get-AichatValues "--list-sessions"
-        } elseif ($flag -eq "-b" -or $flag -eq "--agent") {
+        } elseif ($flag -ceq "-a" -or $flag -eq "--agent") {
             $completions = Get-AichatValues "--list-agents"
-        } elseif ($flag -eq "--rag") {
+        } elseif ($flag -ceq "-R" -or $flag -eq "--rag") {
             $completions = Get-AichatValues "--list-rags"
-        } elseif ($flag -eq "-f" -or $flag -eq "--file") {
+        } elseif ($flag -ceq "-f" -or $flag -eq "--file") {
             $completions = @()
         }
     }

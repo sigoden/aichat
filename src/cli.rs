@@ -19,10 +19,10 @@ pub struct Cli {
     #[clap(long)]
     pub save_session: bool,
     /// Start a agent
-    #[clap(short = 'b', long)]
+    #[clap(short = 'a', long)]
     pub agent: Option<String>,
     /// Start a RAG
-    #[clap(long)]
+    #[clap(short = 'R', long)]
     pub rag: Option<String>,
     /// Serve the LLM API and WebAPP
     #[clap(long, value_name = "ADDRESS")]
