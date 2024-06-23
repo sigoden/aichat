@@ -46,10 +46,10 @@ const RAGS_DIR_NAME: &str = "rags";
 const FUNCTIONS_DIR_NAME: &str = "functions";
 const FUNCTIONS_FILE_NAME: &str = "functions.json";
 const FUNCTIONS_BIN_DIR_NAME: &str = "bin";
-const BOTS_DIR_NAME: &str = "agents";
-const BOT_DEFINITION_FILE_NAME: &str = "index.yaml";
-const BOT_EMBEDDINGS_DIR: &str = "embeddings";
-const BOT_RAG_FILE_NAME: &str = "rag.bin";
+const AGENTS_DIR_NAME: &str = "agents";
+const AGENT_DEFINITION_FILE_NAME: &str = "index.yaml";
+const AGENT_EMBEDDINGS_DIR: &str = "embeddings";
+const AGENT_RAG_FILE_NAME: &str = "rag.bin";
 
 pub const TEMP_ROLE_NAME: &str = "%%";
 pub const TEMP_RAG_NAME: &str = "temp";
@@ -316,7 +316,7 @@ impl Config {
             Self::rags_dir()?.join(format!("{name}.bin"))
         } else {
             Self::rags_dir()?
-                .join(BOTS_DIR_NAME)
+                .join(AGENTS_DIR_NAME)
                 .join(format!("{name}.bin"))
         };
         Ok(path)
@@ -325,7 +325,7 @@ impl Config {
     pub fn agents_config_dir() -> Result<PathBuf> {
         match env::var(get_env_name("agents_config_dir")) {
             Ok(value) => Ok(PathBuf::from(value)),
-            Err(_) => Self::local_path(BOTS_DIR_NAME),
+            Err(_) => Self::local_path(AGENTS_DIR_NAME),
         }
     }
 
@@ -334,13 +334,13 @@ impl Config {
     }
 
     pub fn agent_rag_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_config_dir(name)?.join(BOT_RAG_FILE_NAME))
+        Ok(Self::agent_config_dir(name)?.join(AGENT_RAG_FILE_NAME))
     }
 
     pub fn agents_functions_dir() -> Result<PathBuf> {
         match env::var(get_env_name("agents_functions_dir")) {
             Ok(value) => Ok(PathBuf::from(value)),
-            Err(_) => Ok(Self::functions_dir()?.join(BOTS_DIR_NAME)),
+            Err(_) => Ok(Self::functions_dir()?.join(AGENTS_DIR_NAME)),
         }
     }
 
@@ -353,11 +353,11 @@ impl Config {
     }
 
     pub fn agent_definition_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_functions_dir(name)?.join(BOT_DEFINITION_FILE_NAME))
+        Ok(Self::agent_functions_dir(name)?.join(AGENT_DEFINITION_FILE_NAME))
     }
 
     pub fn agent_embeddings_dir(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_functions_dir(name)?.join(BOT_EMBEDDINGS_DIR))
+        Ok(Self::agent_functions_dir(name)?.join(AGENT_EMBEDDINGS_DIR))
     }
 
     pub fn state(&self) -> StateFlags {
@@ -370,7 +370,7 @@ impl Config {
             }
         }
         if self.agent.is_some() {
-            flags |= StateFlags::BOT;
+            flags |= StateFlags::AGENT;
         }
         if self.role.is_some() {
             flags |= StateFlags::ROLE;
@@ -1486,7 +1486,7 @@ bitflags::bitflags! {
         const SESSION_EMPTY = 1 << 1;
         const SESSION = 1 << 2;
         const RAG = 1 << 3;
-        const BOT = 1 << 4;
+        const AGENT = 1 << 4;
     }
 }
 
