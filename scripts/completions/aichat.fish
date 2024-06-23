@@ -5,13 +5,13 @@ complete -c aichat -s s -l session -x  -a"(aichat --list-sessions)" -d 'Start or
 complete -c aichat -l save-session -d 'Forces the session to be saved'
 complete -c aichat -s a -l agent -x  -a"(aichat --list-agents)" -d 'Start a agent' -r
 complete -c aichat -s R -l rag -x  -a"(aichat --list-rags)" -d 'Start a RAG' -r
-complete -c aichat -s f -l file -d 'Include files with the message' -r -F
-complete -c aichat -s w -l wrap -d 'Control text wrapping (no, auto, <max-width>)'
 complete -c aichat -l serve -d 'Serve the LLM API and WebAPP'
 complete -c aichat -s e -l execute -d 'Execute commands in natural language'
 complete -c aichat -s c -l code -d 'Output code only'
+complete -c aichat -s f -l file -d 'Include files with the message' -r -F
+complete -c aichat -s S -l no-stream -d 'Turn off stream mode'
+complete -c aichat -s w -l wrap -d 'Control text wrapping (no, auto, <max-width>)'
 complete -c aichat -s H -l no-highlight -d 'Turn off syntax highlighting'
-complete -c aichat -s S -l no-stream -d 'Turns off stream mode'
 complete -c aichat -l light-theme -d 'Use light theme'
 complete -c aichat -l dry-run -d 'Display the message without sending it'
 complete -c aichat -l info -d 'Display information'

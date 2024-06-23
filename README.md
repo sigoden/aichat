@@ -136,7 +136,7 @@ Options:
   -c, --code                 Output code only
   -f, --file <FILE>          Include files with the message
   -H, --no-highlight         Turn off syntax highlighting
-  -S, --no-stream            Turns off stream mode
+  -S, --no-stream            Turn off stream mode
   -w, --wrap <WRAP>          Control text wrapping (no, auto, <max-width>)
       --light-theme          Use light theme
       --dry-run              Display the message without sending it

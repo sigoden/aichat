@@ -27,19 +27,19 @@ _aichat() {
 '--agent[Start a agent]:AGENT:->agents' \
 '-R[Start a RAG]:RAG:->rags' \
 '--rag[Start a RAG]:RAG:->rags' \
-'*-f[Include files with the message]:FILE:_files' \
-'*--file[Include files with the message]:FILE:_files' \
-'-w[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
-'--wrap[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
 '--serve[Serve the LLM API and WebAPP]' \
 '-e[Execute commands in natural language]' \
 '--execute[Execute commands in natural language]' \
 '-c[Output code only]' \
 '--code[Output code only]' \
+'*-f[Include files with the message]:FILE:_files' \
+'*--file[Include files with the message]:FILE:_files' \
+'-S[Turn off stream mode]' \
+'--no-stream[Turn off stream mode]' \
+'-w[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
+'--wrap[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
 '-H[Turn off syntax highlighting]' \
 '--no-highlight[Turn off syntax highlighting]' \
-'-S[Turns off stream mode]' \
-'--no-stream[Turns off stream mode]' \
 '--light-theme[Use light theme]' \
 '--dry-run[Display the message without sending it]' \
 '--info[Display information]' \
