@@ -123,7 +123,7 @@ lazy_static! {
             "Include files with the message",
             AssertState::pass()
         ),
-        ReplCommand::new(".continue", "Continue response", AssertState::pass()),
+        ReplCommand::new(".continue", "Continue the response", AssertState::pass()),
         ReplCommand::new(
             ".regenerate",
             "Regenerate the last response",
@@ -440,6 +440,16 @@ Type ".help" for additional help.
         );
         keybindings.add_binding(
             KeyModifiers::CONTROL,
+            KeyCode::Enter,
+            ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
+        );
+        keybindings.add_binding(
+            KeyModifiers::SHIFT,
+            KeyCode::Enter,
+            ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
+        );
+        keybindings.add_binding(
+            KeyModifiers::ALT,
             KeyCode::Enter,
             ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
         );

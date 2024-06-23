@@ -247,7 +247,6 @@ impl RoleLike for Role {
     }
 
     fn set_model(&mut self, model: &Model) {
-        self.model_id = Some(model.id());
         self.model = model.clone();
     }
 

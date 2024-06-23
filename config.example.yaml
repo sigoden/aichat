@@ -1,14 +1,14 @@
 # ---- llm ----
 model: openai:gpt-3.5-turbo      # Specify the language model to use
-temperature: null                # Set default temperature parameter
-top_p: null                      # Set default top-p parameter
+temperature: null                # Set default temperature parameter, range (0, 2)
+top_p: null                      # Set default top-p parameter, range (0, 1)
 
 # ---- apperence ----
 highlight: true                  # Controls syntax highlighting
 light_theme: false               # Activates a light color theme when true. ENV: AICHAT_LIGHT_THEME
 # Custom REPL prompt, see https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt for more detils
 left_prompt:
-  '{color.green}{?session {?agent {agent}#}{session}{?role /}}{!session {?agent {agent}}}{role}{?rag @{rag}}{color.cyan}{?session )}{!session >}{color.reset} '
+  '{color.green}{?session {?agent {agent}>}{session}{?role /}}{!session {?agent {agent}>}}{role}{?rag @{rag}}{color.cyan}{?session )}{!session >}{color.reset} '
 right_prompt:
   '{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}'
 
@@ -79,17 +79,17 @@ clients:
   # - type: xxxx
   #   name: xxxx                                      # Only use it to distinguish clients with the same client type. Optional
   #   models:
-  #     - name: xxxx
+  #     - name: xxxx                                  # Chat model
   #       max_input_tokens: 100000
   #       supports_vision: true
   #       supports_function_calling: true
-  #     - name: xxxx
-  #       type: embedding                             # Embedding model
+  #     - name: xxxx                                  # Embedding model
+  #       type: embedding
   #       max_input_tokens: 2048
   #       default_chunk_size: 2000                        
   #       max_batch_size: 100
-  #     - name: xxxx
-  #       type: rerank                                # Rerank model
+  #     - name: xxxx                                  # Rerank model
+  #       type: rerank 
   #       max_input_tokens: 2048
   #   patches: 
   #     <regex>:                                      # The regex to match model names, e.g. '.*' 'gpt-4o' 'gpt-4o|gpt-4-.*'

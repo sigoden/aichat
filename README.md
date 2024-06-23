@@ -4,7 +4,7 @@
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 [![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/mr3ZZUB9hG)
 
-AIChat is an all-in-one AI CLI tool featuring Chat-REPL, RAG, Function Calling, AI Agents, and more.
+AIChat is an all-in-one AI CLI tool featuring Chat-REPL, Shell Assistant, RAG, Function Calling, AI Agents, and more.
 
 ![AIChat Command](https://github.com/sigoden/aichat/assets/4012553/84ae8382-62be-41d0-a0f1-101b113c5bc7)
 
@@ -45,7 +45,7 @@ AIChat is an all-in-one AI CLI tool featuring Chat-REPL, RAG, Function Calling, 
 - Moonshot (paid, function-calling)
 - Deepseek (paid)
 - ZhipuAI: GLM-4 (paid, vision, function-calling)
-- LingYiWanWu: Yi-Large (paid, vision)
+- LingYiWanWu: Yi-* (paid, vision)
 - Other openAI-compatible platforms
 
 ## Install
