@@ -154,8 +154,8 @@ macro_rules! register_client {
             list_models(config).into_iter().filter(|v| v.model_type() == "embedding").collect()
         }
 
-        pub fn list_rerank_models(config: &$crate::config::Config) -> Vec<&'static $crate::client::Model> {
-            list_models(config).into_iter().filter(|v| v.model_type() == "rerank").collect()
+        pub fn list_reranker_models(config: &$crate::config::Config) -> Vec<&'static $crate::client::Model> {
+            list_models(config).into_iter().filter(|v| v.model_type() == "reranker").collect()
         }
     };
 }

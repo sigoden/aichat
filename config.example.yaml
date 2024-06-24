@@ -42,7 +42,7 @@ agents:
 
 # ---- RAG ----
 rag_embedding_model: null         # Specifies the embedding model to use
-rag_rerank_model: null            # Specifies the rerank model to use
+rag_reranker_model: null            # Specifies the rerank model to use
 rag_top_k: 4                      # Specifies the number of documents to retrieve
 rag_chunk_size: null              # Specifies the chunk size
 rag_chunk_overlap: null           # Specifies the chunk overlap
@@ -89,8 +89,8 @@ clients:
   #       max_input_tokens: 2048
   #       default_chunk_size: 2000                        
   #       max_batch_size: 100
-  #     - name: xxxx                                  # Rerank model
-  #       type: rerank 
+  #     - name: xxxx                                  # Reranker model
+  #       type: reranker 
   #       max_input_tokens: 2048
   #   patches: 
   #     <regex>:                                      # The regex to match model names, e.g. '.*' 'gpt-4o' 'gpt-4o|gpt-4-.*'
