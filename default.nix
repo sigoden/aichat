@@ -1,10 +1,10 @@
-{ lib, rustPlatform, pkgconfig, bzip2, zstd, ... }:
+{ pkgs, rustPlatform, pkg-config, bzip2, zstd, ... }:
 
-rustPlatform.buildRustPackage rec {
+rustPlatform.buildRustPackage {
   pname = "aichat_server";
   version = "0.0.1";
 
-  nativeBuildInputs = [ pkgconfig ];
+  nativeBuildInputs = [ pkg-config ];
 
   cargoLock.lockFile = ./Cargo.lock;
   src = pkgs.lib.cleanSource ./.;
