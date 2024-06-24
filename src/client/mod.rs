@@ -21,6 +21,12 @@ register_client!(
         OpenAICompatibleConfig,
         OpenAICompatibleClient
     ),
+    (
+        rag_dedicated,
+        "rag-dedicated",
+        RagDedicatedConfig,
+        RagDedicatedClient
+    ),
     (gemini, "gemini", GeminiConfig, GeminiClient),
     (claude, "claude", ClaudeConfig, ClaudeClient),
     (cohere, "cohere", CohereConfig, CohereClient),
@@ -59,4 +65,9 @@ pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 13] = [
     ("together", "https://api.together.xyz/v1"),
     ("zhipuai", "https://open.bigmodel.cn/api/paas/v4"),
     ("lingyiwanwu", "https://api.lingyiwanwu.com/v1"),
+];
+
+pub const RAG_DEDICATED_PLATFORMS: [(&str, &str); 2] = [
+    ("jina", "https://api.jina.ai/v1"),
+    ("voyageai", "https://api.voyageai.com/v1"),
 ];

@@ -83,7 +83,9 @@ macro_rules! register_client {
                     let client_name = Self::name(local_config);
                     if local_config.models.is_empty() {
                         if let Some(models) = $crate::client::ALL_MODELS.iter().find(|v| {
-                            v.platform == $name || ($name == "openai-compatible" && local_config.name.as_deref() == Some(&v.platform))
+                            v.platform == $name ||
+                                ($name == OpenAICompatibleClient::NAME && local_config.name.as_deref() == Some(&v.platform)) ||
+                                ($name == RagDedicatedClient::NAME && local_config.name.as_deref() == Some(&v.platform))
                         }) {
                             return Model::from_config(client_name, &models.models);
                         }
@@ -432,7 +434,7 @@ pub trait Client: Sync + Send {
         _client: &ReqwestClient,
         _data: EmbeddingsData,
     ) -> Result<EmbeddingsOutput> {
-        bail!("No embeddings api")
+        bail!("The client doesn't support embeddings api")
     }
 
     async fn rerank_inner(
@@ -440,7 +442,7 @@ pub trait Client: Sync + Send {
         _client: &ReqwestClient,
         _data: RerankData,
     ) -> Result<RerankOutput> {
-        bail!("No rerank api")
+        bail!("The client doesn't support rerank api")
     }
 }
 
@@ -566,7 +568,7 @@ pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(St
         None => Ok(None),
         Some((name, api_base)) => {
             let mut config = json!({
-                "type": "openai-compatible",
+                "type": OpenAICompatibleClient::NAME,
                 "name": name,
                 "api_base": api_base,
             });

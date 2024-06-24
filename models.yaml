@@ -1146,3 +1146,110 @@
       output_vector_size: 768
       default_chunk_size: 1000
       max_batch_size: 100
+
+- platform: jina
+  # docs:
+  #   - https://jina.ai/
+  #   - https://api.jina.ai/redoc
+  models:
+    - name: jina-embeddings-v2-base-en
+      type: embedding
+      max_input_tokens: 8192
+      input_price: 0.02
+      output_vector_size: 768
+      default_chunk_size: 1500
+      max_batch_size: 100
+    - name: jina-embeddings-v2-small-en
+      type: embedding
+      max_input_tokens: 8192
+      input_price: 0.02
+      output_vector_size: 512
+      default_chunk_size: 1000
+      max_batch_size: 100
+    - name: jina-embeddings-v2-base-zsh
+      type: embedding
+      max_input_tokens: 8192
+      input_price: 0.02
+      output_vector_size: 768
+      default_chunk_size: 1500
+      max_batch_size: 100
+    - name: jina-embeddings-v2-base-code
+      type: embedding
+      max_input_tokens: 8192
+      input_price: 0.02
+      output_vector_size: 768
+      default_chunk_size: 1500
+      max_batch_size: 100
+    - name: jina-colbert-v1-en
+      type: embedding
+      max_input_tokens: 8192
+      input_price: 0.02
+      output_vector_size: 768
+      default_chunk_size: 1500
+      max_batch_size: 100
+    - name: jina-reranker-v1-base-en
+      type: rerank
+      max_input_tokens: 8192
+      input_price: 0.02
+    - name: jina-reranker-v1-turbo-en
+      type: rerank
+      max_input_tokens: 8192
+      input_price: 0.02
+    - name: jina-colbert-v1-en
+      type: rerank
+      max_input_tokens: 8192
+      input_price: 0.02
+    - name: jina-reranker-v1-base-multilingual
+      type: rerank
+      max_input_tokens: 8192
+      input_price: 0.02
+
+- platform: voyageai
+  # docs:
+  #   - https://docs.voyageai.com/docs/embeddings
+  #   - https://docs.voyageai.com/docs/pricing
+  #   - https://docs.voyageai.com/reference/embeddings-api
+  models:
+    - name: voyage-large-2-instruct
+      type: embedding
+      max_input_tokens: 16000
+      input_price: 0.12
+      output_vector_size: 1024
+      default_chunk_size: 2000
+      max_batch_size: 128
+    - name: voyage-large-2
+      type: embedding
+      max_input_tokens: 16000
+      input_price: 0.12
+      output_vector_size: 1536
+      default_chunk_size: 3000
+      max_batch_size: 128
+    - name: voyage-multilingual-2
+      type: embedding
+      max_input_tokens: 32000
+      input_price: 0.12
+      output_vector_size: 1024
+      default_chunk_size: 2000
+      max_batch_size: 128
+    - name: voyage-code-2
+      type: embedding
+      max_input_tokens: 16000
+      input_price: 0.12
+      output_vector_size: 1536
+      default_chunk_size: 3000
+      max_batch_size: 128
+    - name: voyage-2
+      type: embedding
+      max_input_tokens: 4000
+      input_price: 0.1
+      output_vector_size: 1024
+      default_chunk_size: 2000
+      max_batch_size: 128
+    - name: rerank-1
+      type: rerank
+      max_input_tokens: 8000
+      input_price: 0.05
+    - name: rerank-lite-1
+      type: rerank
+      max_input_tokens: 4000
+      input_price: 0.02

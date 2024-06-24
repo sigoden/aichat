@@ -286,3 +286,15 @@ clients:
     name: together
     api_base: https://api.together.xyz/v1
     api_key: xxx                                      # ENV: {client}_API_KEY
+
+  # See https://jina.ai
+  - type: rag-dedicated
+    name: jina
+    api_base: https://api.jina.ai/v1
+    api_key: xxx                                      # ENV: {client}_API_KEY
+
+  # See https://docs.voyageai.com/docs/introduction
+  - type: rag-dedicated
+    name: voyageai
+    api_base: https://api.voyageai.ai/v1
+    api_key: xxx                                      # ENV: {client}_API_KEY

@@ -334,6 +334,7 @@ impl Rag {
                 let list = client.rerank(data).await?;
                 let ids = list
                     .into_iter()
+                    .take(top_k)
                     .filter_map(|item| {
                         if item.relevance_score < min_score {
                             None
