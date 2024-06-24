@@ -177,11 +177,11 @@ impl Input {
                         config.rag_min_score_keyword_search,
                     )
                 };
-                let rerank = match self.config.read().rag_rerank_model.clone() {
-                    Some(rerank_model_id) => {
+                let rerank = match self.config.read().rag_reranker_model.clone() {
+                    Some(reranker_model_id) => {
                         let min_score = self.config.read().rag_min_score_rerank;
                         let rerank_model =
-                            Model::retrieve_rerank(&self.config.read(), &rerank_model_id)?;
+                            Model::retrieve_reranker(&self.config.read(), &reranker_model_id)?;
                         let rerank_client = init_client(&self.config, Some(rerank_model))?;
                         Some((rerank_client, min_score))
                     }

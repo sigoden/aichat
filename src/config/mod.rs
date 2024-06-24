@@ -9,7 +9,7 @@ pub use self::role::{Role, RoleLike, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE};
 use self::session::Session;
 
 use crate::client::{
-    create_client_config, list_chat_models, list_client_types, list_rerank_models, ClientConfig,
+    create_client_config, list_chat_models, list_client_types, list_reranker_models, ClientConfig,
     Model, OPENAI_COMPATIBLE_PLATFORMS,
 };
 use crate::function::{FunctionDeclaration, Functions, FunctionsFilter, ToolResult};
@@ -108,7 +108,7 @@ pub struct Config {
     pub agents: Vec<AgentConfig>,
 
     pub rag_embedding_model: Option<String>,
-    pub rag_rerank_model: Option<String>,
+    pub rag_reranker_model: Option<String>,
     pub rag_top_k: usize,
     pub rag_chunk_size: Option<usize>,
     pub rag_chunk_overlap: Option<usize>,
@@ -167,7 +167,7 @@ impl Default for Config {
             agents: vec![],
 
             rag_embedding_model: None,
-            rag_rerank_model: None,
+            rag_reranker_model: None,
             rag_top_k: 4,
             rag_chunk_size: None,
             rag_chunk_overlap: None,
@@ -478,8 +478,8 @@ impl Config {
             ("compress_threshold", self.compress_threshold.to_string()),
             ("function_calling", self.function_calling.to_string()),
             (
-                "rag_rerank_model",
-                format_option_value(&self.rag_rerank_model),
+                "rag_reranker_model",
+                format_option_value(&self.rag_reranker_model),
             ),
             ("rag_top_k", self.rag_top_k.to_string()),
             ("highlight", self.highlight.to_string()),
@@ -527,8 +527,8 @@ impl Config {
                 let value = parse_value(value)?;
                 self.set_top_p(value);
             }
-            "rag_rerank_model" => {
-                self.rag_rerank_model = if value == "null" {
+            "rag_reranker_model" => {
+                self.rag_reranker_model = if value == "null" {
                     None
                 } else {
                     Some(value.to_string())
@@ -1096,7 +1096,7 @@ impl Config {
                     "max_output_tokens",
                     "temperature",
                     "top_p",
-                    "rag_rerank_model",
+                    "rag_reranker_model",
                     "rag_top_k",
                     "function_calling",
                     "compress_threshold",
@@ -1117,7 +1117,7 @@ impl Config {
                     Some(v) => vec![v.to_string()],
                     None => vec![],
                 },
-                "rag_rerank_model" => list_rerank_models(self).iter().map(|v| v.id()).collect(),
+                "rag_reranker_model" => list_reranker_models(self).iter().map(|v| v.id()).collect(),
                 "function_calling" => complete_bool(self.function_calling),
                 "save" => complete_bool(self.save),
                 "save_session" => {

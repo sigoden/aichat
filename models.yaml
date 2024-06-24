@@ -188,10 +188,10 @@
       default_chunk_size: 1000
       max_batch_size: 96
     - name: rerank-english-v3.0
-      type: rerank
+      type: reranker
       max_input_tokens: 4096
     - name: rerank-multilingual-v3.0
-      type: rerank
+      type: reranker
       max_input_tokens: 4096
 
 - platform: perplexity
@@ -529,8 +529,9 @@
       default_chunk_size: 2000
       max_batch_size: 1
     - name: bce_reranker_base
-      type: rerank
+      type: reranker
       max_input_tokens: 1024
+      input_price: 0.28
 
 - platform: qianwen
   # docs:
@@ -1188,19 +1189,19 @@
       default_chunk_size: 1500
       max_batch_size: 100
     - name: jina-reranker-v1-base-en
-      type: rerank
+      type: reranker
       max_input_tokens: 8192
       input_price: 0.02
     - name: jina-reranker-v1-turbo-en
-      type: rerank
+      type: reranker
       max_input_tokens: 8192
       input_price: 0.02
     - name: jina-colbert-v1-en
-      type: rerank
+      type: reranker
       max_input_tokens: 8192
       input_price: 0.02
     - name: jina-reranker-v1-base-multilingual
-      type: rerank
+      type: reranker
       max_input_tokens: 8192
       input_price: 0.02
 
@@ -1246,10 +1247,10 @@
       default_chunk_size: 2000
       max_batch_size: 128
     - name: rerank-1
-      type: rerank
+      type: reranker
       max_input_tokens: 8000
       input_price: 0.05
     - name: rerank-lite-1
-      type: rerank
+      type: reranker
       max_input_tokens: 4000
       input_price: 0.02
