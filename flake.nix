@@ -11,7 +11,7 @@ rustPlatform.buildRustPackage rec {
   pname = "aichat_server";
   version = "0.0.1";
 
-  src = ./;
+  src = ./.;
 
 
   nativeBuildInputs = [ pkgconfig ];
