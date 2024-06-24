@@ -1,3 +1,4 @@
+use super::rag_dedicated::*;
 use super::*;
 
 use anyhow::{bail, Context, Result};
@@ -74,7 +75,7 @@ impl CohereClient {
     fn rerank_builder(&self, client: &ReqwestClient, data: RerankData) -> Result<RequestBuilder> {
         let api_key = self.get_api_key()?;
 
-        let body = cohere_build_rerank_body(data, &self.model);
+        let body = rag_dedicated_build_rerank_body(data, &self.model);
 
         let url = RERANK_API_URL;
 
@@ -91,7 +92,7 @@ impl_client_trait!(
     chat_completions,
     chat_completions_streaming,
     embeddings,
-    cohere_rerank
+    rag_dedicated_rerank
 );
 
 async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
@@ -160,22 +161,6 @@ async fn embeddings(builder: RequestBuilder) -> Result<EmbeddingsOutput> {
 #[derive(Deserialize)]
 struct EmbeddingsResBody {
     embeddings: Vec<Vec<f32>>,
-}
-
-pub async fn cohere_rerank(builder: RequestBuilder) -> Result<RerankOutput> {
-    let res = builder.send().await?;
-    let status = res.status();
-    let data: Value = res.json().await?;
-    if !status.is_success() {
-        catch_error(&data, status.as_u16())?;
-    }
-    let res_body: RerankResBody = serde_json::from_value(data).context("Invalid rerank data")?;
-    Ok(res_body.results)
-}
-
-#[derive(Deserialize)]
-struct RerankResBody {
-    results: RerankOutput,
 }
 
 fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
@@ -307,21 +292,6 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
             .collect();
     }
     Ok(body)
-}
-
-pub fn cohere_build_rerank_body(data: RerankData, model: &Model) -> Value {
-    let RerankData {
-        query,
-        documents,
-        top_n,
-    } = data;
-
-    json!({
-        "model": model.name(),
-        "query": query,
-        "documents": documents,
-        "top_n": top_n
-    })
 }
 
 fn extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {

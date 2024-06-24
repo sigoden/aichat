@@ -1,5 +1,5 @@
 use super::{
-    list_chat_models, list_embedding_models, list_rerank_models,
+    list_chat_models, list_embedding_models, list_reranker_models,
     message::{Message, MessageContent},
     EmbeddingsData,
 };
@@ -57,10 +57,10 @@ impl Model {
         }
     }
 
-    pub fn retrieve_rerank(config: &Config, model_id: &str) -> Result<Self> {
-        match Self::find(&list_rerank_models(config), model_id) {
+    pub fn retrieve_reranker(config: &Config, model_id: &str) -> Result<Self> {
+        match Self::find(&list_reranker_models(config), model_id) {
             Some(v) => Ok(v),
-            None => bail!("Invalid rerank model '{model_id}'"),
+            None => bail!("Invalid reranker model '{model_id}'"),
         }
     }
 

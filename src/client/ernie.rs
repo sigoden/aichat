@@ -1,4 +1,5 @@
 use super::access_token::*;
+use super::rag_dedicated::*;
 use super::*;
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -220,13 +221,9 @@ struct EmbeddingsResBodyEmbedding {
 async fn rerank(builder: RequestBuilder) -> Result<RerankOutput> {
     let data: Value = builder.send().await?.json().await?;
     maybe_catch_error(&data)?;
-    let res_body: RerankResBody = serde_json::from_value(data).context("Invalid rerank data")?;
+    let res_body: RagDedicatedRerankResBody =
+        serde_json::from_value(data).context("Invalid rerank data")?;
     Ok(res_body.results)
-}
-
-#[derive(Deserialize)]
-struct RerankResBody {
-    results: RerankOutput,
 }
 
 fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Value {
