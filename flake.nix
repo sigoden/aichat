@@ -1,23 +1,17 @@
-{ lib
-, stdenv
-, fetchFromGitHub
-, rustPlatform
-, pkgconfig
-, bzip2
-, zstd
-}:
-
-rustPlatform.buildRustPackage rec {
-  pname = "aichat_server";
-  version = "0.0.1";
-
-  src = ./.;
-
-
-  nativeBuildInputs = [ pkgconfig ];
-
-  cargoLock = {
-    lockFile = src + /Cargo.lock;
+{
+  description = "aichat server";
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   };
-
+  outputs = { self, nixpkgs }:
+    let
+      supportedSystems = [ "x86_64-linux" ];
+      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+      pkgsFor = nixpkgs.legacyPackages;
+    in {
+      packages = forAllSystems (system: {
+        default = pkgsFor.${system}.callPackage ./. { };
+      });
+    };
 }
+
