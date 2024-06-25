@@ -262,8 +262,10 @@ impl Rag {
             );
             let documents = load(&path, &extension)
                 .with_context(|| format!("Failed to load file at '{path}'"))?;
-            let documents =
-                splitter.split_documents(&documents, &SplitterChunkHeaderOptions::default());
+            let split_options = SplitterChunkHeaderOptions::default().with_chunk_header(&format!(
+                "<document_metadata>\npath: {path}\n</document_metadata>\n\n"
+            ));
+            let documents = splitter.split_documents(&documents, &split_options);
             rag_files.push(RagFile { path, documents });
             progress(
                 &progress_tx,
