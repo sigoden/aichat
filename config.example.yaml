@@ -18,7 +18,7 @@ agent_prelude: null              # Set a session to use when starting a agent. (
 # ---- session ----
 # Controls the persistence of the session, if null, asking the user
 save_session: null
-# Compress session when token count reaches or exceeds this threshold (must be at least 1000)
+# Compress session when token count reaches or exceeds this threshold
 compress_threshold: 4000
 # Text prompt used for creating a concise summary of session message
 summarize_prompt: 'Summarize the discussion briefly in 200 words or less to use as a prompt for future context.'

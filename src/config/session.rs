@@ -110,11 +110,9 @@ impl Session {
         self.save_session
     }
 
-    pub fn need_compress(&self, current_compress_threshold: usize) -> bool {
-        let threshold = self
-            .compress_threshold
-            .unwrap_or(current_compress_threshold);
-        threshold >= 1000 && self.tokens() > threshold
+    pub fn need_compress(&self, global_compress_threshold: usize) -> bool {
+        let threshold = self.compress_threshold.unwrap_or(global_compress_threshold);
+        threshold > 0 && self.tokens() > threshold
     }
 
     pub fn tokens(&self) -> usize {
