@@ -102,8 +102,6 @@ Here's a glimpse of How to use the tools.
 
 Agent = Prompt (Role) + Tools (Function Callings) + Knowndge (RAG). It's also known as OpenAI's GPTs.
 
-The repository [https://github.com/sigoden/llm-functions](https://github.com/sigoden/llm-functions) provides utilities for developing agents and shares agents developed by the community.
-
 Here's a glimpse of how to use the agents.
 
 ![aichat-agent](https://github.com/sigoden/aichat/assets/4012553/7308a423-2ee5-4847-be1b-a53538bc98dc)
