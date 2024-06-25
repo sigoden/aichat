@@ -106,7 +106,6 @@ impl RecursiveCharacterTextSplitter {
         let SplitterChunkHeaderOptions {
             chunk_header,
             chunk_overlap_header,
-            append_chunk_overlap_header,
         } = chunk_header_options;
 
         let mut documents = Vec::new();
@@ -144,7 +143,7 @@ impl RecursiveCharacterTextSplitter {
                         Ordering::Equal => {}
                     }
 
-                    if *append_chunk_overlap_header {
+                    if let Some(chunk_overlap_header) = chunk_overlap_header {
                         page_content += chunk_overlap_header;
                     }
                 }
@@ -288,16 +287,14 @@ impl RecursiveCharacterTextSplitter {
 
 pub struct SplitterChunkHeaderOptions {
     pub chunk_header: String,
-    pub chunk_overlap_header: String,
-    pub append_chunk_overlap_header: bool,
+    pub chunk_overlap_header: Option<String>,
 }
 
 impl Default for SplitterChunkHeaderOptions {
     fn default() -> Self {
         Self {
             chunk_header: "".into(),
-            chunk_overlap_header: "(cont'd) ".into(),
-            append_chunk_overlap_header: false,
+            chunk_overlap_header: None,
         }
     }
 }
@@ -313,14 +310,7 @@ impl SplitterChunkHeaderOptions {
     // Set the value of chunk_overlap_header
     #[allow(unused)]
     pub fn with_chunk_overlap_header(mut self, overlap_header: &str) -> Self {
-        self.chunk_overlap_header = overlap_header.to_string();
-        self
-    }
-
-    // Set the value of append_chunk_overlap_header
-    #[allow(unused)]
-    pub fn with_append_chunk_overlap_header(mut self, value: bool) -> Self {
-        self.append_chunk_overlap_header = value;
+        self.chunk_overlap_header = Some(overlap_header.to_string());
         self
     }
 }
@@ -414,7 +404,7 @@ mod tests {
         let splitter = RecursiveCharacterTextSplitter::new(3, 0, &[" "]);
         let chunk_header_options = SplitterChunkHeaderOptions::default()
             .with_chunk_header("SOURCE NAME: testing\n-----\n")
-            .with_append_chunk_overlap_header(true);
+            .with_chunk_overlap_header("(cont'd) ");
         let mut metadata1 = IndexMap::new();
         metadata1.insert("source".into(), "1".into());
         let mut metadata2 = IndexMap::new();
