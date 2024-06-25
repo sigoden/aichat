@@ -551,27 +551,6 @@ async fn ask(
     config
         .write()
         .after_chat_completion(&mut input, &output, &tool_results)?;
-
-    if config.write().should_compress_session() {
-        let config = config.clone();
-        let color = if config.read().light_theme {
-            Color::LightGray
-        } else {
-            Color::DarkGray
-        };
-        print!(
-            "\n📢 {}{}{}\n",
-            color.normal().paint(
-                "Session compression is being activated because the current tokens exceed `"
-            ),
-            color.italic().paint("compress_threshold"),
-            color.normal().paint("`."),
-        );
-        tokio::spawn(async move {
-            let _ = compress_session(&config).await;
-            config.write().end_compressing_session();
-        });
-    }
     if need_send_tool_results(&tool_results) {
         ask(
             config,
@@ -581,6 +560,22 @@ async fn ask(
         )
         .await
     } else {
+        if config.write().should_compress_session() {
+            let config = config.clone();
+            let color = if config.read().light_theme {
+                Color::LightGray
+            } else {
+                Color::DarkGray
+            };
+            print!(
+                "\n📢 {}\n",
+                color.italic().paint("Compressing the session."),
+            );
+            tokio::spawn(async move {
+                let _ = compress_session(&config).await;
+                config.write().end_compressing_session();
+            });
+        }
         Ok(())
     }
 }
