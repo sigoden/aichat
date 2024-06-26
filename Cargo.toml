@@ -60,7 +60,6 @@ json-patch = { version = "2.0.0", default-features = false }
 bitflags = "2.5.0"
 path-absolutize = "3.1.1"
 hnsw_rs = "0.3.0"
-which = "6.0.1"
 rayon = "1.10.0"
 
 [dependencies.reqwest]

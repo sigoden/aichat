@@ -18,6 +18,7 @@ use inquire::{required, validator::Validation, Select, Text};
 use path_absolutize::Absolutize;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::HashMap;
 use std::{fmt::Debug, io::BufReader, path::Path};
 use tokio::sync::mpsc;
 
@@ -59,9 +60,10 @@ impl Rag {
             paths = add_doc_paths()?;
         };
         debug!("doc paths: {paths:?}");
+        let loaders = config.read().rag_document_loaders.clone();
         let (stop_spinner_tx, set_spinner_message_tx) = run_spinner("Starting").await;
         tokio::select! {
-            ret = rag.add_paths(&paths, Some(set_spinner_message_tx)) => {
+            ret = rag.add_paths(loaders, &paths, Some(set_spinner_message_tx)) => {
                 let _ = stop_spinner_tx.send(());
                 ret?;
             }
@@ -221,6 +223,7 @@ impl Rag {
 
     pub async fn add_paths<T: AsRef<Path>>(
         &mut self,
+        loaders: HashMap<String, String>,
         paths: &[T],
         progress_tx: Option<mpsc::UnboundedSender<String>>,
     ) -> Result<()> {
@@ -260,13 +263,15 @@ impl Rag {
                 self.data.chunk_overlap,
                 &separator,
             );
-            let documents = load(&path, &extension)
+            let documents = load_file(&loaders, &path, &extension)
                 .with_context(|| format!("Failed to load file at '{path}'"))?;
             let split_options = SplitterChunkHeaderOptions::default().with_chunk_header(&format!(
                 "<document_metadata>\npath: {path}\n</document_metadata>\n\n"
             ));
-            let documents = splitter.split_documents(&documents, &split_options);
-            rag_files.push(RagFile { path, documents });
+            if !documents.is_empty() {
+                let documents = splitter.split_documents(&documents, &split_options);
+                rag_files.push(RagFile { path, documents });
+            }
             progress(
                 &progress_tx,
                 format!("Loading files [{}/{file_paths_len}]", rag_files.len()),
