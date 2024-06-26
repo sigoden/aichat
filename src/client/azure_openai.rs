@@ -68,7 +68,7 @@ impl AzureOpenAIClient {
 
         let url = format!("{api_base}/embeddings");
 
-        let builder = client.post(url).bearer_auth(api_key).json(&body);
+        let builder = client.post(url).header("api-key", api_key).json(&body);
 
         Ok(builder)
     }
