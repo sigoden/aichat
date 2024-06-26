@@ -2,7 +2,7 @@ use anyhow::Result;
 use crossterm::{cursor, queue, style, terminal};
 use is_terminal::IsTerminal;
 use std::{
-    io::{stdout, Stdout, Write},
+    io::{stdout, Write},
     time::Duration,
 };
 use tokio::{
@@ -31,14 +31,20 @@ impl Spinner {
         self.message = format!(" {message}");
     }
 
-    pub fn step(&mut self, writer: &mut Stdout) -> Result<()> {
+    pub fn step(&mut self) -> Result<()> {
         if self.stopped {
             return Ok(());
         }
+        let mut writer = stdout();
         let frame = Self::DATA[self.index % Self::DATA.len()];
         let dots = ".".repeat((self.index / 5) % 4);
         let line = format!("{frame}{}{:<3}", self.message, dots);
-        queue!(writer, cursor::MoveToColumn(0), style::Print(line),)?;
+        queue!(
+            writer,
+            cursor::MoveToColumn(0),
+            terminal::Clear(terminal::ClearType::FromCursorDown),
+            style::Print(line),
+        )?;
         if self.index == 0 {
             queue!(writer, cursor::Hide)?;
         }
@@ -47,10 +53,11 @@ impl Spinner {
         Ok(())
     }
 
-    pub fn stop(&mut self, writer: &mut Stdout) -> Result<()> {
+    pub fn stop(&mut self) -> Result<()> {
         if self.stopped {
             return Ok(());
         }
+        let mut writer = stdout();
         self.stopped = true;
         queue!(
             writer,
@@ -76,7 +83,6 @@ async fn run_spinner_inner(
     stop_rx: oneshot::Receiver<()>,
     mut message_rx: mpsc::UnboundedReceiver<String>,
 ) -> Result<()> {
-    let mut writer = stdout();
     let is_stdout_terminal = stdout().is_terminal();
     let mut spinner = Spinner::new(&message);
     let mut interval = interval(Duration::from_millis(50));
@@ -86,7 +92,7 @@ async fn run_spinner_inner(
                 tokio::select! {
                     _ = interval.tick() => {
                         if is_stdout_terminal {
-                            let _ = spinner.step(&mut writer);
+                            let _ = spinner.step();
                         }
                     }
                     message = message_rx.recv() => {
@@ -99,7 +105,7 @@ async fn run_spinner_inner(
         } => {}
         _ = stop_rx => {
             if is_stdout_terminal {
-                spinner.stop(&mut writer)?;
+                spinner.stop()?;
             }
         }
     }
