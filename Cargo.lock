@@ -82,7 +82,6 @@ dependencies = [
  "reqwest",
  "reqwest-eventsource",
  "rustc-hash",
- "safe-path",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -2243,15 +2242,6 @@ name = "ryu"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3cb5ba0dc43242ce17de99c180e96db90b235b8a9fdc9543c96d2209116bd9f"
-
-[[package]]
-name = "safe-path"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "980abdd3220aa19b67ca3ea07b173ca36383f18ae48cde696d90c8af39447ffb"
-dependencies = [
- "libc",
-]
 
 [[package]]
 name = "same-file"

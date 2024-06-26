@@ -61,7 +61,6 @@ bitflags = "2.5.0"
 path-absolutize = "3.1.1"
 hnsw_rs = "0.3.0"
 rayon = "1.10.0"
-safe-path = "0.1.0"
 
 [dependencies.reqwest]
 version = "0.12.0"

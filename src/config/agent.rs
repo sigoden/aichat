@@ -62,9 +62,9 @@ impl Agent {
                 if Rag::is_url_path(path) {
                     document_paths.push(path.to_string());
                 } else {
-                    let path = safe_path::scoped_join(&functions_dir, path)
-                        .with_context(|| format!("Invalid document path: '{path}'"))?;
-                    document_paths.push(path.display().to_string())
+                    let new_path = join_path_as_subpath(&functions_dir, path)
+                        .ok_or_else(|| anyhow!("Invalid document path: '{path}'"))?;
+                    document_paths.push(new_path.display().to_string())
                 }
             }
             Some(Arc::new(
