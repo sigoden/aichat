@@ -205,7 +205,7 @@ mod tests {
     #[test]
     #[cfg(target_os = "windows")]
     fn test_join_path_as_subpath() {
-        assert!(
+        assert_eq!(
             join_path_as_subpath("C:\\Users\\user\\dir1", "files/file1"),
             Some(PathBuf::from("C:\\Users\\user\\dir1\\files\\file1"))
         );
