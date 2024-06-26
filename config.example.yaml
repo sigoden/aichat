@@ -27,7 +27,7 @@ summary_prompt: 'This is a summary of the chat history as a recap: '
 
 # ---- function-calling & agent ----
 # Controls the function calling feature. For setup instructions, visit https://github.com/sigoden/llm-functions
-function_calling: false
+function_calling: true
 # Regex for seletecting dangerous functions
 # User confirmation is required when executing these functions
 # e.g. 'execute_command|execute_js_code' 'execute_.*'
