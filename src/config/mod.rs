@@ -29,7 +29,7 @@ use std::{
     fs::{create_dir_all, read_dir, read_to_string, remove_file, File, OpenOptions},
     io::Write,
     path::{Path, PathBuf},
-    process::exit,
+    process,
     sync::Arc,
 };
 use syntect::highlighting::ThemeSet;
@@ -1529,7 +1529,7 @@ fn create_config_file(config_path: &Path) -> Result<()> {
         .with_default(true)
         .prompt()?;
     if !ans {
-        exit(0);
+        process::exit(0);
     }
 
     let client = Select::new("Platform:", list_client_types()).prompt()?;
