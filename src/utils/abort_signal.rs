@@ -59,6 +59,6 @@ pub async fn watch_abort_signal(abort_signal: AbortSignal) {
         if abort_signal.aborted() {
             break;
         }
-        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        tokio::time::sleep(std::time::Duration::from_millis(25)).await;
     }
 }
