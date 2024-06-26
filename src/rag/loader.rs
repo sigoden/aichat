@@ -1,21 +1,17 @@
 use super::*;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use async_recursion::async_recursion;
-use lazy_static::lazy_static;
-use std::{fs::read_to_string, path::Path};
-use which::which;
+use std::{collections::HashMap, fs::read_to_string, path::Path};
 
-lazy_static! {
-    static ref EXIST_PANDOC: bool = which("pandoc").is_ok();
-    static ref EXIST_PDFTOTEXT: bool = which("pdftotext").is_ok();
-}
-
-pub fn load(path: &str, extension: &str) -> Result<Vec<RagDocument>> {
-    match extension {
-        "docx" | "epub" => load_with_pandoc(path),
-        "pdf" => load_with_pdftotext(path),
-        _ => load_plain(path),
+pub fn load_file(
+    loaders: &HashMap<String, String>,
+    path: &str,
+    loader_name: &str,
+) -> Result<Vec<RagDocument>> {
+    match loaders.get(loader_name) {
+        Some(loader_command) => load_with_command(path, loader_name, loader_command),
+        None => load_plain(path),
     }
 }
 
@@ -25,21 +21,33 @@ fn load_plain(path: &str) -> Result<Vec<RagDocument>> {
     Ok(vec![document])
 }
 
-fn load_with_pdftotext(path: &str) -> Result<Vec<RagDocument>> {
-    if !*EXIST_PDFTOTEXT {
-        bail!("Need to install pdftotext (part of the poppler package) to load the file.")
+fn load_with_command(
+    path: &str,
+    loader_name: &str,
+    loader_command: &str,
+) -> Result<Vec<RagDocument>> {
+    let cmd_args = shell_words::split(loader_command)
+        .with_context(|| anyhow!("Invalid rag loader '{loader_name}': `{loader_command}`"))?;
+    let cmd_args: Vec<_> = cmd_args
+        .into_iter()
+        .map(|v| if v == "$1" { path.to_string() } else { v })
+        .collect();
+    let cmd_eval = shell_words::join(&cmd_args);
+    let (cmd, args) = cmd_args.split_at(1);
+    let cmd = &cmd[0];
+    let (success, stdout, stderr) =
+        run_command_with_output(cmd, args, None).with_context(|| {
+            format!("Unable to run `{cmd_eval}`, Perhaps '{cmd}' is not installed?")
+        })?;
+    if !success {
+        let err = if !stderr.is_empty() {
+            stderr
+        } else {
+            format!("The command `{cmd_eval}` exited with non-zero.")
+        };
+        bail!("{err}")
     }
-    let contents = run_external_tool("pdftotext", &[path, "-"])?;
-    let document = RagDocument::new(contents);
-    Ok(vec![document])
-}
-
-fn load_with_pandoc(path: &str) -> Result<Vec<RagDocument>> {
-    if !*EXIST_PANDOC {
-        bail!("Need to install pandoc to load the file.")
-    }
-    let contents = run_external_tool("pandoc", &["--to", "plain", path])?;
-    let document = RagDocument::new(contents);
+    let document = RagDocument::new(stdout);
     Ok(vec![document])
 }
 
@@ -112,19 +120,6 @@ fn is_valid_extension(suffixes: Option<&Vec<String>>, path: &Path) -> bool {
         }
     }
     true
-}
-
-fn run_external_tool(cmd: &str, args: &[&str]) -> Result<String> {
-    let (success, stdout, stderr) = run_command_with_output(cmd, args, None)?;
-    if success {
-        return Ok(stdout);
-    }
-    let err = if !stderr.is_empty() {
-        stderr
-    } else {
-        format!("`{cmd}` exited with non-zero.")
-    };
-    bail!("{err}")
 }
 
 #[cfg(test)]
