@@ -224,9 +224,9 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
     let client = input.create_client()?;
     config.write().before_chat_completion(&input)?;
     let ret = if *IS_STDOUT_TERMINAL {
-        let (stop_spinner_tx, _) = run_spinner("Generating").await;
+        let spinner = create_spinner("Generating").await;
         let ret = client.chat_completions(input.clone()).await;
-        let _ = stop_spinner_tx.send(());
+        spinner.stop();
         ret
     } else {
         client.chat_completions(input.clone()).await
