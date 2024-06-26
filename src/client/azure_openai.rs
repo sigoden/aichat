@@ -49,7 +49,7 @@ impl AzureOpenAIClient {
             self.model.name()
         );
 
-        debug!("AzureOpenAI Request: {url} {body}");
+        debug!("AzureOpenAI Chat Completions Request: {url} {body}");
 
         let builder = client.post(url).header("api-key", api_key).json(&body);
 
@@ -66,7 +66,13 @@ impl AzureOpenAIClient {
 
         let body = openai_build_embeddings_body(data, &self.model);
 
-        let url = format!("{api_base}/embeddings");
+        let url = format!(
+            "{}/openai/deployments/{}/embeddings?api-version=2024-02-01",
+            &api_base,
+            self.model.name()
+        );
+
+        debug!("AzureOpenAI Embeddings Request: {url} {body}");
 
         let builder = client.post(url).header("api-key", api_key).json(&body);
 
