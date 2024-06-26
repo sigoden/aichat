@@ -47,8 +47,6 @@ const FUNCTIONS_DIR_NAME: &str = "functions";
 const FUNCTIONS_FILE_NAME: &str = "functions.json";
 const FUNCTIONS_BIN_DIR_NAME: &str = "bin";
 const AGENTS_DIR_NAME: &str = "agents";
-const AGENT_DEFINITION_FILE_NAME: &str = "index.yaml";
-const AGENT_EMBEDDINGS_DIR: &str = "embeddings";
 const AGENT_RAG_FILE_NAME: &str = "rag.bin";
 
 pub const TEMP_ROLE_NAME: &str = "%%";
@@ -350,18 +348,6 @@ impl Config {
 
     pub fn agent_functions_dir(name: &str) -> Result<PathBuf> {
         Ok(Self::agents_functions_dir()?.join(name))
-    }
-
-    pub fn agent_functions_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_functions_dir(name)?.join(FUNCTIONS_FILE_NAME))
-    }
-
-    pub fn agent_definition_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_functions_dir(name)?.join(AGENT_DEFINITION_FILE_NAME))
-    }
-
-    pub fn agent_embeddings_dir(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_functions_dir(name)?.join(AGENT_EMBEDDINGS_DIR))
     }
 
     pub fn state(&self) -> StateFlags {
