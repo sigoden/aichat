@@ -56,7 +56,7 @@ impl Rag {
         let mut rag = Self::create(config, name, save_path, data)?;
         let mut paths = doc_paths.to_vec();
         if paths.is_empty() {
-            paths = add_doc_paths()?;
+            paths = add_document_paths()?;
         };
         debug!("doc paths: {paths:?}");
         let loaders = config.read().rag_document_loaders.clone();
@@ -233,7 +233,7 @@ impl Rag {
         progress(&spinner, "Gathering paths".into());
         for path in paths {
             let path = path.as_ref();
-            if path.starts_with("http://") || path.starts_with("https://") {
+            if Self::is_url_path(path) {
                 if let Some(path) = path.strip_suffix("**") {
                     new_paths.push((path.to_string(), RECURSIVE_URL_LOADER.into()));
                 } else {
@@ -335,6 +335,10 @@ impl Rag {
         self.bm25 = self.data.build_bm25();
 
         Ok(())
+    }
+
+    pub fn is_url_path(path: &str) -> bool {
+        path.starts_with("http://") || path.starts_with("https://")
     }
 
     async fn hybird_search(
@@ -628,8 +632,8 @@ fn set_chunk_overlay(default_value: usize) -> Result<usize> {
     value.parse().map_err(|_| anyhow!("Invalid chunk_overlay"))
 }
 
-fn add_doc_paths() -> Result<Vec<String>> {
-    let text = Text::new("Add document paths:")
+fn add_document_paths() -> Result<Vec<String>> {
+    let text = Text::new("Add documents:")
         .with_validator(required!("This field is required"))
         .with_help_message("e.g. file;dir/;dir/**/*.md;url;sites/**")
         .prompt()?;
