@@ -20,7 +20,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
 use std::{fmt::Debug, io::BufReader, path::Path};
-use tokio::sync::mpsc;
 
 pub struct Rag {
     name: String,
@@ -61,14 +60,14 @@ impl Rag {
         };
         debug!("doc paths: {paths:?}");
         let loaders = config.read().rag_document_loaders.clone();
-        let (stop_spinner_tx, set_spinner_message_tx) = run_spinner("Starting").await;
+        let spinner = create_spinner("Starting").await;
         tokio::select! {
-            ret = rag.add_paths(loaders, &paths, Some(set_spinner_message_tx)) => {
-                let _ = stop_spinner_tx.send(());
+            ret = rag.add_paths(loaders, &paths, Some(spinner.clone())) => {
+                spinner.stop();
                 ret?;
             }
             _ = watch_abort_signal(abort_signal) => {
-                let _ = stop_spinner_tx.send(());
+                spinner.stop();
                 bail!("Aborted!")
             },
         };
@@ -207,7 +206,7 @@ impl Rag {
         rerank: Option<(Box<dyn Client>, f32)>,
         abort_signal: AbortSignal,
     ) -> Result<String> {
-        let (stop_spinner_tx, _) = run_spinner("Searching").await;
+        let spinner = create_spinner("Searching").await;
         let ret = tokio::select! {
             ret = self.hybird_search(text, top_k, min_score_vector_search, min_score_keyword_search, rerank) => {
                 ret
@@ -216,7 +215,7 @@ impl Rag {
                 bail!("Aborted!")
             },
         };
-        let _ = stop_spinner_tx.send(());
+        spinner.stop();
         let output = ret?.join("\n\n");
         Ok(output)
     }
@@ -225,18 +224,18 @@ impl Rag {
         &mut self,
         loaders: HashMap<String, String>,
         paths: &[T],
-        progress_tx: Option<mpsc::UnboundedSender<String>>,
+        spinner: Option<Spinner>,
     ) -> Result<()> {
         let mut rag_files = vec![];
 
         // List files
         let mut new_paths = vec![];
-        progress(&progress_tx, "Gathering paths".into());
+        progress(&spinner, "Gathering paths".into());
         for path in paths {
             let path = path.as_ref();
             if path.starts_with("http://") || path.starts_with("https://") {
                 if let Some(path) = path.strip_suffix("**") {
-                    new_paths.push((path.to_string(), "recursive_url".into()));
+                    new_paths.push((path.to_string(), RECURSIVE_URL_LOADER.into()));
                 } else {
                     new_paths.push((path.to_string(), "url".into()))
                 }
@@ -270,11 +269,11 @@ impl Rag {
         // Load files
         let new_paths_len = new_paths.len();
         if new_paths_len > 0 {
+            if let Some(spinner) = &spinner {
+                let _ = spinner.set_message(String::new());
+            }
             for (index, (path, loader_name)) in new_paths.into_iter().enumerate() {
-                progress(
-                    &progress_tx,
-                    format!("Loading docs [{index}/{new_paths_len}]"),
-                );
+                println!("Loading {path} [{}/{new_paths_len}]", index + 1);
                 let documents = load(&loaders, &path, &loader_name)
                     .with_context(|| format!("Failed to load '{path}'"))?;
                 let separator = get_separators(&loader_name);
@@ -299,8 +298,13 @@ impl Rag {
                         splitter.split_documents(&[document], &split_options)
                     })
                     .collect();
+                let display_path = if loader_name == RECURSIVE_URL_LOADER {
+                    format!("{path}**")
+                } else {
+                    path
+                };
                 rag_files.push(RagFile {
-                    path,
+                    path: display_path,
                     documents: splitted_documents,
                 })
             }
@@ -322,11 +326,11 @@ impl Rag {
 
         let embeddings_data = EmbeddingsData::new(texts, false);
         let embeddings = self
-            .create_embeddings(embeddings_data, progress_tx.clone())
+            .create_embeddings(embeddings_data, spinner.clone())
             .await?;
 
         self.data.add(rag_files, vector_ids, embeddings);
-        progress(&progress_tx, "Building vector store".into());
+        progress(&spinner, "Building vector store".into());
         self.hnsw = self.data.build_hnsw();
         self.bm25 = self.data.build_bm25();
 
@@ -446,7 +450,7 @@ impl Rag {
     async fn create_embeddings(
         &self,
         data: EmbeddingsData,
-        progress_tx: Option<mpsc::UnboundedSender<String>>,
+        spinner: Option<Spinner>,
     ) -> Result<EmbeddingsOutput> {
         let EmbeddingsData { texts, query } = data;
         let mut output = vec![];
@@ -454,8 +458,8 @@ impl Rag {
         let batch_chunks_len = batch_chunks.len();
         for (index, texts) in batch_chunks.enumerate() {
             progress(
-                &progress_tx,
-                format!("Creating embeddings [{index}/{batch_chunks_len}]"),
+                &spinner,
+                format!("Creating embeddings [{}/{batch_chunks_len}]", index + 1),
             );
             let chunk_data = EmbeddingsData {
                 texts: texts.to_vec(),
@@ -633,9 +637,9 @@ fn add_doc_paths() -> Result<Vec<String>> {
     Ok(paths)
 }
 
-fn progress(spinner_message_tx: &Option<mpsc::UnboundedSender<String>>, message: String) {
-    if let Some(tx) = spinner_message_tx {
-        let _ = tx.send(message);
+fn progress(spinner: &Option<Spinner>, message: String) {
+    if let Some(spinner) = spinner {
+        let _ = spinner.set_message(message);
     }
 }
 

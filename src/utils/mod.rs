@@ -12,7 +12,7 @@ pub use self::command::*;
 pub use self::crypto::*;
 pub use self::prompt_input::*;
 pub use self::render_prompt::render_prompt;
-pub use self::spinner::run_spinner;
+pub use self::spinner::{create_spinner, Spinner};
 
 use fancy_regex::Regex;
 use is_terminal::IsTerminal;
