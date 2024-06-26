@@ -2,32 +2,50 @@ use super::*;
 
 use anyhow::{bail, Context, Result};
 use async_recursion::async_recursion;
+use serde_json::Value;
 use std::{collections::HashMap, fs::read_to_string, path::Path};
 
-pub fn load_file(
+pub fn load(
     loaders: &HashMap<String, String>,
     path: &str,
     loader_name: &str,
 ) -> Result<Vec<RagDocument>> {
-    match loaders.get(loader_name) {
-        Some(loader_command) => load_with_command(path, loader_name, loader_command),
-        None => load_plain(path),
+    if loader_name == "recursive_url" {
+        let loader_command = loaders
+            .get(loader_name)
+            .with_context(|| format!("RAG document loader '{loader_name}' not configured"))?;
+        let contents = run_loader_command(path, loader_name, loader_command)?;
+        let output = match parse_json_documents(&contents) {
+            Some(v) => v,
+            None => vec![RagDocument::new(contents)],
+        };
+        Ok(output)
+    } else {
+        let mut document = match loaders.get(loader_name) {
+            Some(loader_command) => load_with_command(path, loader_name, loader_command),
+            None => load_plain(path),
+        }?;
+        document.metadata.insert("path".into(), path.to_string());
+        Ok(vec![document])
     }
 }
 
-fn load_plain(path: &str) -> Result<Vec<RagDocument>> {
+fn load_plain(path: &str) -> Result<RagDocument> {
     let contents = read_to_string(path)?;
     let document = RagDocument::new(contents);
-    Ok(vec![document])
+    Ok(document)
 }
 
-fn load_with_command(
-    path: &str,
-    loader_name: &str,
-    loader_command: &str,
-) -> Result<Vec<RagDocument>> {
-    let cmd_args = shell_words::split(loader_command)
-        .with_context(|| anyhow!("Invalid rag loader '{loader_name}': `{loader_command}`"))?;
+fn load_with_command(path: &str, loader_name: &str, loader_command: &str) -> Result<RagDocument> {
+    let contents = run_loader_command(path, loader_name, loader_command)?;
+    let document = RagDocument::new(contents);
+    Ok(document)
+}
+
+fn run_loader_command(path: &str, loader_name: &str, loader_command: &str) -> Result<String> {
+    let cmd_args = shell_words::split(loader_command).with_context(|| {
+        anyhow!("Invalid rag document loader '{loader_name}': `{loader_command}`")
+    })?;
     let cmd_args: Vec<_> = cmd_args
         .into_iter()
         .map(|v| if v == "$1" { path.to_string() } else { v })
@@ -47,8 +65,79 @@ fn load_with_command(
         };
         bail!("{err}")
     }
-    let document = RagDocument::new(stdout);
-    Ok(vec![document])
+    Ok(stdout)
+}
+
+fn parse_json_documents(data: &str) -> Option<Vec<RagDocument>> {
+    let value: Value = serde_json::from_str(data).ok()?;
+    let items = match value {
+        Value::Array(v) => v,
+        _ => return None,
+    };
+    if items.is_empty() {
+        return None;
+    }
+    match &items[0] {
+        Value::String(_) => {
+            let documents: Vec<_> = items
+                .into_iter()
+                .flat_map(|item| {
+                    if let Value::String(content) = item {
+                        Some(RagDocument::new(content))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            Some(documents)
+        }
+        Value::Object(obj) => {
+            let key = [
+                "page_content",
+                "pageContent",
+                "content",
+                "html",
+                "markdown",
+                "text",
+                "data",
+            ]
+            .into_iter()
+            .map(|v| v.to_string())
+            .find(|key| obj.get(key).and_then(|v| v.as_str()).is_some())?;
+            let documents: Vec<_> = items
+                .into_iter()
+                .flat_map(|item| {
+                    if let Value::Object(mut obj) = item {
+                        if let Some(page_content) = obj.get(&key).and_then(|v| v.as_str()) {
+                            let page_content = page_content.to_string();
+                            obj.remove(&key);
+                            let metadata: IndexMap<_, _> = obj
+                                .into_iter()
+                                .map(|(k, v)| {
+                                    if let Value::String(v) = v {
+                                        (k, v)
+                                    } else {
+                                        (k, v.to_string())
+                                    }
+                                })
+                                .collect();
+                            return Some(RagDocument {
+                                page_content,
+                                metadata,
+                            });
+                        }
+                    }
+                    None
+                })
+                .collect();
+            if documents.is_empty() {
+                None
+            } else {
+                Some(documents)
+            }
+        }
+        _ => None,
+    }
 }
 
 pub fn parse_glob(path_str: &str) -> Result<(String, Vec<String>)> {
@@ -145,5 +234,37 @@ mod tests {
             parse_glob("C:\\dir\\**\\*.{md,txt}").unwrap(),
             ("C:\\dir".into(), vec!["md".into(), "txt".into()])
         );
+    }
+
+    #[test]
+    fn test_parse_json_documents() {
+        let data = r#"["foo", "bar"]"#;
+        assert_eq!(
+            parse_json_documents(data).unwrap(),
+            vec![RagDocument::new("foo"), RagDocument::new("bar")]
+        );
+
+        let data = r#"[{"content": "foo"}, {"content": "bar"}]"#;
+        assert_eq!(
+            parse_json_documents(data).unwrap(),
+            vec![RagDocument::new("foo"), RagDocument::new("bar")]
+        );
+
+        let mut metadata = IndexMap::new();
+        metadata.insert("k1".into(), "1".into());
+        let data = r#"[{"k1": 1, "data": "foo" }]"#;
+        assert_eq!(
+            parse_json_documents(data).unwrap(),
+            vec![RagDocument::new("foo").with_metadata(metadata.clone())]
+        );
+
+        let data = r#""hello""#;
+        assert!(parse_json_documents(data).is_none());
+
+        let data = r#"{"key":"value"}"#;
+        assert!(parse_json_documents(data).is_none());
+
+        let data = r#"[{"key":"value"}]"#;
+        assert!(parse_json_documents(data).is_none());
     }
 }

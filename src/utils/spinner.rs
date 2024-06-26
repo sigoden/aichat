@@ -38,7 +38,7 @@ impl Spinner {
         let frame = Self::DATA[self.index % Self::DATA.len()];
         let dots = ".".repeat((self.index / 5) % 4);
         let line = format!("{frame}{}{:<3}", self.message, dots);
-        queue!(writer, cursor::MoveToColumn(0), style::Print(line),)?;
+        queue!(writer, cursor::MoveToColumn(0), terminal::Clear(terminal::ClearType::FromCursorDown), style::Print(line),)?;
         if self.index == 0 {
             queue!(writer, cursor::Hide)?;
         }
