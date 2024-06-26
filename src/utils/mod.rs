@@ -154,7 +154,7 @@ pub fn dimmed_text(input: &str) -> String {
     nu_ansi_term::Style::new().dimmed().paint(input).to_string()
 }
 
-pub fn join_path_as_subpath<T1: AsRef<Path>, T2: AsRef<Path>>(
+pub fn safe_join_path<T1: AsRef<Path>, T2: AsRef<Path>>(
     base_path: T1,
     sub_path: T2,
 ) -> Option<PathBuf> {
@@ -193,23 +193,23 @@ mod tests {
 
     #[test]
     #[cfg(not(target_os = "windows"))]
-    fn test_join_path_as_subpath() {
+    fn test_safe_join_path() {
         assert_eq!(
-            join_path_as_subpath("/home/user/dir1", "files/file1"),
+            safe_join_path("/home/user/dir1", "files/file1"),
             Some(PathBuf::from("/home/user/dir1/files/file1"))
         );
-        assert!(join_path_as_subpath("/home/user/dir1", "/files/file1").is_none());
-        assert!(join_path_as_subpath("/home/user/dir1", "../file1").is_none());
+        assert!(safe_join_path("/home/user/dir1", "/files/file1").is_none());
+        assert!(safe_join_path("/home/user/dir1", "../file1").is_none());
     }
 
     #[test]
     #[cfg(target_os = "windows")]
-    fn test_join_path_as_subpath() {
-        assert_eq!(
-            join_path_as_subpath("C:\\Users\\user\\dir1", "files/file1"),
+    fn test_safe_join_path() {
+        assert!(
+            safe_join_path("C:\\Users\\user\\dir1", "files/file1"),
             Some(PathBuf::from("C:\\Users\\user\\dir1\\files\\file1"))
         );
-        assert!(join_path_as_subpath("C:\\Users\\user\\dir1", "/files/file1").is_none());
-        assert!(join_path_as_subpath("C:\\Users\\user\\dir1", "../file1").is_none());
+        assert!(safe_join_path("C:\\Users\\user\\dir1", "/files/file1").is_none());
+        assert!(safe_join_path("C:\\Users\\user\\dir1", "../file1").is_none());
     }
 }
