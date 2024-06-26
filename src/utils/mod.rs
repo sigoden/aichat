@@ -205,7 +205,7 @@ mod tests {
     #[test]
     #[cfg(target_os = "windows")]
     fn test_safe_join_path() {
-        assert!(
+        assert_eq!(
             safe_join_path("C:\\Users\\user\\dir1", "files/file1"),
             Some(PathBuf::from("C:\\Users\\user\\dir1\\files\\file1"))
         );
