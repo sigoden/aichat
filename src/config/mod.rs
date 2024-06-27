@@ -1021,7 +1021,7 @@ impl Config {
                 if !model.supports_function_calling() {
                     functions = None;
                     if *IS_STDOUT_TERMINAL {
-                        eprintln!("{}", warning_text("WARNING: the role or session includes functions, but the model or client does not support function calling."));
+                        eprintln!("{}", warning_text("WARNING: This LLM or client does not support function calling, despite the context requiring it."));
                     }
                 }
             }
