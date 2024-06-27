@@ -22,7 +22,10 @@ use crate::config::{
 use crate::function::{eval_tool_calls, need_send_tool_results};
 use crate::render::{render_error, MarkdownRender};
 use crate::repl::Repl;
-use crate::utils::*;
+use crate::utils::{
+    create_abort_signal, create_spinner, detect_shell, extract_block, run_command, AbortSignal,
+    Shell, CODE_BLOCK_RE, IS_STDOUT_TERMINAL,
+};
 
 use anyhow::{bail, Result};
 use async_recursion::async_recursion;
@@ -138,7 +141,7 @@ async fn main() -> Result<()> {
         if no_input {
             bail!("No input");
         }
-        let input = create_input(&config, text, file)?;
+        let input = create_input(&config, text, file).await?;
         let shell = detect_shell();
         shell_execute(&config, &shell, input).await?;
         return Ok(());
@@ -146,7 +149,7 @@ async fn main() -> Result<()> {
     config.write().apply_prelude()?;
     if let Err(err) = match no_input {
         false => {
-            let mut input = create_input(&config, text, file)?;
+            let mut input = create_input(&config, text, file).await?;
             input.use_embeddings(abort_signal.clone()).await?;
             start_directive(&config, input, cli.no_stream, cli.code, abort_signal).await
         }
@@ -298,11 +301,15 @@ fn aggregate_text(text: Option<String>) -> Result<Option<String>> {
     Ok(text)
 }
 
-fn create_input(config: &GlobalConfig, text: Option<String>, file: &[String]) -> Result<Input> {
+async fn create_input(
+    config: &GlobalConfig,
+    text: Option<String>,
+    file: &[String],
+) -> Result<Input> {
     let input = if file.is_empty() {
         Input::from_str(config, &text.unwrap_or_default(), None)
     } else {
-        Input::new(config, &text.unwrap_or_default(), file.to_vec(), None)?
+        Input::from_files(config, &text.unwrap_or_default(), file.to_vec(), None).await?
     };
     if input.is_empty() {
         bail!("No input");

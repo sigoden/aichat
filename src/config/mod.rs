@@ -114,7 +114,7 @@ pub struct Config {
     pub rag_min_score_keyword_search: f32,
     pub rag_min_score_rerank: f32,
     #[serde(default)]
-    pub rag_document_loaders: HashMap<String, String>,
+    pub document_loaders: HashMap<String, String>,
     pub rag_template: Option<String>,
 
     pub highlight: bool,
@@ -174,7 +174,7 @@ impl Default for Config {
             rag_min_score_vector_search: 0.0,
             rag_min_score_keyword_search: 0.0,
             rag_min_score_rerank: 0.0,
-            rag_document_loaders: Default::default(),
+            document_loaders: Default::default(),
             rag_template: None,
 
             save_session: None,
@@ -230,7 +230,7 @@ impl Config {
         config.setup_model()?;
         config.setup_highlight();
         config.setup_light_theme()?;
-        config.setup_rag_document_loaders();
+        config.setup_document_loaders();
 
         Ok(config)
     }
@@ -1433,12 +1433,12 @@ impl Config {
         Ok(())
     }
 
-    fn setup_rag_document_loaders(&mut self) {
+    fn setup_document_loaders(&mut self) {
         [("pdf", "pdftotext $1 -"), ("docx", "pandoc --to plain $1")]
             .into_iter()
             .for_each(|(k, v)| {
                 let (k, v) = (k.to_string(), v.to_string());
-                self.rag_document_loaders.entry(k).or_insert(v);
+                self.document_loaders.entry(k).or_insert(v);
             });
     }
 }

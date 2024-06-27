@@ -4,6 +4,7 @@ mod command;
 mod crypto;
 mod prompt_input;
 mod render_prompt;
+mod request;
 mod spinner;
 
 pub use self::abort_signal::*;
@@ -12,6 +13,7 @@ pub use self::command::*;
 pub use self::crypto::*;
 pub use self::prompt_input::*;
 pub use self::render_prompt::render_prompt;
+pub use self::request::*;
 pub use self::spinner::{create_spinner, Spinner};
 
 use anyhow::{Context, Result};

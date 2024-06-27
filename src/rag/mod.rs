@@ -59,7 +59,7 @@ impl Rag {
             paths = add_document_paths()?;
         };
         debug!("doc paths: {paths:?}");
-        let loaders = config.read().rag_document_loaders.clone();
+        let loaders = config.read().document_loaders.clone();
         let spinner = create_spinner("Starting").await;
         tokio::select! {
             ret = rag.add_paths(loaders, &paths, Some(spinner.clone())) => {
@@ -641,7 +641,7 @@ fn add_document_paths() -> Result<Vec<String>> {
         .with_validator(required!("This field is required"))
         .with_help_message("e.g. file;dir/;dir/**/*.md;url;sites/**")
         .prompt()?;
-    let paths = text.split(';').map(|v| v.to_string()).collect();
+    let paths = text.split(';').map(|v| v.trim().to_string()).collect();
     Ok(paths)
 }
 
