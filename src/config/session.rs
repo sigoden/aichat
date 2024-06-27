@@ -298,9 +298,7 @@ impl Session {
                 if self.is_temp() {
                     self.name = Text::new("Session name:")
                         .with_validator(|input: &str| {
-                            if input == TEMP_SESSION_NAME {
-                                Ok(Validation::Invalid(format!("'{TEMP_SESSION_NAME}' is a reserved word and cannot be used as a session name").into()))
-                            } else if input.trim().is_empty() {
+                            if input.trim().is_empty() {
                                 Ok(Validation::Invalid("This field is required".into()))
                             } else {
                                 Ok(Validation::Valid)
