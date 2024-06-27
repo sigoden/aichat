@@ -10,7 +10,6 @@ use crate::utils::{base64_encode, sha256, AbortSignal};
 use anyhow::{bail, Context, Result};
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
-use mime_guess::from_path;
 use std::{
     collections::HashMap,
     fs::File,
@@ -407,8 +406,16 @@ fn is_image_ext(path: &Path) -> bool {
 
 fn read_media_to_data_url<P: AsRef<Path>>(image_path: P) -> Result<String> {
     let image_path = image_path.as_ref();
-
-    let mime_type = from_path(image_path).first_or_octet_stream().to_string();
+    let mime_type = match image_path.extension().and_then(|v| v.to_str()) {
+        Some(extension) => match extension {
+            "png" => "image/png",
+            "jpg" | "jpeg" => "image/jpeg",
+            "webp" => "image/webp",
+            "gif" => "image/gif",
+            _ => bail!("Unsupported media type"),
+        },
+        None => bail!("Unknown media type"),
+    };
     let mut file = File::open(image_path)?;
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer)?;

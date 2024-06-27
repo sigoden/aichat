@@ -51,11 +51,12 @@ rag_min_score_keyword_search: 0             # Specifies the minimum relevance sc
 rag_min_score_rerank: 0                     # Specifies the minimum relevance score for reranking
 # Defines document loaders
 rag_document_loaders:
-  # You can add more loaders, here is the syntax:
-  # <file-extension>: <command-to-load-the-file>
+  # You can add custom loaders using the following syntax:
+  #   <file-extension>: <command-to-load-the-file>
+  # Note: Use `$1` for input filepath and `$2` for output filepath. If `$2` is not provided, output to stdout.
   pdf: 'pdftotext $1 -'                     # Load .pdf file, see https://poppler.freedesktop.org
   docx: 'pandoc --to plain $1'              # Load .docx file
-  url: 'curl -fsSL $1'                      # Load url
+  # xlsx: 'ssconvert $1 $2'                 # Load .xlsx file
   # recursive_url: 'crawler $1 $2'          # Load websites
 
 # Defines the query structure using variables like __CONTEXT__ and __INPUT__ to tailor searches to specific needs
