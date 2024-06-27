@@ -2,23 +2,10 @@ use super::*;
 
 use anyhow::{bail, Context, Result};
 use async_recursion::async_recursion;
-use lazy_static::lazy_static;
 use serde_json::Value;
-use std::{collections::HashMap, env, path::Path, time::Duration};
-use tokio::io::AsyncWriteExt;
+use std::{collections::HashMap, path::Path};
 
-pub const RECURSIVE_URL_LOADER: &str = "recursive_url";
-pub const URL_LOADER: &str = "url";
 pub const EXTENSION_METADATA: &str = "__extension__";
-
-lazy_static! {
-    static ref CLIENT: Result<reqwest::Client> = {
-        let builder = reqwest::ClientBuilder::new().timeout(Duration::from_secs(30));
-        let builder = set_proxy(builder, None)?;
-        let client = builder.build()?;
-        Ok(client)
-    };
-}
 
 pub async fn load(
     loaders: &HashMap<String, String>,
@@ -35,16 +22,16 @@ pub async fn load(
             None => vec![RagDocument::new(contents)],
         };
         Ok(output)
+    } else if extension == URL_LOADER {
+        let (contents, extension) = fetch(loaders, path).await?;
+        let mut metadata: RagMetadata = Default::default();
+        metadata.insert("path".into(), path.into());
+        metadata.insert(EXTENSION_METADATA.into(), extension);
+        Ok(vec![RagDocument::new(contents).with_metadata(metadata)])
     } else {
         match loaders.get(extension) {
             Some(loader_command) => load_with_command(path, extension, loader_command),
-            None => {
-                if extension == URL_LOADER {
-                    load_url(loaders, path).await
-                } else {
-                    load_plain(path, extension).await
-                }
-            }
+            None => load_plain(path, extension).await,
         }
     }
 }
@@ -61,44 +48,6 @@ async fn load_plain(path: &str, extension: &str) -> Result<Vec<RagDocument>> {
     Ok(vec![document])
 }
 
-async fn load_url(loaders: &HashMap<String, String>, path: &str) -> Result<Vec<RagDocument>> {
-    let client = match *CLIENT {
-        Ok(ref client) => client,
-        Err(ref err) => bail!("{err}"),
-    };
-    let mut res = client.get(path).send().await?;
-
-    let mut metadata: RagMetadata = Default::default();
-    metadata.insert("path".into(), path.to_string());
-
-    let extension = path
-        .rsplit_once('/')
-        .and_then(|(_, pair)| pair.rsplit_once('.').map(|(_, ext)| ext))
-        .unwrap_or("txt");
-    let extension = extension.to_lowercase();
-    let document = match loaders.get(&extension) {
-        Some(loader_command) => {
-            let save_path = env::temp_dir()
-                .join(format!("aichat-download-{}.{extension}", sha256(path)))
-                .display()
-                .to_string();
-            let mut save_file = tokio::fs::File::create(&save_path).await?;
-            while let Some(chunk) = res.chunk().await? {
-                save_file.write_all(&chunk).await?;
-            }
-            let contents = run_loader_command(&save_path, &extension, loader_command)?;
-            metadata.insert(EXTENSION_METADATA.into(), "txt".to_string());
-            RagDocument::new(contents).with_metadata(metadata)
-        }
-        None => {
-            let contents = res.text().await?;
-            metadata.insert(EXTENSION_METADATA.into(), extension);
-            RagDocument::new(contents).with_metadata(metadata)
-        }
-    };
-    Ok(vec![document])
-}
-
 fn load_with_command(
     path: &str,
     extension: &str,
@@ -109,61 +58,8 @@ fn load_with_command(
     document.metadata.insert("path".into(), path.to_string());
     document
         .metadata
-        .insert(EXTENSION_METADATA.into(), "txt".to_string());
+        .insert(EXTENSION_METADATA.into(), DEFAULT_EXTENSION.to_string());
     Ok(vec![document])
-}
-
-fn run_loader_command(path: &str, extension: &str, loader_command: &str) -> Result<String> {
-    let cmd_args = shell_words::split(loader_command).with_context(|| {
-        anyhow!("Invalid rag document loader '{extension}': `{loader_command}`")
-    })?;
-    let mut use_stdout = true;
-    let outpath = env::temp_dir()
-        .join(format!("aichat-output-{}", sha256(path)))
-        .display()
-        .to_string();
-    let cmd_args: Vec<_> = cmd_args
-        .into_iter()
-        .map(|mut v| {
-            if v.contains("$1") {
-                v = v.replace("$1", path);
-            }
-            if v.contains("$2") {
-                use_stdout = false;
-                v = v.replace("$2", &outpath);
-            }
-            v
-        })
-        .collect();
-    let cmd_eval = shell_words::join(&cmd_args);
-    debug!("run `{cmd_eval}`");
-    let (cmd, args) = cmd_args.split_at(1);
-    let cmd = &cmd[0];
-    if use_stdout {
-        let (success, stdout, stderr) =
-            run_command_with_output(cmd, args, None).with_context(|| {
-                format!("Unable to run `{cmd_eval}`, Perhaps '{cmd}' is not installed?")
-            })?;
-        if !success {
-            let err = if !stderr.is_empty() {
-                stderr
-            } else {
-                format!("The command `{cmd_eval}` exited with non-zero.")
-            };
-            bail!("{err}")
-        }
-        Ok(stdout)
-    } else {
-        let status = run_command(cmd, args, None).with_context(|| {
-            format!("Unable to run `{cmd_eval}`, Perhaps '{cmd}' is not installed?")
-        })?;
-        if status != 0 {
-            bail!("The command `{cmd_eval}` exited with non-zero.")
-        }
-        let contents = std::fs::read_to_string(&outpath)
-            .context("Failed to read file generated by the loader")?;
-        Ok(contents)
-    }
 }
 
 fn parse_json_documents(data: &str) -> Option<Vec<RagDocument>> {

@@ -318,7 +318,7 @@ Tips: use <tab> to autocomplete conversation starter text.
                     Some(args) => {
                         let (files, text) = split_files_text(args);
                         let files = shell_words::split(files).with_context(|| "Invalid args")?;
-                        let input = Input::new(&self.config, text, files, None)?;
+                        let input = Input::from_files(&self.config, text, files, None).await?;
                         ask(&self.config, self.abort_signal.clone(), input, true).await?;
                     }
                     None => println!("Usage: .file <files>... [-- <text>...]"),

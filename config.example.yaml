@@ -25,6 +25,17 @@ summarize_prompt: 'Summarize the discussion briefly in 200 words or less to use 
 # Text prompt used for including the summary of the entire session
 summary_prompt: 'This is a summary of the chat history as a recap: '
 
+# Define document loaders to control how `.file`/`--file` and RAG load files of specific formats.
+document_loaders:
+  # You can add custom loaders using the following syntax:
+  #   <file-extension>: <command-to-load-the-file>
+  # Note: Use `$1` for input filepath and `$2` for output filepath. If `$2` is not provided, output to stdout.
+  pdf: 'pdftotext $1 -'                     # Load .pdf file, see https://poppler.freedesktop.org
+  docx: 'pandoc --to plain $1'              # Load .docx file
+  # xlsx: 'ssconvert $1 $2'                 # Load .xlsx file
+  # html: 'pandoc --to plain $1'            # Load .html file
+  # recursive_url: 'crawler $1 $2'          # Load websites
+
 # ---- function-calling & agent ----
 # Controls the function calling feature. For setup instructions, visit https://github.com/sigoden/llm-functions
 function_calling: true
@@ -49,16 +60,6 @@ rag_chunk_overlap: null                     # Specifies the chunk overlap
 rag_min_score_vector_search: 0              # Specifies the minimum relevance score for vector-based searching
 rag_min_score_keyword_search: 0             # Specifies the minimum relevance score for keyword-based searching
 rag_min_score_rerank: 0                     # Specifies the minimum relevance score for reranking
-# Defines document loaders
-rag_document_loaders:
-  # You can add custom loaders using the following syntax:
-  #   <file-extension>: <command-to-load-the-file>
-  # Note: Use `$1` for input filepath and `$2` for output filepath. If `$2` is not provided, output to stdout.
-  pdf: 'pdftotext $1 -'                     # Load .pdf file, see https://poppler.freedesktop.org
-  docx: 'pandoc --to plain $1'              # Load .docx file
-  # xlsx: 'ssconvert $1 $2'                 # Load .xlsx file
-  # recursive_url: 'crawler $1 $2'          # Load websites
-
 # Defines the query structure using variables like __CONTEXT__ and __INPUT__ to tailor searches to specific needs
 rag_template: |
   Use the following context as your learned knowledge, inside <context></context> XML tags.
