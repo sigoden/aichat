@@ -8,7 +8,7 @@ use std::cmp::Ordering;
 
 pub const DEFAULT_SEPARATES: [&str; 4] = ["\n\n", "\n", " ", ""];
 
-pub fn detect_separators(extension: &str) -> Vec<&'static str> {
+pub fn get_separators(extension: &str) -> Vec<&'static str> {
     match extension {
         "c" | "cc" | "cpp" => Language::Cpp.separators(),
         "go" => Language::Go.separators(),
@@ -106,7 +106,6 @@ impl RecursiveCharacterTextSplitter {
         let SplitterChunkHeaderOptions {
             chunk_header,
             chunk_overlap_header,
-            append_chunk_overlap_header,
         } = chunk_header_options;
 
         let mut documents = Vec::new();
@@ -144,22 +143,13 @@ impl RecursiveCharacterTextSplitter {
                         Ordering::Equal => {}
                     }
 
-                    if *append_chunk_overlap_header {
+                    if let Some(chunk_overlap_header) = chunk_overlap_header {
                         page_content += chunk_overlap_header;
                     }
                 }
 
                 let newlines_count = self.number_of_newlines(&chunk, 0, chunk.len());
-
-                let mut metadata = metadatas[i].clone();
-                metadata.insert(
-                    "loc".into(),
-                    format!(
-                        "{}:{}",
-                        line_counter_index,
-                        line_counter_index + newlines_count
-                    ),
-                );
+                let metadata = metadatas[i].clone();
                 page_content += &chunk;
                 documents.push(RagDocument {
                     page_content,
@@ -288,16 +278,14 @@ impl RecursiveCharacterTextSplitter {
 
 pub struct SplitterChunkHeaderOptions {
     pub chunk_header: String,
-    pub chunk_overlap_header: String,
-    pub append_chunk_overlap_header: bool,
+    pub chunk_overlap_header: Option<String>,
 }
 
 impl Default for SplitterChunkHeaderOptions {
     fn default() -> Self {
         Self {
             chunk_header: "".into(),
-            chunk_overlap_header: "(cont'd) ".into(),
-            append_chunk_overlap_header: false,
+            chunk_overlap_header: None,
         }
     }
 }
@@ -313,14 +301,7 @@ impl SplitterChunkHeaderOptions {
     // Set the value of chunk_overlap_header
     #[allow(unused)]
     pub fn with_chunk_overlap_header(mut self, overlap_header: &str) -> Self {
-        self.chunk_overlap_header = overlap_header.to_string();
-        self
-    }
-
-    // Set the value of append_chunk_overlap_header
-    #[allow(unused)]
-    pub fn with_append_chunk_overlap_header(mut self, value: bool) -> Self {
-        self.append_chunk_overlap_header = value;
+        self.chunk_overlap_header = Some(overlap_header.to_string());
         self
     }
 }
@@ -358,11 +339,8 @@ mod tests {
     use pretty_assertions::assert_eq;
     use serde_json::{json, Value};
 
-    fn build_metadata(source: &str, loc_from_line: usize, loc_to_line: usize) -> Value {
-        json!({
-            "source": source,
-            "loc": format!("{loc_from_line}:{loc_to_line}"),
-        })
+    fn build_metadata(source: &str) -> Value {
+        json!({ "source": source })
     }
     #[test]
     fn test_split_text() {
@@ -395,15 +373,15 @@ mod tests {
             json!([
                 {
                     "page_content": "foo",
-                    "metadata": build_metadata("1", 1, 1),
+                    "metadata": build_metadata("1"),
                 },
                 {
                     "page_content": "bar",
-                    "metadata": build_metadata("1", 1, 1),
+                    "metadata": build_metadata("1"),
                 },
                 {
                     "page_content": "baz",
-                    "metadata": build_metadata("2", 1, 1),
+                    "metadata": build_metadata("2"),
                 },
             ])
         );
@@ -414,7 +392,7 @@ mod tests {
         let splitter = RecursiveCharacterTextSplitter::new(3, 0, &[" "]);
         let chunk_header_options = SplitterChunkHeaderOptions::default()
             .with_chunk_header("SOURCE NAME: testing\n-----\n")
-            .with_append_chunk_overlap_header(true);
+            .with_chunk_overlap_header("(cont'd) ");
         let mut metadata1 = IndexMap::new();
         metadata1.insert("source".into(), "1".into());
         let mut metadata2 = IndexMap::new();
@@ -430,15 +408,15 @@ mod tests {
             json!([
                 {
                     "page_content": "SOURCE NAME: testing\n-----\nfoo",
-                    "metadata": build_metadata("1", 1, 1),
+                    "metadata": build_metadata("1"),
                 },
                 {
                     "page_content": "SOURCE NAME: testing\n-----\n(cont'd) bar",
-                    "metadata": build_metadata("1", 1, 1),
+                    "metadata": build_metadata("1"),
                 },
                 {
                     "page_content": "SOURCE NAME: testing\n-----\nbaz",
-                    "metadata": build_metadata("2", 1, 1),
+                    "metadata": build_metadata("2"),
                 },
             ])
         );

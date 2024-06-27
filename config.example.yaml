@@ -18,7 +18,7 @@ agent_prelude: null              # Set a session to use when starting a agent. (
 # ---- session ----
 # Controls the persistence of the session, if null, asking the user
 save_session: null
-# Compress session when token count reaches or exceeds this threshold (must be at least 1000)
+# Compress session when token count reaches or exceeds this threshold
 compress_threshold: 4000
 # Text prompt used for creating a concise summary of session message
 summarize_prompt: 'Summarize the discussion briefly in 200 words or less to use as a prompt for future context.'
@@ -27,7 +27,7 @@ summary_prompt: 'This is a summary of the chat history as a recap: '
 
 # ---- function-calling & agent ----
 # Controls the function calling feature. For setup instructions, visit https://github.com/sigoden/llm-functions
-function_calling: false
+function_calling: true
 # Regex for seletecting dangerous functions
 # User confirmation is required when executing these functions
 # e.g. 'execute_command|execute_js_code' 'execute_.*'
@@ -41,14 +41,23 @@ agents:
     dangerously_functions_filter: null
 
 # ---- RAG ----
-rag_embedding_model: null         # Specifies the embedding model to use
-rag_reranker_model: null            # Specifies the rerank model to use
-rag_top_k: 4                      # Specifies the number of documents to retrieve
-rag_chunk_size: null              # Specifies the chunk size
-rag_chunk_overlap: null           # Specifies the chunk overlap
-rag_min_score_vector_search: 0    # Specifies the minimum relevance score for vector-based searching
-rag_min_score_keyword_search: 0   # Specifies the minimum relevance score for keyword-based searching
-rag_min_score_rerank: 0           # Specifies the minimum relevance score for reranking
+rag_embedding_model: null                   # Specifies the embedding model to use
+rag_reranker_model: null                    # Specifies the rerank model to use
+rag_top_k: 4                                # Specifies the number of documents to retrieve
+rag_chunk_size: null                        # Specifies the chunk size
+rag_chunk_overlap: null                     # Specifies the chunk overlap
+rag_min_score_vector_search: 0              # Specifies the minimum relevance score for vector-based searching
+rag_min_score_keyword_search: 0             # Specifies the minimum relevance score for keyword-based searching
+rag_min_score_rerank: 0                     # Specifies the minimum relevance score for reranking
+# Defines document loaders
+rag_document_loaders:
+  # You can add more loaders, here is the syntax:
+  # <file-extension>: <command-to-load-the-file>
+  pdf: 'pdftotext $1 -'                     # Load .pdf file, see https://poppler.freedesktop.org
+  docx: 'pandoc --to plain $1'              # Load .docx file
+  url: 'curl -fsSL $1'                      # Load url
+  # recursive_url: 'crawler $1 $2'          # Load websites
+
 # Defines the query structure using variables like __CONTEXT__ and __INPUT__ to tailor searches to specific needs
 rag_template: |
   Use the following context as your learned knowledge, inside <context></context> XML tags.

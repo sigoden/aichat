@@ -162,7 +162,7 @@ async fn main() -> Result<()> {
 #[async_recursion]
 async fn start_directive(
     config: &GlobalConfig,
-    mut input: Input,
+    input: Input,
     no_stream: bool,
     code_mode: bool,
     abort_signal: AbortSignal,
@@ -196,7 +196,7 @@ async fn start_directive(
     };
     config
         .write()
-        .after_chat_completion(&mut input, &output, &tool_results)?;
+        .after_chat_completion(&input, &output, &tool_results)?;
 
     config.write().exit_session()?;
 
@@ -224,9 +224,9 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
     let client = input.create_client()?;
     config.write().before_chat_completion(&input)?;
     let ret = if *IS_STDOUT_TERMINAL {
-        let (stop_spinner_tx, _) = run_spinner("Generating").await;
+        let spinner = create_spinner("Generating").await;
         let ret = client.chat_completions(input.clone()).await;
-        let _ = stop_spinner_tx.send(());
+        spinner.stop();
         ret
     } else {
         client.chat_completions(input.clone()).await
@@ -237,7 +237,7 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
     }
     config
         .write()
-        .after_chat_completion(&mut input, &eval_str, &[])?;
+        .after_chat_completion(&input, &eval_str, &[])?;
     let render_options = config.read().render_options()?;
     let mut markdown_render = MarkdownRender::init(render_options)?;
     if config.read().dry_run {

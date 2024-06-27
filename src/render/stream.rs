@@ -1,6 +1,6 @@
 use super::{MarkdownRender, SseEvent};
 
-use crate::utils::{run_spinner, AbortSignal};
+use crate::utils::{create_spinner, AbortSignal};
 
 use anyhow::Result;
 use crossterm::{
@@ -62,16 +62,15 @@ async fn markdown_stream_inner(
 
     let columns = terminal::size()?.0;
 
-    let (stop_spinner_tx, _) = run_spinner("Generating").await;
-    let mut stop_spinner_tx = Some(stop_spinner_tx);
+    let mut spinner = Some(create_spinner("Generating").await);
 
     'outer: loop {
         if abort.aborted() {
             return Ok(());
         }
         for reply_event in gather_events(&mut rx).await {
-            if let Some(stop_spinner_tx) = stop_spinner_tx.take() {
-                let _ = stop_spinner_tx.send(());
+            if let Some(spinner) = spinner.take() {
+                spinner.stop();
             }
 
             match reply_event {
@@ -149,8 +148,8 @@ async fn markdown_stream_inner(
         }
     }
 
-    if let Some(stop_spinner_tx) = stop_spinner_tx.take() {
-        let _ = stop_spinner_tx.send(());
+    if let Some(spinner) = spinner.take() {
+        spinner.stop();
     }
     Ok(())
 }

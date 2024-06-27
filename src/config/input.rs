@@ -134,6 +134,10 @@ impl Input {
         }
     }
 
+    pub fn clear_patch(&mut self) {
+        self.patched_text = None;
+    }
+
     pub fn set_text(&mut self, text: String) {
         self.text = text;
     }
@@ -318,13 +322,14 @@ impl Input {
     }
 
     pub fn render(&self) -> String {
+        let text = self.text();
         if self.medias.is_empty() {
-            return self.text();
+            return text;
         }
-        let text = if self.text.is_empty() {
+        let tail_text = if text.is_empty() {
             String::new()
         } else {
-            format!(" -- {}", self.text())
+            format!(" -- {text}")
         };
         let files: Vec<String> = self
             .medias
@@ -332,7 +337,7 @@ impl Input {
             .cloned()
             .map(|url| resolve_data_url(&self.data_urls, url))
             .collect();
-        format!(".file {}{}", files.join(" "), text)
+        format!(".file {}{}", files.join(" "), tail_text)
     }
 
     pub fn message_content(&self) -> MessageContent {

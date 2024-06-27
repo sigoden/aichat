@@ -72,10 +72,10 @@ impl Functions {
             vec![]
         };
 
-        let func_names = declarations.iter().map(|v| v.name.clone()).collect();
+        let names = declarations.iter().map(|v| v.name.clone()).collect();
 
         Ok(Self {
-            names: func_names,
+            names,
             declarations,
         })
     }

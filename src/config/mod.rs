@@ -29,7 +29,7 @@ use std::{
     fs::{create_dir_all, read_dir, read_to_string, remove_file, File, OpenOptions},
     io::Write,
     path::{Path, PathBuf},
-    process::exit,
+    process,
     sync::Arc,
 };
 use syntect::highlighting::ThemeSet;
@@ -47,8 +47,6 @@ const FUNCTIONS_DIR_NAME: &str = "functions";
 const FUNCTIONS_FILE_NAME: &str = "functions.json";
 const FUNCTIONS_BIN_DIR_NAME: &str = "bin";
 const AGENTS_DIR_NAME: &str = "agents";
-const AGENT_DEFINITION_FILE_NAME: &str = "index.yaml";
-const AGENT_EMBEDDINGS_DIR: &str = "embeddings";
 const AGENT_RAG_FILE_NAME: &str = "rag.bin";
 
 pub const TEMP_ROLE_NAME: &str = "%%";
@@ -115,6 +113,8 @@ pub struct Config {
     pub rag_min_score_vector_search: f32,
     pub rag_min_score_keyword_search: f32,
     pub rag_min_score_rerank: f32,
+    #[serde(default)]
+    pub rag_document_loaders: HashMap<String, String>,
     pub rag_template: Option<String>,
 
     pub highlight: bool,
@@ -174,6 +174,7 @@ impl Default for Config {
             rag_min_score_vector_search: 0.0,
             rag_min_score_keyword_search: 0.0,
             rag_min_score_rerank: 0.0,
+            rag_document_loaders: Default::default(),
             rag_template: None,
 
             save_session: None,
@@ -229,6 +230,7 @@ impl Config {
         config.setup_model()?;
         config.setup_highlight();
         config.setup_light_theme()?;
+        config.setup_rag_document_loaders();
 
         Ok(config)
     }
@@ -346,18 +348,6 @@ impl Config {
 
     pub fn agent_functions_dir(name: &str) -> Result<PathBuf> {
         Ok(Self::agents_functions_dir()?.join(name))
-    }
-
-    pub fn agent_functions_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_functions_dir(name)?.join(FUNCTIONS_FILE_NAME))
-    }
-
-    pub fn agent_definition_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_functions_dir(name)?.join(AGENT_DEFINITION_FILE_NAME))
-    }
-
-    pub fn agent_embeddings_dir(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_functions_dir(name)?.join(AGENT_EMBEDDINGS_DIR))
     }
 
     pub fn state(&self) -> StateFlags {
@@ -1277,7 +1267,7 @@ impl Config {
 
     pub fn after_chat_completion(
         &mut self,
-        input: &mut Input,
+        input: &Input,
         output: &str,
         tool_results: &[ToolResult],
     ) -> Result<()> {
@@ -1290,9 +1280,11 @@ impl Config {
         Ok(())
     }
 
-    fn save_message(&mut self, input: &mut Input, output: &str) -> Result<()> {
+    fn save_message(&mut self, input: &Input, output: &str) -> Result<()> {
+        let mut input = input.clone();
+        input.clear_patch();
         if let Some(session) = input.session_mut(&mut self.session) {
-            session.add_message(input, output)?;
+            session.add_message(&input, output)?;
             return Ok(());
         }
 
@@ -1440,6 +1432,19 @@ impl Config {
         };
         Ok(())
     }
+
+    fn setup_rag_document_loaders(&mut self) {
+        [
+            ("pdf", "pdftotext $1 -"),
+            ("docx", "pandoc --to plain $1"),
+            ("url", "curl -fsSL $1"),
+        ]
+        .into_iter()
+        .for_each(|(k, v)| {
+            let (k, v) = (k.to_string(), v.to_string());
+            self.rag_document_loaders.entry(k).or_insert(v);
+        });
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -1512,7 +1517,7 @@ fn create_config_file(config_path: &Path) -> Result<()> {
         .with_default(true)
         .prompt()?;
     if !ans {
-        exit(0);
+        process::exit(0);
     }
 
     let client = Select::new("Platform:", list_client_types()).prompt()?;

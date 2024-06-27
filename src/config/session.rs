@@ -110,11 +110,9 @@ impl Session {
         self.save_session
     }
 
-    pub fn need_compress(&self, current_compress_threshold: usize) -> bool {
-        let threshold = self
-            .compress_threshold
-            .unwrap_or(current_compress_threshold);
-        threshold >= 1000 && self.tokens() > threshold
+    pub fn need_compress(&self, global_compress_threshold: usize) -> bool {
+        let threshold = self.compress_threshold.unwrap_or(global_compress_threshold);
+        threshold > 0 && self.tokens() > threshold
     }
 
     pub fn tokens(&self) -> usize {
@@ -300,9 +298,7 @@ impl Session {
                 if self.is_temp() {
                     self.name = Text::new("Session name:")
                         .with_validator(|input: &str| {
-                            if input == TEMP_SESSION_NAME {
-                                Ok(Validation::Invalid(format!("'{TEMP_SESSION_NAME}' is a reserved word and cannot be used as a session name").into()))
-                            } else if input.trim().is_empty() {
+                            if input.trim().is_empty() {
                                 Ok(Validation::Invalid("This field is required".into()))
                             } else {
                                 Ok(Validation::Valid)

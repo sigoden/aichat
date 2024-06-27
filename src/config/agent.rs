@@ -29,13 +29,13 @@ impl Agent {
         name: &str,
         abort_signal: AbortSignal,
     ) -> Result<Self> {
-        let definition_path = Config::agent_definition_file(name)?;
-        let functions_path = Config::agent_functions_file(name)?;
+        let functions_dir = Config::agent_functions_dir(name)?;
+        let definition_file_path = functions_dir.join("index.yaml");
+        let functions_file_path = functions_dir.join("functions.json");
         let rag_path = Config::agent_rag_file(name)?;
-        let embeddings_dir = Config::agent_embeddings_dir(name)?;
-        let definition = AgentDefinition::load(&definition_path)?;
-        let functions = if functions_path.exists() {
-            Functions::init(&functions_path)?
+        let definition = AgentDefinition::load(&definition_file_path)?;
+        let functions = if functions_file_path.exists() {
+            Functions::init(&functions_file_path)?
         } else {
             Functions::default()
         };
@@ -55,11 +55,20 @@ impl Agent {
         };
         let rag = if rag_path.exists() {
             Some(Arc::new(Rag::load(config, "rag", &rag_path)?))
-        } else if embeddings_dir.is_dir() {
-            println!("The agent uses an embeddings directory, initializing RAG...");
-            let doc_path = embeddings_dir.display().to_string();
+        } else if !definition.documents.is_empty() {
+            println!("The agent has the documents, initializing RAG...");
+            let mut document_paths = vec![];
+            for path in &definition.documents {
+                if Rag::is_url_path(path) {
+                    document_paths.push(path.to_string());
+                } else {
+                    let new_path = safe_join_path(&functions_dir, path)
+                        .ok_or_else(|| anyhow!("Invalid document path: '{path}'"))?;
+                    document_paths.push(new_path.display().to_string())
+                }
+            }
             Some(Arc::new(
-                Rag::init(config, "rag", &rag_path, &[doc_path], abort_signal).await?,
+                Rag::init(config, "rag", &rag_path, &document_paths, abort_signal).await?,
             ))
         } else {
             None
@@ -197,6 +206,8 @@ pub struct AgentDefinition {
     pub instructions: String,
     #[serde(default)]
     pub conversation_starters: Vec<String>,
+    #[serde(default)]
+    pub documents: Vec<String>,
 }
 
 impl AgentDefinition {
@@ -249,7 +260,7 @@ fn list_agents_impl() -> Result<Vec<String>> {
         .split('\n')
         .filter_map(|line| {
             let line = line.trim();
-            if line.is_empty() {
+            if line.is_empty() || line.starts_with('#') {
                 None
             } else {
                 Some(line.to_string())
