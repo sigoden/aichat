@@ -237,7 +237,7 @@ impl Rag {
                 if let Some(path) = path.strip_suffix("**") {
                     new_paths.push((path.to_string(), RECURSIVE_URL_LOADER.into()));
                 } else {
-                    new_paths.push((path.to_string(), "url".into()))
+                    new_paths.push((path.to_string(), URL_LOADER.into()))
                 }
             } else {
                 let path = Path::new(path);
@@ -275,6 +275,7 @@ impl Rag {
             for (index, (path, loader_name)) in new_paths.into_iter().enumerate() {
                 println!("Loading {path} [{}/{new_paths_len}]", index + 1);
                 let documents = load(&loaders, &path, &loader_name)
+                    .await
                     .with_context(|| format!("Failed to load '{path}'"))?;
                 let separator = get_separators(&loader_name);
                 let splitter = RecursiveCharacterTextSplitter::new(

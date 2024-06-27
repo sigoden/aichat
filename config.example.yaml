@@ -55,8 +55,8 @@ rag_document_loaders:
   # <file-extension>: <command-to-load-the-file>
   pdf: 'pdftotext $1 -'                     # Load .pdf file, see https://poppler.freedesktop.org
   docx: 'pandoc --to plain $1'              # Load .docx file
-  url: 'curl -fsSL $1'                      # Load url
-  # recursive_url: 'crawler $1 $2'          # Load websites
+  # xlsx: 'ssconvert $1 $2'                   # Load .xlsx file
+  # recursive_url: 'crawler $1 $2'            # Load websites
 
 # Defines the query structure using variables like __CONTEXT__ and __INPUT__ to tailor searches to specific needs
 rag_template: |

@@ -14,6 +14,7 @@ pub use self::prompt_input::*;
 pub use self::render_prompt::render_prompt;
 pub use self::spinner::{create_spinner, Spinner};
 
+use anyhow::{Context, Result};
 use fancy_regex::Regex;
 use is_terminal::IsTerminal;
 use lazy_static::lazy_static;
@@ -178,6 +179,28 @@ pub fn safe_join_path<T1: AsRef<Path>, T2: AsRef<Path>>(
     } else {
         None
     }
+}
+
+pub fn set_proxy(
+    builder: reqwest::ClientBuilder,
+    proxy: Option<&String>,
+) -> Result<reqwest::ClientBuilder> {
+    let proxy = if let Some(proxy) = proxy {
+        if proxy.is_empty() || proxy == "-" {
+            return Ok(builder);
+        }
+        proxy.clone()
+    } else if let Some(proxy) = ["HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"]
+        .into_iter()
+        .find_map(|v| env::var(v).ok())
+    {
+        proxy
+    } else {
+        return Ok(builder);
+    };
+    let builder = builder
+        .proxy(reqwest::Proxy::all(&proxy).with_context(|| format!("Invalid proxy `{proxy}`"))?);
+    Ok(builder)
 }
 
 #[cfg(test)]

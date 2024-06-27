@@ -4,10 +4,7 @@ use crate::{
     config::{GlobalConfig, Input},
     function::{eval_tool_calls, FunctionDeclaration, ToolCall, ToolResult},
     render::{render_error, render_stream},
-    utils::{
-        prompt_input_integer, prompt_input_string, tokenize, watch_abort_signal, AbortSignal,
-        PromptKind,
-    },
+    utils::*,
 };
 
 use anyhow::{bail, Context, Result};
@@ -15,10 +12,10 @@ use async_trait::async_trait;
 use fancy_regex::Regex;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
-use reqwest::{Client as ReqwestClient, ClientBuilder, Proxy, RequestBuilder};
+use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::{env, future::Future, time::Duration};
+use std::{future::Future, time::Duration};
 use tokio::sync::mpsc::unbounded_channel;
 
 const MODELS_YAML: &str = include_str!("../../models.yaml");
@@ -340,7 +337,7 @@ pub trait Client: Sync + Send {
         let extra = self.extra_config();
         let timeout = extra.and_then(|v| v.connect_timeout).unwrap_or(10);
         let proxy = extra.and_then(|v| v.proxy.clone());
-        builder = set_proxy(builder, &proxy)?;
+        builder = set_proxy(builder, proxy.as_ref())?;
         let client = builder
             .connect_timeout(Duration::from_secs(timeout))
             .build()
@@ -770,23 +767,4 @@ fn to_json(kind: &PromptKind, value: &str) -> Value {
             Err(_) => value.into(),
         },
     }
-}
-
-fn set_proxy(builder: ClientBuilder, proxy: &Option<String>) -> Result<ClientBuilder> {
-    let proxy = if let Some(proxy) = proxy {
-        if proxy.is_empty() || proxy == "-" {
-            return Ok(builder);
-        }
-        proxy.clone()
-    } else if let Some(proxy) = ["HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"]
-        .into_iter()
-        .find_map(|v| env::var(v).ok())
-    {
-        proxy
-    } else {
-        return Ok(builder);
-    };
-    let builder =
-        builder.proxy(Proxy::all(&proxy).with_context(|| format!("Invalid proxy `{proxy}`"))?);
-    Ok(builder)
 }

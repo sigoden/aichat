@@ -1434,16 +1434,12 @@ impl Config {
     }
 
     fn setup_rag_document_loaders(&mut self) {
-        [
-            ("pdf", "pdftotext $1 -"),
-            ("docx", "pandoc --to plain $1"),
-            ("url", "curl -fsSL $1"),
-        ]
-        .into_iter()
-        .for_each(|(k, v)| {
-            let (k, v) = (k.to_string(), v.to_string());
-            self.rag_document_loaders.entry(k).or_insert(v);
-        });
+        [("pdf", "pdftotext $1 -"), ("docx", "pandoc --to plain $1")]
+            .into_iter()
+            .for_each(|(k, v)| {
+                let (k, v) = (k.to_string(), v.to_string());
+                self.rag_document_loaders.entry(k).or_insert(v);
+            });
     }
 }
 
