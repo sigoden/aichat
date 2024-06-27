@@ -550,7 +550,7 @@ async fn ask(
         chat_completion_streaming(&input, client.as_ref(), config, abort_signal.clone()).await?;
     config
         .write()
-        .after_chat_completion(&mut input, &output, &tool_results)?;
+        .after_chat_completion(&input, &output, &tool_results)?;
     if need_send_tool_results(&tool_results) {
         ask(
             config,

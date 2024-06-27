@@ -1267,7 +1267,7 @@ impl Config {
 
     pub fn after_chat_completion(
         &mut self,
-        input: &mut Input,
+        input: &Input,
         output: &str,
         tool_results: &[ToolResult],
     ) -> Result<()> {
@@ -1280,9 +1280,11 @@ impl Config {
         Ok(())
     }
 
-    fn save_message(&mut self, input: &mut Input, output: &str) -> Result<()> {
+    fn save_message(&mut self, input: &Input, output: &str) -> Result<()> {
+        let mut input = input.clone();
+        input.clear_patch();
         if let Some(session) = input.session_mut(&mut self.session) {
-            session.add_message(input, output)?;
+            session.add_message(&input, output)?;
             return Ok(());
         }
 
