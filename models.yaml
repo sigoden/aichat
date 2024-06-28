@@ -1153,6 +1153,13 @@
   #   - https://jina.ai/
   #   - https://api.jina.ai/redoc
   models:
+    - name: jina-clip-v1
+      type: embedding
+      max_input_tokens: 8192
+      input_price: 0.02
+      output_vector_size: 768
+      default_chunk_size: 1500
+      max_batch_size: 100
     - name: jina-embeddings-v2-base-en
       type: embedding
       max_input_tokens: 8192
@@ -1160,14 +1167,7 @@
       output_vector_size: 768
       default_chunk_size: 1500
       max_batch_size: 100
-    - name: jina-embeddings-v2-small-en
-      type: embedding
-      max_input_tokens: 8192
-      input_price: 0.02
-      output_vector_size: 512
-      default_chunk_size: 1000
-      max_batch_size: 100
-    - name: jina-embeddings-v2-base-zsh
+    - name: jina-embeddings-v2-base-zh
       type: embedding
       max_input_tokens: 8192
       input_price: 0.02
@@ -1188,7 +1188,7 @@
       output_vector_size: 768
       default_chunk_size: 1500
       max_batch_size: 100
-    - name: jina-reranker-v1-base-en
+    - name: jina-reranker-v1-base-multilingual
       type: reranker
       max_input_tokens: 8192
       input_price: 0.02
@@ -1197,10 +1197,6 @@
       max_input_tokens: 8192
       input_price: 0.02
     - name: jina-colbert-v1-en
-      type: reranker
-      max_input_tokens: 8192
-      input_price: 0.02
-    - name: jina-reranker-v1-base-multilingual
       type: reranker
       max_input_tokens: 8192
       input_price: 0.02
