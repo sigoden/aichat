@@ -30,11 +30,11 @@ document_loaders:
   # You can add custom loaders using the following syntax:
   #   <file-extension>: <command-to-load-the-file>
   # Note: Use `$1` for input filepath and `$2` for output filepath. If `$2` is not provided, output to stdout.
-  pdf: 'pdftotext $1 -'                     # Load .pdf file, see https://poppler.freedesktop.org
-  docx: 'pandoc --to plain $1'              # Load .docx file
-  # xlsx: 'ssconvert $1 $2'                 # Load .xlsx file
-  # html: 'pandoc --to plain $1'            # Load .html file
-  # recursive_url: 'crawler $1 $2'          # Load websites
+  pdf: 'pdftotext $1 -'                         # Load .pdf file, see https://poppler.freedesktop.org
+  docx: 'pandoc --to plain $1'                  # Load .docx file
+  # xlsx: 'ssconvert $1 $2'                     # Load .xlsx file
+  # html: 'pandoc --to plain $1'                # Load .html file
+  # recursive_url: 'rag-crawler $1 $2.json'     # Load websites, see https://github.com/sigoden/rag-crawler
 
 # ---- function-calling & agent ----
 # Controls the function calling feature. For setup instructions, visit https://github.com/sigoden/llm-functions
