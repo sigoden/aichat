@@ -98,10 +98,7 @@ pub fn run_loader_command(path: &str, extension: &str, loader_command: &str) -> 
         anyhow!("Invalid rag document loader '{extension}': `{loader_command}`")
     })?;
     let mut use_stdout = true;
-    let outpath = env::temp_dir()
-        .join(format!("aichat-output-{}", sha256(path)))
-        .display()
-        .to_string();
+    let outpath = temp_file("-output-", "").display().to_string();
     let cmd_args: Vec<_> = cmd_args
         .into_iter()
         .map(|mut v| {
