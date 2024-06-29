@@ -176,7 +176,7 @@ impl Rag {
     }
 
     pub fn export(&self) -> Result<String> {
-        let files: Vec<_> = self.data.files.iter().map(|v| &v.path).collect();
+        let files: Vec<_> = self.data.files.iter().map(|(_, v)| &v.path).collect();
         let data = json!({
             "path": self.path,
             "embedding_model": self.embedding_model.id(),
@@ -245,7 +245,7 @@ impl Rag {
                     .absolutize()
                     .with_context(|| anyhow!("Invalid path '{}'", path.display()))?;
                 let path_str = path.display().to_string();
-                if self.data.files.iter().any(|v| v.path == path_str) {
+                if self.data.files.iter().any(|(_, v)| v.path == path_str) {
                     continue;
                 }
                 let (path_str, suffixes) = parse_glob(&path_str)?;
@@ -320,13 +320,17 @@ impl Rag {
         }
 
         // Convert vectors
-        let mut vector_ids = vec![];
+        let mut document_ids = vec![];
         let mut texts = vec![];
-        for (file_index, file) in rag_files.iter().enumerate() {
+        let mut files = vec![];
+        let mut next_file_id = self.data.next_file_id;
+        for file in rag_files.into_iter() {
             for (document_index, document) in file.documents.iter().enumerate() {
-                vector_ids.push(combine_document_id(file_index, document_index));
+                document_ids.push(combine_document_id(next_file_id, document_index));
                 texts.push(document.page_content.clone())
             }
+            files.push((next_file_id, file));
+            next_file_id += 1;
         }
 
         let embeddings_data = EmbeddingsData::new(texts, false);
@@ -334,7 +338,7 @@ impl Rag {
             .create_embeddings(embeddings_data, spinner.clone())
             .await?;
 
-        self.data.add(rag_files, vector_ids, embeddings);
+        self.data.add(next_file_id, files, document_ids, embeddings);
         progress(&spinner, "Building vector store".into());
         self.hnsw = self.data.build_hnsw();
         self.bm25 = self.data.build_bm25();
@@ -490,7 +494,8 @@ pub struct RagData {
     pub embedding_model: String,
     pub chunk_size: usize,
     pub chunk_overlap: usize,
-    pub files: Vec<RagFile>,
+    pub next_file_id: FileId,
+    pub files: IndexMap<FileId, RagFile>,
     pub vectors: IndexMap<DocumentId, Vec<f32>>,
 }
 
@@ -500,6 +505,7 @@ impl RagData {
             embedding_model,
             chunk_size,
             chunk_overlap,
+            next_file_id: 0,
             files: Default::default(),
             vectors: Default::default(),
         }
@@ -507,19 +513,21 @@ impl RagData {
 
     pub fn get(&self, id: DocumentId) -> Option<&RagDocument> {
         let (file_index, document_index) = split_document_id(id);
-        let file = self.files.get(file_index)?;
+        let file = self.files.get(&file_index)?;
         let document = file.documents.get(document_index)?;
         Some(document)
     }
 
     pub fn add(
         &mut self,
-        files: Vec<RagFile>,
-        vector_ids: Vec<DocumentId>,
+        next_file_id: FileId,
+        files: Vec<(FileId, RagFile)>,
+        document_ids: Vec<DocumentId>,
         embeddings: EmbeddingsOutput,
     ) {
+        self.next_file_id = next_file_id;
         self.files.extend(files);
-        self.vectors.extend(vector_ids.into_iter().zip(embeddings));
+        self.vectors.extend(document_ids.into_iter().zip(embeddings));
     }
 
     pub fn build_hnsw(&self) -> Hnsw<'static, f32, DistCosine> {
@@ -531,9 +539,9 @@ impl RagData {
 
     pub fn build_bm25(&self) -> BM25<DocumentId> {
         let mut corpus = vec![];
-        for (file_index, file) in self.files.iter().enumerate() {
+        for (file_index, file) in self.files.iter() {
             for (document_index, document) in file.documents.iter().enumerate() {
-                let id = combine_document_id(file_index, document_index);
+                let id = combine_document_id(*file_index, document_index);
                 corpus.push((id, document.page_content.clone()));
             }
         }
@@ -578,6 +586,7 @@ impl Default for RagDocument {
 
 pub type RagMetadata = IndexMap<String, String>;
 
+pub type FileId = usize;
 pub type DocumentId = usize;
 
 pub fn combine_document_id(file_index: usize, document_index: usize) -> DocumentId {
