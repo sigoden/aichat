@@ -38,8 +38,8 @@ pub fn now() -> String {
 pub fn get_env_name(key: &str) -> String {
     format!(
         "{}_{}",
-        env!("CARGO_CRATE_NAME").to_ascii_uppercase(),
-        key.to_ascii_uppercase(),
+        env!("CARGO_CRATE_NAME").to_uppercase(),
+        key.to_uppercase(),
     )
 }
 
@@ -181,6 +181,14 @@ pub fn safe_join_path<T1: AsRef<Path>, T2: AsRef<Path>>(
     } else {
         None
     }
+}
+
+pub fn temp_file(prefix: &str, suffix: &str) -> PathBuf {
+    env::temp_dir().join(format!(
+        "{}{prefix}{}{suffix}",
+        env!("CARGO_CRATE_NAME").to_lowercase(),
+        uuid::Uuid::new_v4()
+    ))
 }
 
 pub fn set_proxy(

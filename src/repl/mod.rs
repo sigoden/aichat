@@ -10,7 +10,7 @@ use crate::client::chat_completion_streaming;
 use crate::config::{AssertState, Config, GlobalConfig, Input, StateFlags};
 use crate::function::need_send_tool_results;
 use crate::render::render_error;
-use crate::utils::{create_abort_signal, set_text, AbortSignal};
+use crate::utils::{create_abort_signal, set_text, temp_file, AbortSignal};
 
 use anyhow::{bail, Context, Result};
 use async_recursion::async_recursion;
@@ -415,8 +415,7 @@ Type ".help" for additional help.
             .with_ansi_colors(true);
 
         if let Some(cmd) = config.read().buffer_editor() {
-            let temp_file =
-                env::temp_dir().join(format!("aichat-{}.txt", chrono::Utc::now().timestamp()));
+            let temp_file = temp_file("-repl-", ".txt");
             let command = process::Command::new(cmd);
             editor = editor.with_buffer_editor(command, temp_file);
         }

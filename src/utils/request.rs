@@ -3,7 +3,7 @@ use super::*;
 use anyhow::{bail, Result};
 use http::header::CONTENT_TYPE;
 use lazy_static::lazy_static;
-use std::{collections::HashMap, env, time::Duration};
+use std::{collections::HashMap, time::Duration};
 use tokio::io::AsyncWriteExt;
 
 pub const URL_LOADER: &str = "url";
@@ -48,10 +48,7 @@ pub async fn fetch(loaders: &HashMap<String, String>, path: &str) -> Result<(Str
     }
     let result = match loaders.get(&extension) {
         Some(loader_command) => {
-            let save_path = env::temp_dir()
-                .join(format!("aichat-download-{}.{extension}", sha256(path)))
-                .display()
-                .to_string();
+            let save_path = temp_file("-download-", "").display().to_string();
             let mut save_file = tokio::fs::File::create(&save_path).await?;
             let mut size = 0;
             while let Some(chunk) = res.chunk().await? {

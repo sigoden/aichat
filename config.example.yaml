@@ -34,7 +34,7 @@ document_loaders:
   docx: 'pandoc --to plain $1'                  # Load .docx file
   # xlsx: 'ssconvert $1 $2'                     # Load .xlsx file
   # html: 'pandoc --to plain $1'                # Load .html file
-  # recursive_url: 'rag-crawler $1 $2.json'     # Load websites, see https://github.com/sigoden/rag-crawler
+  # recursive_url: 'rag-crawler $1 $2'          # Load websites, see https://github.com/sigoden/rag-crawler
 
 # ---- function-calling & agent ----
 # Controls the function calling feature. For setup instructions, visit https://github.com/sigoden/llm-functions
