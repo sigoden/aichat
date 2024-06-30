@@ -19,6 +19,7 @@ use crate::utils::*;
 
 use anyhow::{anyhow, bail, Context, Result};
 use fancy_regex::Regex;
+use input::Regenerate;
 use inquire::{Confirm, Select};
 use parking_lot::RwLock;
 use serde::Deserialize;
@@ -119,6 +120,7 @@ pub struct Config {
 
     pub highlight: bool,
     pub light_theme: bool,
+    pub repl_spinner: bool,
     pub left_prompt: Option<String>,
     pub right_prompt: Option<String>,
 
@@ -184,6 +186,7 @@ impl Default for Config {
 
             highlight: true,
             light_theme: false,
+            repl_spinner: true,
             left_prompt: None,
             right_prompt: None,
 
@@ -1271,12 +1274,16 @@ impl Config {
         output: &str,
         tool_results: &[ToolResult],
     ) -> Result<()> {
+        let mut output = output.to_string();
         if self.dry_run || output.is_empty() || !tool_results.is_empty() {
             self.last_message = None;
             return Ok(());
         }
+        if let Some(Regenerate::Edit(prefix)) = input.regenerate() {
+            output = format!("{}{}", prefix, output);
+        }
         self.last_message = Some((input.clone(), output.to_string()));
-        self.save_message(input, output)?;
+        self.save_message(input, &output)?;
         Ok(())
     }
 

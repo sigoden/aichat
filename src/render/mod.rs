@@ -17,8 +17,9 @@ pub async fn render_stream(
 ) -> Result<()> {
     if *IS_STDOUT_TERMINAL {
         let render_options = config.read().render_options()?;
+        let spin = config.read().repl_spinner;
         let mut render = MarkdownRender::init(render_options)?;
-        markdown_stream(rx, &mut render, &abort).await
+        markdown_stream(rx, &mut render, &abort, spin).await
     } else {
         raw_stream(rx, &abort).await
     }

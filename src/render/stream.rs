@@ -1,6 +1,6 @@
 use super::{MarkdownRender, SseEvent};
 
-use crate::utils::{create_spinner, AbortSignal};
+use crate::utils::{create_spinner, AbortSignal, Spinner};
 
 use anyhow::Result;
 use crossterm::{
@@ -20,11 +20,12 @@ pub async fn markdown_stream(
     rx: UnboundedReceiver<SseEvent>,
     render: &mut MarkdownRender,
     abort: &AbortSignal,
+    spin: bool,
 ) -> Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
 
-    let ret = markdown_stream_inner(rx, render, abort, &mut stdout).await;
+    let ret = markdown_stream_inner(rx, render, abort, &mut stdout, spin).await;
 
     disable_raw_mode()?;
 
@@ -56,13 +57,17 @@ async fn markdown_stream_inner(
     render: &mut MarkdownRender,
     abort: &AbortSignal,
     writer: &mut Stdout,
+    spin: bool,
 ) -> Result<()> {
     let mut buffer = String::new();
     let mut buffer_rows = 1;
 
     let columns = terminal::size()?.0;
 
-    let mut spinner = Some(create_spinner("Generating").await);
+    let mut spinner: Option<Spinner> = None;
+    if spin {
+        spinner = Some(create_spinner("Generating").await); 
+    }
 
     'outer: loop {
         if abort.aborted() {
