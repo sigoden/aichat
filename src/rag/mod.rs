@@ -56,7 +56,7 @@ impl Rag {
         let mut rag = Self::create(config, name, save_path, data)?;
         let mut paths = doc_paths.to_vec();
         if paths.is_empty() {
-            paths = add_document_paths()?;
+            paths = add_documents()?;
         };
         debug!("doc paths: {paths:?}");
         let loaders = config.read().document_loaders.clone();
@@ -274,7 +274,7 @@ impl Rag {
             }
             for (index, (path, extension)) in new_paths.into_iter().enumerate() {
                 println!("Loading {path} [{}/{new_paths_len}]", index + 1);
-                let documents = load(&loaders, &path, &extension)
+                let (hash, documents) = load(&loaders, &path, &extension)
                     .await
                     .with_context(|| format!("Failed to load '{path}'"))?;
                 let splitted_documents: Vec<_> = documents
@@ -309,6 +309,7 @@ impl Rag {
                     path
                 };
                 rag_files.push(RagFile {
+                    hash,
                     path: display_path,
                     documents: splitted_documents,
                 })
@@ -527,7 +528,8 @@ impl RagData {
     ) {
         self.next_file_id = next_file_id;
         self.files.extend(files);
-        self.vectors.extend(document_ids.into_iter().zip(embeddings));
+        self.vectors
+            .extend(document_ids.into_iter().zip(embeddings));
     }
 
     pub fn build_hnsw(&self) -> Hnsw<'static, f32, DistCosine> {
@@ -551,6 +553,7 @@ impl RagData {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RagFile {
+    hash: String,
     path: String,
     documents: Vec<RagDocument>,
 }
@@ -645,7 +648,7 @@ fn set_chunk_overlay(default_value: usize) -> Result<usize> {
     value.parse().map_err(|_| anyhow!("Invalid chunk_overlay"))
 }
 
-fn add_document_paths() -> Result<Vec<String>> {
+fn add_documents() -> Result<Vec<String>> {
     let text = Text::new("Add documents:")
         .with_validator(required!("This field is required"))
         .with_help_message("e.g. file;dir/;dir/**/*.md;url;sites/**")

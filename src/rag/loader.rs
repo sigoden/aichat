@@ -11,23 +11,28 @@ pub async fn load(
     loaders: &HashMap<String, String>,
     path: &str,
     extension: &str,
-) -> Result<Vec<RagDocument>> {
+) -> Result<(String, Vec<RagDocument>)> {
     if extension == RECURSIVE_URL_LOADER {
         let loader_command = loaders
             .get(extension)
             .with_context(|| format!("RAG document loader '{extension}' not configured"))?;
         let contents = run_loader_command(path, extension, loader_command)?;
-        let output = match parse_json_documents(&contents) {
+        let hash = sha256(&contents);
+        let documents = match parse_json_documents(&contents) {
             Some(v) => v,
             None => vec![RagDocument::new(contents)],
         };
-        Ok(output)
+        Ok((hash, documents))
     } else if extension == URL_LOADER {
         let (contents, extension) = fetch(loaders, path).await?;
+        let hash = sha256(&contents);
         let mut metadata: RagMetadata = Default::default();
         metadata.insert("path".into(), path.into());
         metadata.insert(EXTENSION_METADATA.into(), extension);
-        Ok(vec![RagDocument::new(contents).with_metadata(metadata)])
+        Ok((
+            hash,
+            vec![RagDocument::new(contents).with_metadata(metadata)],
+        ))
     } else {
         match loaders.get(extension) {
             Some(loader_command) => load_with_command(path, extension, loader_command),
@@ -36,30 +41,32 @@ pub async fn load(
     }
 }
 
-async fn load_plain(path: &str, extension: &str) -> Result<Vec<RagDocument>> {
+async fn load_plain(path: &str, extension: &str) -> Result<(String, Vec<RagDocument>)> {
     let contents = tokio::fs::read_to_string(path).await?;
+    let hash = sha256(&contents);
     if extension == "json" {
         if let Some(documents) = parse_json_documents(&contents) {
-            return Ok(documents);
+            return Ok((hash, documents));
         }
     }
     let mut document = RagDocument::new(contents);
     document.metadata.insert("path".into(), path.to_string());
-    Ok(vec![document])
+    Ok((hash, vec![document]))
 }
 
 fn load_with_command(
     path: &str,
     extension: &str,
     loader_command: &str,
-) -> Result<Vec<RagDocument>> {
+) -> Result<(String, Vec<RagDocument>)> {
     let contents = run_loader_command(path, extension, loader_command)?;
+    let hash = sha256(&contents);
     let mut document = RagDocument::new(contents);
     document.metadata.insert("path".into(), path.to_string());
     document
         .metadata
         .insert(EXTENSION_METADATA.into(), DEFAULT_EXTENSION.to_string());
-    Ok(vec![document])
+    Ok((hash, vec![document]))
 }
 
 fn parse_json_documents(data: &str) -> Option<Vec<RagDocument>> {
@@ -158,6 +165,8 @@ pub fn parse_glob(path_str: &str) -> Result<(String, Vec<String>)> {
             let extensions = vec![extensions_str.to_string()];
             Ok((base_path, extensions))
         }
+    } else if path_str.ends_with("/**") || path_str.ends_with(r"\**") {
+        Ok((path_str[0..path_str.len() - 3].to_string(), vec![]))
     } else {
         Ok((path_str.to_string(), vec![]))
     }
