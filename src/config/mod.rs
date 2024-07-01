@@ -885,11 +885,23 @@ impl Config {
         Ok(())
     }
 
+    pub async fn rebuild_rag(config: &GlobalConfig, abort_signal: AbortSignal) -> Result<()> {
+        let rag_name = match config.read().rag.clone() {
+            Some(v) => v.name().to_string(),
+            None => bail!("No RAG"),
+        };
+        let rag_path = config.read().rag_file(&rag_name)?;
+        let mut rag = Rag::load(config, &rag_name, &rag_path)?;
+        rag.rebuild(config, &rag_path, abort_signal).await?;
+        config.write().rag = Some(Arc::new(rag));
+        Ok(())
+    }
+
     pub fn rag_info(&self) -> Result<String> {
         if let Some(rag) = &self.rag {
             rag.export()
         } else {
-            bail!("No rag")
+            bail!("No RAG")
         }
     }
 

@@ -33,7 +33,7 @@ lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 26] = [
+    static ref REPL_COMMANDS: [ReplCommand; 27] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
@@ -95,6 +95,11 @@ lazy_static! {
         ReplCommand::new(
             ".info rag",
             "View rag info",
+            AssertState::True(StateFlags::RAG),
+        ),
+        ReplCommand::new(
+            ".rebuild rag",
+            "Rebuild the rag",
             AssertState::True(StateFlags::RAG),
         ),
         ReplCommand::new(
@@ -311,6 +316,19 @@ Tips: use <tab> to autocomplete conversation starter text.
                         }
                         _ => {
                             println!(r#"Usage: .edit session"#)
+                        }
+                    }
+                }
+                ".rebuild" => {
+                    match args.map(|v| match v.split_once(' ') {
+                        Some((subcmd, args)) => (subcmd, Some(args.trim())),
+                        None => (v, None),
+                    }) {
+                        Some(("rag", _)) => {
+                            Config::rebuild_rag(&self.config, self.abort_signal.clone()).await?;
+                        }
+                        _ => {
+                            println!(r#"Usage: .rebuild rag"#)
                         }
                     }
                 }

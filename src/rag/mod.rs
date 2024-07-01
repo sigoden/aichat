@@ -18,7 +18,7 @@ use inquire::{required, validator::Validation, Select, Text};
 use path_absolutize::Absolutize;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::{fmt::Debug, io::BufReader, path::Path};
 
 pub struct Rag {
@@ -62,7 +62,7 @@ impl Rag {
         let loaders = config.read().document_loaders.clone();
         let spinner = create_spinner("Starting").await;
         tokio::select! {
-            ret = rag.add_paths(loaders, &paths, Some(spinner.clone())) => {
+            ret = rag.load_paths(loaders, &paths, Some(spinner.clone())) => {
                 spinner.stop();
                 ret?;
             }
@@ -101,6 +101,33 @@ impl Rag {
             embedding_client,
         };
         Ok(rag)
+    }
+
+    pub async fn rebuild(
+        &mut self,
+        config: &GlobalConfig,
+        save_path: &Path,
+        abort_signal: AbortSignal,
+    ) -> Result<()> {
+        debug!("rebuild rag: {}", self.name);
+        let loaders = config.read().document_loaders.clone();
+        let spinner = create_spinner("Starting").await;
+        let paths = self.data.document_paths.clone();
+        tokio::select! {
+            ret = self.load_paths(loaders, &paths, Some(spinner.clone())) => {
+                spinner.stop();
+                ret?;
+            }
+            _ = watch_abort_signal(abort_signal) => {
+                spinner.stop();
+                bail!("Aborted!")
+            },
+        };
+        if !self.is_temp() {
+            self.save(save_path)?;
+            println!("✨ Saved rag to '{}'", save_path.display());
+        }
+        Ok(())
     }
 
     pub fn config(config: &GlobalConfig) -> Result<(Model, usize, usize)> {
@@ -220,7 +247,7 @@ impl Rag {
         Ok(output)
     }
 
-    pub async fn add_paths<T: AsRef<str>>(
+    pub async fn load_paths<T: AsRef<str>>(
         &mut self,
         loaders: HashMap<String, String>,
         paths: &[T],
@@ -230,7 +257,7 @@ impl Rag {
             let _ = spinner.set_message(String::new());
         }
 
-        let mut document_paths = IndexSet::new();
+        let mut document_paths = vec![];
         let mut files = vec![];
         let paths_len = paths.len();
         for (index, path) in paths.iter().enumerate() {
@@ -242,26 +269,33 @@ impl Rag {
                 } else {
                     files.push(load_url(&loaders, path).await?);
                 }
-                document_paths.insert(path.to_string());
+                document_paths.push(path.to_string());
             } else {
                 let path = Path::new(path);
                 let path = path.absolutize()?.display().to_string();
                 files.extend(load_path(&loaders, &path).await?);
-                document_paths.insert(path);
+                document_paths.push(path);
             }
         }
 
-        let mut exist_hashes = HashSet::new();
+        let mut to_deleted: IndexMap<String, FileId> = Default::default();
+        for (file_id, file) in &self.data.files {
+            to_deleted.insert(file.hash.clone(), *file_id);
+        }
+
         let mut rag_files = vec![];
         for (contents, mut metadata) in files {
-            let hash = sha256(&contents);
-            if exist_hashes.contains(&hash) {
-                continue;
-            }
             let path = match metadata.swap_remove(PATH_METADATA) {
                 Some(v) => v,
                 None => continue,
             };
+            let hash = sha256(&contents);
+            if let Some(file_id) = to_deleted.get(&hash) {
+                if self.data.files[file_id].path == path {
+                    to_deleted.swap_remove(&hash);
+                    continue;
+                }
+            }
             let extension = metadata
                 .swap_remove(EXTENSION_METADATA)
                 .unwrap_or_else(|| DEFAULT_EXTENSION.into());
@@ -281,38 +315,34 @@ impl Rag {
                 path,
                 documents: splitted_documents,
             });
-            exist_hashes.insert(hash);
         }
 
-        if rag_files.is_empty() {
-            return Ok(());
-        }
-
-        let mut document_ids = vec![];
-        let mut texts = vec![];
-        let mut files = vec![];
         let mut next_file_id = self.data.next_file_id;
-        for file in rag_files.into_iter() {
-            for (document_index, document) in file.documents.iter().enumerate() {
-                document_ids.push(combine_document_id(next_file_id, document_index));
-                texts.push(document.page_content.clone())
+        let mut files = vec![];
+        let mut document_ids = vec![];
+        let mut embeddings = vec![];
+
+        if !rag_files.is_empty() {
+            let mut texts = vec![];
+            for file in rag_files.into_iter() {
+                for (document_index, document) in file.documents.iter().enumerate() {
+                    document_ids.push(combine_document_id(next_file_id, document_index));
+                    texts.push(document.page_content.clone())
+                }
+                files.push((next_file_id, file));
+                next_file_id += 1;
             }
-            files.push((next_file_id, file));
-            next_file_id += 1;
+
+            let embeddings_data = EmbeddingsData::new(texts, false);
+            embeddings = self
+                .create_embeddings(embeddings_data, spinner.clone())
+                .await?;
         }
 
-        let embeddings_data = EmbeddingsData::new(texts, false);
-        let embeddings = self
-            .create_embeddings(embeddings_data, spinner.clone())
-            .await?;
+        self.data.del(to_deleted.values().cloned().collect());
+        self.data.add(next_file_id, files, document_ids, embeddings);
+        self.data.document_paths = document_paths;
 
-        self.data.add(
-            next_file_id,
-            document_paths,
-            files,
-            document_ids,
-            embeddings,
-        );
         progress(&spinner, "Building database".into());
         self.hnsw = self.data.build_hnsw();
         self.bm25 = self.data.build_bm25();
@@ -469,7 +499,7 @@ pub struct RagData {
     pub chunk_size: usize,
     pub chunk_overlap: usize,
     pub next_file_id: FileId,
-    pub document_paths: IndexSet<String>,
+    pub document_paths: Vec<String>,
     pub files: IndexMap<FileId, RagFile>,
     pub vectors: IndexMap<DocumentId, Vec<f32>>,
 }
@@ -507,16 +537,25 @@ impl RagData {
         Some(document)
     }
 
+    pub fn del(&mut self, file_ids: Vec<FileId>) {
+        for file_id in file_ids {
+            if let Some(file) = self.files.swap_remove(&file_id) {
+                for (document_index, _) in file.documents.iter().enumerate() {
+                    let document_id = combine_document_id(file_id, document_index);
+                    self.vectors.swap_remove(&document_id);
+                }
+            }
+        }
+    }
+
     pub fn add(
         &mut self,
         next_file_id: FileId,
-        document_paths: IndexSet<String>,
         files: Vec<(FileId, RagFile)>,
         document_ids: Vec<DocumentId>,
         embeddings: EmbeddingsOutput,
     ) {
         self.next_file_id = next_file_id;
-        self.document_paths.extend(document_paths);
         self.files.extend(files);
         self.vectors
             .extend(document_ids.into_iter().zip(embeddings));
