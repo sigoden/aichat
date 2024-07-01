@@ -203,12 +203,23 @@ impl Rag {
     }
 
     pub fn export(&self) -> Result<String> {
-        let files: Vec<_> = self.data.files.iter().map(|(_, v)| &v.path).collect();
+        let files: Vec<_> = self
+            .data
+            .files
+            .iter()
+            .map(|(_, v)| {
+                json!({
+                    "path": v.path,
+                    "num_chunks": v.documents.len(),
+                })
+            })
+            .collect();
         let data = json!({
             "path": self.path,
             "embedding_model": self.embedding_model.id(),
             "chunk_size": self.data.chunk_size,
             "chunk_overlap": self.data.chunk_overlap,
+            "document_paths": self.data.document_paths,
             "files": files,
         });
         let output = serde_yaml::to_string(&data)

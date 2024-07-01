@@ -89,22 +89,22 @@ lazy_static! {
         ),
         ReplCommand::new(
             ".rag",
-            "Init or use a rag",
+            "Init or use the RAG",
             AssertState::False(StateFlags::AGENT)
         ),
         ReplCommand::new(
             ".info rag",
-            "View rag info",
+            "View RAG info",
             AssertState::True(StateFlags::RAG),
         ),
         ReplCommand::new(
             ".rebuild rag",
-            "Rebuild the rag",
+            "Rebuild the RAG to sync document changes",
             AssertState::True(StateFlags::RAG),
         ),
         ReplCommand::new(
             ".exit rag",
-            "Leave the rag",
+            "Leave the RAG",
             AssertState::TrueFalse(StateFlags::RAG, StateFlags::AGENT),
         ),
         ReplCommand::new(".agent", "Use a agent", AssertState::bare()),
