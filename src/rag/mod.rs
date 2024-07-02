@@ -316,8 +316,14 @@ impl Rag {
                 self.data.chunk_overlap,
                 &separator,
             );
+
+            let metadata = metadata
+                .iter()
+                .map(|(k, v)| format!("{k}: {v}\n"))
+                .collect::<Vec<String>>()
+                .join("");
             let split_options = SplitterChunkHeaderOptions::default().with_chunk_header(&format!(
-                "<document_metadata>\npath: {path}</document_metadata>\n\n"
+                "<document_metadata>\npath: {path}\n{metadata}</document_metadata>\n\n"
             ));
             let document = RagDocument::new(contents);
             let splitted_documents = splitter.split_documents(&[document], &split_options);
@@ -354,7 +360,7 @@ impl Rag {
         self.data.add(next_file_id, files, document_ids, embeddings);
         self.data.document_paths = document_paths;
 
-        progress(&spinner, "Building database".into());
+        progress(&spinner, "Building store".into());
         self.hnsw = self.data.build_hnsw();
         self.bm25 = self.data.build_bm25();
 
