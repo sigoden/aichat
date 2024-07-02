@@ -4,8 +4,6 @@ pub use self::language::*;
 
 use super::{RagDocument, RagMetadata};
 
-use std::cmp::Ordering;
-
 pub const DEFAULT_SEPARATES: [&str; 4] = ["\n\n", "\n", " ", ""];
 
 pub fn get_separators(extension: &str) -> Vec<&'static str> {
@@ -71,15 +69,6 @@ impl RecursiveCharacterTextSplitter {
         self
     }
 
-    #[allow(unused)]
-    pub fn with_length_function<F>(mut self, length_function: F) -> Self
-    where
-        F: Fn(&str) -> usize + Send + Sync + 'static,
-    {
-        self.length_function = Box::new(length_function);
-        self
-    }
-
     pub fn split_documents(
         &self,
         documents: &[RagDocument],
@@ -110,45 +99,33 @@ impl RecursiveCharacterTextSplitter {
 
         let mut documents = Vec::new();
         for (i, text) in texts.iter().enumerate() {
-            let mut line_counter_index = 1;
-            let mut prev_chunk = None;
-            let mut index_prev_chunk = None;
+            let mut prev_chunk: Option<String> = None;
+            let mut index_prev_chunk = -1;
 
             for chunk in self.split_text(text) {
                 let mut page_content = chunk_header.clone();
 
-                let index_chunk = {
-                    let idx = match index_prev_chunk {
-                        Some(v) => v + 1,
-                        None => 0,
-                    };
-                    text[idx..].find(&chunk).map(|i| i + idx).unwrap_or(0)
-                };
-                if prev_chunk.is_none() {
-                    line_counter_index += self.number_of_newlines(text, 0, index_chunk);
+                let index_chunk = if index_prev_chunk < 0 {
+                    text.find(&chunk).map(|i| i as i32).unwrap_or(-1)
                 } else {
-                    let index_end_prev_chunk: usize = index_prev_chunk.unwrap_or_default()
-                        + (self.length_function)(prev_chunk.as_deref().unwrap_or_default());
-
-                    match index_end_prev_chunk.cmp(&index_chunk) {
-                        Ordering::Less => {
-                            line_counter_index +=
-                                self.number_of_newlines(text, index_end_prev_chunk, index_chunk);
+                    match text[(index_prev_chunk as usize)..].chars().next() {
+                        Some(c) => {
+                            let offset = (index_prev_chunk as usize) + c.len_utf8();
+                            text[offset..]
+                                .find(&chunk)
+                                .map(|i| (i + offset) as i32)
+                                .unwrap_or(-1)
                         }
-                        Ordering::Greater => {
-                            let number =
-                                self.number_of_newlines(text, index_chunk, index_end_prev_chunk);
-                            line_counter_index = line_counter_index.saturating_sub(number);
-                        }
-                        Ordering::Equal => {}
+                        None => -1,
                     }
+                };
 
+                if prev_chunk.is_some() {
                     if let Some(chunk_overlap_header) = chunk_overlap_header {
                         page_content += chunk_overlap_header;
                     }
                 }
 
-                let newlines_count = self.number_of_newlines(&chunk, 0, chunk.len());
                 let metadata = metadatas[i].clone();
                 page_content += &chunk;
                 documents.push(RagDocument {
@@ -156,17 +133,12 @@ impl RecursiveCharacterTextSplitter {
                     metadata,
                 });
 
-                line_counter_index += newlines_count;
                 prev_chunk = Some(chunk);
-                index_prev_chunk = Some(index_chunk);
+                index_prev_chunk = index_chunk;
             }
         }
 
         documents
-    }
-
-    fn number_of_newlines(&self, text: &str, start: usize, end: usize) -> usize {
-        text[start..end].matches('\n').count()
     }
 
     pub fn split_text(&self, text: &str) -> Vec<String> {
