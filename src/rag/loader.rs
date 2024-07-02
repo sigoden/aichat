@@ -14,7 +14,7 @@ pub async fn load_recrusive_url(
     let extension = RECURSIVE_URL_LOADER;
     let loader_command = loaders
         .get(extension)
-        .with_context(|| format!("RAG document loader '{extension}' not configured"))?;
+        .with_context(|| format!("Document loader '{extension}' not configured"))?;
     let contents = run_loader_command(path, extension, loader_command)?;
     let pages: Vec<WebPage> = serde_json::from_str(&contents).context(r#"The crawler response is invalid. It should follow the JSON format: `[{"path":"...", "text":"..."}]`."#)?;
     let output = pages

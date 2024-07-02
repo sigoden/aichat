@@ -29,23 +29,31 @@ pub async fn fetch(loaders: &HashMap<String, String>, path: &str) -> Result<(Str
         Err(ref err) => bail!("{err}"),
     };
     let mut res = client.get(path).send().await?;
-
-    let extension = path
-        .rsplit_once('/')
-        .and_then(|(_, pair)| pair.rsplit_once('.').map(|(_, ext)| ext))
-        .unwrap_or(DEFAULT_EXTENSION);
-    let mut extension = extension.to_lowercase();
     let content_type = res
         .headers()
         .get(CONTENT_TYPE)
         .and_then(|v| v.to_str().ok())
         .map(|v| match v.split_once(';') {
-            Some((mime, _)) => mime,
+            Some((mime, _)) => mime.trim(),
             None => v,
-        });
-    if let Some(true) = content_type.map(|v| v.contains("text/html")) {
-        extension = "html".into()
-    }
+        })
+        .unwrap_or_default();
+    let extension = match content_type {
+        "application/pdf" => "pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => "docx",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => "xlsx",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation" => "pptx",
+        "application/vnd.oasis.opendocument.text" => "odt",
+        "application/vnd.oasis.opendocument.spreadsheet" => "ods",
+        "application/vnd.oasis.opendocument.presentation" => "odp",
+        "application/rtf" => "rtf",
+        "text/html" => "html",
+        _ => path
+            .rsplit_once('/')
+            .and_then(|(_, pair)| pair.rsplit_once('.').map(|(_, ext)| ext))
+            .unwrap_or(DEFAULT_EXTENSION),
+    };
+    let extension = extension.to_lowercase();
     let result = match loaders.get(&extension) {
         Some(loader_command) => {
             let save_path = temp_file("-download-", &format!(".{extension}"))
