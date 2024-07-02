@@ -125,6 +125,15 @@ pub struct JsonSchema {
     pub required: Option<Vec<String>>,
 }
 
+impl JsonSchema {
+    pub fn is_empty_properties(&self) -> bool {
+        match &self.properties {
+            Some(v) => v.is_empty(),
+            None => true,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct ToolCall {
     pub name: String,

@@ -10,7 +10,7 @@ use crate::client::chat_completion_streaming;
 use crate::config::{AssertState, Config, GlobalConfig, Input, StateFlags};
 use crate::function::need_send_tool_results;
 use crate::render::render_error;
-use crate::utils::{create_abort_signal, set_text, AbortSignal};
+use crate::utils::{create_abort_signal, set_text, temp_file, AbortSignal};
 
 use anyhow::{bail, Context, Result};
 use async_recursion::async_recursion;
@@ -33,7 +33,7 @@ lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 26] = [
+    static ref REPL_COMMANDS: [ReplCommand; 27] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
@@ -89,17 +89,22 @@ lazy_static! {
         ),
         ReplCommand::new(
             ".rag",
-            "Init or use a rag",
+            "Init or use the RAG",
             AssertState::False(StateFlags::AGENT)
         ),
         ReplCommand::new(
             ".info rag",
-            "View rag info",
+            "View RAG info",
+            AssertState::True(StateFlags::RAG),
+        ),
+        ReplCommand::new(
+            ".rebuild rag",
+            "Rebuild the RAG to sync document changes",
             AssertState::True(StateFlags::RAG),
         ),
         ReplCommand::new(
             ".exit rag",
-            "Leave the rag",
+            "Leave the RAG",
             AssertState::TrueFalse(StateFlags::RAG, StateFlags::AGENT),
         ),
         ReplCommand::new(".agent", "Use a agent", AssertState::bare()),
@@ -314,11 +319,24 @@ Tips: use <tab> to autocomplete conversation starter text.
                         }
                     }
                 }
+                ".rebuild" => {
+                    match args.map(|v| match v.split_once(' ') {
+                        Some((subcmd, args)) => (subcmd, Some(args.trim())),
+                        None => (v, None),
+                    }) {
+                        Some(("rag", _)) => {
+                            Config::rebuild_rag(&self.config, self.abort_signal.clone()).await?;
+                        }
+                        _ => {
+                            println!(r#"Usage: .rebuild rag"#)
+                        }
+                    }
+                }
                 ".file" => match args {
                     Some(args) => {
                         let (files, text) = split_files_text(args);
                         let files = shell_words::split(files).with_context(|| "Invalid args")?;
-                        let input = Input::new(&self.config, text, files, None)?;
+                        let input = Input::from_files(&self.config, text, files, None).await?;
                         ask(&self.config, self.abort_signal.clone(), input, true).await?;
                     }
                     None => println!("Usage: .file <files>... [-- <text>...]"),
@@ -415,8 +433,7 @@ Type ".help" for additional help.
             .with_ansi_colors(true);
 
         if let Some(cmd) = config.read().buffer_editor() {
-            let temp_file =
-                env::temp_dir().join(format!("aichat-{}.txt", chrono::Utc::now().timestamp()));
+            let temp_file = temp_file("-repl-", ".txt");
             let command = process::Command::new(cmd);
             editor = editor.with_buffer_editor(command, temp_file);
         }

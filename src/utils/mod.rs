@@ -4,6 +4,7 @@ mod command;
 mod crypto;
 mod prompt_input;
 mod render_prompt;
+mod request;
 mod spinner;
 
 pub use self::abort_signal::*;
@@ -12,8 +13,10 @@ pub use self::command::*;
 pub use self::crypto::*;
 pub use self::prompt_input::*;
 pub use self::render_prompt::render_prompt;
+pub use self::request::*;
 pub use self::spinner::{create_spinner, Spinner};
 
+use anyhow::{Context, Result};
 use fancy_regex::Regex;
 use is_terminal::IsTerminal;
 use lazy_static::lazy_static;
@@ -35,8 +38,8 @@ pub fn now() -> String {
 pub fn get_env_name(key: &str) -> String {
     format!(
         "{}_{}",
-        env!("CARGO_CRATE_NAME").to_ascii_uppercase(),
-        key.to_ascii_uppercase(),
+        env!("CARGO_CRATE_NAME").to_uppercase(),
+        key.to_uppercase(),
     )
 }
 
@@ -178,6 +181,36 @@ pub fn safe_join_path<T1: AsRef<Path>, T2: AsRef<Path>>(
     } else {
         None
     }
+}
+
+pub fn temp_file(prefix: &str, suffix: &str) -> PathBuf {
+    env::temp_dir().join(format!(
+        "{}{prefix}{}{suffix}",
+        env!("CARGO_CRATE_NAME").to_lowercase(),
+        uuid::Uuid::new_v4()
+    ))
+}
+
+pub fn set_proxy(
+    builder: reqwest::ClientBuilder,
+    proxy: Option<&String>,
+) -> Result<reqwest::ClientBuilder> {
+    let proxy = if let Some(proxy) = proxy {
+        if proxy.is_empty() || proxy == "-" {
+            return Ok(builder);
+        }
+        proxy.clone()
+    } else if let Some(proxy) = ["HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"]
+        .into_iter()
+        .find_map(|v| env::var(v).ok())
+    {
+        proxy
+    } else {
+        return Ok(builder);
+    };
+    let builder = builder
+        .proxy(reqwest::Proxy::all(&proxy).with_context(|| format!("Invalid proxy `{proxy}`"))?);
+    Ok(builder)
 }
 
 #[cfg(test)]

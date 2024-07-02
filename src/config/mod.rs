@@ -114,7 +114,7 @@ pub struct Config {
     pub rag_min_score_keyword_search: f32,
     pub rag_min_score_rerank: f32,
     #[serde(default)]
-    pub rag_document_loaders: HashMap<String, String>,
+    pub document_loaders: HashMap<String, String>,
     pub rag_template: Option<String>,
 
     pub highlight: bool,
@@ -174,7 +174,7 @@ impl Default for Config {
             rag_min_score_vector_search: 0.0,
             rag_min_score_keyword_search: 0.0,
             rag_min_score_rerank: 0.0,
-            rag_document_loaders: Default::default(),
+            document_loaders: Default::default(),
             rag_template: None,
 
             save_session: None,
@@ -230,7 +230,7 @@ impl Config {
         config.setup_model()?;
         config.setup_highlight();
         config.setup_light_theme()?;
-        config.setup_rag_document_loaders();
+        config.setup_document_loaders();
 
         Ok(config)
     }
@@ -885,11 +885,23 @@ impl Config {
         Ok(())
     }
 
+    pub async fn rebuild_rag(config: &GlobalConfig, abort_signal: AbortSignal) -> Result<()> {
+        let rag_name = match config.read().rag.clone() {
+            Some(v) => v.name().to_string(),
+            None => bail!("No RAG"),
+        };
+        let rag_path = config.read().rag_file(&rag_name)?;
+        let mut rag = Rag::load(config, &rag_name, &rag_path)?;
+        rag.rebuild(config, &rag_path, abort_signal).await?;
+        config.write().rag = Some(Arc::new(rag));
+        Ok(())
+    }
+
     pub fn rag_info(&self) -> Result<String> {
         if let Some(rag) = &self.rag {
             rag.export()
         } else {
-            bail!("No rag")
+            bail!("No RAG")
         }
     }
 
@@ -1021,7 +1033,7 @@ impl Config {
                 if !model.supports_function_calling() {
                     functions = None;
                     if *IS_STDOUT_TERMINAL {
-                        eprintln!("{}", warning_text("WARNING: the role or session includes functions, but the model or client does not support function calling."));
+                        eprintln!("{}", warning_text("WARNING: This LLM or client does not support function calling, despite the context requiring it."));
                     }
                 }
             }
@@ -1433,16 +1445,16 @@ impl Config {
         Ok(())
     }
 
-    fn setup_rag_document_loaders(&mut self) {
+    fn setup_document_loaders(&mut self) {
         [
             ("pdf", "pdftotext $1 -"),
             ("docx", "pandoc --to plain $1"),
-            ("url", "curl -fsSL $1"),
+            (RECURSIVE_URL_LOADER, "rag-crawler $1 $2"),
         ]
         .into_iter()
         .for_each(|(k, v)| {
             let (k, v) = (k.to_string(), v.to_string());
-            self.rag_document_loaders.entry(k).or_insert(v);
+            self.document_loaders.entry(k).or_insert(v);
         });
     }
 }
