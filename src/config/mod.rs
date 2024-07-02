@@ -162,7 +162,7 @@ impl Default for Config {
             repl_prelude: None,
             agent_prelude: None,
 
-            function_calling: false,
+            function_calling: true,
             dangerously_functions_filter: None,
             agents: vec![],
 
@@ -222,9 +222,9 @@ impl Config {
             config.set_wrap(&wrap)?;
         }
 
-        config.functions = Functions::init(&Self::functions_file()?)?;
-
         config.working_mode = working_mode;
+
+        config.load_functions()?;
         config.load_roles()?;
 
         config.setup_model()?;
@@ -531,6 +531,11 @@ impl Config {
             }
             "function_calling" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
+                if value && self.functions.is_empty() {
+                    bail!(
+                        "Cannot enable function_calling because there are no functions installed."
+                    )
+                }
                 self.function_calling = value;
             }
             "compress_threshold" => {
@@ -949,7 +954,7 @@ impl Config {
         abort_signal: AbortSignal,
     ) -> Result<()> {
         if !config.read().function_calling {
-            bail!("Before using the agent, please configure function calling first.");
+            bail!("Please enable function calling before using the agent.");
         }
         if config.read().agent.is_some() {
             bail!("Already in a agent, please run '.exit agent' first to exit the current agent.");
@@ -1383,6 +1388,14 @@ impl Config {
         let config =
             serde_json::from_value(config).with_context(|| "Failed to load config from env")?;
         Ok(config)
+    }
+
+    fn load_functions(&mut self) -> Result<()> {
+        self.functions = Functions::init(&Self::functions_file()?)?;
+        if self.functions.is_empty() {
+            self.function_calling = false;
+        }
+        Ok(())
     }
 
     fn load_roles(&mut self) -> Result<()> {
