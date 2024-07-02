@@ -62,7 +62,7 @@ impl Functions {
         let declarations: Vec<FunctionDeclaration> = if declarations_path.exists() {
             let ctx = || {
                 format!(
-                    "Failed to load function declarations at {}",
+                    "Failed to load functions at {}",
                     declarations_path.display()
                 )
             };
