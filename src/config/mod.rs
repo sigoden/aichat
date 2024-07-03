@@ -532,9 +532,7 @@ impl Config {
             "function_calling" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 if value && self.functions.is_empty() {
-                    bail!(
-                        "Cannot enable function_calling because there are no functions installed."
-                    )
+                    bail!("Function calling cannot be enabled because no functions are installed.")
                 }
                 self.function_calling = value;
             }
