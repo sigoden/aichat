@@ -276,7 +276,7 @@ impl Rag {
             println!("Load {path} [{}/{paths_len}]", index + 1);
             if Self::is_url_path(path) {
                 if let Some(path) = path.strip_suffix("**") {
-                    files.extend(load_recrusive_url(&loaders, path).await?);
+                    files.extend(load_recursive_url(&loaders, path).await?);
                 } else {
                     files.push(load_url(&loaders, path).await?);
                 }
@@ -326,11 +326,11 @@ impl Rag {
                 "<document_metadata>\npath: {path}\n{metadata}</document_metadata>\n\n"
             ));
             let document = RagDocument::new(contents);
-            let splitted_documents = splitter.split_documents(&[document], &split_options);
+            let split_documents = splitter.split_documents(&[document], &split_options);
             rag_files.push(RagFile {
                 hash: hash.clone(),
                 path,
-                documents: splitted_documents,
+                documents: split_documents,
             });
         }
 
