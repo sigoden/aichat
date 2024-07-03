@@ -222,9 +222,9 @@ impl ToolCall {
 
         let output = if is_dangerously {
             if *IS_STDOUT_TERMINAL {
-                println!("{prompt}");
+                println!("{}", dimmed_text(&prompt));
                 let answer = Text::new("[1] Run, [2] Run & Retrieve, [3] Skip:")
-                    .with_default("2")
+                    .with_default("1")
                     .with_validator(|input: &str| match matches!(input, "1" | "2" | "3") {
                         true => Ok(Validation::Valid),
                         false => Ok(Validation::Invalid(
