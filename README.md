@@ -96,7 +96,7 @@ We have created a new repository [https://github.com/sigoden/llm-functions](http
 
 Here's a glimpse of How to use the tools.
 
-![aichat-tool-use](https://github.com/sigoden/aichat/assets/4012553/c1b6b136-bbd3-4028-9b01-7d728390c0bf)
+![aichat-tool-use](https://github.com/sigoden/aichat/assets/4012553/f9d7f827-9a2a-4ea1-8b8c-19e1c93178d4)
 
 #### AI Agent
 
