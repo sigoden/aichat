@@ -80,7 +80,7 @@ With sessions, AIChat conducts context-aware conversations.
 
 ![aichat-session](https://github.com/sigoden/aichat/assets/4012553/1444c5c9-ea67-4ad2-80df-a76954e8cce0)
 
-### Retrieval-Augmented Generation (RAG)
+### RAG
 
 Seamlessly integrates document interactions into your chat experience.
 
@@ -92,13 +92,13 @@ Function calling supercharges LLMs by connecting them to external tools and data
 
 We have created a new repository [https://github.com/sigoden/llm-functions](https://github.com/sigoden/llm-functions) to help you make the most of this feature.
 
-#### Tool Use
+#### Tool
 
 Here's a glimpse of How to use the tools.
 
-![aichat-tool-use](https://github.com/sigoden/aichat/assets/4012553/c1b6b136-bbd3-4028-9b01-7d728390c0bf)
+![aichat-tool](https://github.com/sigoden/aichat/assets/4012553/f9d7f827-9a2a-4ea1-8b8c-19e1c93178d4)
 
-#### AI Agent
+#### Agent
 
 Agent = Prompt (Role) + Tools (Function Callings) + Knowndge (RAG). It's also known as OpenAI's GPTs.
 

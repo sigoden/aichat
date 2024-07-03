@@ -7,7 +7,7 @@ use std::{collections::HashMap, path::Path};
 pub const EXTENSION_METADATA: &str = "__extension__";
 pub const PATH_METADATA: &str = "__path__";
 
-pub async fn load_recrusive_url(
+pub async fn load_recursive_url(
     loaders: &HashMap<String, String>,
     path: &str,
 ) -> Result<Vec<(String, RagMetadata)>> {
