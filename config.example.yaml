@@ -16,7 +16,7 @@ repl_prelude: null               # Overrides the `prelude` setting specifically 
 agent_prelude: null              # Set a session to use when starting a agent. (e.g. temp, default)
 
 # ---- session ----
-# Controls the persistence of the session, if null, asking the user
+# Controls the persistence of the session. if true, auto save; if false, not save; if null, asking the user
 save_session: null
 # Compress session when token count reaches or exceeds this threshold
 compress_threshold: 4000
@@ -25,20 +25,9 @@ summarize_prompt: 'Summarize the discussion briefly in 200 words or less to use 
 # Text prompt used for including the summary of the entire session
 summary_prompt: 'This is a summary of the chat history as a recap: '
 
-# Define document loaders to control how RAG and `.file`/`--file` load files of specific formats.
-document_loaders:
-  # You can add custom loaders using the following syntax:
-  #   <file-extension>: <command-to-load-the-file>
-  # Note: Use `$1` for input file and `$2` for output file. If `$2` is omitted, use stdout as output.
-  pdf: 'pdftotext $1 -'                         # Load .pdf file, see https://poppler.freedesktop.org
-  docx: 'pandoc --to plain $1'                  # Load .docx file
-  # xlsx: 'ssconvert $1 $2'                     # Load .xlsx file
-  # html: 'pandoc --to plain $1'                # Load .html file
-  recursive_url: 'rag-crawler $1 $2'            # Load websites, see https://github.com/sigoden/rag-crawler
-
 # ---- function-calling & agent ----
-# Controls the function calling feature. For setup instructions, visit https://github.com/sigoden/llm-functions
-function_calling: true
+# Visit https://github.com/sigoden/llm-functions for setup instructions
+function_calling: true           # Enables or disables function calling (Globally).
 # Regex for seletecting dangerous functions
 # User confirmation is required when executing these functions
 # e.g. 'execute_command|execute_js_code' 'execute_.*'
@@ -76,6 +65,17 @@ rag_template: |
   Given the context information, answer the query.
   Query: __INPUT__
 
+# Define document loaders to control how RAG and `.file`/`--file` load files of specific formats.
+document_loaders:
+  # You can add custom loaders using the following syntax:
+  #   <file-extension>: <command-to-load-the-file>
+  # Note: Use `$1` for input file and `$2` for output file. If `$2` is omitted, use stdout as output.
+  pdf: 'pdftotext $1 -'                         # Load .pdf file, see https://poppler.freedesktop.org
+  docx: 'pandoc --to plain $1'                  # Load .docx file
+  # xlsx: 'ssconvert $1 $2'                     # Load .xlsx file
+  # html: 'pandoc --to plain $1'                # Load .html file
+  recursive_url: 'rag-crawler $1 $2'            # Load websites, see https://github.com/sigoden/rag-crawler
+
 # ---- apperence ----
 highlight: true                  # Controls syntax highlighting
 light_theme: false               # Activates a light color theme when true. env: AICHAT_LIGHT_THEME
@@ -98,7 +98,7 @@ clients:
   #     - name: xxxx                                  # Embedding model
   #       type: embedding
   #       max_input_tokens: 2048
-  #       default_chunk_size: 2000                        
+  #       default_chunk_size: 1500                        
   #       max_batch_size: 100
   #     - name: xxxx                                  # Reranker model
   #       type: reranker 

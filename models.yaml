@@ -437,13 +437,6 @@
       require_max_tokens: true
       input_price: 0
       output_price: 0
-    - name: '@cf/baai/bge-base-en-v1.5'
-      type: embedding
-      max_input_tokens: 512
-      input_price: 0
-      output_vector_size: 768
-      default_chunk_size: 1000
-      max_batch_size: 100
     - name: '@cf/baai/bge-large-en-v1.5'
       type: embedding
       max_input_tokens: 512
@@ -488,6 +481,11 @@
   #   - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu
   #   - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7
   models:
+    - name: ernie-4.0-turbo-8k
+      max_input_tokens: 8192
+      input_price: 4.2
+      output_price: 8.4
+      supports_function_calling: true
     - name: ernie-4.0-8k-0613
       max_input_tokens: 8192
       input_price: 16.8
@@ -497,11 +495,6 @@
       max_input_tokens: 8192
       input_price: 1.68
       output_price: 1.68
-      supports_function_calling: true
-    - name: ernie-3.5-128k
-      max_input_tokens: 8192
-      input_price: 6.72
-      output_price: 13.44
       supports_function_calling: true
     - name: ernie-speed-128k
       max_input_tokens: 128000
@@ -777,26 +770,12 @@
       output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 100
-    - name: BAAI/bge-base-en-v1.5
-      type: embedding
-      max_input_tokens: 512
-      input_price: 0.005
-      output_vector_size: 768
-      default_chunk_size: 1000
-      max_batch_size: 100
     - name: BAAI/bge-m3
       type: embedding
       max_input_tokens: 8192
       input_price: 0.01
       output_vector_size: 1024
       default_chunk_size: 2000
-      max_batch_size: 100
-    - name: intfloat/e5-base-v2
-      type: embedding
-      max_input_tokens: 512
-      input_price: 0.005
-      output_vector_size: 768
-      default_chunk_size: 1000
       max_batch_size: 100
     - name: intfloat/e5-large-v2
       type: embedding
@@ -810,13 +789,6 @@
       max_input_tokens: 512
       input_price: 0.01
       output_vector_size: 1024
-      default_chunk_size: 1000
-      max_batch_size: 100
-    - name: thenlper/gte-base
-      type: embedding
-      max_input_tokens: 512
-      input_price: 0.005
-      output_vector_size: 768
       default_chunk_size: 1000
       max_batch_size: 100
     - name: thenlper/gte-large
@@ -898,13 +870,6 @@
       max_input_tokens: 512
       input_price: 0.016
       output_vector_size: 1024
-      default_chunk_size: 1000
-      max_batch_size: 100
-    - name: thenlper/gte-base
-      type: embedding
-      max_input_tokens: 512
-      input_price: 0.008
-      output_vector_size: 768
       default_chunk_size: 1000
       max_batch_size: 100
 
@@ -1140,13 +1105,6 @@
       output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 100
-    - name: BAAI/bge-base-en-v1.5
-      type: embedding
-      max_input_tokens: 512
-      input_price: 0.008
-      output_vector_size: 768
-      default_chunk_size: 1000
-      max_batch_size: 100
 
 - platform: jina
   # docs:
@@ -1192,7 +1150,7 @@
       type: reranker
       max_input_tokens: 8192
       input_price: 0.02
-    - name: jina-reranker-v1-turbo-en
+    - name: jina-reranker-v1-base-en
       type: reranker
       max_input_tokens: 8192
       input_price: 0.02
@@ -1235,18 +1193,7 @@
       output_vector_size: 1536
       default_chunk_size: 3000
       max_batch_size: 128
-    - name: voyage-2
-      type: embedding
-      max_input_tokens: 4000
-      input_price: 0.1
-      output_vector_size: 1024
-      default_chunk_size: 2000
-      max_batch_size: 128
     - name: rerank-1
       type: reranker
       max_input_tokens: 8000
       input_price: 0.05
-    - name: rerank-lite-1
-      type: reranker
-      max_input_tokens: 4000
-      input_price: 0.02
