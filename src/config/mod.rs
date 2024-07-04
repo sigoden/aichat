@@ -12,13 +12,14 @@ use crate::client::{
     create_client_config, list_chat_models, list_client_types, list_reranker_models, ClientConfig,
     Model, OPENAI_COMPATIBLE_PLATFORMS,
 };
-use crate::function::{FunctionDeclaration, Functions, FunctionsFilter, ToolResult};
+use crate::function::{FunctionDeclaration, Functions, ToolResult};
 use crate::rag::Rag;
 use crate::render::{MarkdownRender, RenderOptions};
 use crate::utils::*;
 
 use anyhow::{anyhow, bail, Context, Result};
 use fancy_regex::Regex;
+use indexmap::IndexMap;
 use inquire::{Confirm, Select};
 use parking_lot::RwLock;
 use serde::Deserialize;
@@ -103,7 +104,9 @@ pub struct Config {
     pub summary_prompt: Option<String>,
 
     pub function_calling: bool,
-    pub dangerously_functions_filter: Option<FunctionsFilter>,
+    pub mapping_tools: IndexMap<String, String>,
+    pub use_tools: Option<String>,
+    pub dangerously_functions_filter: Option<String>,
     pub agents: Vec<AgentConfig>,
 
     pub rag_embedding_model: Option<String>,
@@ -164,6 +167,8 @@ impl Default for Config {
             agent_prelude: None,
 
             function_calling: true,
+            mapping_tools: Default::default(),
+            use_tools: None,
             dangerously_functions_filter: None,
             agents: vec![],
 
@@ -421,6 +426,9 @@ impl Config {
         if role.top_p().is_none() && self.top_p.is_some() {
             role.set_top_p(self.top_p);
         }
+        if role.use_tools().is_none() && self.use_tools.is_some() && self.agent.is_none() {
+            role.set_use_tools(self.use_tools.clone())
+        }
         role
     }
 
@@ -475,6 +483,7 @@ impl Config {
             ("save_session", format_option_value(&self.save_session)),
             ("compress_threshold", self.compress_threshold.to_string()),
             ("function_calling", self.function_calling.to_string()),
+            ("use_tools", format_option_value(&role.use_tools())),
             (
                 "rag_reranker_model",
                 format_option_value(&self.rag_reranker_model),
@@ -545,6 +554,13 @@ impl Config {
                 }
                 self.function_calling = value;
             }
+            "use_tools" => {
+                if self.agent.is_some() {
+                    bail!("This action cannot be performed within an agent.")
+                }
+                let value = parse_value(value)?;
+                self.set_use_tools(value);
+            }
             "compress_threshold" => {
                 let value = parse_value(value)?;
                 self.set_compress_threshold(value);
@@ -581,6 +597,13 @@ impl Config {
         match self.role_like_mut() {
             Some(role_like) => role_like.set_top_p(value),
             None => self.top_p = value,
+        }
+    }
+
+    pub fn set_use_tools(&mut self, value: Option<String>) {
+        match self.role_like_mut() {
+            Some(role_like) => role_like.set_use_tools(value),
+            None => self.use_tools = value,
         }
     }
 
@@ -1034,23 +1057,62 @@ impl Config {
     }
 
     pub fn select_functions(&self, model: &Model, role: &Role) -> Option<Vec<FunctionDeclaration>> {
-        let mut functions = None;
+        let mut functions = vec![];
         if self.function_calling {
-            let filter = role.functions_filter();
-            if let Some(filter) = filter {
-                functions = match &self.agent {
-                    Some(agent) => agent.functions().select(&filter),
-                    None => self.functions.select(&filter),
-                };
+            let use_tools = role.use_tools();
+            let declaration_names: HashSet<String> = self
+                .functions
+                .declarations()
+                .iter()
+                .map(|v| v.name.to_string())
+                .collect();
+            if let Some(use_tools) = use_tools {
+                let mut tool_names: HashSet<String> = Default::default();
+                for item in use_tools.split(',') {
+                    let item = item.trim();
+                    if item == "all" {
+                        tool_names.extend(declaration_names);
+                        break;
+                    } else if let Some(values) = self.mapping_tools.get(item) {
+                        tool_names.extend(
+                            values
+                                .split(',')
+                                .map(|v| v.to_string())
+                                .filter(|v| declaration_names.contains(v)),
+                        )
+                    } else if declaration_names.contains(item) {
+                        tool_names.insert(item.to_string());
+                    }
+                }
+                functions = self
+                    .functions
+                    .declarations()
+                    .iter()
+                    .filter_map(|v| {
+                        if tool_names.contains(&v.name) {
+                            Some(v.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                if let Some(agent) = &self.agent {
+                    let agent_functions = agent.functions().declarations().to_vec();
+                    functions = [agent_functions, functions].concat();
+                }
                 if !model.supports_function_calling() {
-                    functions = None;
+                    functions.clear();
                     if *IS_STDOUT_TERMINAL {
                         eprintln!("{}", warning_text("WARNING: This LLM or client does not support function calling, despite the context requiring it."));
                     }
                 }
             }
         };
-        functions
+        if functions.is_empty() {
+            None
+        } else {
+            Some(functions)
+        }
     }
 
     pub fn is_dangerously_function(&self, name: &str) -> bool {
@@ -1110,14 +1172,15 @@ impl Config {
                     "max_output_tokens",
                     "temperature",
                     "top_p",
-                    "rag_reranker_model",
-                    "rag_top_k",
-                    "function_calling",
-                    "compress_threshold",
+                    "dry_run",
                     "save",
                     "save_session",
+                    "compress_threshold",
+                    "function_calling",
+                    "use_tools",
+                    "rag_reranker_model",
+                    "rag_top_k",
                     "highlight",
-                    "dry_run",
                 ]
                 .into_iter()
                 .map(|v| (format!("{v} "), None))
@@ -1131,8 +1194,7 @@ impl Config {
                     Some(v) => vec![v.to_string()],
                     None => vec![],
                 },
-                "rag_reranker_model" => list_reranker_models(self).iter().map(|v| v.id()).collect(),
-                "function_calling" => complete_bool(self.function_calling),
+                "dry_run" => complete_bool(self.dry_run),
                 "save" => complete_bool(self.save),
                 "save_session" => {
                     let save_session = if let Some(session) = &self.session {
@@ -1142,8 +1204,26 @@ impl Config {
                     };
                     complete_option_bool(save_session)
                 }
+                "function_calling" => complete_bool(self.function_calling),
+                "use_tools" => {
+                    let mut prefix = String::new();
+                    if let Some((v, _)) = args[1].rsplit_once(',') {
+                        prefix = format!("{v},");
+                    }
+                    let mut values = vec![];
+                    if prefix.is_empty() {
+                        values.push("all".to_string());
+                    }
+                    values.extend(self.mapping_tools.keys().map(|v| v.to_string()));
+                    values.extend(self.functions.declarations().iter().map(|v| v.name.clone()));
+                    values
+                        .into_iter()
+                        .filter(|v| !prefix.contains(&format!("{v},")))
+                        .map(|v| format!("{prefix}{v}"))
+                        .collect()
+                }
+                "rag_reranker_model" => list_reranker_models(self).iter().map(|v| v.id()).collect(),
                 "highlight" => complete_bool(self.highlight),
-                "dry_run" => complete_bool(self.dry_run),
                 _ => vec![],
             };
             (values.into_iter().map(|v| (v, None)).collect(), args[1])

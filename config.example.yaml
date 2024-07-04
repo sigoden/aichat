@@ -28,6 +28,10 @@ summary_prompt: 'This is a summary of the chat history as a recap: '
 # ---- function-calling & agent ----
 # Visit https://github.com/sigoden/llm-functions for setup instructions
 function_calling: true           # Enables or disables function calling (Globally).
+mapping_tools:                   # Alias for a tool or toolset
+  # web_search: 'search_duckduckgo'
+  # code_interpreter: 'execute_py_code'
+use_tools: null                  # Which tools to use by default
 # Regex for seletecting dangerous functions
 # User confirmation is required when executing these functions
 # e.g. 'execute_command|execute_js_code' 'execute_.*'
