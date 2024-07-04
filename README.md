@@ -4,7 +4,7 @@
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 [![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/mr3ZZUB9hG)
 
-AIChat is an all-in-one AI CLI tool featuring Chat-REPL, Shell Assistant, RAG, Tool Use, AI Agent, and More.
+AIChat is an all-in-one AI CLI tool featuring Chat-REPL, Shell Assistant, RAG, Function Calling, AI Agents, and More.
 
 ## Install
 
@@ -94,13 +94,13 @@ Function calling supercharges LLMs by connecting them to external tools and data
 
 We have created a new repository [https://github.com/sigoden/llm-functions](https://github.com/sigoden/llm-functions) to help you make the most of this feature.
 
-#### Tool
+#### Tools
 
 Here's a glimpse of How to use the tools.
 
 ![aichat-tool](https://github.com/sigoden/aichat/assets/4012553/f9d7f827-9a2a-4ea1-8b8c-19e1c93178d4)
 
-#### Agent
+#### Agents
 
 Agent = Prompt (Role) + Tools (Function Callings) + Knowndge (RAG). It's also known as OpenAI's GPTs.
 
@@ -152,7 +152,7 @@ AIChat supports custom dark and light themes, which highlight response text and 
 
 ![aichat-themes](https://github.com/sigoden/aichat/assets/4012553/29fa8b79-031e-405d-9caa-70d24fa0acf8)
 
-## Wiki
+## Documents
 
 - [Command-Line Guide](https://github.com/sigoden/aichat/wiki/Command-Line-Guide)
 - [Chat-REPL Guide](https://github.com/sigoden/aichat/wiki/Chat-REPL-Guide)
