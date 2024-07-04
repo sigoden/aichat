@@ -40,6 +40,7 @@ const LIGHT_THEME: &[u8] = include_bytes!("../../assets/monokai-extended-light.t
 
 const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_FILE_NAME: &str = "roles.yaml";
+const ENV_FILE_NAME: &str = ".env";
 const MESSAGES_FILE_NAME: &str = "messages.md";
 const SESSIONS_DIR_NAME: &str = "sessions";
 const RAGS_DIR_NAME: &str = "rags";
@@ -267,6 +268,13 @@ impl Config {
         }
     }
 
+    pub fn env_file() -> Result<PathBuf> {
+        match env::var(get_env_name("env_file")) {
+            Ok(value) => Ok(PathBuf::from(value)),
+            Err(_) => Self::local_path(ENV_FILE_NAME),
+        }
+    }
+
     pub fn messages_file(&self) -> Result<PathBuf> {
         match &self.agent {
             None => match env::var(get_env_name("messages_file")) {
@@ -476,6 +484,7 @@ impl Config {
             ("light_theme", self.light_theme.to_string()),
             ("config_file", display_path(&Self::config_file()?)),
             ("roles_file", display_path(&Self::roles_file()?)),
+            ("env_file", display_path(&Self::env_file()?)),
             ("functions_dir", display_path(&Self::functions_dir()?)),
             (
                 "agents_functions_dir",
@@ -1468,6 +1477,25 @@ impl Config {
             self.document_loaders.entry(k).or_insert(v);
         });
     }
+}
+
+pub fn load_env_file() -> Result<()> {
+    let env_file_path = Config::env_file()?;
+    let contents = match read_to_string(&env_file_path) {
+        Ok(v) => v,
+        Err(_) => return Ok(()),
+    };
+    debug!("Use env file '{}'", env_file_path.display());
+    for line in contents.lines() {
+        let line = line.trim();
+        if line.starts_with('#') || line.is_empty() {
+            continue;
+        }
+        if let Some((key, value)) = line.split_once('=') {
+            std::env::set_var(key.trim(), value.trim());
+        }
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
