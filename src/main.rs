@@ -16,8 +16,8 @@ extern crate log;
 use crate::cli::Cli;
 use crate::client::{chat_completion_streaming, list_chat_models, ChatCompletionsOutput};
 use crate::config::{
-    list_agents, Config, GlobalConfig, Input, WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE,
-    SHELL_ROLE, TEMP_SESSION_NAME,
+    list_agents, load_env_file, Config, GlobalConfig, Input, WorkingMode, CODE_ROLE,
+    EXPLAIN_SHELL_ROLE, SHELL_ROLE, TEMP_SESSION_NAME,
 };
 use crate::function::{eval_tool_calls, need_send_tool_results};
 use crate::render::{render_error, MarkdownRender};
@@ -39,6 +39,7 @@ use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    load_env_file()?;
     let cli = Cli::parse();
     let text = cli.text();
     let text = aggregate_text(text)?;
