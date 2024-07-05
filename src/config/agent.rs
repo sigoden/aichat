@@ -1,9 +1,6 @@
 use super::*;
 
-use crate::{
-    client::Model,
-    function::{Functions, FunctionsFilter, SELECTED_ALL_FUNCTIONS},
-};
+use crate::{client::Model, function::Functions};
 
 use anyhow::{Context, Result};
 use std::{fs::read_to_string, path::Path};
@@ -150,11 +147,12 @@ impl RoleLike for Agent {
         self.config.top_p
     }
 
-    fn functions_filter(&self) -> Option<FunctionsFilter> {
-        if self.functions.is_empty() {
+    fn use_tools(&self) -> Option<String> {
+        let common_tools = &self.definition.common_tools;
+        if common_tools.is_empty() {
             None
         } else {
-            Some(SELECTED_ALL_FUNCTIONS.into())
+            Some(common_tools.join(","))
         }
     }
 
@@ -171,7 +169,7 @@ impl RoleLike for Agent {
         self.config.top_p = value;
     }
 
-    fn set_functions_filter(&mut self, _value: Option<FunctionsFilter>) {}
+    fn set_use_tools(&mut self, _value: Option<String>) {}
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -184,7 +182,7 @@ pub struct AgentConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub dangerously_functions_filter: Option<FunctionsFilter>,
+    pub dangerously_functions_filter: Option<String>,
 }
 
 impl AgentConfig {
@@ -208,6 +206,8 @@ pub struct AgentDefinition {
     pub conversation_starters: Vec<String>,
     #[serde(default)]
     pub documents: Vec<String>,
+    #[serde(default)]
+    pub common_tools: Vec<String>,
 }
 
 impl AgentDefinition {
