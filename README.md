@@ -161,6 +161,7 @@ AIChat supports custom dark and light themes, which highlight response text and 
 - [Environment Variables](https://github.com/sigoden/aichat/wiki/Environment-Variables)
 - [Custom Theme](https://github.com/sigoden/aichat/wiki/Custom-Theme)
 - [Custom REPL Prompt](https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt)
+- [Contributing](https://github.com/sigoden/aichat/wiki/Contributing)
 
 ## License
 
