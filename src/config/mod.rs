@@ -50,6 +50,7 @@ const FUNCTIONS_FILE_NAME: &str = "functions.json";
 const FUNCTIONS_BIN_DIR_NAME: &str = "bin";
 const AGENTS_DIR_NAME: &str = "agents";
 const AGENT_RAG_FILE_NAME: &str = "rag.bin";
+const AGENT_VARIABLES_FILE_NAME: &str = "variables.yaml";
 
 pub const TEMP_ROLE_NAME: &str = "%%";
 pub const TEMP_RAG_NAME: &str = "temp";
@@ -350,6 +351,10 @@ impl Config {
 
     pub fn agent_rag_file(name: &str) -> Result<PathBuf> {
         Ok(Self::agent_config_dir(name)?.join(AGENT_RAG_FILE_NAME))
+    }
+
+    pub fn agent_variables_file(name: &str) -> Result<PathBuf> {
+        Ok(Self::agent_config_dir(name)?.join(AGENT_VARIABLES_FILE_NAME))
     }
 
     pub fn agents_functions_dir() -> Result<PathBuf> {
@@ -1014,6 +1019,20 @@ impl Config {
         }
     }
 
+    pub fn set_agent_variable(&mut self, data: &str) -> Result<()> {
+        let parts: Vec<&str> = data.split_whitespace().collect();
+        if parts.len() != 2 {
+            bail!("Usage: .variable <key> <value>");
+        }
+        let key = parts[0];
+        let value = parts[1];
+        match self.agent.as_mut() {
+            Some(agent) => agent.set_variable(key, value)?,
+            None => bail!("No agent"),
+        };
+        Ok(())
+    }
+
     pub fn exit_agent(&mut self) -> Result<()> {
         self.exit_session()?;
         if self.agent.take().is_some() {
@@ -1180,6 +1199,14 @@ impl Config {
                         .collect(),
                     None => vec![],
                 },
+                ".variable" => match &self.agent {
+                    Some(agent) => agent
+                        .variables()
+                        .iter()
+                        .map(|v| (v.name.clone(), Some(v.description.clone())))
+                        .collect(),
+                    None => vec![],
+                },
                 ".set" => vec![
                     "max_output_tokens",
                     "temperature",
@@ -1200,7 +1227,7 @@ impl Config {
                 _ => vec![],
             };
             (values, args[0])
-        } else if args.len() == 2 {
+        } else if args.len() == 2 && cmd == ".set" {
             let values = match args[0] {
                 "max_output_tokens" => match self.model.max_output_tokens() {
                     Some(v) => vec![v.to_string()],
@@ -1693,11 +1720,11 @@ pub(crate) fn ensure_parent_exists(path: &Path) -> Result<()> {
     }
     let parent = path
         .parent()
-        .ok_or_else(|| anyhow!("Failed to write to {}, No parent path", path.display()))?;
+        .ok_or_else(|| anyhow!("Failed to write to '{}', No parent path", path.display()))?;
     if !parent.exists() {
         create_dir_all(parent).with_context(|| {
             format!(
-                "Failed to write {}, Cannot create parent directory",
+                "Failed to write to '{}', Cannot create parent directory",
                 path.display()
             )
         })?;

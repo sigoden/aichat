@@ -9,7 +9,7 @@ use inquire::{validator::Validation, Confirm, Text};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
-use std::fs::{self, create_dir_all, read_to_string};
+use std::fs::{self, read_to_string};
 use std::path::Path;
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -314,13 +314,7 @@ impl Session {
     }
 
     pub fn save(&mut self, session_path: &Path, is_repl: bool) -> Result<()> {
-        if let Some(sessions_dir) = session_path.parent() {
-            if !sessions_dir.exists() {
-                create_dir_all(sessions_dir).with_context(|| {
-                    format!("Failed to create session_dir '{}'", sessions_dir.display())
-                })?;
-            }
-        }
+        ensure_parent_exists(session_path)?;
 
         self.path = Some(session_path.display().to_string());
 
