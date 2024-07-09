@@ -1517,15 +1517,16 @@ impl Config {
     }
 
     fn setup_model(&mut self) -> Result<()> {
-        let model_id = if self.model_id.is_empty() {
+        let mut model_id = match env::var(get_env_name("model")) {
+            Ok(v) => v,
+            Err(_) => self.model_id.clone(),
+        };
+        if model_id.is_empty() {
             let models = list_chat_models(self);
             if models.is_empty() {
                 bail!("No available model");
             }
-
-            models[0].id()
-        } else {
-            self.model_id.clone()
+            model_id = models[0].id()
         };
         self.set_model(&model_id)?;
         self.model_id = model_id;
