@@ -148,12 +148,7 @@ impl RoleLike for Agent {
     }
 
     fn use_tools(&self) -> Option<String> {
-        let common_tools = &self.definition.common_tools;
-        if common_tools.is_empty() {
-            None
-        } else {
-            Some(common_tools.join(","))
-        }
+        self.config.use_tools.clone()
     }
 
     fn set_model(&mut self, model: &Model) {
@@ -169,7 +164,9 @@ impl RoleLike for Agent {
         self.config.top_p = value;
     }
 
-    fn set_use_tools(&mut self, _value: Option<String>) {}
+    fn set_use_tools(&mut self, value: Option<String>) {
+        self.config.use_tools = value;
+    }
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -181,6 +178,8 @@ pub struct AgentConfig {
     pub temperature: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    use_tools: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dangerously_functions_filter: Option<String>,
 }
@@ -206,8 +205,6 @@ pub struct AgentDefinition {
     pub conversation_starters: Vec<String>,
     #[serde(default)]
     pub documents: Vec<String>,
-    #[serde(default)]
-    pub common_tools: Vec<String>,
 }
 
 impl AgentDefinition {

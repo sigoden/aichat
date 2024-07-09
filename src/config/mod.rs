@@ -555,9 +555,6 @@ impl Config {
                 self.function_calling = value;
             }
             "use_tools" => {
-                if self.agent.is_some() {
-                    bail!("This action cannot be performed within an agent.")
-                }
                 let value = parse_value(value)?;
                 self.set_use_tools(value);
             }
@@ -1059,15 +1056,14 @@ impl Config {
     pub fn select_functions(&self, model: &Model, role: &Role) -> Option<Vec<FunctionDeclaration>> {
         let mut functions = vec![];
         if self.function_calling {
-            let use_tools = role.use_tools();
-            let declaration_names: HashSet<String> = self
-                .functions
-                .declarations()
-                .iter()
-                .map(|v| v.name.to_string())
-                .collect();
-            if let Some(use_tools) = use_tools {
+            if let Some(use_tools) = role.use_tools() {
                 let mut tool_names: HashSet<String> = Default::default();
+                let declaration_names: HashSet<String> = self
+                    .functions
+                    .declarations()
+                    .iter()
+                    .map(|v| v.name.to_string())
+                    .collect();
                 for item in use_tools.split(',') {
                     let item = item.trim();
                     if item == "all" {
@@ -1096,15 +1092,31 @@ impl Config {
                         }
                     })
                     .collect();
-                if let Some(agent) = &self.agent {
-                    let agent_functions = agent.functions().declarations().to_vec();
-                    functions = [agent_functions, functions].concat();
-                }
-                if !model.supports_function_calling() {
-                    functions.clear();
-                    if *IS_STDOUT_TERMINAL {
-                        eprintln!("{}", warning_text("WARNING: This LLM or client does not support function calling, despite the context requiring it."));
-                    }
+            }
+
+            if let Some(agent) = &self.agent {
+                let mut agent_functions = agent.functions().declarations().to_vec();
+                let tool_names: HashSet<String> = agent_functions
+                    .iter()
+                    .filter_map(|v| {
+                        if v.agent {
+                            None
+                        } else {
+                            Some(v.name.to_string())
+                        }
+                    })
+                    .collect();
+                agent_functions.extend(
+                    functions
+                        .into_iter()
+                        .filter(|v| !tool_names.contains(&v.name)),
+                );
+                functions = agent_functions;
+            }
+            if !functions.is_empty() && !model.supports_function_calling() {
+                functions.clear();
+                if *IS_STDOUT_TERMINAL {
+                    eprintln!("{}", warning_text("WARNING: This LLM or client does not support function calling, despite the context requiring it."));
                 }
             }
         };

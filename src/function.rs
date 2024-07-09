@@ -71,6 +71,10 @@ impl Functions {
         Ok(Self { declarations })
     }
 
+    pub fn find(&self, name: &str) -> Option<&FunctionDeclaration> {
+        self.declarations.iter().find(|v| v.name == name)
+    }
+
     pub fn contains(&self, name: &str) -> bool {
         self.declarations.iter().any(|v| v.name == name)
     }
@@ -89,6 +93,8 @@ pub struct FunctionDeclaration {
     pub name: String,
     pub description: String,
     pub parameters: JsonSchema,
+    #[serde(skip_serializing, default)]
+    pub agent: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -154,7 +160,7 @@ impl ToolCall {
         let is_dangerously = config.read().is_dangerously_function(&function_name);
         let (call_name, cmd_name, mut cmd_args) = match &config.read().agent {
             Some(agent) => {
-                if agent.functions().contains(&function_name) {
+                if let Some(true) = agent.functions().find(&function_name).map(|v| v.agent) {
                     (
                         format!("{}:{}", agent.name(), function_name),
                         agent.name().to_string(),
