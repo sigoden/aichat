@@ -33,7 +33,7 @@ lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 27] = [
+    static ref REPL_COMMANDS: [ReplCommand; 28] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
@@ -116,6 +116,11 @@ lazy_static! {
         ReplCommand::new(
             ".starter",
             "Use the conversation starter",
+            AssertState::True(StateFlags::AGENT)
+        ),
+        ReplCommand::new(
+            ".variable",
+            "Set agent variable",
             AssertState::True(StateFlags::AGENT)
         ),
         ReplCommand::new(
@@ -291,6 +296,14 @@ Tips: use <tab> to autocomplete conversation starter text.
                         );
 
                         println!("{output}");
+                    }
+                },
+                ".variable" => match args {
+                    Some(args) => {
+                        self.config.write().set_agent_variable(args)?;
+                    }
+                    _ => {
+                        println!("Usage: .variable <key> <value>")
                     }
                 },
                 ".save" => {
