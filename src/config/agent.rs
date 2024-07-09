@@ -101,6 +101,10 @@ impl Agent {
             .display()
             .to_string()
             .into();
+        value["variables_file"] = Config::agent_variables_file(&self.name)?
+            .display()
+            .to_string()
+            .into();
         let data = serde_yaml::to_string(&value)?;
         Ok(data)
     }
@@ -336,7 +340,7 @@ fn init_variables(variables_path: &Path, variables: &mut [AgentVariable]) -> Res
             Some(value) => variable.value = value.to_string(),
             None => {
                 if !initialized {
-                    println!("The agent has the variables, initializing variables...");
+                    println!("The agent has the variables and is initializing them...");
                     initialized = true;
                 }
                 if *IS_STDOUT_TERMINAL {
