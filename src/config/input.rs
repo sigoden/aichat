@@ -379,13 +379,14 @@ async fn load_paths(
         }
     }
     for file_url in remote_urls {
-        if is_image(&file_url) {
-            medias.push(file_url)
+        let (contents, extension) = fetch(&loaders, &file_url, true)
+            .await
+            .with_context(|| format!("Failed to load url '{file_url}'"))?;
+        if extension == MEDIA_URL_EXTENSION {
+            data_urls.insert(sha256(&contents), file_url);
+            medias.push(contents)
         } else {
-            let (text, _) = fetch(&loaders, &file_url)
-                .await
-                .with_context(|| format!("Failed to load url '{file_url}'"))?;
-            files.push((file_url, text));
+            files.push((file_url, contents));
         }
     }
     Ok((files, medias, data_urls))
@@ -416,22 +417,19 @@ fn resolve_local_path(path: &str) -> Option<String> {
 }
 
 fn is_image(path: &str) -> bool {
-    path_extension(path)
+    get_patch_extension(path)
         .map(|v| IMAGE_EXTS.contains(&v.as_str()))
         .unwrap_or_default()
 }
 
-fn read_media_to_data_url<P: AsRef<Path>>(image_path: P) -> Result<String> {
-    let image_path = image_path.as_ref();
-    let mime_type = match image_path.extension().and_then(|v| v.to_str()) {
-        Some(extension) => match extension {
-            "png" => "image/png",
-            "jpg" | "jpeg" => "image/jpeg",
-            "webp" => "image/webp",
-            "gif" => "image/gif",
-            _ => bail!("Unsupported media type"),
-        },
-        None => bail!("Unknown media type"),
+fn read_media_to_data_url(image_path: &str) -> Result<String> {
+    let extension = get_patch_extension(image_path).unwrap_or_default();
+    let mime_type = match extension.as_str() {
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "webp" => "image/webp",
+        "gif" => "image/gif",
+        _ => bail!("Unexpected media type"),
     };
     let mut file = File::open(image_path)?;
     let mut buffer = Vec::new();

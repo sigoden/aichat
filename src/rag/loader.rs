@@ -60,7 +60,7 @@ pub async fn load_file(
     loaders: &HashMap<String, String>,
     path: &str,
 ) -> Result<(String, RagMetadata)> {
-    let extension = path_extension(path).unwrap_or_else(|| DEFAULT_EXTENSION.into());
+    let extension = get_patch_extension(path).unwrap_or_else(|| DEFAULT_EXTENSION.into());
     match loaders.get(&extension) {
         Some(loader_command) => load_with_command(path, &extension, loader_command),
         None => load_plain(path, &extension).await,
@@ -71,7 +71,7 @@ pub async fn load_url(
     loaders: &HashMap<String, String>,
     path: &str,
 ) -> Result<(String, RagMetadata)> {
-    let (contents, extension) = fetch(loaders, path).await?;
+    let (contents, extension) = fetch(loaders, path, false).await?;
     let mut metadata: RagMetadata = Default::default();
     metadata.insert(PATH_METADATA.into(), path.into());
     metadata.insert(EXTENSION_METADATA.into(), extension);
