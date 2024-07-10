@@ -80,7 +80,6 @@ test-server() {
 
 OPENAI_COMPATIBLE_PLATFORMS=( \
   openai,gpt-3.5-turbo,https://api.openai.com/v1 \
-  anyscale,meta-llama/Meta-Llama-3-8B-Instruct,https://api.endpoints.anyscale.com/v1 \
   deepinfra,meta-llama/Meta-Llama-3-8B-Instruct,https://api.deepinfra.com/v1/openai \
   deepseek,deepseek-chat,https://api.deepseek.com \
   fireworks,accounts/fireworks/models/llama-v3-8b-instruct,https://api.fireworks.ai/inference/v1 \

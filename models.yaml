@@ -239,22 +239,21 @@
   models:
     - name: llama3-8b-8192
       max_input_tokens: 8192
-      input_price: 0.05
-      output_price: 0.08
+      input_price: 0
+      output_price: 0
       supports_function_calling: true
     - name: llama3-70b-8192
       max_input_tokens: 8192
-      input_price: 0.59
-      output_price: 0.79
-      supports_function_calling: true
+      input_price: 0
+      output_price: 0
     - name: mixtral-8x7b-32768
       max_input_tokens: 32768
-      input_price: 0.24
-      output_price: 0.24
-    - name: gemma-7b-it
+      input_price: 0
+      output_price: 0
+    - name: gemma2-9b-it
       max_input_tokens: 8192
-      input_price: 0.07
-      output_price: 0.07
+      input_price: 0
+      output_price: 0
 
 - platform: vertexai
   # docs:
@@ -284,6 +283,13 @@
       input_price: 0.125
       output_price: 0.375
       supports_function_calling: true
+    - name: textembedding-gecko@003
+      type: embedding
+      max_input_tokens: 3072
+      input_price: 0.025
+      output_vector_size: 2048
+      default_chunk_size: 3000
+      max_batch_size: 5
     - name: text-embedding-004
       type: embedding
       max_input_tokens: 3072
@@ -481,17 +487,17 @@
   #   - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu
   #   - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7
   models:
-    - name: ernie-4.0-turbo-8k
+    - name: ernie-4.0-turbo-8k-preview
       max_input_tokens: 8192
       input_price: 4.2
       output_price: 8.4
       supports_function_calling: true
-    - name: ernie-4.0-8k-0613
+    - name: ernie-4.0-8k-preview
       max_input_tokens: 8192
       input_price: 16.8
       output_price: 16.8
       supports_function_calling: true
-    - name: ernie-3.5-8k-0613
+    - name: ernie-3.5-8k-preview
       max_input_tokens: 8192
       input_price: 1.68
       output_price: 1.68
@@ -514,13 +520,6 @@
       output_vector_size: 1024
       default_chunk_size: 1000
       max_batch_size: 16
-    - name: tao_8k
-      type: embedding
-      max_input_tokens: 8192
-      input_price: 0.28
-      output_vector_size: 1024
-      default_chunk_size: 2000
-      max_batch_size: 1
     - name: bce_reranker_base
       type: reranker
       max_input_tokens: 1024
@@ -616,6 +615,11 @@
       input_price: 14
       output_price: 14
       supports_function_calling: true
+    - name: glm-4-alltools
+      max_input_tokens: 2048
+      input_price: 14
+      output_price: 14
+      supports_function_calling: true
     - name: glm-4-airx
       max_input_tokens: 8092
       input_price: 1.4
@@ -677,50 +681,6 @@
     max_input_tokens: 16384
     input_price: 0.14
     output_price: 0.14
-
-- platform: anyscale
-  # docs:
-  #   - https://docs.anyscale.com/endpoints/text-generation/query-a-model
-  #   - https://www.anyscale.com/pricing-detail
-  models:
-    - name: meta-llama/Meta-Llama-3-8B-Instruct
-      max_input_tokens: 8192
-      input_price: 0.15
-      output_price: 0.15
-    - name: meta-llama/Meta-Llama-3-70B-Instruct
-      max_input_tokens: 8192
-      input_price: 1.0
-      output_price: 1.0
-    - name: mistralai/Mistral-7B-Instruct-v0.1
-      max_input_tokens: 16384
-      input_price: 0.15
-      output_price: 0.15
-    - name: mistralai/Mixtral-8x7B-Instruct-v0.1
-      max_input_tokens: 32768
-      input_price: 0.50
-      output_price: 0.50
-    - name: mistralai/Mixtral-8x22B-Instruct-v0.1
-      max_input_tokens: 65536
-      input_price: 0.90
-      output_price: 0.90
-    - name: google/gemma-7b-it
-      max_input_tokens: 8192
-      input_price: 0.15
-      output_price: 0.15
-    - name: BAAI/bge-large-en-v1.5
-      type: embedding
-      max_input_tokens: 512
-      input_price: 0.05
-      output_vector_size: 1024
-      default_chunk_size: 1000
-      max_batch_size: 30
-    - name: thenlper/gte-large
-      type: embedding
-      max_input_tokens: 512
-      input_price: 0.05
-      output_vector_size: 1024
-      default_chunk_size: 1000
-      max_batch_size: 30
 
 - platform: deepinfra
   # docs:
@@ -834,7 +794,7 @@
       max_input_tokens: 65536
       input_price: 0.9
       output_price: 0.9
-    - name: accounts/fireworks/models/gemma-7b-it
+    - name: accounts/fireworks/models/gemma2-9b-it
       max_input_tokens: 8192
       input_price: 0.2
       output_price: 0.2
@@ -935,6 +895,10 @@
       input_price: 0.125
       output_price: 0.375
       supports_function_calling: true
+    - name: google/gemma-2-9b-it
+      max_input_tokens: 2800000
+      input_price: 0.2
+      output_price: 0.2
     - name: anthropic/claude-3.5-sonnet
       max_input_tokens: 200000
       max_output_tokens: 4096
@@ -1021,7 +985,10 @@
       max_input_tokens: 28000
       input_price: 1
       output_price: 1
-
+    - name: 01-ai/yi-large
+      max_input_tokens: 32768
+      input_price: 3
+      output_price: 3
 
 - platform: octoai
   # docs:
