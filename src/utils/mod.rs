@@ -22,7 +22,7 @@ use anyhow::{Context, Result};
 use fancy_regex::Regex;
 use is_terminal::IsTerminal;
 use lazy_static::lazy_static;
-use std::{env, path::PathBuf};
+use std::{env, path::PathBuf, process};
 
 lazy_static! {
     pub static ref CODE_BLOCK_RE: Regex = Regex::new(r"(?ms)```\w*(.*)```").unwrap();
@@ -40,14 +40,6 @@ pub fn get_env_name(key: &str) -> String {
         env!("CARGO_CRATE_NAME").to_uppercase(),
         key.to_uppercase(),
     )
-}
-
-pub fn get_env_bool(key: &str) -> bool {
-    if let Ok(value) = env::var(get_env_name(key)) {
-        value == "1" || value == "true"
-    } else {
-        false
-    }
 }
 
 pub fn tokenize(text: &str) -> Vec<&str> {
@@ -158,8 +150,9 @@ pub fn dimmed_text(input: &str) -> String {
 
 pub fn temp_file(prefix: &str, suffix: &str) -> PathBuf {
     env::temp_dir().join(format!(
-        "{}{prefix}{}{suffix}",
+        "{}-{}{prefix}{}{suffix}",
         env!("CARGO_CRATE_NAME").to_lowercase(),
+        process::id(),
         uuid::Uuid::new_v4()
     ))
 }
