@@ -692,9 +692,19 @@ fn set_chunk_overlay(default_value: usize) -> Result<usize> {
 fn add_documents() -> Result<Vec<String>> {
     let text = Text::new("Add documents:")
         .with_validator(required!("This field is required"))
-        .with_help_message("e.g. file;dir/;dir/**/*.md;url;sites/**")
+        .with_help_message("e.g. file;dir/;dir/**/*.{md,mdx};solo-url;site-url/**")
         .prompt()?;
-    let paths = text.split(';').map(|v| v.trim().to_string()).collect();
+    let paths = text
+        .split(';')
+        .filter_map(|v| {
+            let v = v.trim().to_string();
+            if v.is_empty() {
+                None
+            } else {
+                Some(v)
+            }
+        })
+        .collect();
     Ok(paths)
 }
 
