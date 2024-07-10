@@ -42,7 +42,7 @@ pub async fn expand_glob_paths<T: AsRef<str>>(paths: &[T]) -> Result<Vec<String>
     Ok(new_paths)
 }
 
-pub fn path_extension(path: &str) -> Option<String> {
+pub fn get_patch_extension(path: &str) -> Option<String> {
     Path::new(&path)
         .extension()
         .map(|v| v.to_string_lossy().to_lowercase())
