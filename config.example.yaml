@@ -29,20 +29,14 @@ summary_prompt: 'This is a summary of the chat history as a recap: '
 # Visit https://github.com/sigoden/llm-functions for setup instructions
 function_calling: true           # Enables or disables function calling (Globally).
 mapping_tools:                   # Alias for a tool or toolset
-  # web_search: 'search_duckduckgo'
-  # code_interpreter: 'execute_py_code'
+  # fs: 'fs_cat,fs_ls,fs_mkdir,fs_rm,fs_write'
 use_tools: null                  # Which tools to use by default
-# Regex for seletecting dangerous functions
-# User confirmation is required when executing these functions
-# e.g. 'execute_command|execute_js_code' 'execute_.*'
-dangerously_functions_filter: null
 # Per-Agent configuration
 agents:
   - name: todo-sh
     model: null
     temperature: null
     top_p: null
-    dangerously_functions_filter: null
 
 # ---- RAG ----
 rag_embedding_model: null                   # Specifies the embedding model to use

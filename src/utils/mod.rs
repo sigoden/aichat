@@ -2,6 +2,7 @@ mod abort_signal;
 mod clipboard;
 mod command;
 mod crypto;
+mod path;
 mod prompt_input;
 mod render_prompt;
 mod request;
@@ -11,6 +12,7 @@ pub use self::abort_signal::*;
 pub use self::clipboard::set_text;
 pub use self::command::*;
 pub use self::crypto::*;
+pub use self::path::*;
 pub use self::prompt_input::*;
 pub use self::render_prompt::render_prompt;
 pub use self::request::*;
@@ -20,10 +22,7 @@ use anyhow::{Context, Result};
 use fancy_regex::Regex;
 use is_terminal::IsTerminal;
 use lazy_static::lazy_static;
-use std::{
-    env,
-    path::{self, Path, PathBuf},
-};
+use std::{env, path::PathBuf, process};
 
 lazy_static! {
     pub static ref CODE_BLOCK_RE: Regex = Regex::new(r"(?ms)```\w*(.*)```").unwrap();
@@ -41,14 +40,6 @@ pub fn get_env_name(key: &str) -> String {
         env!("CARGO_CRATE_NAME").to_uppercase(),
         key.to_uppercase(),
     )
-}
-
-pub fn get_env_bool(key: &str) -> bool {
-    if let Ok(value) = env::var(get_env_name(key)) {
-        value == "1" || value == "true"
-    } else {
-        false
-    }
 }
 
 pub fn tokenize(text: &str) -> Vec<&str> {
@@ -157,36 +148,11 @@ pub fn dimmed_text(input: &str) -> String {
     nu_ansi_term::Style::new().dimmed().paint(input).to_string()
 }
 
-pub fn safe_join_path<T1: AsRef<Path>, T2: AsRef<Path>>(
-    base_path: T1,
-    sub_path: T2,
-) -> Option<PathBuf> {
-    let base_path = base_path.as_ref();
-    let sub_path = sub_path.as_ref();
-    if sub_path.is_absolute() {
-        return None;
-    }
-
-    let mut joined_path = PathBuf::from(base_path);
-
-    for component in sub_path.components() {
-        if path::Component::ParentDir == component {
-            return None;
-        }
-        joined_path.push(component);
-    }
-
-    if joined_path.starts_with(base_path) {
-        Some(joined_path)
-    } else {
-        None
-    }
-}
-
 pub fn temp_file(prefix: &str, suffix: &str) -> PathBuf {
     env::temp_dir().join(format!(
-        "{}{prefix}{}{suffix}",
+        "{}-{}{prefix}{}{suffix}",
         env!("CARGO_CRATE_NAME").to_lowercase(),
+        process::id(),
         uuid::Uuid::new_v4()
     ))
 }

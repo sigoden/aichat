@@ -5,7 +5,6 @@ use crate::{
 
 use anyhow::{anyhow, bail, Context, Result};
 use indexmap::IndexMap;
-use inquire::{validator::Validation, Text};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{
@@ -71,6 +70,10 @@ impl Functions {
         Ok(Self { declarations })
     }
 
+    pub fn find(&self, name: &str) -> Option<&FunctionDeclaration> {
+        self.declarations.iter().find(|v| v.name == name)
+    }
+
     pub fn contains(&self, name: &str) -> bool {
         self.declarations.iter().any(|v| v.name == name)
     }
@@ -89,6 +92,8 @@ pub struct FunctionDeclaration {
     pub name: String,
     pub description: String,
     pub parameters: JsonSchema,
+    #[serde(skip_serializing, default)]
+    pub agent: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -151,10 +156,9 @@ impl ToolCall {
 
     pub fn eval(&self, config: &GlobalConfig) -> Result<Value> {
         let function_name = self.name.clone();
-        let is_dangerously = config.read().is_dangerously_function(&function_name);
         let (call_name, cmd_name, mut cmd_args) = match &config.read().agent {
             Some(agent) => {
-                if agent.functions().contains(&function_name) {
+                if let Some(true) = agent.functions().find(&function_name).map(|v| v.agent) {
                     (
                         format!("{}:{}", agent.name(), function_name),
                         agent.name().to_string(),
@@ -199,76 +203,28 @@ impl ToolCall {
         if bin_dir.exists() {
             envs.insert("PATH".into(), prepend_env_path(&bin_dir)?);
         }
+        let temp_file = temp_file("-eval-", "");
+        envs.insert("LLM_OUTPUT".into(), temp_file.display().to_string());
 
         #[cfg(windows)]
         let cmd_name = polyfill_cmd_name(&cmd_name, &bin_dir);
-
-        let output = if is_dangerously {
-            if *IS_STDOUT_TERMINAL {
-                println!("{}", dimmed_text(&prompt));
-                let answer = Text::new("[1] Run, [2] Run & Retrieve, [3] Skip:")
-                    .with_default("1")
-                    .with_validator(|input: &str| match matches!(input, "1" | "2" | "3") {
-                        true => Ok(Validation::Valid),
-                        false => Ok(Validation::Invalid(
-                            "Invalid input, please select 1, 2 or 3".into(),
-                        )),
-                    })
-                    .prompt()?;
-                match answer.as_str() {
-                    "1" => {
-                        let exit_code = run_command(&cmd_name, &cmd_args, Some(envs))?;
-                        if exit_code != 0 {
-                            bail!("Exit {exit_code}");
-                        }
-                        Value::Null
-                    }
-                    "2" => run_and_retrieve(&cmd_name, &cmd_args, envs)?,
-                    _ => Value::Null,
-                }
-            } else {
-                println!("Skipped {prompt}");
-                Value::Null
-            }
-        } else {
-            println!("{}", dimmed_text(&prompt));
-            run_and_retrieve(&cmd_name, &cmd_args, envs)?
-        };
-
-        Ok(output)
-    }
-}
-
-fn run_and_retrieve(
-    cmd_name: &str,
-    cmd_args: &[String],
-    envs: HashMap<String, String>,
-) -> Result<Value> {
-    let (success, stdout, stderr) = run_command_with_output(cmd_name, cmd_args, Some(envs))?;
-
-    if success {
-        if !stderr.is_empty() {
-            eprintln!("{}", warning_text(&stderr));
+        println!("{}", dimmed_text(&prompt));
+        let exit_code = run_command(&cmd_name, &cmd_args, Some(envs))?;
+        if exit_code != 0 {
+            bail!("Tool call exit with {exit_code}");
         }
-        let value = if !stdout.is_empty() {
-            serde_json::from_str(&stdout)
+        let output = if temp_file.exists() {
+            let contents =
+                fs::read_to_string(temp_file).context("Failed to retrieve tool call output")?;
+
+            serde_json::from_str(&contents)
                 .ok()
-                .unwrap_or_else(|| json!({"output": stdout}))
+                .unwrap_or_else(|| json!({"result": contents}))
         } else {
             Value::Null
         };
-        Ok(value)
-    } else {
-        let err = if stderr.is_empty() {
-            if stdout.is_empty() {
-                "Something wrong"
-            } else {
-                &stdout
-            }
-        } else {
-            &stderr
-        };
-        bail!("{err}");
+
+        Ok(output)
     }
 }
 

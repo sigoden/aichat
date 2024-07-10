@@ -18,7 +18,6 @@ use crate::render::{MarkdownRender, RenderOptions};
 use crate::utils::*;
 
 use anyhow::{anyhow, bail, Context, Result};
-use fancy_regex::Regex;
 use indexmap::IndexMap;
 use inquire::{Confirm, Select};
 use parking_lot::RwLock;
@@ -50,6 +49,7 @@ const FUNCTIONS_FILE_NAME: &str = "functions.json";
 const FUNCTIONS_BIN_DIR_NAME: &str = "bin";
 const AGENTS_DIR_NAME: &str = "agents";
 const AGENT_RAG_FILE_NAME: &str = "rag.bin";
+const AGENT_VARIABLES_FILE_NAME: &str = "variables.yaml";
 
 pub const TEMP_ROLE_NAME: &str = "%%";
 pub const TEMP_RAG_NAME: &str = "temp";
@@ -106,7 +106,6 @@ pub struct Config {
     pub function_calling: bool,
     pub mapping_tools: IndexMap<String, String>,
     pub use_tools: Option<String>,
-    pub dangerously_functions_filter: Option<String>,
     pub agents: Vec<AgentConfig>,
 
     pub rag_embedding_model: Option<String>,
@@ -169,7 +168,6 @@ impl Default for Config {
             function_calling: true,
             mapping_tools: Default::default(),
             use_tools: None,
-            dangerously_functions_filter: None,
             agents: vec![],
 
             rag_embedding_model: None,
@@ -350,6 +348,10 @@ impl Config {
 
     pub fn agent_rag_file(name: &str) -> Result<PathBuf> {
         Ok(Self::agent_config_dir(name)?.join(AGENT_RAG_FILE_NAME))
+    }
+
+    pub fn agent_variables_file(name: &str) -> Result<PathBuf> {
+        Ok(Self::agent_config_dir(name)?.join(AGENT_VARIABLES_FILE_NAME))
     }
 
     pub fn agents_functions_dir() -> Result<PathBuf> {
@@ -555,9 +557,6 @@ impl Config {
                 self.function_calling = value;
             }
             "use_tools" => {
-                if self.agent.is_some() {
-                    bail!("This action cannot be performed within an agent.")
-                }
                 let value = parse_value(value)?;
                 self.set_use_tools(value);
             }
@@ -1017,6 +1016,20 @@ impl Config {
         }
     }
 
+    pub fn set_agent_variable(&mut self, data: &str) -> Result<()> {
+        let parts: Vec<&str> = data.split_whitespace().collect();
+        if parts.len() != 2 {
+            bail!("Usage: .variable <key> <value>");
+        }
+        let key = parts[0];
+        let value = parts[1];
+        match self.agent.as_mut() {
+            Some(agent) => agent.set_variable(key, value)?,
+            None => bail!("No agent"),
+        };
+        Ok(())
+    }
+
     pub fn exit_agent(&mut self) -> Result<()> {
         self.exit_session()?;
         if self.agent.take().is_some() {
@@ -1059,15 +1072,14 @@ impl Config {
     pub fn select_functions(&self, model: &Model, role: &Role) -> Option<Vec<FunctionDeclaration>> {
         let mut functions = vec![];
         if self.function_calling {
-            let use_tools = role.use_tools();
-            let declaration_names: HashSet<String> = self
-                .functions
-                .declarations()
-                .iter()
-                .map(|v| v.name.to_string())
-                .collect();
-            if let Some(use_tools) = use_tools {
+            if let Some(use_tools) = role.use_tools() {
                 let mut tool_names: HashSet<String> = Default::default();
+                let declaration_names: HashSet<String> = self
+                    .functions
+                    .declarations()
+                    .iter()
+                    .map(|v| v.name.to_string())
+                    .collect();
                 for item in use_tools.split(',') {
                     let item = item.trim();
                     if item == "all" {
@@ -1096,15 +1108,31 @@ impl Config {
                         }
                     })
                     .collect();
-                if let Some(agent) = &self.agent {
-                    let agent_functions = agent.functions().declarations().to_vec();
-                    functions = [agent_functions, functions].concat();
-                }
-                if !model.supports_function_calling() {
-                    functions.clear();
-                    if *IS_STDOUT_TERMINAL {
-                        eprintln!("{}", warning_text("WARNING: This LLM or client does not support function calling, despite the context requiring it."));
-                    }
+            }
+
+            if let Some(agent) = &self.agent {
+                let mut agent_functions = agent.functions().declarations().to_vec();
+                let tool_names: HashSet<String> = agent_functions
+                    .iter()
+                    .filter_map(|v| {
+                        if v.agent {
+                            None
+                        } else {
+                            Some(v.name.to_string())
+                        }
+                    })
+                    .collect();
+                agent_functions.extend(
+                    functions
+                        .into_iter()
+                        .filter(|v| !tool_names.contains(&v.name)),
+                );
+                functions = agent_functions;
+            }
+            if !functions.is_empty() && !model.supports_function_calling() {
+                functions.clear();
+                if *IS_STDOUT_TERMINAL {
+                    eprintln!("{}", warning_text("WARNING: This LLM or client does not support function calling, despite the context requiring it."));
                 }
             }
         };
@@ -1112,26 +1140,6 @@ impl Config {
             None
         } else {
             Some(functions)
-        }
-    }
-
-    pub fn is_dangerously_function(&self, name: &str) -> bool {
-        if get_env_bool("no_dangerously_functions") {
-            return false;
-        }
-        let dangerously_functions_filter = match &self.agent {
-            Some(agent) => agent.config().dangerously_functions_filter.as_ref(),
-            None => self.dangerously_functions_filter.as_ref(),
-        };
-        match dangerously_functions_filter {
-            None => false,
-            Some(regex) => {
-                let regex = match Regex::new(&format!("^({regex})$")) {
-                    Ok(v) => v,
-                    Err(_) => return false,
-                };
-                regex.is_match(name).unwrap_or(false)
-            }
         }
     }
 
@@ -1168,6 +1176,14 @@ impl Config {
                         .collect(),
                     None => vec![],
                 },
+                ".variable" => match &self.agent {
+                    Some(agent) => agent
+                        .variables()
+                        .iter()
+                        .map(|v| (v.name.clone(), Some(v.description.clone())))
+                        .collect(),
+                    None => vec![],
+                },
                 ".set" => vec![
                     "max_output_tokens",
                     "temperature",
@@ -1188,7 +1204,7 @@ impl Config {
                 _ => vec![],
             };
             (values, args[0])
-        } else if args.len() == 2 {
+        } else if args.len() == 2 && cmd == ".set" {
             let values = match args[0] {
                 "max_output_tokens" => match self.model.max_output_tokens() {
                     Some(v) => vec![v.to_string()],
@@ -1505,15 +1521,16 @@ impl Config {
     }
 
     fn setup_model(&mut self) -> Result<()> {
-        let model_id = if self.model_id.is_empty() {
+        let mut model_id = match env::var(get_env_name("model")) {
+            Ok(v) => v,
+            Err(_) => self.model_id.clone(),
+        };
+        if model_id.is_empty() {
             let models = list_chat_models(self);
             if models.is_empty() {
                 bail!("No available model");
             }
-
-            models[0].id()
-        } else {
-            self.model_id.clone()
+            model_id = models[0].id()
         };
         self.set_model(&model_id)?;
         self.model_id = model_id;
@@ -1680,11 +1697,11 @@ pub(crate) fn ensure_parent_exists(path: &Path) -> Result<()> {
     }
     let parent = path
         .parent()
-        .ok_or_else(|| anyhow!("Failed to write to {}, No parent path", path.display()))?;
+        .ok_or_else(|| anyhow!("Failed to write to '{}', No parent path", path.display()))?;
     if !parent.exists() {
         create_dir_all(parent).with_context(|| {
             format!(
-                "Failed to write {}, Cannot create parent directory",
+                "Failed to write to '{}', Cannot create parent directory",
                 path.display()
             )
         })?;
