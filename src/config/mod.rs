@@ -18,7 +18,6 @@ use crate::render::{MarkdownRender, RenderOptions};
 use crate::utils::*;
 
 use anyhow::{anyhow, bail, Context, Result};
-use fancy_regex::Regex;
 use indexmap::IndexMap;
 use inquire::{Confirm, Select};
 use parking_lot::RwLock;
@@ -107,7 +106,6 @@ pub struct Config {
     pub function_calling: bool,
     pub mapping_tools: IndexMap<String, String>,
     pub use_tools: Option<String>,
-    pub dangerously_functions_filter: Option<String>,
     pub agents: Vec<AgentConfig>,
 
     pub rag_embedding_model: Option<String>,
@@ -170,7 +168,6 @@ impl Default for Config {
             function_calling: true,
             mapping_tools: Default::default(),
             use_tools: None,
-            dangerously_functions_filter: None,
             agents: vec![],
 
             rag_embedding_model: None,
@@ -1143,26 +1140,6 @@ impl Config {
             None
         } else {
             Some(functions)
-        }
-    }
-
-    pub fn is_dangerously_function(&self, name: &str) -> bool {
-        if get_env_bool("no_dangerously_functions") {
-            return false;
-        }
-        let dangerously_functions_filter = match &self.agent {
-            Some(agent) => agent.config().dangerously_functions_filter.as_ref(),
-            None => self.dangerously_functions_filter.as_ref(),
-        };
-        match dangerously_functions_filter {
-            None => false,
-            Some(regex) => {
-                let regex = match Regex::new(&format!("^({regex})$")) {
-                    Ok(v) => v,
-                    Err(_) => return false,
-                };
-                regex.is_match(name).unwrap_or(false)
-            }
         }
     }
 

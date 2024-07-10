@@ -117,10 +117,6 @@ impl Agent {
         &self.name
     }
 
-    pub fn config(&self) -> &AgentConfig {
-        &self.config
-    }
-
     pub fn functions(&self) -> &Functions {
         &self.functions
     }
@@ -211,8 +207,6 @@ pub struct AgentConfig {
     pub top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     use_tools: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub dangerously_functions_filter: Option<String>,
 }
 
 impl AgentConfig {
