@@ -69,14 +69,10 @@ impl VertexAIClient {
         let base_url = format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers");
         let url = format!("{base_url}/google/models/{}:predict", self.model.name());
 
-        let task_type = match data.query {
-            true => "RETRIEVAL_DOCUMENT",
-            false => "QUESTION_ANSWERING",
-        };
         let instances: Vec<_> = data
             .texts
             .into_iter()
-            .map(|v| json!({"task_type": task_type, "content": v}))
+            .map(|v| json!({"content": v}))
             .collect();
         let body = json!({
             "instances": instances,

@@ -260,12 +260,6 @@ clients:
     name: lingyiwanwu
     api_key: xxx                                      # ENV: {client}_API_KEY
 
-  # See https://docs.endpoints.anyscale.com/
-  - type: openai-compatible
-    name: anyscale
-    api_base: https://api.endpoints.anyscale.com/v1
-    api_key: xxx                                      # ENV: {client}_API_KEY
-
   # See https://deepinfra.com/docs
   - type: openai-compatible
     name: deepinfra
