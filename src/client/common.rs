@@ -368,7 +368,7 @@ pub trait Client: Sync + Send {
             ret = async {
                 if self.global_config().read().dry_run {
                     let content = input.echo_messages();
-                    let tokens = tokenize(&content);
+                    let tokens = split_content(&content);
                     for token in tokens {
                         tokio::time::sleep(Duration::from_millis(10)).await;
                         handler.text(token)?;
@@ -648,22 +648,22 @@ pub fn catch_error(data: &Value, status: u16) -> Result<()> {
     debug!("Invalid response, status: {status}, data: {data}");
     if let Some(error) = data["error"].as_object() {
         if let (Some(typ), Some(message)) = (
-            get_str_field_from_json_map(error, "type"),
-            get_str_field_from_json_map(error, "message"),
+            json_str_from_map(error, "type"),
+            json_str_from_map(error, "message"),
         ) {
             bail!("{message} (type: {typ})");
         }
     } else if let Some(error) = data["errors"][0].as_object() {
         if let (Some(code), Some(message)) = (
-            get_u64_field_from_json_map(error, "code"),
-            get_str_field_from_json_map(error, "message"),
+            error.get("code").and_then(|v| v.as_u64()),
+            json_str_from_map(error, "message"),
         ) {
             bail!("{message} (status: {code})")
         }
     } else if let Some(error) = data[0]["error"].as_object() {
         if let (Some(status), Some(message)) = (
-            get_str_field_from_json_map(error, "status"),
-            get_str_field_from_json_map(error, "message"),
+            json_str_from_map(error, "status"),
+            json_str_from_map(error, "message"),
         ) {
             bail!("{message} (status: {status})")
         }
@@ -678,18 +678,11 @@ pub fn catch_error(data: &Value, status: u16) -> Result<()> {
     bail!("Invalid response data: {data} (status: {status})");
 }
 
-pub fn get_str_field_from_json_map<'a>(
+pub fn json_str_from_map<'a>(
     map: &'a serde_json::Map<String, Value>,
     field_name: &str,
 ) -> Option<&'a str> {
     map.get(field_name).and_then(|v| v.as_str())
-}
-
-pub fn get_u64_field_from_json_map(
-    map: &serde_json::Map<String, Value>,
-    field_name: &str,
-) -> Option<u64> {
-    map.get(field_name).and_then(|v| v.as_u64())
 }
 
 pub fn maybe_catch_error(data: &Value) -> Result<()> {
@@ -766,5 +759,14 @@ fn to_json(kind: &PromptKind, value: &str) -> Value {
             Ok(value) => value.into(),
             Err(_) => value.into(),
         },
+    }
+}
+
+fn split_content(text: &str) -> Vec<&str> {
+    if text.is_ascii() {
+        text.split_inclusive(|c: char| c.is_ascii_whitespace())
+            .collect()
+    } else {
+        unicode_segmentation::UnicodeSegmentation::graphemes(text, true).collect()
     }
 }
