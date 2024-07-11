@@ -157,29 +157,24 @@ impl ToolCall {
     pub fn eval(&self, config: &GlobalConfig) -> Result<Value> {
         let function_name = self.name.clone();
         let (call_name, cmd_name, mut cmd_args) = match &config.read().agent {
-            Some(agent) => {
-                if let Some(true) = agent.functions().find(&function_name).map(|v| v.agent) {
-                    (
-                        format!("{}:{}", agent.name(), function_name),
-                        agent.name().to_string(),
-                        vec![function_name],
-                    )
-                } else if config.read().functions.contains(&function_name) {
-                    (function_name.clone(), function_name, vec![])
-                } else {
-                    bail!(
-                        "Unexpected call: {} {function_name} {}",
-                        agent.name(),
-                        self.arguments
-                    );
+            Some(agent) => match agent.functions().find(&function_name) {
+                Some(function) => {
+                    if function.agent {
+                        (
+                            format!("{}:{}", agent.name(), function_name),
+                            agent.name().to_string(),
+                            vec![function_name],
+                        )
+                    } else {
+                        (function_name.clone(), function_name, vec![])
+                    }
                 }
-            }
-            None => {
-                if !config.read().functions.contains(&function_name) {
-                    bail!("Unexpected call: {function_name} {}", self.arguments);
-                }
-                (function_name.clone(), function_name, vec![])
-            }
+                None => bail!("Unexpected call {function_name} {}", self.arguments),
+            },
+            None => match config.read().functions.contains(&function_name) {
+                true => (function_name.clone(), function_name, vec![]),
+                false => bail!("Unexpected call: {function_name} {}", self.arguments),
+            },
         };
         let json_data = if self.arguments.is_object() {
             self.arguments.clone()
