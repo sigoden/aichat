@@ -72,13 +72,8 @@ impl Input {
         if files_len > 0 {
             texts.push(String::new());
         }
-        let is_multi_files = files_len > 1;
         for (path, contents) in files {
-            if is_multi_files {
-                texts.push(format!("`{path}`:\n\n{contents}\n\n"));
-            } else {
-                texts.push(contents);
-            }
+            texts.push(format!("`{path}`:\n\n{contents}\n\n"));
         }
         let (role, with_session, with_agent) = resolve_role(&config.read(), role);
         Ok(Self {
@@ -409,11 +404,11 @@ fn resolve_local_path(path: &str) -> Option<String> {
         return None;
     }
     let new_path = if let (Some(file), Some(home)) = (path.strip_prefix("~/"), dirs::home_dir()) {
-        home.join(file)
+        home.join(file).display().to_string()
     } else {
-        std::env::current_dir().ok()?.join(path)
+        path.to_string()
     };
-    Some(new_path.display().to_string())
+    Some(new_path)
 }
 
 fn is_image(path: &str) -> bool {
