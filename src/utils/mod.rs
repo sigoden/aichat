@@ -23,6 +23,7 @@ use fancy_regex::Regex;
 use is_terminal::IsTerminal;
 use lazy_static::lazy_static;
 use std::{env, path::PathBuf, process};
+use unicode_segmentation::UnicodeSegmentation;
 
 lazy_static! {
     pub static ref CODE_BLOCK_RE: Regex = Regex::new(r"(?ms)```\w*(.*)```").unwrap();
@@ -42,31 +43,22 @@ pub fn get_env_name(key: &str) -> String {
     )
 }
 
-pub fn tokenize(text: &str) -> Vec<&str> {
-    if text.is_ascii() {
-        text.split_inclusive(|c: char| c.is_ascii_whitespace())
-            .collect()
-    } else {
-        unicode_segmentation::UnicodeSegmentation::graphemes(text, true).collect()
-    }
-}
-
 pub fn estimate_token_length(text: &str) -> usize {
-    let mut token_length: f32 = 0.0;
-
-    for char in text.chars() {
-        if char.is_ascii() {
-            if char.is_ascii_alphabetic() {
-                token_length += 0.25;
-            } else {
-                token_length += 0.5;
-            }
+    let words: Vec<&str> = text.unicode_words().collect();
+    let mut output: f32 = 0.0;
+    for word in words {
+        if word.is_ascii() {
+            output += 1.3;
         } else {
-            token_length += 1.5;
+            let count = word.chars().count();
+            if count == 1 {
+                output += 1.0
+            } else {
+                output += (count as f32) * 0.5;
+            }
         }
     }
-
-    token_length.ceil() as usize
+    output.ceil() as usize
 }
 
 pub fn light_theme_from_colorfgbg(colorfgbg: &str) -> Option<bool> {
