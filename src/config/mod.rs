@@ -1149,9 +1149,16 @@ impl Config {
             .or_else(|| env::var("VISUAL").ok().or_else(|| env::var("EDITOR").ok()))
     }
 
-    pub fn repl_complete(&self, cmd: &str, args: &[&str]) -> Vec<(String, Option<String>)> {
-        let (values, filter) = if args.len() == 1 {
-            let values = match cmd {
+    pub fn repl_complete(
+        &self,
+        cmd: &str,
+        args: &[&str],
+        line: &str,
+    ) -> Vec<(String, Option<String>)> {
+        let mut values: Vec<(String, Option<String>)> = vec![];
+        let mut filter = "";
+        if args.len() == 1 {
+            values = match cmd {
                 ".role" => self
                     .roles
                     .iter()
@@ -1203,9 +1210,9 @@ impl Config {
                 .collect(),
                 _ => vec![],
             };
-            (values, args[0])
-        } else if args.len() == 2 && cmd == ".set" {
-            let values = match args[0] {
+            filter = args[0]
+        } else if cmd == ".set" && args.len() == 2 {
+            let candidates = match args[0] {
                 "max_output_tokens" => match self.model.max_output_tokens() {
                     Some(v) => vec![v.to_string()],
                     None => vec![],
@@ -1242,9 +1249,16 @@ impl Config {
                 "highlight" => complete_bool(self.highlight),
                 _ => vec![],
             };
-            (values.into_iter().map(|v| (v, None)).collect(), args[1])
-        } else {
-            return vec![];
+            values = candidates.into_iter().map(|v| (v, None)).collect();
+            filter = args[1];
+        } else if cmd == ".starter" && args.len() >= 2 {
+            if let Some(agent) = &self.agent {
+                values = agent
+                    .conversation_staters()
+                    .iter()
+                    .filter_map(|v| v.strip_prefix(line).map(|x| (x.to_string(), None)))
+                    .collect()
+            }
         };
         values
             .into_iter()
