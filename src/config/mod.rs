@@ -1291,6 +1291,12 @@ impl Config {
         Ok(RenderOptions::new(theme, wrap, self.wrap_code, truecolor))
     }
 
+    pub fn markdown_render(&self, text: &str) -> Result<String> {
+        let render_options = self.render_options()?;
+        let mut markdown_render = MarkdownRender::init(render_options)?;
+        Ok(markdown_render.render(text))
+    }
+
     pub fn render_prompt_left(&self) -> String {
         let variables = self.generate_prompt_context();
         let left_prompt = self.left_prompt.as_deref().unwrap_or(LEFT_PROMPT);

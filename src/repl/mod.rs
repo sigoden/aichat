@@ -286,15 +286,7 @@ impl Repl {
                     }
                     None => {
                         let banner = self.config.read().agent_banner()?;
-                        let output = format!(
-                            r#"Usage: .starter <text>...
-
-Tips: use <tab> to autocomplete conversation starter text.
----------------------------------------------------------
-
-{banner}"#
-                        );
-
+                        let output = self.config.read().markdown_render(&banner)?;
                         println!("{output}");
                     }
                 },

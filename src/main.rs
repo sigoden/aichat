@@ -20,7 +20,7 @@ use crate::config::{
     EXPLAIN_SHELL_ROLE, SHELL_ROLE, TEMP_SESSION_NAME,
 };
 use crate::function::{eval_tool_calls, need_send_tool_results};
-use crate::render::{render_error, MarkdownRender};
+use crate::render::render_error;
 use crate::repl::Repl;
 use crate::utils::{
     create_abort_signal, create_spinner, detect_shell, extract_block, run_command, AbortSignal,
@@ -187,9 +187,7 @@ async fn start_directive(
                 text.clone()
             };
             if *IS_STDOUT_TERMINAL {
-                let render_options = config.read().render_options()?;
-                let mut markdown_render = MarkdownRender::init(render_options)?;
-                println!("{}", markdown_render.render(&text).trim());
+                println!("{}", config.read().markdown_render(&text)?);
             } else {
                 println!("{}", text);
             }
@@ -242,10 +240,8 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
     config
         .write()
         .after_chat_completion(&input, &eval_str, &[])?;
-    let render_options = config.read().render_options()?;
-    let mut markdown_render = MarkdownRender::init(render_options)?;
     if config.read().dry_run {
-        println!("{}", markdown_render.render(&eval_str).trim());
+        println!("{}", config.read().markdown_render(&eval_str)?);
         return Ok(());
     }
     if *IS_STDOUT_TERMINAL {
