@@ -48,13 +48,18 @@ impl Completer for ReplCompleter {
 
         if parts_len > 1 {
             let span = Span::new(parts[parts_len - 1].1, pos);
+            let args_line = &line[parts[1].1..];
             let args: Vec<&str> = parts.iter().skip(1).map(|(v, _)| *v).collect();
-            suggestions.extend(self.config.read().repl_complete(cmd, &args).iter().map(
-                |(value, description)| {
-                    let description = description.as_deref().unwrap_or_default();
-                    create_suggestion(value, description, span)
-                },
-            ))
+            suggestions.extend(
+                self.config
+                    .read()
+                    .repl_complete(cmd, &args, args_line)
+                    .iter()
+                    .map(|(value, description)| {
+                        let description = description.as_deref().unwrap_or_default();
+                        create_suggestion(value, description, span)
+                    }),
+            )
         }
 
         if suggestions.is_empty() {
