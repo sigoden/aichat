@@ -276,13 +276,16 @@ impl Session {
     }
 
     pub fn compress(&mut self, mut prompt: String) {
-        if let Some(message) = self.messages.first() {
-            if MessageRole::System == message.role {
-                let system_prompt = message.content.to_text();
-                if !system_prompt.is_empty() {
-                    prompt = format!("{system_prompt}\n\n{prompt}",);
+        if let Some(system_prompt) = self.messages.first().and_then(|v| {
+            if MessageRole::System == v.role {
+                let content = v.content.to_text();
+                if !content.is_empty() {
+                    return Some(content);
                 }
             }
+            None
+        }) {
+            prompt = format!("{system_prompt}\n\n{prompt}",);
         }
         self.compressed_messages.append(&mut self.messages);
         self.messages.push(Message::new(
