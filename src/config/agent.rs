@@ -11,7 +11,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-pub const TOOLS_PLACEHOLDER: &str = "__TOOLS__";
+const TOOLS_PLACEHOLDER: &str = "__TOOLS__";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Agent {
