@@ -275,7 +275,18 @@ impl Session {
         self.compressing = compressing;
     }
 
-    pub fn compress(&mut self, prompt: String) {
+    pub fn compress(&mut self, mut prompt: String) {
+        if let Some(system_prompt) = self.messages.first().and_then(|v| {
+            if MessageRole::System == v.role {
+                let content = v.content.to_text();
+                if !content.is_empty() {
+                    return Some(content);
+                }
+            }
+            None
+        }) {
+            prompt = format!("{system_prompt}\n\n{prompt}",);
+        }
         self.compressed_messages.append(&mut self.messages);
         self.messages.push(Message::new(
             MessageRole::System,
@@ -403,8 +414,13 @@ impl Session {
             messages = input.role().build_messages(input);
             need_add_msg = false;
         } else if len == 1 && self.compressed_messages.len() >= 2 {
-            messages
-                .extend(self.compressed_messages[self.compressed_messages.len() - 2..].to_vec());
+            if let Some(index) = self
+                .compressed_messages
+                .iter()
+                .rposition(|v| v.role == MessageRole::User)
+            {
+                messages.extend(self.compressed_messages[index..].to_vec());
+            }
         }
         if need_add_msg {
             messages.push(Message::new(MessageRole::User, input.message_content()));
