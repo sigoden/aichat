@@ -11,6 +11,8 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
+const TOOLS_PLACEHOLDER: &str = "__TOOLS__";
+
 #[derive(Debug, Clone, Serialize)]
 pub struct Agent {
     name: String,
@@ -45,6 +47,7 @@ impl Agent {
         } else {
             Functions::default()
         };
+        definition.replace_tools_placeholder(&functions);
         let agent_config = config
             .read()
             .agents
@@ -278,6 +281,25 @@ impl AgentDefinition {
             output = output.replace(&format!("{{{{{}}}}}", variable.name), &variable.value)
         }
         output
+    }
+
+    fn replace_tools_placeholder(&mut self, functions: &Functions) {
+        if self.instructions.contains(TOOLS_PLACEHOLDER) {
+            let tools = functions
+                .declarations()
+                .iter()
+                .enumerate()
+                .map(|(i, v)| {
+                    let description = match v.description.split_once('\n') {
+                        Some((v, _)) => v,
+                        None => &v.description,
+                    };
+                    format!("{}. {}: {description}", i + 1, v.name)
+                })
+                .collect::<Vec<String>>()
+                .join("\n");
+            self.instructions = self.instructions.replace(TOOLS_PLACEHOLDER, &tools);
+        }
     }
 }
 
