@@ -500,16 +500,6 @@
       </div>
       <div class="settings">
         <div class="control">
-          <div class="checkbox-group">
-            <label for="compress_threshold">Session Compress Threshold</label>
-            <input type="checkbox" id="enable_session" title="Enable Session?" x-model="settings.enable_session"
-              :disabled="sessionMode">
-          </div>
-          <input type="number" :disabled="!settings.enable_session" id="compress_threshold"
-            x-model="settings.compress_threshold">
-        </div>
-
-        <div class="control">
           <label for="role">Role</label>
           <select id="role" x-model="settings.role" :disabled="sessionMode" @change="handleRoleChange">
             <template x-for="role in roles">
@@ -724,8 +714,6 @@
         max_output_tokens: null,
         temperature: null,
         top_p: null,
-        enable_session: true,
-        compress_threshold: 4000,
       };
       try {
         const persistSettings = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY)) || {};
@@ -744,7 +732,6 @@
         currentModel: {},
         messages: [],
         hoveredMessageIndex: null,
-        skipMessageId: -1,
         input: "",
         images: [],
         asking: false,
@@ -980,34 +967,14 @@
             lastMessage.html = renderMarkdown(lastMessage.content, lastMessage.error);
           }
           if (succeed) {
-            if (this.settings.enable_session) {
-              this.sessionMode = true;
-            }
-            const countTokens = [...body.messages.map(v => v.content), lastMessage.content].reduce((acc, cur) => acc + estimateTokenLength(cur), 0);
-            if (countTokens > this.settings.compress_threshold) {
-              const { messages } = body;
-              messages.push({ role: "assistant", content: lastMessage.content });
-              messages.push({ role: "user", content: "Summarize the discussion briefly in 200 words or less to use as a prompt for future context." });
-              try {
-                toast("Compressing session...", 30000);
-                const iter = await fetchChatCompletions(CHAT_COMPLETIONS_URL, { model: this.settings.model_id, messages, stream: false });
-                const summarizedData = await iter.next();
-                const summarizedText = summarizedData?.value?.choices[0]?.message?.content;
-                this.summary = "This is a summary of the chat history as a recap: " + summarizedText;
-                this.skipMessageId = lastMessage.id;
-                toast("Session compressed!");
-              } catch (err) {
-                toast("❌ Failed to compress session.");
-                console.error("Failed to compress session", err);
-              }
-            }
+            this.sessionMode = true;
           }
           this.asking = false;
         },
 
         buildBody() {
           let messages = [];
-          for ([userMessage, assistantMessage] of chunkArray(this.messages.filter(v => v.id > this.skipMessageId), 2)) {
+          for ([userMessage, assistantMessage] of chunkArray(this.messages, 2)) {
             if (assistantMessage.state == "failed") {
               continue;
             } else if (assistantMessage.state == "loading") {
@@ -1015,7 +982,7 @@
                 role: userMessage.role,
                 content: userMessage.content,
               });
-            } else if (this.settings.enable_session) {
+            } else {
               messages.push({
                 role: userMessage.role,
                 content: userMessage.content,
@@ -1176,7 +1143,7 @@
         const index = text.indexOf(search);
 
         if (index !== -1) {
-          if (system == null) {
+          if (system === null) {
             system = text.slice(0, index);
           } else {
             parts.push(text.slice(0, index));
@@ -1185,7 +1152,7 @@
           text = text.slice(index + search.length);
         } else {
           if (text.trim()) {
-            if (system == null) {
+            if (system === null) {
               system = text;
             } else {
               parts.push(text);
@@ -1224,29 +1191,6 @@
         reader.onload = (event) => resolve(event.target.result);
         reader.onerror = (error) => reject(error);
       });
-    }
-
-    function estimateTokenLength(input) {
-      let tokenLength = 0;
-      if (Array.isArray(input)) {
-        input = input.map(v => v.text || "").join("");
-      }
-
-      for (let i = 0; i < input.length; i++) {
-        const charCode = input.charCodeAt(i);
-
-        if (charCode < 128) {
-          if (charCode <= 122 && charCode >= 65) {
-            tokenLength += 0.25;
-          } else {
-            tokenLength += 0.5;
-          }
-        } else {
-          tokenLength += 1.5;
-        }
-      }
-
-      return tokenLength;
     }
 
     function setupMarked() {
