@@ -204,7 +204,8 @@ impl ToolCall {
         #[cfg(windows)]
         let cmd_name = polyfill_cmd_name(&cmd_name, &bin_dir);
         println!("{}", dimmed_text(&prompt));
-        let exit_code = run_command(&cmd_name, &cmd_args, Some(envs))?;
+        let exit_code = run_command(&cmd_name, &cmd_args, Some(envs))
+            .map_err(|err| anyhow!("Unable to run {cmd_name}, {err}"))?;
         if exit_code != 0 {
             bail!("Tool call exit with {exit_code}");
         }
