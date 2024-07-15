@@ -15,10 +15,12 @@ pub struct ClaudeConfig {
     pub models: Vec<ModelData>,
     pub patches: Option<ModelPatches>,
     pub extra: Option<ExtraConfig>,
+    pub beta_header: Option<String>,
 }
 
 impl ClaudeClient {
     config_get_fn!(api_key, get_api_key);
+    config_get_fn!(beta_header, get_beta_header);
 
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
@@ -41,6 +43,10 @@ impl ClaudeClient {
         builder = builder.header("anthropic-version", "2023-06-01");
         if let Some(api_key) = api_key {
             builder = builder.header("x-api-key", api_key)
+        }
+
+        if let Ok(beta_header) = self.get_beta_header() {
+            builder = builder.header("anthropic-beta", beta_header);
         }
 
         Ok(builder)
