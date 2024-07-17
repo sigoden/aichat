@@ -104,7 +104,7 @@ impl ErnieClient {
     async fn prepare_access_token(&self) -> Result<()> {
         let client_name = self.name();
         if !is_valid_access_token(client_name) {
-            let env_prefix = Self::name(&self.config).to_uppercase();
+            let env_prefix = Self::name(&self.config).to_ascii_uppercase();
             let api_key = self.config.api_key.clone();
             let api_key = api_key
                 .or_else(|| env::var(format!("{env_prefix}_API_KEY")).ok())

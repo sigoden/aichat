@@ -552,7 +552,7 @@ pub fn create_config(prompts: &[PromptAction], client: &str) -> Result<(String, 
         "type": client,
     });
     let mut model = client.to_string();
-    set_client_config_values(prompts, &mut model, &mut config)?;
+    set_client_config(prompts, &mut model, &mut config)?;
     let clients = json!(vec![config]);
     Ok((model, clients))
 }
@@ -584,7 +584,7 @@ pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(St
                 ]
             };
             let mut model = client.to_string();
-            set_client_config_values(&prompts, &mut model, &mut config)?;
+            set_client_config(&prompts, &mut model, &mut config)?;
             let clients = json!(vec![config]);
             Ok(Some((model, clients)))
         }
@@ -698,22 +698,30 @@ pub fn maybe_catch_error(data: &Value) -> Result<()> {
     Ok(())
 }
 
-fn set_client_config_values(
+fn set_client_config(
     list: &[PromptAction],
     model: &mut String,
     client_config: &mut Value,
 ) -> Result<()> {
+    let env_prefix = model.clone();
     for (path, desc, required, kind) in list {
+        let mut required = *required;
+        if required {
+            let env_name = format!("{env_prefix}_{path}").to_ascii_uppercase();
+            if std::env::var(&env_name).is_ok() {
+                required = false;
+            }
+        }
         match kind {
             PromptKind::String => {
-                let value = prompt_input_string(desc, *required)?;
+                let value = prompt_input_string(desc, required)?;
                 set_client_config_value(client_config, path, kind, &value);
                 if *path == "name" {
                     *model = value;
                 }
             }
             PromptKind::Integer => {
-                let value = prompt_input_integer(desc, *required)?;
+                let value = prompt_input_integer(desc, required)?;
                 set_client_config_value(client_config, path, kind, &value);
             }
         }
