@@ -36,11 +36,7 @@ pub fn now() -> String {
 }
 
 pub fn get_env_name(key: &str) -> String {
-    format!(
-        "{}_{}",
-        env!("CARGO_CRATE_NAME").to_uppercase(),
-        key.to_uppercase(),
-    )
+    format!("{}_{key}", env!("CARGO_CRATE_NAME"),).to_ascii_uppercase()
 }
 
 pub fn estimate_token_length(text: &str) -> usize {
