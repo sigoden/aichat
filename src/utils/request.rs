@@ -108,7 +108,14 @@ pub async fn fetch(
             }
             None => {
                 let contents = res.text().await?;
-                (contents, extension)
+                if extension == "html" {
+                    (
+                        html2text::from_read(contents.as_bytes(), usize::MAX),
+                        "md".into(),
+                    )
+                } else {
+                    (contents, extension)
+                }
             }
         }
     };
