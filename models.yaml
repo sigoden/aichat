@@ -16,6 +16,13 @@
       output_price: 15
       supports_vision: true
       supports_function_calling: true
+    - name: gpt-4o-mini
+      max_input_tokens: 128000
+      max_output_tokens: 4096
+      input_price: 0.15
+      output_price: 0.6
+      supports_vision: true
+      supports_function_calling: true
     - name: gpt-4-turbo
       max_input_tokens: 128000
       max_output_tokens: 4096
@@ -126,6 +133,10 @@
   # notes:
   #   - unable to get max_output_tokens info
   models:
+    - name: open-mistral-nemo-2407
+      max_input_tokens: 128000
+      input_price: 0.3
+      output_price: 0.3
     - name: open-mistral-7b
       max_input_tokens: 32000
       input_price: 0.25
@@ -150,6 +161,10 @@
       max_input_tokens: 32000
       input_price: 1
       output_price: 3
+    - name: open-codestral-mamba
+      max_input_tokens: 256000
+      input_price: 0.25
+      output_price: 0.25
     - name: mistral-embed
       type: embedding
       input_price: 0.1
@@ -241,11 +256,20 @@
       max_input_tokens: 8192
       input_price: 0
       output_price: 0
-      supports_function_calling: true
     - name: llama3-70b-8192
       max_input_tokens: 8192
       input_price: 0
       output_price: 0
+    - name: llama3-groq-8b-8192-tool-use-preview
+      max_input_tokens: 8192
+      input_price: 0
+      output_price: 0
+      supports_function_calling: true
+    - name: llama3-groq-70b-8192-tool-use-preview
+      max_input_tokens: 8192
+      input_price: 0
+      output_price: 0
+      supports_function_calling: true
     - name: mixtral-8x7b-32768
       max_input_tokens: 32768
       input_price: 0
@@ -865,6 +889,12 @@
       max_input_tokens: 128000
       input_price: 5
       output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-4o-mini
+      max_input_tokens: 128000
+      input_price: 0.15
+      output_price: 0.6
       supports_vision: true
       supports_function_calling: true
     - name: openai/gpt-4-turbo
