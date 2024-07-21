@@ -15,8 +15,8 @@ extern crate log;
 use crate::cli::Cli;
 use crate::client::{chat_completion_streaming, list_chat_models, ChatCompletionsOutput};
 use crate::config::{
-    list_agents, load_env_file, Config, GlobalConfig, Input, WorkingMode, CODE_ROLE,
-    EXPLAIN_SHELL_ROLE, SHELL_ROLE, TEMP_SESSION_NAME,
+    ensure_parent_exists, list_agents, load_env_file, Config, GlobalConfig, Input, WorkingMode,
+    CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE, TEMP_SESSION_NAME,
 };
 use crate::function::{eval_tool_calls, need_send_tool_results};
 use crate::render::render_error;
@@ -339,6 +339,7 @@ fn setup_logger(is_serve: bool) -> Result<()> {
             SimpleLogger::init(log_level, config)?;
         }
         Some(log_path) => {
+            ensure_parent_exists(&log_path)?;
             let log_file = std::fs::File::create(log_path)?;
             WriteLogger::init(log_level, config, log_file)?;
         }
