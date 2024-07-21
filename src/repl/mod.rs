@@ -413,9 +413,10 @@ impl Repl {
     }
 
     fn banner(&self) {
+        let name = env!("CARGO_CRATE_NAME");
         let version = env!("CARGO_PKG_VERSION");
         print!(
-            r#"Welcome to aichat {version}
+            r#"Welcome to {name} {version}
 Type ".help" for additional help.
 "#
         )
