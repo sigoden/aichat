@@ -23,6 +23,7 @@ use inquire::{Confirm, Select};
 use parking_lot::RwLock;
 use serde::Deserialize;
 use serde_json::json;
+use simplelog::LevelFilter;
 use std::collections::{HashMap, HashSet};
 use std::{
     env,
@@ -386,6 +387,36 @@ impl Config {
         flags
     }
 
+    pub fn log(is_serve: bool) -> Result<(LevelFilter, Option<PathBuf>)> {
+        let log_level = env::var(get_env_name("log_level"))
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(match cfg!(debug_assertions) {
+                true => LevelFilter::Debug,
+                false => {
+                    if is_serve {
+                        LevelFilter::Info
+                    } else {
+                        LevelFilter::Off
+                    }
+                }
+            });
+        if log_level == LevelFilter::Off {
+            return Ok((log_level, None));
+        }
+        let log_path = match env::var(get_env_name("log_path")) {
+            Ok(v) => Some(PathBuf::from(v)),
+            Err(_) => match is_serve {
+                true => None,
+                false => Some(Config::local_path(&format!(
+                    "{}.log",
+                    env!("CARGO_CRATE_NAME")
+                ))?),
+            },
+        };
+        Ok((log_level, log_path))
+    }
+
     pub fn current_model(&self) -> &Model {
         if let Some(session) = self.session.as_ref() {
             session.model()
@@ -466,7 +497,7 @@ impl Config {
             .clone()
             .map_or_else(|| String::from("no"), |v| v.to_string());
         let role = self.extract_role();
-        let items = vec![
+        let mut items = vec![
             ("model", role.model().id()),
             (
                 "max_output_tokens",
@@ -509,6 +540,9 @@ impl Config {
             ("sessions_dir", display_path(&self.sessions_dir()?)),
             ("messages_file", display_path(&self.messages_file()?)),
         ];
+        if let Ok((_, Some(log_path))) = Self::log(self.working_mode.is_serve()) {
+            items.push(("log_path", display_path(&log_path)));
+        }
         let output = items
             .iter()
             .map(|(name, value)| format!("{name:<24}{value}"))

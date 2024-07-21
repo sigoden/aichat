@@ -2,7 +2,6 @@ mod cli;
 mod client;
 mod config;
 mod function;
-mod logger;
 mod rag;
 mod render;
 mod repl;
@@ -23,8 +22,8 @@ use crate::function::{eval_tool_calls, need_send_tool_results};
 use crate::render::render_error;
 use crate::repl::Repl;
 use crate::utils::{
-    create_abort_signal, create_spinner, detect_shell, extract_block, run_command, AbortSignal,
-    Shell, CODE_BLOCK_RE, IS_STDOUT_TERMINAL,
+    create_abort_signal, create_spinner, detect_shell, extract_block, get_env_name, run_command,
+    AbortSignal, Shell, CODE_BLOCK_RE, IS_STDOUT_TERMINAL,
 };
 
 use anyhow::{bail, Result};
@@ -33,6 +32,7 @@ use clap::Parser;
 use inquire::{Select, Text};
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
+use simplelog::{format_description, ConfigBuilder, LevelFilter, SimpleLogger, WriteLogger};
 use std::io::{stderr, stdin, Read};
 use std::process;
 use std::sync::Arc;
@@ -52,7 +52,7 @@ async fn main() -> Result<()> {
     } else {
         WorkingMode::Command
     };
-    crate::logger::setup_logger(working_mode)?;
+    setup_logger(working_mode.is_serve())?;
     let config = Arc::new(RwLock::new(Config::init(working_mode)?));
 
     let abort_signal = create_abort_signal();
@@ -312,4 +312,36 @@ async fn create_input(
         bail!("No input");
     }
     Ok(input)
+}
+
+fn setup_logger(is_serve: bool) -> Result<()> {
+    let (log_level, log_path) = Config::log(is_serve)?;
+    if log_level == LevelFilter::Off {
+        return Ok(());
+    }
+    let crate_name = env!("CARGO_CRATE_NAME");
+    let log_filter = match std::env::var(get_env_name("log_filter")) {
+        Ok(v) => v,
+        Err(_) => match is_serve {
+            true => format!("{crate_name}::serve"),
+            false => crate_name.into(),
+        },
+    };
+    let config = ConfigBuilder::new()
+        .add_filter_allow(log_filter)
+        .set_time_format_custom(format_description!(
+            "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:3]Z"
+        ))
+        .set_thread_level(LevelFilter::Off)
+        .build();
+    match log_path {
+        None => {
+            SimpleLogger::init(log_level, config)?;
+        }
+        Some(log_path) => {
+            let log_file = std::fs::File::create(log_path)?;
+            WriteLogger::init(log_level, config, log_file)?;
+        }
+    }
+    Ok(())
 }
