@@ -7,7 +7,7 @@ top_p: null                      # Set default top-p parameter, range (0, 1)
 save: true                       # Indicates whether to persist the message
 keybindings: emacs               # Choose keybinding style (emacs, vi)
 buffer_editor: null              # Command used to edit the current input with ctrl+o, env: EDITOR
-wrap: no                         # Controls text wrapping (no, auto, <max-width>)
+wrap: auto                         # Controls text wrapping (no, auto, <max-width>)
 wrap_code: false                 # Enables or disables wrapping of code blocks
 
 # ---- prelude ----
