@@ -210,7 +210,7 @@ impl Input {
             bail!("The current model does not support vision. Is the model configured with `supports_vision: true`?");
         }
         let messages = self.build_messages()?;
-        self.config.read().model.guard_max_input_tokens(&messages)?;
+        model.guard_max_input_tokens(&messages)?;
         let temperature = self.role().temperature();
         let top_p = self.role().top_p();
         let functions = self.config.read().select_functions(model, self.role());
