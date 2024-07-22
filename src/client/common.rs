@@ -104,7 +104,7 @@ macro_rules! register_client {
             None
             $(.or_else(|| $client::init(config, &model)))+
             .ok_or_else(|| {
-                anyhow::anyhow!("Unknown client '{}'", model.client_name())
+                anyhow::anyhow!("Invalid model '{}'", model.id())
             })
         }
 
