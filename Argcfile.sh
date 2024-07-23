@@ -247,7 +247,7 @@ models-cohere() {
 }
 
 # @cmd Chat with ollama api
-# @option -m --model=codegemma $OLLAMA_MODEL
+# @option -m --model=llama3.1:latest $OLLAMA_MODEL
 # @flag -S --no-stream
 # @arg text~
 chat-ollama() {
