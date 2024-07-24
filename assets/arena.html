@@ -495,7 +495,7 @@
     <div class="input-panel">
       <div class="input-panel-inner">
         <textarea id="chat-input" x-model="input" x-ref="input" @keydown.enter="handleEnterKeydown"
-          placeholder="Ask Anything"></textarea>
+          placeholder="Ask Anything" autofocus></textarea>
         <div class="input-image-bar" x-show="images.length > 0">
           <template x-for="(image, index) in images">
             <div class="input-image-item">
