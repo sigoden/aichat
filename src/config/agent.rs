@@ -37,7 +37,12 @@ impl Agent {
         let functions_file_path = functions_dir.join("functions.json");
         let variables_path = Config::agent_variables_file(name)?;
         let rag_path = Config::agent_rag_file(name)?;
-
+        let config_path = Config::agent_config_file(name)?;
+        let agent_config = if config_path.exists() {
+            AgentConfig::load(&config_path)?
+        } else {
+            AgentConfig::default()
+        };
         let mut definition = AgentDefinition::load(&definition_file_path)?;
         init_variables(&variables_path, &mut definition.variables)
             .context("Failed to init variables")?;
@@ -48,13 +53,7 @@ impl Agent {
             Functions::default()
         };
         definition.replace_tools_placeholder(&functions);
-        let agent_config = config
-            .read()
-            .agents
-            .iter()
-            .find(|v| v.name == name)
-            .cloned()
-            .unwrap_or_else(|| AgentConfig::new(name));
+
         let model = {
             let config = config.read();
             match agent_config.model_id.as_ref() {
@@ -201,7 +200,6 @@ impl RoleLike for Agent {
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct AgentConfig {
-    pub name: String,
     #[serde(rename(serialize = "model", deserialize = "model"))]
     pub model_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -213,11 +211,12 @@ pub struct AgentConfig {
 }
 
 impl AgentConfig {
-    pub fn new(name: &str) -> Self {
-        Self {
-            name: name.to_string(),
-            ..Default::default()
-        }
+    pub fn load(path: &Path) -> Result<Self> {
+        let contents = read_to_string(path)
+            .with_context(|| format!("Failed to read agent config file at '{}'", path.display()))?;
+        let config: Self = serde_yaml::from_str(&contents)
+            .with_context(|| format!("Failed to load agent config at '{}'", path.display()))?;
+        Ok(config)
     }
 }
 
@@ -242,7 +241,7 @@ impl AgentDefinition {
         let contents = read_to_string(path)
             .with_context(|| format!("Failed to read agent index file at '{}'", path.display()))?;
         let definition: Self = serde_yaml::from_str(&contents)
-            .with_context(|| format!("Failed to load agent at '{}'", path.display()))?;
+            .with_context(|| format!("Failed to load agent index at '{}'", path.display()))?;
         Ok(definition)
     }
 

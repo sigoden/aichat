@@ -3,7 +3,7 @@ mod input;
 mod role;
 mod session;
 
-pub use self::agent::{list_agents, Agent, AgentConfig};
+pub use self::agent::{list_agents, Agent};
 pub use self::input::Input;
 pub use self::role::{Role, RoleLike, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE};
 use self::session::Session;
@@ -107,7 +107,6 @@ pub struct Config {
     pub function_calling: bool,
     pub mapping_tools: IndexMap<String, String>,
     pub use_tools: Option<String>,
-    pub agents: Vec<AgentConfig>,
 
     pub rag_embedding_model: Option<String>,
     pub rag_reranker_model: Option<String>,
@@ -169,7 +168,6 @@ impl Default for Config {
             function_calling: true,
             mapping_tools: Default::default(),
             use_tools: None,
-            agents: vec![],
 
             rag_embedding_model: None,
             rag_reranker_model: None,
@@ -337,14 +335,18 @@ impl Config {
     }
 
     pub fn agents_config_dir() -> Result<PathBuf> {
-        match env::var(get_env_name("agents_config_dir")) {
-            Ok(value) => Ok(PathBuf::from(value)),
-            Err(_) => Self::local_path(AGENTS_DIR_NAME),
-        }
+        Self::local_path(AGENTS_DIR_NAME)
     }
 
     pub fn agent_config_dir(name: &str) -> Result<PathBuf> {
-        Ok(Self::agents_config_dir()?.join(name))
+        match env::var(format!("{}_CONFIG_DIR", convert_env_prefix(name))) {
+            Ok(value) => Ok(PathBuf::from(value)),
+            Err(_) => Ok(Self::agents_config_dir()?.join(name)),
+        }
+    }
+
+    pub fn agent_config_file(name: &str) -> Result<PathBuf> {
+        Ok(Self::agent_config_dir(name)?.join(CONFIG_FILE_NAME))
     }
 
     pub fn agent_rag_file(name: &str) -> Result<PathBuf> {
@@ -356,14 +358,14 @@ impl Config {
     }
 
     pub fn agents_functions_dir() -> Result<PathBuf> {
-        match env::var(get_env_name("agents_functions_dir")) {
-            Ok(value) => Ok(PathBuf::from(value)),
-            Err(_) => Ok(Self::functions_dir()?.join(AGENTS_DIR_NAME)),
-        }
+        Ok(Self::functions_dir()?.join(AGENTS_DIR_NAME))
     }
 
     pub fn agent_functions_dir(name: &str) -> Result<PathBuf> {
-        Ok(Self::agents_functions_dir()?.join(name))
+        match env::var(format!("{}_FUNCTIONS_DIR", convert_env_prefix(name))) {
+            Ok(value) => Ok(PathBuf::from(value)),
+            Err(_) => Ok(Self::agents_functions_dir()?.join(name)),
+        }
     }
 
     pub fn state(&self) -> StateFlags {
@@ -528,14 +530,6 @@ impl Config {
             ("roles_file", display_path(&Self::roles_file()?)),
             ("env_file", display_path(&Self::env_file()?)),
             ("functions_dir", display_path(&Self::functions_dir()?)),
-            (
-                "agents_functions_dir",
-                display_path(&Self::agents_functions_dir()?),
-            ),
-            (
-                "agents_config_dir",
-                display_path(&Self::agents_config_dir()?),
-            ),
             ("rags_dir", display_path(&Self::rags_dir()?)),
             ("sessions_dir", display_path(&self.sessions_dir()?)),
             ("messages_file", display_path(&self.messages_file()?)),
@@ -1797,4 +1791,8 @@ fn complete_option_bool(value: Option<bool>) -> Vec<String> {
         Some(false) => vec!["true".to_string(), "null".to_string()],
         None => vec!["true".to_string(), "false".to_string()],
     }
+}
+
+fn convert_env_prefix(value: &str) -> String {
+    value.replace('-', "_").to_ascii_uppercase()
 }
