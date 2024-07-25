@@ -277,7 +277,7 @@
 - platform: vertexai
   # docs:
   #   - https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
-  #   - https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-claude
+  #   - https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/explore-models
   #   - https://cloud.google.com/vertex-ai/generative-ai/pricing
   #   - https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/gemini
   # notes:
@@ -335,6 +335,20 @@
       output_price: 1.25
       supports_vision: true
       supports_function_calling: true
+    - name: mistral-large@2407
+      max_input_tokens: 128000
+      input_price: 3
+      output_price: 9
+      supports_function_calling: true
+    - name: mistral-nemo@2407
+      max_input_tokens: 128000
+      input_price: 0.3
+      output_price: 0.3
+      supports_function_calling: true
+    - name: codestral@2405
+      max_input_tokens: 32000
+      input_price: 1
+      output_price: 3
     - name: text-embedding-004
       type: embedding
       max_input_tokens: 3072
