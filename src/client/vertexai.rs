@@ -1,4 +1,5 @@
 use super::access_token::*;
+use super::claude::*;
 use super::*;
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -7,7 +8,7 @@ use chrono::{Duration, Utc};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::path::PathBuf;
+use std::{path::PathBuf, str::FromStr};
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct VertexAIConfig {
@@ -34,6 +35,7 @@ impl VertexAIClient {
         &self,
         client: &ReqwestClient,
         data: ChatCompletionsData,
+        model_category: &ModelCategory,
     ) -> Result<RequestBuilder> {
         let project_id = self.get_project_id()?;
         let location = self.get_location()?;
@@ -41,13 +43,32 @@ impl VertexAIClient {
 
         let base_url = format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers");
 
-        let func = match data.stream {
-            true => "streamGenerateContent",
-            false => "generateContent",
-        };
-        let url = format!("{base_url}/google/models/{}:{func}", self.model.name());
+        let model_name = self.model.name();
 
-        let mut body = gemini_build_chat_completions_body(data, &self.model)?;
+        let url = match model_category {
+            ModelCategory::Gemini => {
+                let func = match data.stream {
+                    true => "streamGenerateContent",
+                    false => "generateContent",
+                };
+                format!("{base_url}/google/models/{model_name}:{func}")
+            }
+            ModelCategory::Claude => {
+                format!("{base_url}/anthropic/models/{model_name}:streamRawPredict")
+            }
+        };
+
+        let mut body = match model_category {
+            ModelCategory::Gemini => gemini_build_chat_completions_body(data, &self.model)?,
+            ModelCategory::Claude => {
+                let mut body = claude_build_chat_completions_body(data, &self.model)?;
+                if let Some(body_obj) = body.as_object_mut() {
+                    body_obj.remove("model");
+                }
+                body["anthropic_version"] = "vertex-2023-10-16".into();
+                body
+            }
+        };
         self.patch_chat_completions_body(&mut body);
 
         debug!("VertexAI Chat Completions Request: {url} {body}");
@@ -96,8 +117,12 @@ impl Client for VertexAIClient {
         data: ChatCompletionsData,
     ) -> Result<ChatCompletionsOutput> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
-        let builder = self.chat_completions_builder(client, data)?;
-        gemini_chat_completions(builder).await
+        let model_category = ModelCategory::from_str(self.model.name())?;
+        let builder = self.chat_completions_builder(client, data, &model_category)?;
+        match model_category {
+            ModelCategory::Gemini => gemini_chat_completions(builder).await,
+            ModelCategory::Claude => claude_chat_completions(builder).await,
+        }
     }
 
     async fn chat_completions_streaming_inner(
@@ -107,8 +132,12 @@ impl Client for VertexAIClient {
         data: ChatCompletionsData,
     ) -> Result<()> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
-        let builder = self.chat_completions_builder(client, data)?;
-        gemini_chat_completions_streaming(builder, handler).await
+        let model_category = ModelCategory::from_str(self.model.name())?;
+        let builder = self.chat_completions_builder(client, data, &model_category)?;
+        match model_category {
+            ModelCategory::Gemini => gemini_chat_completions_streaming(builder, handler).await,
+            ModelCategory::Claude => claude_chat_completions_streaming(builder, handler).await,
+        }
     }
 
     async fn embeddings_inner(
@@ -364,6 +393,26 @@ pub fn gemini_build_chat_completions_body(
     }
 
     Ok(body)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ModelCategory {
+    Gemini,
+    Claude,
+}
+
+impl FromStr for ModelCategory {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        if s.starts_with("gemini-") {
+            Ok(ModelCategory::Gemini)
+        } else if s.starts_with("claude-") {
+            Ok(ModelCategory::Claude)
+        } else {
+            unsupported_model!(s)
+        }
+    }
 }
 
 pub async fn prepare_gcloud_access_token(

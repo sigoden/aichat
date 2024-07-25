@@ -38,12 +38,6 @@ register_client!(
         AzureOpenAIClient
     ),
     (vertexai, "vertexai", VertexAIConfig, VertexAIClient),
-    (
-        vertexai_claude,
-        "vertexai-claude",
-        VertexAIClaudeConfig,
-        VertexAIClaudeClient
-    ),
     (bedrock, "bedrock", BedrockConfig, BedrockClient),
     (cloudflare, "cloudflare", CloudflareConfig, CloudflareClient),
     (replicate, "replicate", ReplicateConfig, ReplicateClient),

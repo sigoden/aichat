@@ -277,6 +277,7 @@
 - platform: vertexai
   # docs:
   #   - https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
+  #   - https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-claude
   #   - https://cloud.google.com/vertex-ai/generative-ai/pricing
   #   - https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/gemini
   # notes:
@@ -302,27 +303,6 @@
       input_price: 0.125
       output_price: 0.375
       supports_function_calling: true
-    - name: text-embedding-004
-      type: embedding
-      max_input_tokens: 3072
-      input_price: 0.025
-      output_vector_size: 768
-      default_chunk_size: 1500
-      max_batch_size: 5
-    - name: text-multilingual-embedding-002
-      type: embedding
-      max_input_tokens: 3072
-      input_price: 0.2
-      output_vector_size: 768
-      default_chunk_size: 1500
-      max_batch_size: 5
-
-- platform: vertexai-claude
-  # docs:
-  #   - https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-claude
-  # notes:
-  #   - get max_output_tokens info from models doc
-  models:
     - name: claude-3-5-sonnet@20240620
       max_input_tokens: 200000
       max_output_tokens: 4096
@@ -355,6 +335,20 @@
       output_price: 1.25
       supports_vision: true
       supports_function_calling: true
+    - name: text-embedding-004
+      type: embedding
+      max_input_tokens: 3072
+      input_price: 0.025
+      output_vector_size: 768
+      default_chunk_size: 1500
+      max_batch_size: 5
+    - name: text-multilingual-embedding-002
+      type: embedding
+      max_input_tokens: 3072
+      input_price: 0.2
+      output_vector_size: 768
+      default_chunk_size: 1500
+      max_batch_size: 5
 
 - platform: bedrock
   # docs:
