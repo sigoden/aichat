@@ -1,5 +1,6 @@
 use super::access_token::*;
 use super::claude::*;
+use super::openai::*;
 use super::*;
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -56,6 +57,13 @@ impl VertexAIClient {
             ModelCategory::Claude => {
                 format!("{base_url}/anthropic/models/{model_name}:streamRawPredict")
             }
+            ModelCategory::Mistral => {
+                let func = match data.stream {
+                    true => "streamRawPredict",
+                    false => "rawPredict",
+                };
+                format!("{base_url}/mistralai/models/{model_name}:{func}")
+            }
         };
 
         let mut body = match model_category {
@@ -66,6 +74,13 @@ impl VertexAIClient {
                     body_obj.remove("model");
                 }
                 body["anthropic_version"] = "vertex-2023-10-16".into();
+                body
+            }
+            ModelCategory::Mistral => {
+                let mut body = openai_build_chat_completions_body(data, &self.model);
+                if let Some(body_obj) = body.as_object_mut() {
+                    body_obj["model"] = strip_model_version(self.model.name()).into();
+                }
                 body
             }
         };
@@ -122,6 +137,7 @@ impl Client for VertexAIClient {
         match model_category {
             ModelCategory::Gemini => gemini_chat_completions(builder).await,
             ModelCategory::Claude => claude_chat_completions(builder).await,
+            ModelCategory::Mistral => openai_chat_completions(builder).await,
         }
     }
 
@@ -137,6 +153,7 @@ impl Client for VertexAIClient {
         match model_category {
             ModelCategory::Gemini => gemini_chat_completions_streaming(builder, handler).await,
             ModelCategory::Claude => claude_chat_completions_streaming(builder, handler).await,
+            ModelCategory::Mistral => openai_chat_completions_streaming(builder, handler).await,
         }
     }
 
@@ -379,16 +396,19 @@ pub fn gemini_build_chat_completions_body(
 
     if let Some(functions) = functions {
         // Gemini doesn't support functions with parameters that have empty properties, so we need to patch it.
-        let function_declarations: Vec<_> = functions.into_iter().map(|function| {
-            if function.parameters.is_empty_properties() {
-                json!({
-                    "name": function.name,
-                    "description": function.description,
-                })
-            } else {
-                json!(function)
-            }
-        }).collect();
+        let function_declarations: Vec<_> = functions
+            .into_iter()
+            .map(|function| {
+                if function.parameters.is_empty_properties() {
+                    json!({
+                        "name": function.name,
+                        "description": function.description,
+                    })
+                } else {
+                    json!(function)
+                }
+            })
+            .collect();
         body["tools"] = json!([{ "functionDeclarations": function_declarations }]);
     }
 
@@ -399,16 +419,19 @@ pub fn gemini_build_chat_completions_body(
 enum ModelCategory {
     Gemini,
     Claude,
+    Mistral,
 }
 
 impl FromStr for ModelCategory {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        if s.starts_with("gemini-") {
+        if s.starts_with("gemini") {
             Ok(ModelCategory::Gemini)
-        } else if s.starts_with("claude-") {
+        } else if s.starts_with("claude") {
             Ok(ModelCategory::Claude)
+        } else if s.starts_with("mistral") || s.starts_with("codestral") {
+            Ok(ModelCategory::Mistral)
         } else {
             unsupported_model!(s)
         }
@@ -495,4 +518,11 @@ fn default_adc_file() -> Option<PathBuf> {
     path.push("gcloud");
     path.push("application_default_credentials.json");
     Some(path)
+}
+
+fn strip_model_version(name: &str) -> &str {
+    match name.split_once('@') {
+        Some((v, _)) => v,
+        None => name,
+    }
 }
