@@ -134,13 +134,15 @@
   #   - unable to get max_output_tokens info
   models:
     - name: mistral-large-latest
-      max_input_tokens: 32000
-      input_price: 4
-      output_price: 12
-    - name: mistral-small-latest
-      max_input_tokens: 32000
-      input_price: 1
-      output_price: 3
+      max_input_tokens: 128000
+      input_price: 3
+      output_price: 9
+      supports_function_calling: true
+    - name: open-mistral-nemo
+      max_input_tokens: 128000
+      input_price: 0.3
+      output_price: 0.3
+      supports_function_calling: true
     - name: codestral-latest
       max_input_tokens: 32000
       input_price: 1
@@ -149,11 +151,6 @@
       max_input_tokens: 256000
       input_price: 0.25
       output_price: 0.25
-    - name: open-mistral-nemo
-      max_input_tokens: 128000
-      input_price: 0.3
-      output_price: 0.3
-      supports_function_calling: true
     - name: open-mixtral-8x22b
       max_input_tokens: 64000
       input_price: 2
@@ -611,10 +608,12 @@
       max_input_tokens: 32768 
       input_price: 0.14
       output_price: 0.28
+      supports_function_calling: true
     - name: deepseek-coder 
       max_input_tokens: 32768
       input_price: 0.14
       output_price: 0.28
+      supports_function_calling: true
 
 - platform: zhipuai
   # docs:
@@ -667,14 +666,23 @@
     max_input_tokens: 32768
     input_price: 2.8
     output_price: 2.8
-  - name: yi-large-turbo
-    max_input_tokens: 16384
-    input_price: 1.68
-    output_price: 1.68
+  - name: yi-large-fc
+    max_input_tokens: 32768
+    input_price: 2.8
+    output_price: 2.8
+    supports_function_calling: true
   - name: yi-large-rag
     max_input_tokens: 16384
     input_price: 3.5
     output_price: 3.5
+  - name: yi-large-turbo
+    max_input_tokens: 16384
+    input_price: 1.68
+    output_price: 1.68
+  - name: yi-medium-200k
+    max_input_tokens: 200000
+    input_price: 1.68
+    output_price: 1.68
   - name: yi-vision
     max_input_tokens: 4096
     input_price: 0.84
@@ -684,10 +692,6 @@
     max_input_tokens: 16384
     input_price: 0.35
     output_price: 0.35
-  - name: yi-medium-200k
-    max_input_tokens: 200000
-    input_price: 1.68
-    output_price: 1.68
   - name: yi-spark
     max_input_tokens: 16384
     input_price: 0.14
@@ -966,22 +970,19 @@
       supports_vision: true
       supports_function_calling: true
     - name: mistralai/mistral-large
-      max_input_tokens: 32000
-      input_price: 8
-      output_price: 24
-    - name: mistralai/mistral-small
-      max_input_tokens: 32000
-      input_price: 2
-      output_price: 6
-    - name: mistralai/codestral-mamba
-      max_input_tokens: 256000
-      input_price: 0.25
-      output_price: 0.25
+      max_input_tokens: 128000
+      input_price: 3
+      output_price: 9
+      supports_function_calling: true
     - name: mistralai/mistral-nemo
       max_input_tokens: 128000
       input_price: 0.18
       output_price: 0.18
       supports_function_calling: true
+    - name: mistralai/codestral-mamba
+      max_input_tokens: 256000
+      input_price: 0.25
+      output_price: 0.25
     - name: mistralai/mixtral-8x22b-instruct
       max_input_tokens: 65536
       input_price: 0.65
