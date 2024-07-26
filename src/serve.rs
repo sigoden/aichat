@@ -163,7 +163,7 @@ impl Server {
             self.arena_page()
         } else {
             status = StatusCode::NOT_FOUND;
-            Err(anyhow!("The requested endpoint was not found."))
+            Err(anyhow!("Not Found"))
         };
         let mut res = match res {
             Ok(res) => {
@@ -171,7 +171,9 @@ impl Server {
                 res
             }
             Err(err) => {
-                status = StatusCode::BAD_REQUEST;
+                if status == StatusCode::OK {
+                    status = StatusCode::BAD_REQUEST;
+                }
                 error!("{method} {uri} {} {err}", status.as_u16());
                 ret_err(err)
             }

@@ -1,7 +1,6 @@
 use super::{
     list_chat_models, list_embedding_models, list_reranker_models,
     message::{Message, MessageContent},
-    EmbeddingsData,
 };
 
 use crate::config::Config;
@@ -251,13 +250,6 @@ impl Model {
             if total_tokens >= max_input_tokens {
                 bail!("Exceed max_input_tokens limit")
             }
-        }
-        Ok(())
-    }
-
-    pub fn guard_max_batch_size(&self, data: &EmbeddingsData) -> Result<()> {
-        if data.texts.len() > self.max_batch_size() {
-            bail!("Exceed max_batch_size limit");
         }
         Ok(())
     }
