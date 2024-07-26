@@ -391,7 +391,6 @@ pub trait Client: Sync + Send {
 
     async fn embeddings(&self, data: EmbeddingsData) -> Result<Vec<Vec<f32>>> {
         let client = self.build_client()?;
-        self.model().guard_max_batch_size(&data)?;
         self.embeddings_inner(&client, data)
             .await
             .context("Failed to call embeddings api")
