@@ -369,6 +369,8 @@
   #   - https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html#model-ids-arns
   #   - https://aws.amazon.com/bedrock/pricing/
   #   - https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html
+  # notes:
+  #   - except for Claude, other models do not support streaming function calling
   models:
     - name: anthropic.claude-3-5-sonnet-20240620-v1:0
       max_input_tokens: 200000
@@ -406,14 +408,17 @@
       max_input_tokens: 128000
       input_price: 5.32
       output_price: 16
+      supports_function_calling: true
     - name: meta.llama3-1-70b-instruct-v1:0
       max_input_tokens: 128000
       input_price: 2.65
       output_price: 3.5
+      supports_function_calling: true
     - name: meta.llama3-1-8b-instruct-v1:0
       max_input_tokens: 128000
       input_price: 0.3
       output_price: 0.6
+      supports_function_calling: true
     - name: meta.llama3-70b-instruct-v1:0
       max_input_tokens: 8192
       input_price: 2.65
@@ -426,6 +431,7 @@
       max_input_tokens: 128000
       input_price: 3
       output_price: 9
+      supports_function_calling: true
     - name: cohere.command-r-plus-v1:0
       max_input_tokens: 128000
       input_price: 3
