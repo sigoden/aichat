@@ -426,6 +426,30 @@
       max_input_tokens: 128000
       input_price: 3
       output_price: 9
+    - name: cohere.command-r-plus-v1:0
+      max_input_tokens: 128000
+      input_price: 3
+      output_price: 15
+      supports_function_calling: true
+    - name: cohere.command-r-v1:0
+      max_input_tokens: 128000
+      input_price: 0.5
+      output_price: 1.5
+      supports_function_calling: true
+    - name: cohere.embed-english-v3
+      type: embedding
+      max_input_tokens: 512
+      input_price: 0.1
+      output_vector_size: 1024
+      default_chunk_size: 1000
+      max_batch_size: 96
+    - name: cohere.embed-multilingual-v3
+      type: embedding
+      max_input_tokens: 512
+      input_price: 0.1
+      output_vector_size: 1024
+      default_chunk_size: 1000
+      max_batch_size: 96
 
 - platform: cloudflare
   # docs:
