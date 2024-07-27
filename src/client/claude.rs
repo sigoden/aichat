@@ -13,7 +13,7 @@ pub struct ClaudeConfig {
     pub api_key: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
-    pub patches: Option<ModelPatches>,
+    pub patch: Option<ModelPatch>,
     pub extra: Option<ExtraConfig>,
 }
 
