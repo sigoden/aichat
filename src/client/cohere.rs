@@ -2,7 +2,7 @@ use super::rag_dedicated::*;
 use super::*;
 
 use anyhow::{bail, Context, Result};
-use reqwest::{Client as ReqwestClient, RequestBuilder};
+use reqwest::RequestBuilder;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -16,7 +16,7 @@ pub struct CohereConfig {
     pub api_key: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
-    pub patch: Option<ModelPatch>,
+    pub patch: Option<RequestPatch>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -26,30 +26,19 @@ impl CohereClient {
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    fn chat_completions_builder(
-        &self,
-        client: &ReqwestClient,
-        data: ChatCompletionsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_chat_completions(&self, data: ChatCompletionsData) -> Result<RequestData> {
         let api_key = self.get_api_key()?;
 
-        let mut body = build_chat_completions_body(data, &self.model)?;
-        self.patch_chat_completions_body(&mut body);
+        let body = build_chat_completions_body(data, &self.model)?;
 
-        let url = CHAT_COMPLETIONS_API_URL;
+        let mut request_data = RequestData::new(CHAT_COMPLETIONS_API_URL, body);
 
-        debug!("Cohere Chat Completions Request: {url} {body}");
+        request_data.bearer_auth(api_key);
 
-        let builder = client.post(url).bearer_auth(api_key).json(&body);
-
-        Ok(builder)
+        Ok(request_data)
     }
 
-    fn embeddings_builder(
-        &self,
-        client: &ReqwestClient,
-        data: EmbeddingsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
         let api_key = self.get_api_key()?;
 
         let input_type = match data.query {
@@ -63,27 +52,23 @@ impl CohereClient {
             "input_type": input_type,
         });
 
-        let url = EMBEDDINGS_API_URL;
+        let mut request_data = RequestData::new(EMBEDDINGS_API_URL, body);
 
-        debug!("Cohere Embeddings Request: {url} {body}");
+        request_data.bearer_auth(api_key);
 
-        let builder = client.post(url).bearer_auth(api_key).json(&body);
-
-        Ok(builder)
+        Ok(request_data)
     }
 
-    fn rerank_builder(&self, client: &ReqwestClient, data: RerankData) -> Result<RequestBuilder> {
+    fn prepare_rerank(&self, data: RerankData) -> Result<RequestData> {
         let api_key = self.get_api_key()?;
 
         let body = rag_dedicated_build_rerank_body(data, &self.model);
 
-        let url = RERANK_API_URL;
+        let mut request_data = RequestData::new(RERANK_API_URL, body);
 
-        debug!("Cohere Rerank Request: {url} {body}");
+        request_data.bearer_auth(api_key);
 
-        let builder = client.post(url).bearer_auth(api_key).json(&body);
-
-        Ok(builder)
+        Ok(request_data)
     }
 }
 

@@ -2,7 +2,7 @@ use super::vertexai::*;
 use super::*;
 
 use anyhow::{Context, Result};
-use reqwest::{Client as ReqwestClient, RequestBuilder};
+use reqwest::RequestBuilder;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -14,7 +14,7 @@ pub struct GeminiConfig {
     pub api_key: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
-    pub patch: Option<ModelPatch>,
+    pub patch: Option<RequestPatch>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -24,11 +24,7 @@ impl GeminiClient {
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    fn chat_completions_builder(
-        &self,
-        client: &ReqwestClient,
-        data: ChatCompletionsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_chat_completions(&self, data: ChatCompletionsData) -> Result<RequestData> {
         let api_key = self.get_api_key()?;
 
         let func = match data.stream {
@@ -36,24 +32,23 @@ impl GeminiClient {
             false => "generateContent",
         };
 
-        let mut body = gemini_build_chat_completions_body(data, &self.model)?;
-        self.patch_chat_completions_body(&mut body);
-
         let url = format!("{API_BASE}{}:{}?key={}", &self.model.name(), func, api_key);
 
-        debug!("Gemini Chat Completions Request: {url} {body}");
+        let body = gemini_build_chat_completions_body(data, &self.model)?;
 
-        let builder = client.post(url).json(&body);
+        let request_data = RequestData::new(url, body);
 
-        Ok(builder)
+        Ok(request_data)
     }
 
-    fn embeddings_builder(
-        &self,
-        client: &ReqwestClient,
-        data: EmbeddingsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
         let api_key = self.get_api_key()?;
+
+        let url = format!(
+            "{API_BASE}{}:embedContent?key={}",
+            &self.model.name(),
+            api_key
+        );
 
         let body = json!({
             "content": {
@@ -65,17 +60,9 @@ impl GeminiClient {
             }
         });
 
-        let url = format!(
-            "{API_BASE}{}:embedContent?key={}",
-            &self.model.name(),
-            api_key
-        );
+        let request_data = RequestData::new(url, body);
 
-        debug!("Gemini Embeddings Request: {url} {body}");
-
-        let builder = client.post(url).json(&body);
-
-        Ok(builder)
+        Ok(request_data)
     }
 }
 

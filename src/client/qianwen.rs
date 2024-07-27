@@ -27,7 +27,7 @@ pub struct QianwenConfig {
     pub api_key: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
-    pub patch: Option<ModelPatch>,
+    pub patch: Option<RequestPatch>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -37,11 +37,7 @@ impl QianwenClient {
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    fn chat_completions_builder(
-        &self,
-        client: &ReqwestClient,
-        data: ChatCompletionsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_chat_completions(&self, data: ChatCompletionsData) -> Result<RequestData> {
         let api_key = self.get_api_key()?;
 
         let stream = data.stream;
@@ -50,27 +46,24 @@ impl QianwenClient {
             true => CHAT_COMPLETIONS_API_URL_VL,
             false => CHAT_COMPLETIONS_API_URL,
         };
-        let (mut body, has_upload) = build_chat_completions_body(data, &self.model)?;
-        self.patch_chat_completions_body(&mut body);
 
-        debug!("Qianwen Chat Completions Request: {url} {body}");
+        let (body, has_upload) = build_chat_completions_body(data, &self.model)?;
 
-        let mut builder = client.post(url).bearer_auth(api_key).json(&body);
+        let mut request_data = RequestData::new(url, body);
+
+        request_data.bearer_auth(api_key);
+
         if stream {
-            builder = builder.header("X-DashScope-SSE", "enable");
+            request_data.header("X-DashScope-SSE", "enable");
         }
         if has_upload {
-            builder = builder.header("X-DashScope-OssResourceResolve", "enable");
+            request_data.header("X-DashScope-OssResourceResolve", "enable");
         }
 
-        Ok(builder)
+        Ok(request_data)
     }
 
-    fn embeddings_builder(
-        &self,
-        client: &ReqwestClient,
-        data: EmbeddingsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
         let api_key = self.get_api_key()?;
 
         let text_type = match data.query {
@@ -88,13 +81,11 @@ impl QianwenClient {
             }
         });
 
-        let url = EMBEDDINGS_API_URL;
+        let mut request_data = RequestData::new(EMBEDDINGS_API_URL, body);
 
-        debug!("Qianwen Embeddings Request: {url} {body}");
+        request_data.bearer_auth(api_key);
 
-        let builder = client.post(url).bearer_auth(api_key).json(&body);
-
-        Ok(builder)
+        Ok(request_data)
     }
 }
 
@@ -109,7 +100,8 @@ impl Client for QianwenClient {
     ) -> Result<ChatCompletionsOutput> {
         let api_key = self.get_api_key()?;
         patch_messages(self.model.name(), &api_key, &mut data.messages).await?;
-        let builder = self.chat_completions_builder(client, data)?;
+        let request_data = self.prepare_chat_completions(data)?;
+        let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
         chat_completions(builder, &self.model).await
     }
 
@@ -121,7 +113,8 @@ impl Client for QianwenClient {
     ) -> Result<()> {
         let api_key = self.get_api_key()?;
         patch_messages(self.model.name(), &api_key, &mut data.messages).await?;
-        let builder = self.chat_completions_builder(client, data)?;
+        let request_data = self.prepare_chat_completions(data)?;
+        let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
         chat_completions_streaming(builder, handler, &self.model).await
     }
 
@@ -130,7 +123,8 @@ impl Client for QianwenClient {
         client: &ReqwestClient,
         data: EmbeddingsData,
     ) -> Result<Vec<Vec<f32>>> {
-        let builder = self.embeddings_builder(client, data)?;
+        let request_data = self.prepare_embeddings(data)?;
+        let builder = self.request_builder(client, request_data, ApiType::Embeddings);
         embeddings(builder).await
     }
 }

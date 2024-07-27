@@ -19,7 +19,7 @@ pub struct VertexAIConfig {
     pub adc_file: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
-    pub patch: Option<ModelPatch>,
+    pub patch: Option<RequestPatch>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -32,12 +32,11 @@ impl VertexAIClient {
         ("location", "Location", true, PromptKind::String),
     ];
 
-    fn chat_completions_builder(
+    fn prepare_chat_completions(
         &self,
-        client: &ReqwestClient,
         data: ChatCompletionsData,
         model_category: &ModelCategory,
-    ) -> Result<RequestBuilder> {
+    ) -> Result<RequestData> {
         let project_id = self.get_project_id()?;
         let location = self.get_location()?;
         let access_token = get_access_token(self.name())?;
@@ -66,7 +65,7 @@ impl VertexAIClient {
             }
         };
 
-        let mut body = match model_category {
+        let body = match model_category {
             ModelCategory::Gemini => gemini_build_chat_completions_body(data, &self.model)?,
             ModelCategory::Claude => {
                 let mut body = claude_build_chat_completions_body(data, &self.model)?;
@@ -84,20 +83,15 @@ impl VertexAIClient {
                 body
             }
         };
-        self.patch_chat_completions_body(&mut body);
 
-        debug!("VertexAI Chat Completions Request: {url} {body}");
+        let mut request_data = RequestData::new(url, body);
 
-        let builder = client.post(url).bearer_auth(access_token).json(&body);
+        request_data.bearer_auth(access_token);
 
-        Ok(builder)
+        Ok(request_data)
     }
 
-    fn embeddings_builder(
-        &self,
-        client: &ReqwestClient,
-        data: EmbeddingsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
         let project_id = self.get_project_id()?;
         let location = self.get_location()?;
         let access_token = get_access_token(self.name())?;
@@ -110,15 +104,16 @@ impl VertexAIClient {
             .into_iter()
             .map(|v| json!({"content": v}))
             .collect();
+
         let body = json!({
             "instances": instances,
         });
 
-        debug!("VertexAI Embeddings Request: {url} {body}");
+        let mut request_data = RequestData::new(url, body);
 
-        let builder = client.post(url).bearer_auth(access_token).json(&body);
+        request_data.bearer_auth(access_token);
 
-        Ok(builder)
+        Ok(request_data)
     }
 }
 
@@ -133,7 +128,8 @@ impl Client for VertexAIClient {
     ) -> Result<ChatCompletionsOutput> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let model_category = ModelCategory::from_str(self.model.name())?;
-        let builder = self.chat_completions_builder(client, data, &model_category)?;
+        let request_data = self.prepare_chat_completions(data, &model_category)?;
+        let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
         match model_category {
             ModelCategory::Gemini => gemini_chat_completions(builder).await,
             ModelCategory::Claude => claude_chat_completions(builder).await,
@@ -149,7 +145,8 @@ impl Client for VertexAIClient {
     ) -> Result<()> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let model_category = ModelCategory::from_str(self.model.name())?;
-        let builder = self.chat_completions_builder(client, data, &model_category)?;
+        let request_data = self.prepare_chat_completions(data, &model_category)?;
+        let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
         match model_category {
             ModelCategory::Gemini => gemini_chat_completions_streaming(builder, handler).await,
             ModelCategory::Claude => claude_chat_completions_streaming(builder, handler).await,
@@ -163,7 +160,8 @@ impl Client for VertexAIClient {
         data: EmbeddingsData,
     ) -> Result<Vec<Vec<f32>>> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
-        let builder = self.embeddings_builder(client, data)?;
+        let request_data = self.prepare_embeddings(data)?;
+        let builder = self.request_builder(client, request_data, ApiType::Embeddings);
         embeddings(builder).await
     }
 }

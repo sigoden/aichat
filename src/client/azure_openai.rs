@@ -2,7 +2,6 @@ use super::openai::*;
 use super::*;
 
 use anyhow::Result;
-use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -12,7 +11,7 @@ pub struct AzureOpenAIConfig {
     pub api_key: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
-    pub patch: Option<ModelPatch>,
+    pub patch: Option<RequestPatch>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -32,16 +31,9 @@ impl AzureOpenAIClient {
         ),
     ];
 
-    fn chat_completions_builder(
-        &self,
-        client: &ReqwestClient,
-        data: ChatCompletionsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_chat_completions(&self, data: ChatCompletionsData) -> Result<RequestData> {
         let api_base = self.get_api_base()?;
         let api_key = self.get_api_key()?;
-
-        let mut body = openai_build_chat_completions_body(data, &self.model);
-        self.patch_chat_completions_body(&mut body);
 
         let url = format!(
             "{}/openai/deployments/{}/chat/completions?api-version=2024-02-01",
@@ -49,22 +41,18 @@ impl AzureOpenAIClient {
             self.model.name()
         );
 
-        debug!("AzureOpenAI Chat Completions Request: {url} {body}");
+        let body = openai_build_chat_completions_body(data, &self.model);
 
-        let builder = client.post(url).header("api-key", api_key).json(&body);
+        let mut request_data = RequestData::new(url, body);
 
-        Ok(builder)
+        request_data.header("api-key", api_key);
+
+        Ok(request_data)
     }
 
-    fn embeddings_builder(
-        &self,
-        client: &ReqwestClient,
-        data: EmbeddingsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
         let api_base = self.get_api_base()?;
         let api_key = self.get_api_key()?;
-
-        let body = openai_build_embeddings_body(data, &self.model);
 
         let url = format!(
             "{}/openai/deployments/{}/embeddings?api-version=2024-02-01",
@@ -72,11 +60,13 @@ impl AzureOpenAIClient {
             self.model.name()
         );
 
-        debug!("AzureOpenAI Embeddings Request: {url} {body}");
+        let body = openai_build_embeddings_body(data, &self.model);
 
-        let builder = client.post(url).header("api-key", api_key).json(&body);
+        let mut request_data = RequestData::new(url, body);
 
-        Ok(builder)
+        request_data.header("api-key", api_key);
+
+        Ok(request_data)
     }
 }
 

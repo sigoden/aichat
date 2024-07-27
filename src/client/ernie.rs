@@ -19,7 +19,7 @@ pub struct ErnieConfig {
     pub secret_key: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
-    pub patch: Option<ModelPatch>,
+    pub patch: Option<RequestPatch>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -29,53 +29,45 @@ impl ErnieClient {
         ("secret_key", "Secret Key:", true, PromptKind::String),
     ];
 
-    fn chat_completions_builder(
-        &self,
-        client: &ReqwestClient,
-        data: ChatCompletionsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_chat_completions(&self, data: ChatCompletionsData) -> Result<RequestData> {
         let access_token = get_access_token(self.name())?;
-
-        let mut body = build_chat_completions_body(data, &self.model);
-        self.patch_chat_completions_body(&mut body);
 
         let url = format!(
             "{API_BASE}/wenxinworkshop/chat/{}?access_token={access_token}",
             &self.model.name(),
         );
 
-        debug!("Ernie Chat Completions Request: {url} {body}");
+        let body = build_chat_completions_body(data, &self.model);
 
-        let builder = client.post(url).json(&body);
+        let request_data = RequestData::new(url, body);
 
-        Ok(builder)
+        Ok(request_data)
     }
 
-    fn embeddings_builder(
-        &self,
-        client: &ReqwestClient,
-        data: EmbeddingsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
         let access_token = get_access_token(self.name())?;
-
-        let body = json!({
-            "input": data.texts,
-        });
 
         let url = format!(
             "{API_BASE}/wenxinworkshop/embeddings/{}?access_token={access_token}",
             &self.model.name(),
         );
 
-        debug!("Ernie Embeddings Request: {url} {body}");
+        let body = json!({
+            "input": data.texts,
+        });
 
-        let builder = client.post(url).json(&body);
+        let request_data = RequestData::new(url, body);
 
-        Ok(builder)
+        Ok(request_data)
     }
 
-    fn rerank_builder(&self, client: &ReqwestClient, data: RerankData) -> Result<RequestBuilder> {
+    fn prepare_rerank(&self, data: RerankData) -> Result<RequestData> {
         let access_token = get_access_token(self.name())?;
+
+        let url = format!(
+            "{API_BASE}/wenxinworkshop/reranker/{}?access_token={access_token}",
+            &self.model.name(),
+        );
 
         let RerankData {
             query,
@@ -89,16 +81,9 @@ impl ErnieClient {
             "top_n": top_n
         });
 
-        let url = format!(
-            "{API_BASE}/wenxinworkshop/reranker/{}?access_token={access_token}",
-            &self.model.name(),
-        );
+        let request_data = RequestData::new(url, body);
 
-        debug!("Ernie Rerank Request: {url} {body}");
-
-        let builder = client.post(url).json(&body);
-
-        Ok(builder)
+        Ok(request_data)
     }
 
     async fn prepare_access_token(&self) -> Result<()> {
@@ -135,7 +120,8 @@ impl Client for ErnieClient {
         data: ChatCompletionsData,
     ) -> Result<ChatCompletionsOutput> {
         self.prepare_access_token().await?;
-        let builder = self.chat_completions_builder(client, data)?;
+        let request_data = self.prepare_chat_completions(data)?;
+        let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
         chat_completions(builder).await
     }
 
@@ -146,7 +132,8 @@ impl Client for ErnieClient {
         data: ChatCompletionsData,
     ) -> Result<()> {
         self.prepare_access_token().await?;
-        let builder = self.chat_completions_builder(client, data)?;
+        let request_data = self.prepare_chat_completions(data)?;
+        let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
         chat_completions_streaming(builder, handler).await
     }
 
@@ -156,12 +143,14 @@ impl Client for ErnieClient {
         data: EmbeddingsData,
     ) -> Result<EmbeddingsOutput> {
         self.prepare_access_token().await?;
-        let builder = self.embeddings_builder(client, data)?;
+        let request_data = self.prepare_embeddings(data)?;
+        let builder = self.request_builder(client, request_data, ApiType::Embeddings);
         embeddings(builder).await
     }
 
     async fn rerank_inner(&self, client: &ReqwestClient, data: RerankData) -> Result<RerankOutput> {
-        let builder = self.rerank_builder(client, data)?;
+        let request_data = self.prepare_rerank(data)?;
+        let builder = self.request_builder(client, request_data, ApiType::Rerank);
         rerank(builder).await
     }
 }

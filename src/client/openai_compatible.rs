@@ -3,7 +3,6 @@ use super::rag_dedicated::*;
 use super::*;
 
 use anyhow::Result;
-use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -14,7 +13,7 @@ pub struct OpenAICompatibleConfig {
     pub chat_endpoint: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
-    pub patch: Option<ModelPatch>,
+    pub patch: Option<RequestPatch>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -35,16 +34,9 @@ impl OpenAICompatibleClient {
         ),
     ];
 
-    fn chat_completions_builder(
-        &self,
-        client: &ReqwestClient,
-        data: ChatCompletionsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_chat_completions(&self, data: ChatCompletionsData) -> Result<RequestData> {
         let api_key = self.get_api_key().ok();
         let api_base = self.get_api_base_ext()?;
-
-        let mut body = openai_build_chat_completions_body(data, &self.model);
-        self.patch_chat_completions_body(&mut body);
 
         let chat_endpoint = self
             .config
@@ -54,54 +46,49 @@ impl OpenAICompatibleClient {
 
         let url = format!("{api_base}{chat_endpoint}");
 
-        debug!("OpenAICompatible Chat Completions Request: {url} {body}");
+        let body = openai_build_chat_completions_body(data, &self.model);
 
-        let mut builder = client.post(url).json(&body);
+        let mut request_data = RequestData::new(url, body);
+
         if let Some(api_key) = api_key {
-            builder = builder.bearer_auth(api_key);
+            request_data.bearer_auth(api_key);
         }
 
-        Ok(builder)
+        Ok(request_data)
     }
 
-    fn embeddings_builder(
-        &self,
-        client: &ReqwestClient,
-        data: EmbeddingsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
         let api_key = self.get_api_key().ok();
         let api_base = self.get_api_base_ext()?;
-
-        let body = openai_build_embeddings_body(data, &self.model);
 
         let url = format!("{api_base}/embeddings");
 
-        debug!("OpenAICompatible Embeddings Request: {url} {body}");
+        let body = openai_build_embeddings_body(data, &self.model);
 
-        let mut builder = client.post(url).json(&body);
+        let mut request_data = RequestData::new(url, body);
+
         if let Some(api_key) = api_key {
-            builder = builder.bearer_auth(api_key);
+            request_data.bearer_auth(api_key);
         }
 
-        Ok(builder)
+        Ok(request_data)
     }
 
-    fn rerank_builder(&self, client: &ReqwestClient, data: RerankData) -> Result<RequestBuilder> {
+    fn prepare_rerank(&self, data: RerankData) -> Result<RequestData> {
         let api_key = self.get_api_key().ok();
         let api_base = self.get_api_base_ext()?;
 
-        let body = rag_dedicated_build_rerank_body(data, &self.model);
-
         let url = format!("{api_base}/rerank");
 
-        debug!("OpenAICompatible Rerank Request: {url} {body}");
+        let body = rag_dedicated_build_rerank_body(data, &self.model);
 
-        let mut builder = client.post(url).json(&body);
+        let mut request_data = RequestData::new(url, body);
+
         if let Some(api_key) = api_key {
-            builder = builder.bearer_auth(api_key);
+            request_data.bearer_auth(api_key);
         }
 
-        Ok(builder)
+        Ok(request_data)
     }
 
     fn get_api_base_ext(&self) -> Result<String> {
