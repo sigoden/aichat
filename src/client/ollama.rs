@@ -1,7 +1,7 @@
 use super::*;
 
 use anyhow::{bail, Context, Result};
-use reqwest::{Client as ReqwestClient, RequestBuilder};
+use reqwest::RequestBuilder;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -12,7 +12,7 @@ pub struct OllamaConfig {
     pub api_auth: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
-    pub patch: Option<ModelPatch>,
+    pub patch: Option<RequestPatch>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -32,52 +32,41 @@ impl OllamaClient {
         ),
     ];
 
-    fn chat_completions_builder(
-        &self,
-        client: &ReqwestClient,
-        data: ChatCompletionsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_chat_completions(&self, data: ChatCompletionsData) -> Result<RequestData> {
         let api_base = self.get_api_base()?;
         let api_auth = self.get_api_auth().ok();
-
-        let mut body = build_chat_completions_body(data, &self.model)?;
-        self.patch_chat_completions_body(&mut body);
 
         let url = format!("{api_base}/api/chat");
 
-        debug!("Ollama Chat Completions Request: {url} {body}");
+        let body = build_chat_completions_body(data, &self.model)?;
 
-        let mut builder = client.post(url).json(&body);
+        let mut request_data = RequestData::new(url, body);
+
         if let Some(api_auth) = api_auth {
-            builder = builder.header("Authorization", api_auth)
+            request_data.header("Authorization", api_auth)
         }
 
-        Ok(builder)
+        Ok(request_data)
     }
 
-    fn embeddings_builder(
-        &self,
-        client: &ReqwestClient,
-        data: EmbeddingsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
         let api_base = self.get_api_base()?;
         let api_auth = self.get_api_auth().ok();
+
+        let url = format!("{api_base}/api/embed");
 
         let body = json!({
             "model": self.model.name(),
             "input": data.texts,
         });
 
-        let url = format!("{api_base}/api/embed");
+        let mut request_data = RequestData::new(url, body);
 
-        debug!("Ollama Embeddings Request: {url} {body}");
-
-        let mut builder = client.post(url).json(&body);
         if let Some(api_auth) = api_auth {
-            builder = builder.header("Authorization", api_auth)
+            request_data.header("Authorization", api_auth)
         }
 
-        Ok(builder)
+        Ok(request_data)
     }
 }
 

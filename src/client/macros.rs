@@ -141,7 +141,7 @@ macro_rules! client_common_fns {
             self.config.extra.as_ref()
         }
 
-        fn patch_config(&self) -> Option<&$crate::client::ModelPatch> {
+        fn patch_config(&self) -> Option<&$crate::client::RequestPatch> {
             self.config.patch.as_ref()
         }
 
@@ -171,7 +171,8 @@ macro_rules! impl_client_trait {
                 client: &reqwest::Client,
                 data: $crate::client::ChatCompletionsData,
             ) -> anyhow::Result<$crate::client::ChatCompletionsOutput> {
-                let builder = self.chat_completions_builder(client, data)?;
+                let request_data = self.prepare_chat_completions(data)?;
+                let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
                 $chat_completions(builder).await
             }
 
@@ -181,7 +182,8 @@ macro_rules! impl_client_trait {
                 handler: &mut $crate::client::SseHandler,
                 data: $crate::client::ChatCompletionsData,
             ) -> Result<()> {
-                let builder = self.chat_completions_builder(client, data)?;
+                let request_data = self.prepare_chat_completions(data)?;
+                let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
                 $chat_completions_streaming(builder, handler).await
             }
         }
@@ -196,7 +198,8 @@ macro_rules! impl_client_trait {
                 client: &reqwest::Client,
                 data: $crate::client::ChatCompletionsData,
             ) -> anyhow::Result<$crate::client::ChatCompletionsOutput> {
-                let builder = self.chat_completions_builder(client, data)?;
+                let request_data = self.prepare_chat_completions(data)?;
+                let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
                 $chat_completions(builder).await
             }
 
@@ -206,7 +209,8 @@ macro_rules! impl_client_trait {
                 handler: &mut $crate::client::SseHandler,
                 data: $crate::client::ChatCompletionsData,
             ) -> Result<()> {
-                let builder = self.chat_completions_builder(client, data)?;
+                let request_data = self.prepare_chat_completions(data)?;
+                let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
                 $chat_completions_streaming(builder, handler).await
             }
 
@@ -215,7 +219,8 @@ macro_rules! impl_client_trait {
                 client: &reqwest::Client,
                 data: $crate::client::EmbeddingsData,
             ) -> Result<$crate::client::EmbeddingsOutput> {
-                let builder = self.embeddings_builder(client, data)?;
+                let request_data = self.prepare_embeddings(data)?;
+                let builder = self.request_builder(client, request_data, ApiType::Embeddings);
                 $embeddings(builder).await
             }
         }
@@ -230,7 +235,8 @@ macro_rules! impl_client_trait {
                 client: &reqwest::Client,
                 data: $crate::client::ChatCompletionsData,
             ) -> anyhow::Result<$crate::client::ChatCompletionsOutput> {
-                let builder = self.chat_completions_builder(client, data)?;
+                let request_data = self.prepare_chat_completions(data)?;
+                let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
                 $chat_completions(builder).await
             }
 
@@ -240,7 +246,8 @@ macro_rules! impl_client_trait {
                 handler: &mut $crate::client::SseHandler,
                 data: $crate::client::ChatCompletionsData,
             ) -> Result<()> {
-                let builder = self.chat_completions_builder(client, data)?;
+                let request_data = self.prepare_chat_completions(data)?;
+                let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
                 $chat_completions_streaming(builder, handler).await
             }
 
@@ -249,7 +256,8 @@ macro_rules! impl_client_trait {
                 client: &reqwest::Client,
                 data: $crate::client::EmbeddingsData,
             ) -> Result<$crate::client::EmbeddingsOutput> {
-                let builder = self.embeddings_builder(client, data)?;
+                let request_data = self.prepare_embeddings(data)?;
+                let builder = self.request_builder(client, request_data, ApiType::Embeddings);
                 $embeddings(builder).await
             }
 
@@ -258,7 +266,8 @@ macro_rules! impl_client_trait {
                 client: &reqwest::Client,
                 data: $crate::client::RerankData,
             ) -> Result<$crate::client::RerankOutput> {
-                let builder = self.rerank_builder(client, data)?;
+                let request_data = self.prepare_rerank(data)?;
+                let builder = self.request_builder(client, request_data, ApiType::Rerank);
                 $rerank(builder).await
             }
         }

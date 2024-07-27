@@ -1,7 +1,7 @@
 use super::*;
 
 use anyhow::{anyhow, Context, Result};
-use reqwest::{Client as ReqwestClient, RequestBuilder};
+use reqwest::RequestBuilder;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -14,7 +14,7 @@ pub struct CloudflareConfig {
     pub api_key: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
-    pub patch: Option<ModelPatch>,
+    pub patch: Option<RequestPatch>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -27,51 +27,42 @@ impl CloudflareClient {
         ("api_key", "API Key:", true, PromptKind::String),
     ];
 
-    fn chat_completions_builder(
-        &self,
-        client: &ReqwestClient,
-        data: ChatCompletionsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_chat_completions(&self, data: ChatCompletionsData) -> Result<RequestData> {
         let account_id = self.get_account_id()?;
         let api_key = self.get_api_key()?;
-
-        let mut body = build_chat_completions_body(data, &self.model)?;
-        self.patch_chat_completions_body(&mut body);
 
         let url = format!(
             "{API_BASE}/accounts/{account_id}/ai/run/{}",
             self.model.name()
         );
 
-        debug!("Cloudflare Chat Completions Request: {url} {body}");
+        let body = build_chat_completions_body(data, &self.model)?;
 
-        let builder = client.post(url).bearer_auth(api_key).json(&body);
+        let mut request_data = RequestData::new(url, body);
 
-        Ok(builder)
+        request_data.bearer_auth(api_key);
+
+        Ok(request_data)
     }
 
-    fn embeddings_builder(
-        &self,
-        client: &ReqwestClient,
-        data: EmbeddingsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
         let account_id = self.get_account_id()?;
         let api_key = self.get_api_key()?;
+
+        let url = format!(
+            "{API_BASE}/accounts/{account_id}/ai/run/{}",
+            self.model.name()
+        );
 
         let body = json!({
             "text": data.texts,
         });
 
-        let url = format!(
-            "{API_BASE}/accounts/{account_id}/ai/run/{}",
-            self.model.name()
-        );
+        let mut request_data = RequestData::new(url, body);
 
-        debug!("Cloudflare Embeddings Request: {url} {body}");
+        request_data.bearer_auth(api_key);
 
-        let builder = client.post(url).bearer_auth(api_key).json(&body);
-
-        Ok(builder)
+        Ok(request_data)
     }
 }
 

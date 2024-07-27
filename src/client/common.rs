@@ -31,7 +31,7 @@ pub trait Client: Sync + Send {
 
     fn extra_config(&self) -> Option<&ExtraConfig>;
 
-    fn patch_config(&self) -> Option<&ModelPatch>;
+    fn patch_config(&self) -> Option<&RequestPatch>;
 
     fn name(&self) -> &str;
 
@@ -110,13 +110,40 @@ pub trait Client: Sync + Send {
             .context("Failed to call rerank api")
     }
 
-    fn patch_chat_completions_body(&self, body: &mut Value) {
-        if let Some(patch) = extract_chat_completions_body_patch(
-            self.patch_config().map(|v| v.chat_completions_body.clone()),
-            self.model(),
-        ) {
-            if body.is_object() && patch.is_object() {
-                json_patch::merge(body, &patch)
+    fn request_builder(
+        &self,
+        client: &reqwest::Client,
+        mut request_data: RequestData,
+        api_type: ApiType,
+    ) -> RequestBuilder {
+        self.patch_request_data(&mut request_data, api_type);
+        request_data.into_builder(client)
+    }
+
+    fn patch_request_data(&self, request_data: &mut RequestData, api_type: ApiType) {
+        let map = std::env::var(get_env_name(&format!(
+            "patch_{}_{}",
+            self.model().client_name(),
+            api_type.name(),
+        )))
+        .ok()
+        .and_then(|v| serde_json::from_str(&v).ok())
+        .or_else(|| {
+            self.patch_config()
+                .and_then(|v| api_type.extract_patch(v))
+                .cloned()
+        });
+        let map = match map {
+            Some(v) => v,
+            _ => return,
+        };
+        for (key, patch) in map {
+            let key = ESCAPE_SLASH_RE.replace_all(&key, r"\/");
+            if let Ok(regex) = Regex::new(&format!("^({key})$")) {
+                if let Ok(true) = regex.is_match(self.model().name()) {
+                    request_data.apply_patch(patch);
+                    return;
+                }
             }
         }
     }
@@ -164,32 +191,99 @@ pub struct ExtraConfig {
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
-pub struct ModelPatch {
-    pub chat_completions_body: ChatCompletionsBodyPatch,
+pub struct RequestPatch {
+    pub chat_completions: Option<ApiPatch>,
+    pub embeddings: Option<ApiPatch>,
+    pub rerank: Option<ApiPatch>,
 }
 
-pub type ChatCompletionsBodyPatch = IndexMap<String, Value>;
+pub type ApiPatch = IndexMap<String, Value>;
 
-pub fn extract_chat_completions_body_patch(
-    patch: Option<ChatCompletionsBodyPatch>,
-    model: &Model,
-) -> Option<Value> {
-    let patch = std::env::var(get_env_name(&format!(
-        "{}_chat_completions_body_patch",
-        model.client_name()
-    )))
-    .ok()
-    .and_then(|v| serde_json::from_str(&v).ok())
-    .or(patch)?;
-    for (key, patch_data) in patch {
-        let key = ESCAPE_SLASH_RE.replace_all(&key, r"\/");
-        if let Ok(regex) = Regex::new(&format!("^({key})$")) {
-            if let Ok(true) = regex.is_match(model.name()) {
-                return Some(patch_data);
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ApiType {
+    ChatCompletions,
+    Embeddings,
+    Rerank,
+}
+
+impl ApiType {
+    pub fn name(&self) -> &str {
+        match self {
+            ApiType::ChatCompletions => "chat_completions",
+            ApiType::Embeddings => "embeddings",
+            ApiType::Rerank => "rerank",
+        }
+    }
+    pub fn extract_patch<'a>(&self, patch: &'a RequestPatch) -> Option<&'a ApiPatch> {
+        match self {
+            ApiType::ChatCompletions => patch.chat_completions.as_ref(),
+            ApiType::Embeddings => patch.embeddings.as_ref(),
+            ApiType::Rerank => patch.rerank.as_ref(),
+        }
+    }
+}
+
+pub struct RequestData {
+    pub url: String,
+    pub headers: IndexMap<String, String>,
+    pub body: Value,
+}
+
+impl RequestData {
+    pub fn new<T>(url: T, body: Value) -> Self
+    where
+        T: std::fmt::Display,
+    {
+        Self {
+            url: url.to_string(),
+            headers: Default::default(),
+            body,
+        }
+    }
+
+    pub fn bearer_auth<T>(&mut self, auth: T)
+    where
+        T: std::fmt::Display,
+    {
+        self.headers
+            .insert("authorization".into(), format!("Bearer {auth}"));
+    }
+
+    pub fn header<K, V>(&mut self, key: K, value: V)
+    where
+        K: std::fmt::Display,
+        V: std::fmt::Display,
+    {
+        self.headers.insert(key.to_string(), value.to_string());
+    }
+
+    pub fn into_builder(self, client: &ReqwestClient) -> RequestBuilder {
+        let RequestData { url, headers, body } = self;
+        debug!("Request {url} {body}");
+
+        let mut builder = client.post(url);
+        for (key, value) in headers {
+            builder = builder.header(key, value);
+        }
+        builder = builder.json(&body);
+        builder
+    }
+
+    pub fn apply_patch(&mut self, patch: Value) {
+        if let Some(patch_url) = patch["url"].as_str() {
+            self.url = patch_url.into();
+        }
+        if let Some(patch_body) = patch.get("body") {
+            json_patch::merge(&mut self.body, patch_body)
+        }
+        if let Some(patch_headers) = patch["headers"].as_object() {
+            for (key, value) in patch_headers {
+                if let Some(value) = value.as_str() {
+                    self.header(key, value)
+                }
             }
         }
     }
-    None
 }
 
 #[derive(Debug)]
@@ -445,24 +539,24 @@ fn set_client_config(
 fn set_client_config_value(client_config: &mut Value, path: &str, kind: &PromptKind, value: &str) {
     let segs: Vec<&str> = path.split('.').collect();
     match segs.as_slice() {
-        [name] => client_config[name] = to_json(kind, value),
+        [name] => client_config[name] = prompt_value_to_json(kind, value),
         [scope, name] => match scope.split_once('[') {
             None => {
                 if client_config.get(scope).is_none() {
                     let mut obj = json!({});
-                    obj[name] = to_json(kind, value);
+                    obj[name] = prompt_value_to_json(kind, value);
                     client_config[scope] = obj;
                 } else {
-                    client_config[scope][name] = to_json(kind, value);
+                    client_config[scope][name] = prompt_value_to_json(kind, value);
                 }
             }
             Some((scope, _)) => {
                 if client_config.get(scope).is_none() {
                     let mut obj = json!({});
-                    obj[name] = to_json(kind, value);
+                    obj[name] = prompt_value_to_json(kind, value);
                     client_config[scope] = json!([obj]);
                 } else {
-                    client_config[scope][0][name] = to_json(kind, value);
+                    client_config[scope][0][name] = prompt_value_to_json(kind, value);
                 }
             }
         },
@@ -470,7 +564,7 @@ fn set_client_config_value(client_config: &mut Value, path: &str, kind: &PromptK
     }
 }
 
-fn to_json(kind: &PromptKind, value: &str) -> Value {
+fn prompt_value_to_json(kind: &PromptKind, value: &str) -> Value {
     if value.is_empty() {
         return Value::Null;
     }

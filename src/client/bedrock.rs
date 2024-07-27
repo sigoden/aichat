@@ -3,19 +3,16 @@ use super::*;
 use crate::utils::{base64_decode, encode_uri, hex_encode, hmac_sha256, sha256};
 
 use anyhow::{bail, Context, Result};
+use async_trait::async_trait;
 use aws_smithy_eventstream::frame::{DecodedFrame, MessageFrameDecoder};
 use aws_smithy_eventstream::smithy::parse_response_headers;
 use bytes::BytesMut;
 use chrono::{DateTime, Utc};
 use futures_util::StreamExt;
 use indexmap::IndexMap;
-use reqwest::{
-    header::{HeaderMap, HeaderName, HeaderValue},
-    Client as ReqwestClient, Method, RequestBuilder,
-};
+use reqwest::{Client as ReqwestClient, Method, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::str::FromStr;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct BedrockConfig {
@@ -25,7 +22,7 @@ pub struct BedrockConfig {
     pub region: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
-    pub patch: Option<ModelPatch>,
+    pub patch: Option<RequestPatch>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -61,16 +58,22 @@ impl BedrockClient {
         let host = format!("bedrock-runtime.{region}.amazonaws.com");
 
         let model_name = &self.model.name();
+
         let uri = if data.stream {
             format!("/model/{model_name}/converse-stream")
         } else {
             format!("/model/{model_name}/converse")
         };
 
-        let headers = IndexMap::new();
+        let body = build_chat_completions_body(data, &self.model)?;
 
-        let mut body = build_chat_completions_body(data, &self.model)?;
-        self.patch_chat_completions_body(&mut body);
+        let mut request_data = RequestData::new("", body);
+        self.patch_request_data(&mut request_data, ApiType::ChatCompletions);
+        let RequestData {
+            url: _,
+            headers,
+            body,
+        } = request_data;
 
         let builder = aws_fetch(
             client,
@@ -105,8 +108,6 @@ impl BedrockClient {
 
         let uri = format!("/model/{}/invoke", self.model.name());
 
-        let headers = IndexMap::new();
-
         let input_type = match data.query {
             true => "search_query",
             false => "search_document",
@@ -116,6 +117,14 @@ impl BedrockClient {
             "texts": data.texts,
             "input_type": input_type,
         });
+
+        let mut request_data = RequestData::new("", body);
+        self.patch_request_data(&mut request_data, ApiType::Embeddings);
+        let RequestData {
+            url: _,
+            headers,
+            body,
+        } = request_data;
 
         let builder = aws_fetch(
             client,
@@ -139,12 +148,38 @@ impl BedrockClient {
     }
 }
 
-impl_client_trait!(
-    BedrockClient,
-    chat_completions,
-    chat_completions_streaming,
-    embeddings
-);
+#[async_trait]
+impl Client for BedrockClient {
+    client_common_fns!();
+
+    async fn chat_completions_inner(
+        &self,
+        client: &ReqwestClient,
+        data: ChatCompletionsData,
+    ) -> Result<ChatCompletionsOutput> {
+        let builder = self.chat_completions_builder(client, data)?;
+        chat_completions(builder).await
+    }
+
+    async fn chat_completions_streaming_inner(
+        &self,
+        client: &ReqwestClient,
+        handler: &mut SseHandler,
+        data: ChatCompletionsData,
+    ) -> Result<()> {
+        let builder = self.chat_completions_builder(client, data)?;
+        chat_completions_streaming(builder, handler).await
+    }
+
+    async fn embeddings_inner(
+        &self,
+        client: &ReqwestClient,
+        data: EmbeddingsData,
+    ) -> Result<EmbeddingsOutput> {
+        let builder = self.embeddings_builder(client, data)?;
+        embeddings(builder).await
+    }
+}
 
 async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
@@ -550,17 +585,14 @@ fn aws_fetch(
 
     headers.insert("authorization".into(), authorization_header);
 
-    let mut req_headers = HeaderMap::new();
-    for (k, v) in &headers {
-        req_headers.insert(HeaderName::from_str(k)?, HeaderValue::from_str(v)?);
+    debug!("Request {endpoint} {body}");
+
+    let mut request_builder = client.request(method, endpoint).body(body);
+
+    for (key, value) in &headers {
+        request_builder = request_builder.header(key, value);
     }
 
-    debug!("Bedrock Request: {endpoint} {body}");
-
-    let request_builder = client
-        .request(method, endpoint)
-        .headers(req_headers)
-        .body(body);
     Ok(request_builder)
 }
 

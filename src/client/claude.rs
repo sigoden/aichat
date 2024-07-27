@@ -1,7 +1,7 @@
 use super::*;
 
 use anyhow::{bail, Context, Result};
-use reqwest::{Client as ReqwestClient, RequestBuilder};
+use reqwest::RequestBuilder;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -13,7 +13,7 @@ pub struct ClaudeConfig {
     pub api_key: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
-    pub patch: Option<ModelPatch>,
+    pub patch: Option<RequestPatch>,
     pub extra: Option<ExtraConfig>,
 }
 
@@ -23,27 +23,19 @@ impl ClaudeClient {
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
 
-    fn chat_completions_builder(
-        &self,
-        client: &ReqwestClient,
-        data: ChatCompletionsData,
-    ) -> Result<RequestBuilder> {
+    fn prepare_chat_completions(&self, data: ChatCompletionsData) -> Result<RequestData> {
         let api_key = self.get_api_key().ok();
 
-        let mut body = claude_build_chat_completions_body(data, &self.model)?;
-        self.patch_chat_completions_body(&mut body);
+        let body = claude_build_chat_completions_body(data, &self.model)?;
 
-        let url = API_BASE;
+        let mut request_data = RequestData::new(API_BASE, body);
 
-        debug!("Claude Request: {url} {body}");
-
-        let mut builder = client.post(url).json(&body);
-        builder = builder.header("anthropic-version", "2023-06-01");
+        request_data.header("anthropic-version", "2023-06-01");
         if let Some(api_key) = api_key {
-            builder = builder.header("x-api-key", api_key)
+            request_data.header("x-api-key", api_key)
         }
 
-        Ok(builder)
+        Ok(request_data)
     }
 }
 
