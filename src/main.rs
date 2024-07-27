@@ -46,18 +46,39 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
     let text = cli.text();
     let text = aggregate_text(text)?;
-    let file = &cli.file;
-    let no_input = text.is_none() && file.is_empty();
     let working_mode = if cli.serve.is_some() {
         WorkingMode::Serve
-    } else if no_input {
+    } else if text.is_none() && cli.file.is_empty() {
         WorkingMode::Repl
     } else {
         WorkingMode::Command
     };
+    let mut model_id = cli.model.clone();
+    if model_id.is_none() {
+        if let Ok(v) = env::var(get_env_name("model")) {
+            model_id = Some(v);
+        }
+    }
     setup_logger(working_mode.is_serve())?;
-    let config = Arc::new(RwLock::new(Config::init(working_mode)?));
+    let config = Arc::new(RwLock::new(Config::init(
+        working_mode,
+        model_id.as_deref(),
+    )?));
+    let highlight = config.read().highlight;
+    if let Err(err) = run(config, cli, text, model_id).await {
+        let highlight = stderr().is_terminal() && highlight;
+        render_error(err, highlight);
+        std::process::exit(1);
+    }
+    Ok(())
+}
 
+async fn run(
+    config: GlobalConfig,
+    cli: Cli,
+    text: Option<String>,
+    model_id: Option<String>,
+) -> Result<()> {
     let abort_signal = create_abort_signal();
 
     if let Some(addr) = cli.serve {
@@ -127,7 +148,7 @@ async fn main() -> Result<()> {
         println!("{sessions}");
         return Ok(());
     }
-    if let Some(model_id) = &cli.model {
+    if let Some(model_id) = &model_id {
         config.write().set_model(model_id)?;
     }
     if cli.save_session {
@@ -141,29 +162,22 @@ async fn main() -> Result<()> {
         println!("{}", info);
         return Ok(());
     }
-    if cli.execute {
-        if no_input {
-            bail!("No input");
-        }
-        let input = create_input(&config, text, file).await?;
+    let is_repl = config.read().working_mode.is_repl();
+    if cli.execute && !is_repl {
+        let input = create_input(&config, text, &cli.file).await?;
         let shell = detect_shell();
         shell_execute(&config, &shell, input).await?;
         return Ok(());
     }
     config.write().apply_prelude()?;
-    if let Err(err) = match no_input {
+    match is_repl {
         false => {
-            let mut input = create_input(&config, text, file).await?;
+            let mut input = create_input(&config, text, &cli.file).await?;
             input.use_embeddings(abort_signal.clone()).await?;
             start_directive(&config, input, cli.no_stream, cli.code, abort_signal).await
         }
         true => start_interactive(&config).await,
-    } {
-        let highlight = stderr().is_terminal() && config.read().highlight;
-        render_error(err, highlight);
-        std::process::exit(1);
     }
-    Ok(())
 }
 
 #[async_recursion]

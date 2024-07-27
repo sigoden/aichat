@@ -45,21 +45,21 @@ impl Model {
     pub fn retrieve_chat(config: &Config, model_id: &str) -> Result<Self> {
         match Self::find(&list_chat_models(config), model_id) {
             Some(v) => Ok(v),
-            None => bail!("Invalid chat model '{model_id}'"),
+            None => bail!("Unknown chat model '{model_id}'"),
         }
     }
 
     pub fn retrieve_embedding(config: &Config, model_id: &str) -> Result<Self> {
         match Self::find(&list_embedding_models(config), model_id) {
             Some(v) => Ok(v),
-            None => bail!("Invalid embedding model '{model_id}'"),
+            None => bail!("Unknown embedding model '{model_id}'"),
         }
     }
 
     pub fn retrieve_reranker(config: &Config, model_id: &str) -> Result<Self> {
         match Self::find(&list_reranker_models(config), model_id) {
             Some(v) => Ok(v),
-            None => bail!("Invalid reranker model '{model_id}'"),
+            None => bail!("Unknown reranker model '{model_id}'"),
         }
     }
 

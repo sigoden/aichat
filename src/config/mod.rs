@@ -210,17 +210,20 @@ impl Default for Config {
 pub type GlobalConfig = Arc<RwLock<Config>>;
 
 impl Config {
-    pub fn init(working_mode: WorkingMode) -> Result<Self> {
+    pub fn init(working_mode: WorkingMode, model_id: Option<&str>) -> Result<Self> {
         let config_path = Self::config_file()?;
-
-        let platform = env::var(get_env_name("platform")).ok();
-        if *IS_STDOUT_TERMINAL && platform.is_none() && !config_path.exists() {
-            create_config_file(&config_path)?;
-        }
-        let mut config = if platform.is_some() {
-            Self::load_dynamic_config(&platform.unwrap())?
+        let mut config = if !config_path.exists() {
+            match model_id {
+                Some(v) => Self::load_dynamic(v)?,
+                None => {
+                    if *IS_STDOUT_TERMINAL {
+                        create_config_file(&config_path)?;
+                    }
+                    Self::load_from_file(&config_path)?
+                }
+            }
         } else {
-            Self::load_config_file(&config_path)?
+            Self::load_from_file(&config_path)?
         };
 
         config.working_mode = working_mode;
@@ -1498,7 +1501,7 @@ impl Config {
             .with_context(|| format!("Failed to create/append {}", path.display()))
     }
 
-    fn load_config_file(config_path: &Path) -> Result<Self> {
+    fn load_from_file(config_path: &Path) -> Result<Self> {
         let content = read_to_string(config_path)
             .with_context(|| format!("Failed to load config at {}", config_path.display()))?;
         let config: Self = serde_yaml::from_str(&content).map_err(|err| {
@@ -1520,7 +1523,11 @@ impl Config {
         Ok(config)
     }
 
-    fn load_dynamic_config(platform: &str) -> Result<Self> {
+    fn load_dynamic(model_id: &str) -> Result<Self> {
+        let platform = match model_id.split_once(':') {
+            Some((v, _)) => v,
+            _ => model_id,
+        };
         let is_openai_compatible = OPENAI_COMPATIBLE_PLATFORMS
             .into_iter()
             .any(|(name, _)| platform == name);
@@ -1530,7 +1537,7 @@ impl Config {
             json!({ "type": platform })
         };
         let config = json!({
-            "model": platform.to_string(),
+            "model": model_id.to_string(),
             "save": false,
             "clients": vec![client],
         });
@@ -1540,9 +1547,6 @@ impl Config {
     }
 
     fn load_envs(&mut self) {
-        if let Ok(v) = env::var(get_env_name("model")) {
-            self.model_id = v;
-        }
         if let Some(v) = read_env_value::<f64>("temperature") {
             self.temperature = v;
         }
