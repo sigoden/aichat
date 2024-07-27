@@ -23,57 +23,64 @@ impl GeminiClient {
 
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
-
-    fn prepare_chat_completions(&self, data: ChatCompletionsData) -> Result<RequestData> {
-        let api_key = self.get_api_key()?;
-
-        let func = match data.stream {
-            true => "streamGenerateContent",
-            false => "generateContent",
-        };
-
-        let url = format!("{API_BASE}{}:{}?key={}", &self.model.name(), func, api_key);
-
-        let body = gemini_build_chat_completions_body(data, &self.model)?;
-
-        let request_data = RequestData::new(url, body);
-
-        Ok(request_data)
-    }
-
-    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
-        let api_key = self.get_api_key()?;
-
-        let url = format!(
-            "{API_BASE}{}:embedContent?key={}",
-            &self.model.name(),
-            api_key
-        );
-
-        let body = json!({
-            "content": {
-                "parts": [
-                    {
-                        "text": data.texts[0],
-                    }
-                ]
-            }
-        });
-
-        let request_data = RequestData::new(url, body);
-
-        Ok(request_data)
-    }
 }
 
 impl_client_trait!(
     GeminiClient,
-    gemini_chat_completions,
-    gemini_chat_completions_streaming,
-    gemini_embeddings
+    (
+        prepare_chat_completions,
+        gemini_chat_completions,
+        gemini_chat_completions_streaming
+    ),
+    (prepare_embeddings, gemini_embeddings),
+    (noop_prepare_rerank, noop_rerank),
 );
 
-async fn gemini_embeddings(builder: RequestBuilder) -> Result<EmbeddingsOutput> {
+fn prepare_chat_completions(
+    self_: &GeminiClient,
+    data: ChatCompletionsData,
+) -> Result<RequestData> {
+    let api_key = self_.get_api_key()?;
+
+    let func = match data.stream {
+        true => "streamGenerateContent",
+        false => "generateContent",
+    };
+
+    let url = format!("{API_BASE}{}:{}?key={}", self_.model.name(), func, api_key);
+
+    let body = gemini_build_chat_completions_body(data, &self_.model)?;
+
+    let request_data = RequestData::new(url, body);
+
+    Ok(request_data)
+}
+
+fn prepare_embeddings(self_: &GeminiClient, data: EmbeddingsData) -> Result<RequestData> {
+    let api_key = self_.get_api_key()?;
+
+    let url = format!(
+        "{API_BASE}{}:embedContent?key={}",
+        self_.model.name(),
+        api_key
+    );
+
+    let body = json!({
+        "content": {
+            "parts": [
+                {
+                    "text": data.texts[0],
+                }
+            ]
+        }
+    });
+
+    let request_data = RequestData::new(url, body);
+
+    Ok(request_data)
+}
+
+async fn gemini_embeddings(builder: RequestBuilder, _model: &Model) -> Result<EmbeddingsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;

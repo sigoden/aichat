@@ -31,53 +31,63 @@ impl OllamaClient {
             PromptKind::Integer,
         ),
     ];
-
-    fn prepare_chat_completions(&self, data: ChatCompletionsData) -> Result<RequestData> {
-        let api_base = self.get_api_base()?;
-        let api_auth = self.get_api_auth().ok();
-
-        let url = format!("{api_base}/api/chat");
-
-        let body = build_chat_completions_body(data, &self.model)?;
-
-        let mut request_data = RequestData::new(url, body);
-
-        if let Some(api_auth) = api_auth {
-            request_data.header("Authorization", api_auth)
-        }
-
-        Ok(request_data)
-    }
-
-    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
-        let api_base = self.get_api_base()?;
-        let api_auth = self.get_api_auth().ok();
-
-        let url = format!("{api_base}/api/embed");
-
-        let body = json!({
-            "model": self.model.name(),
-            "input": data.texts,
-        });
-
-        let mut request_data = RequestData::new(url, body);
-
-        if let Some(api_auth) = api_auth {
-            request_data.header("Authorization", api_auth)
-        }
-
-        Ok(request_data)
-    }
 }
 
 impl_client_trait!(
     OllamaClient,
-    chat_completions,
-    chat_completions_streaming,
-    embeddings
+    (
+        prepare_chat_completions,
+        chat_completions,
+        chat_completions_streaming
+    ),
+    (prepare_embeddings, embeddings),
+    (noop_prepare_rerank, noop_rerank),
 );
 
-async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
+fn prepare_chat_completions(
+    self_: &OllamaClient,
+    data: ChatCompletionsData,
+) -> Result<RequestData> {
+    let api_base = self_.get_api_base()?;
+    let api_auth = self_.get_api_auth().ok();
+
+    let url = format!("{api_base}/api/chat");
+
+    let body = build_chat_completions_body(data, &self_.model)?;
+
+    let mut request_data = RequestData::new(url, body);
+
+    if let Some(api_auth) = api_auth {
+        request_data.header("Authorization", api_auth)
+    }
+
+    Ok(request_data)
+}
+
+fn prepare_embeddings(self_: &OllamaClient, data: EmbeddingsData) -> Result<RequestData> {
+    let api_base = self_.get_api_base()?;
+    let api_auth = self_.get_api_auth().ok();
+
+    let url = format!("{api_base}/api/embed");
+
+    let body = json!({
+        "model": self_.model.name(),
+        "input": data.texts,
+    });
+
+    let mut request_data = RequestData::new(url, body);
+
+    if let Some(api_auth) = api_auth {
+        request_data.header("Authorization", api_auth)
+    }
+
+    Ok(request_data)
+}
+
+async fn chat_completions(
+    builder: RequestBuilder,
+    _model: &Model,
+) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data = res.json().await?;
@@ -92,6 +102,7 @@ async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutp
 async fn chat_completions_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
+    _model: &Model,
 ) -> Result<()> {
     let res = builder.send().await?;
     let status = res.status();
@@ -120,7 +131,7 @@ async fn chat_completions_streaming(
     Ok(())
 }
 
-async fn embeddings(builder: RequestBuilder) -> Result<EmbeddingsOutput> {
+async fn embeddings(builder: RequestBuilder, _model: &Model) -> Result<EmbeddingsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data = res.json().await?;

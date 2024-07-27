@@ -3,7 +3,6 @@ use super::*;
 use crate::utils::{base64_decode, sha256};
 
 use anyhow::{anyhow, bail, Context, Result};
-use async_trait::async_trait;
 use reqwest::{
     multipart::{Form, Part},
     Client as ReqwestClient, RequestBuilder,
@@ -36,60 +35,9 @@ impl QianwenClient {
 
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
-
-    fn prepare_chat_completions(&self, data: ChatCompletionsData) -> Result<RequestData> {
-        let api_key = self.get_api_key()?;
-
-        let stream = data.stream;
-
-        let url = match self.model.supports_vision() {
-            true => CHAT_COMPLETIONS_API_URL_VL,
-            false => CHAT_COMPLETIONS_API_URL,
-        };
-
-        let (body, has_upload) = build_chat_completions_body(data, &self.model)?;
-
-        let mut request_data = RequestData::new(url, body);
-
-        request_data.bearer_auth(api_key);
-
-        if stream {
-            request_data.header("X-DashScope-SSE", "enable");
-        }
-        if has_upload {
-            request_data.header("X-DashScope-OssResourceResolve", "enable");
-        }
-
-        Ok(request_data)
-    }
-
-    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
-        let api_key = self.get_api_key()?;
-
-        let text_type = match data.query {
-            true => "query",
-            false => "document",
-        };
-
-        let body = json!({
-            "model": self.model.name(),
-            "input": {
-                "texts": data.texts,
-            },
-            "parameters": {
-                "text_type": text_type,
-            }
-        });
-
-        let mut request_data = RequestData::new(EMBEDDINGS_API_URL, body);
-
-        request_data.bearer_auth(api_key);
-
-        Ok(request_data)
-    }
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 impl Client for QianwenClient {
     client_common_fns!();
 
@@ -100,7 +48,7 @@ impl Client for QianwenClient {
     ) -> Result<ChatCompletionsOutput> {
         let api_key = self.get_api_key()?;
         patch_messages(self.model.name(), &api_key, &mut data.messages).await?;
-        let request_data = self.prepare_chat_completions(data)?;
+        let request_data = prepare_chat_completions(self, data)?;
         let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
         chat_completions(builder, &self.model).await
     }
@@ -113,7 +61,7 @@ impl Client for QianwenClient {
     ) -> Result<()> {
         let api_key = self.get_api_key()?;
         patch_messages(self.model.name(), &api_key, &mut data.messages).await?;
-        let request_data = self.prepare_chat_completions(data)?;
+        let request_data = prepare_chat_completions(self, data)?;
         let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
         chat_completions_streaming(builder, handler, &self.model).await
     }
@@ -123,10 +71,64 @@ impl Client for QianwenClient {
         client: &ReqwestClient,
         data: EmbeddingsData,
     ) -> Result<Vec<Vec<f32>>> {
-        let request_data = self.prepare_embeddings(data)?;
+        let request_data = prepare_embeddings(self, data)?;
         let builder = self.request_builder(client, request_data, ApiType::Embeddings);
-        embeddings(builder).await
+        embeddings(builder, &self.model).await
     }
+}
+
+fn prepare_chat_completions(
+    self_: &QianwenClient,
+    data: ChatCompletionsData,
+) -> Result<RequestData> {
+    let api_key = self_.get_api_key()?;
+
+    let stream = data.stream;
+
+    let url = match self_.model().supports_vision() {
+        true => CHAT_COMPLETIONS_API_URL_VL,
+        false => CHAT_COMPLETIONS_API_URL,
+    };
+
+    let (body, has_upload) = build_chat_completions_body(data, &self_.model)?;
+
+    let mut request_data = RequestData::new(url, body);
+
+    request_data.bearer_auth(api_key);
+
+    if stream {
+        request_data.header("X-DashScope-SSE", "enable");
+    }
+    if has_upload {
+        request_data.header("X-DashScope-OssResourceResolve", "enable");
+    }
+
+    Ok(request_data)
+}
+
+fn prepare_embeddings(self_: &QianwenClient, data: EmbeddingsData) -> Result<RequestData> {
+    let api_key = self_.get_api_key()?;
+
+    let text_type = match data.query {
+        true => "query",
+        false => "document",
+    };
+
+    let body = json!({
+        "model": self_.model.name(),
+        "input": {
+            "texts": data.texts,
+        },
+        "parameters": {
+            "text_type": text_type,
+        }
+    });
+
+    let mut request_data = RequestData::new(EMBEDDINGS_API_URL, body);
+
+    request_data.bearer_auth(api_key);
+
+    Ok(request_data)
 }
 
 async fn chat_completions(builder: RequestBuilder, model: &Model) -> Result<ChatCompletionsOutput> {
@@ -322,7 +324,7 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
     Ok((body, has_upload))
 }
 
-async fn embeddings(builder: RequestBuilder) -> Result<EmbeddingsOutput> {
+async fn embeddings(builder: RequestBuilder, _model: &Model) -> Result<EmbeddingsOutput> {
     let data: Value = builder.send().await?.json().await?;
     maybe_catch_error(&data)?;
     let res_body: EmbeddingsResBody =
