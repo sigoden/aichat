@@ -122,7 +122,7 @@ pub trait Client: Sync + Send {
 
     fn patch_request_data(&self, request_data: &mut RequestData, api_type: ApiType) {
         let map = std::env::var(get_env_name(&format!(
-            "{}_{}_patch",
+            "patch_{}_{}",
             self.model().client_name(),
             api_type.name(),
         )))
