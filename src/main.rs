@@ -108,12 +108,6 @@ async fn run(
         println!("{rags}");
         return Ok(());
     }
-    if let Some(wrap) = &cli.wrap {
-        config.write().set_wrap(wrap)?;
-    }
-    if cli.light_theme {
-        config.write().light_theme = true;
-    }
     if cli.dry_run {
         config.write().dry_run = true;
     }
@@ -153,9 +147,6 @@ async fn run(
     }
     if cli.save_session {
         config.write().set_save_session(Some(true));
-    }
-    if cli.no_highlight {
-        config.write().highlight = false;
     }
     if cli.info {
         let info = config.read().info()?;

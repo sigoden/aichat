@@ -39,15 +39,6 @@ pub struct Cli {
     /// Turn off stream mode
     #[clap(short = 'S', long)]
     pub no_stream: bool,
-    /// Control text wrapping (no, auto, <max-width>)
-    #[clap(short = 'w', long)]
-    pub wrap: Option<String>,
-    /// Turn off syntax highlighting
-    #[clap(short = 'H', long)]
-    pub no_highlight: bool,
-    /// Use light theme
-    #[clap(long)]
-    pub light_theme: bool,
     /// Display the message without sending it
     #[clap(long)]
     pub dry_run: bool,

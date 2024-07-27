@@ -19,7 +19,7 @@ _aichat() {
 
     case "${cmd}" in
         aichat)
-            opts="-m -r -s -a -R -e -c -f -S -w -H -h -V --model --prompt --role --session --save-session --agent --rag --serve --execute --code --file --no-stream --wrap --no-highlight --light-theme --dry-run --info --list-models --list-roles --list-sessions --list-agents --list-rags --help --version"
+            opts="-m -r -s -a -R -e -c -f -S -h -V --model --prompt --role --session --save-session --agent --rag --serve --execute --code --file --no-stream --dry-run --info --list-models --list-roles --list-sessions --list-agents --list-rags --help --version"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -82,10 +82,6 @@ _aichat() {
                     if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
                         compopt -o filenames
                     fi
-                    return 0
-                    ;;
-                -w|--wrap)
-                    COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
                 *)

@@ -48,9 +48,6 @@ module completions {
     --code(-c)                                          # Output code only
     --file(-f): string                                  # Include files with the message
     --no-stream(-S)                                     # Turn off stream mode
-    --wrap(-w): string                                  # Control text wrapping (no, auto, <max-width>)
-    --no-highlight(-H)                                  # Turn off syntax highlighting
-    --light-theme                                       # Use light theme
     --dry-run                                           # Display the message without sending it
     --info                                              # Display information
     --list-models                                       # List all available chat models
