@@ -95,9 +95,10 @@ clients:
   #     - name: xxxx                                  # Reranker model
   #       type: reranker 
   #       max_input_tokens: 2048
-  #   patches: 
-  #     <regex>:                                      # The regex to match model names, e.g. '.*' 'gpt-4o' 'gpt-4o|gpt-4-.*'
-  #       chat_completions_body:                      # The JSON to be merged with the chat completions request body.
+  #   patch:                                          # Patch api request
+  #     chat_completions_body:                        
+  #       <regex>:                                    # The regex to match model names, e.g. '.*' 'gpt-4o' 'gpt-4o|gpt-4-.*'
+  #         <json>                                    # The JSON to be merged with the chat completions request body.
   #   extra:
   #     proxy: socks5://127.0.0.1:1080                # Set https/socks5 proxy. ENV: HTTPS_PROXY/https_proxy/ALL_PROXY/all_proxy
   #     connect_timeout: 10                           # Set timeout in seconds for connect to api
@@ -121,9 +122,9 @@ clients:
   # See https://ai.google.dev/docs
   - type: gemini
     api_key: xxx                                      # ENV: {client}_API_KEY
-    patches:
-      '.*':                                           
-        chat_completions_body:
+    patch:
+      chat_completions_body:
+        '.*':                                           
           safetySettings:
             - category: HARM_CATEGORY_HARASSMENT
               threshold: BLOCK_NONE
@@ -187,9 +188,9 @@ clients:
     # Run `gcloud auth application-default login` to init the adc file
     # see https://cloud.google.com/docs/authentication/external/set-up-adc
     adc_file: <path-to/gcloud/application_default_credentials.json> 
-    patches:
-      'gemini-.*':
-        chat_completions_body:
+    patch:
+      chat_completions_body:
+        'gemini-.*':
           safetySettings:
             - category: HARM_CATEGORY_HARASSMENT
               threshold: BLOCK_ONLY_HIGH

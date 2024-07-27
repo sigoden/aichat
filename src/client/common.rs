@@ -31,7 +31,7 @@ pub trait Client: Sync + Send {
 
     fn extra_config(&self) -> Option<&ExtraConfig>;
 
-    fn patches_config(&self) -> Option<&ModelPatches>;
+    fn patch_config(&self) -> Option<&ModelPatch>;
 
     fn name(&self) -> &str;
 
@@ -111,9 +111,12 @@ pub trait Client: Sync + Send {
     }
 
     fn patch_chat_completions_body(&self, body: &mut Value) {
-        if let Some(patch_data) = select_model_patch(self.patches_config().cloned(), self.model()) {
-            if body.is_object() && patch_data.chat_completions_body.is_object() {
-                json_patch::merge(body, &patch_data.chat_completions_body)
+        if let Some(patch) = extract_chat_completions_body_patch(
+            self.patch_config().map(|v| v.chat_completions_body.clone()),
+            self.model(),
+        ) {
+            if body.is_object() && patch.is_object() {
+                json_patch::merge(body, &patch)
             }
         }
     }
@@ -160,21 +163,25 @@ pub struct ExtraConfig {
     pub connect_timeout: Option<u64>,
 }
 
-pub type ModelPatches = IndexMap<String, ModelPatch>;
-
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Default)]
 pub struct ModelPatch {
-    #[serde(default)]
-    pub chat_completions_body: Value,
+    pub chat_completions_body: ChatCompletionsBodyPatch,
 }
 
-pub fn select_model_patch(patches: Option<ModelPatches>, model: &Model) -> Option<ModelPatch> {
-    let patches: ModelPatches =
-        std::env::var(get_env_name(&format!("{}_patches", model.client_name())))
-            .ok()
-            .and_then(|v| serde_json::from_str(&v).ok())
-            .or(patches)?;
-    for (key, patch_data) in patches {
+pub type ChatCompletionsBodyPatch = IndexMap<String, Value>;
+
+pub fn extract_chat_completions_body_patch(
+    patch: Option<ChatCompletionsBodyPatch>,
+    model: &Model,
+) -> Option<Value> {
+    let patch = std::env::var(get_env_name(&format!(
+        "{}_chat_completions_body_patch",
+        model.client_name()
+    )))
+    .ok()
+    .and_then(|v| serde_json::from_str(&v).ok())
+    .or(patch)?;
+    for (key, patch_data) in patch {
         let key = ESCAPE_SLASH_RE.replace_all(&key, r"\/");
         if let Ok(regex) = Regex::new(&format!("^({key})$")) {
             if let Ok(true) = regex.is_match(model.name()) {
