@@ -4,7 +4,6 @@ use super::openai::*;
 use super::*;
 
 use anyhow::{anyhow, bail, Context, Result};
-use async_trait::async_trait;
 use chrono::{Duration, Utc};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
@@ -31,93 +30,9 @@ impl VertexAIClient {
         ("project_id", "Project ID", true, PromptKind::String),
         ("location", "Location", true, PromptKind::String),
     ];
-
-    fn prepare_chat_completions(
-        &self,
-        data: ChatCompletionsData,
-        model_category: &ModelCategory,
-    ) -> Result<RequestData> {
-        let project_id = self.get_project_id()?;
-        let location = self.get_location()?;
-        let access_token = get_access_token(self.name())?;
-
-        let base_url = format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers");
-
-        let model_name = self.model.name();
-
-        let url = match model_category {
-            ModelCategory::Gemini => {
-                let func = match data.stream {
-                    true => "streamGenerateContent",
-                    false => "generateContent",
-                };
-                format!("{base_url}/google/models/{model_name}:{func}")
-            }
-            ModelCategory::Claude => {
-                format!("{base_url}/anthropic/models/{model_name}:streamRawPredict")
-            }
-            ModelCategory::Mistral => {
-                let func = match data.stream {
-                    true => "streamRawPredict",
-                    false => "rawPredict",
-                };
-                format!("{base_url}/mistralai/models/{model_name}:{func}")
-            }
-        };
-
-        let body = match model_category {
-            ModelCategory::Gemini => gemini_build_chat_completions_body(data, &self.model)?,
-            ModelCategory::Claude => {
-                let mut body = claude_build_chat_completions_body(data, &self.model)?;
-                if let Some(body_obj) = body.as_object_mut() {
-                    body_obj.remove("model");
-                }
-                body["anthropic_version"] = "vertex-2023-10-16".into();
-                body
-            }
-            ModelCategory::Mistral => {
-                let mut body = openai_build_chat_completions_body(data, &self.model);
-                if let Some(body_obj) = body.as_object_mut() {
-                    body_obj["model"] = strip_model_version(self.model.name()).into();
-                }
-                body
-            }
-        };
-
-        let mut request_data = RequestData::new(url, body);
-
-        request_data.bearer_auth(access_token);
-
-        Ok(request_data)
-    }
-
-    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
-        let project_id = self.get_project_id()?;
-        let location = self.get_location()?;
-        let access_token = get_access_token(self.name())?;
-
-        let base_url = format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers");
-        let url = format!("{base_url}/google/models/{}:predict", self.model.name());
-
-        let instances: Vec<_> = data
-            .texts
-            .into_iter()
-            .map(|v| json!({"content": v}))
-            .collect();
-
-        let body = json!({
-            "instances": instances,
-        });
-
-        let mut request_data = RequestData::new(url, body);
-
-        request_data.bearer_auth(access_token);
-
-        Ok(request_data)
-    }
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 impl Client for VertexAIClient {
     client_common_fns!();
 
@@ -127,13 +42,14 @@ impl Client for VertexAIClient {
         data: ChatCompletionsData,
     ) -> Result<ChatCompletionsOutput> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
-        let model_category = ModelCategory::from_str(self.model.name())?;
-        let request_data = self.prepare_chat_completions(data, &model_category)?;
+        let model = self.model();
+        let model_category = ModelCategory::from_str(model.name())?;
+        let request_data = prepare_chat_completions(self, data, &model_category)?;
         let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
         match model_category {
-            ModelCategory::Gemini => gemini_chat_completions(builder).await,
-            ModelCategory::Claude => claude_chat_completions(builder).await,
-            ModelCategory::Mistral => openai_chat_completions(builder).await,
+            ModelCategory::Gemini => gemini_chat_completions(builder, model).await,
+            ModelCategory::Claude => claude_chat_completions(builder, model).await,
+            ModelCategory::Mistral => openai_chat_completions(builder, model).await,
         }
     }
 
@@ -144,13 +60,20 @@ impl Client for VertexAIClient {
         data: ChatCompletionsData,
     ) -> Result<()> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
-        let model_category = ModelCategory::from_str(self.model.name())?;
-        let request_data = self.prepare_chat_completions(data, &model_category)?;
+        let model = self.model();
+        let model_category = ModelCategory::from_str(model.name())?;
+        let request_data = prepare_chat_completions(self, data, &model_category)?;
         let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
         match model_category {
-            ModelCategory::Gemini => gemini_chat_completions_streaming(builder, handler).await,
-            ModelCategory::Claude => claude_chat_completions_streaming(builder, handler).await,
-            ModelCategory::Mistral => openai_chat_completions_streaming(builder, handler).await,
+            ModelCategory::Gemini => {
+                gemini_chat_completions_streaming(builder, handler, model).await
+            }
+            ModelCategory::Claude => {
+                claude_chat_completions_streaming(builder, handler, model).await
+            }
+            ModelCategory::Mistral => {
+                openai_chat_completions_streaming(builder, handler, model).await
+            }
         }
     }
 
@@ -160,13 +83,100 @@ impl Client for VertexAIClient {
         data: EmbeddingsData,
     ) -> Result<Vec<Vec<f32>>> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
-        let request_data = self.prepare_embeddings(data)?;
+        let request_data = prepare_embeddings(self, data)?;
         let builder = self.request_builder(client, request_data, ApiType::Embeddings);
-        embeddings(builder).await
+        embeddings(builder, self.model()).await
     }
 }
 
-pub async fn gemini_chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
+fn prepare_chat_completions(
+    self_: &VertexAIClient,
+    data: ChatCompletionsData,
+    model_category: &ModelCategory,
+) -> Result<RequestData> {
+    let project_id = self_.get_project_id()?;
+    let location = self_.get_location()?;
+    let access_token = get_access_token(self_.name())?;
+
+    let base_url = format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers");
+
+    let model_name = self_.model.name();
+
+    let url = match model_category {
+        ModelCategory::Gemini => {
+            let func = match data.stream {
+                true => "streamGenerateContent",
+                false => "generateContent",
+            };
+            format!("{base_url}/google/models/{model_name}:{func}")
+        }
+        ModelCategory::Claude => {
+            format!("{base_url}/anthropic/models/{model_name}:streamRawPredict")
+        }
+        ModelCategory::Mistral => {
+            let func = match data.stream {
+                true => "streamRawPredict",
+                false => "rawPredict",
+            };
+            format!("{base_url}/mistralai/models/{model_name}:{func}")
+        }
+    };
+
+    let body = match model_category {
+        ModelCategory::Gemini => gemini_build_chat_completions_body(data, &self_.model)?,
+        ModelCategory::Claude => {
+            let mut body = claude_build_chat_completions_body(data, &self_.model)?;
+            if let Some(body_obj) = body.as_object_mut() {
+                body_obj.remove("model");
+            }
+            body["anthropic_version"] = "vertex-2023-10-16".into();
+            body
+        }
+        ModelCategory::Mistral => {
+            let mut body = openai_build_chat_completions_body(data, &self_.model);
+            if let Some(body_obj) = body.as_object_mut() {
+                body_obj["model"] = strip_model_version(self_.model.name()).into();
+            }
+            body
+        }
+    };
+
+    let mut request_data = RequestData::new(url, body);
+
+    request_data.bearer_auth(access_token);
+
+    Ok(request_data)
+}
+
+fn prepare_embeddings(self_: &VertexAIClient, data: EmbeddingsData) -> Result<RequestData> {
+    let project_id = self_.get_project_id()?;
+    let location = self_.get_location()?;
+    let access_token = get_access_token(self_.name())?;
+
+    let base_url = format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers");
+    let url = format!("{base_url}/google/models/{}:predict", self_.model.name());
+
+    let instances: Vec<_> = data
+        .texts
+        .into_iter()
+        .map(|v| json!({"content": v}))
+        .collect();
+
+    let body = json!({
+        "instances": instances,
+    });
+
+    let mut request_data = RequestData::new(url, body);
+
+    request_data.bearer_auth(access_token);
+
+    Ok(request_data)
+}
+
+pub async fn gemini_chat_completions(
+    builder: RequestBuilder,
+    _model: &Model,
+) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -180,6 +190,7 @@ pub async fn gemini_chat_completions(builder: RequestBuilder) -> Result<ChatComp
 pub async fn gemini_chat_completions_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
+    _model: &Model,
 ) -> Result<()> {
     let res = builder.send().await?;
     let status = res.status();
@@ -217,7 +228,7 @@ pub async fn gemini_chat_completions_streaming(
     Ok(())
 }
 
-async fn embeddings(builder: RequestBuilder) -> Result<EmbeddingsOutput> {
+async fn embeddings(builder: RequestBuilder, _model: &Model) -> Result<EmbeddingsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;

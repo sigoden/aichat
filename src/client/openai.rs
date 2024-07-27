@@ -25,45 +25,66 @@ impl OpenAIClient {
 
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
-
-    fn prepare_chat_completions(&self, data: ChatCompletionsData) -> Result<RequestData> {
-        let api_key = self.get_api_key()?;
-        let api_base = self.get_api_base().unwrap_or_else(|_| API_BASE.to_string());
-
-        let url = format!("{api_base}/chat/completions");
-
-        let body = openai_build_chat_completions_body(data, &self.model);
-
-        let mut request_data = RequestData::new(url, body);
-
-        request_data.bearer_auth(api_key);
-        if let Some(organization_id) = &self.config.organization_id {
-            request_data.header("OpenAI-Organization", organization_id);
-        }
-
-        Ok(request_data)
-    }
-
-    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
-        let api_key = self.get_api_key()?;
-        let api_base = self.get_api_base().unwrap_or_else(|_| API_BASE.to_string());
-
-        let url = format!("{api_base}/embeddings");
-
-        let body = openai_build_embeddings_body(data, &self.model);
-
-        let mut request_data = RequestData::new(url, body);
-
-        request_data.bearer_auth(api_key);
-        if let Some(organization_id) = &self.config.organization_id {
-            request_data.header("OpenAI-Organization", organization_id);
-        }
-
-        Ok(request_data)
-    }
 }
 
-pub async fn openai_chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
+impl_client_trait!(
+    OpenAIClient,
+    (
+        prepare_chat_completions,
+        openai_chat_completions,
+        openai_chat_completions_streaming
+    ),
+    (prepare_embeddings, openai_embeddings),
+    (noop_prepare_rerank, noop_rerank),
+);
+
+fn prepare_chat_completions(
+    self_: &OpenAIClient,
+    data: ChatCompletionsData,
+) -> Result<RequestData> {
+    let api_key = self_.get_api_key()?;
+    let api_base = self_
+        .get_api_base()
+        .unwrap_or_else(|_| API_BASE.to_string());
+
+    let url = format!("{api_base}/chat/completions");
+
+    let body = openai_build_chat_completions_body(data, &self_.model);
+
+    let mut request_data = RequestData::new(url, body);
+
+    request_data.bearer_auth(api_key);
+    if let Some(organization_id) = &self_.config.organization_id {
+        request_data.header("OpenAI-Organization", organization_id);
+    }
+
+    Ok(request_data)
+}
+
+fn prepare_embeddings(self_: &OpenAIClient, data: EmbeddingsData) -> Result<RequestData> {
+    let api_key = self_.get_api_key()?;
+    let api_base = self_
+        .get_api_base()
+        .unwrap_or_else(|_| API_BASE.to_string());
+
+    let url = format!("{api_base}/embeddings");
+
+    let body = openai_build_embeddings_body(data, &self_.model);
+
+    let mut request_data = RequestData::new(url, body);
+
+    request_data.bearer_auth(api_key);
+    if let Some(organization_id) = &self_.config.organization_id {
+        request_data.header("OpenAI-Organization", organization_id);
+    }
+
+    Ok(request_data)
+}
+
+pub async fn openai_chat_completions(
+    builder: RequestBuilder,
+    _model: &Model,
+) -> Result<ChatCompletionsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -78,6 +99,7 @@ pub async fn openai_chat_completions(builder: RequestBuilder) -> Result<ChatComp
 pub async fn openai_chat_completions_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
+    _model: &Model,
 ) -> Result<()> {
     let mut function_index = 0;
     let mut function_name = String::new();
@@ -133,7 +155,10 @@ pub async fn openai_chat_completions_streaming(
     sse_stream(builder, handle).await
 }
 
-pub async fn openai_embeddings(builder: RequestBuilder) -> Result<EmbeddingsOutput> {
+pub async fn openai_embeddings(
+    builder: RequestBuilder,
+    _model: &Model,
+) -> Result<EmbeddingsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;
@@ -277,10 +302,3 @@ pub fn openai_extract_chat_completions(data: &Value) -> Result<ChatCompletionsOu
     };
     Ok(output)
 }
-
-impl_client_trait!(
-    OpenAIClient,
-    openai_chat_completions,
-    openai_chat_completions_streaming,
-    openai_embeddings
-);

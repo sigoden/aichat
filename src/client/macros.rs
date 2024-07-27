@@ -54,8 +54,7 @@ macro_rules! register_client {
                     if local_config.models.is_empty() {
                         if let Some(models) = $crate::client::ALL_MODELS.iter().find(|v| {
                             v.platform == $name ||
-                                ($name == OpenAICompatibleClient::NAME && local_config.name.as_deref() == Some(&v.platform)) ||
-                                ($name == RagDedicatedClient::NAME && local_config.name.as_deref() == Some(&v.platform))
+                                ($name == OpenAICompatibleClient::NAME && local_config.name.as_deref() == Some(&v.platform))
                         }) {
                             return Model::from_config(client_name, &models.models);
                         }
@@ -161,7 +160,12 @@ macro_rules! client_common_fns {
 
 #[macro_export]
 macro_rules! impl_client_trait {
-    ($client:ident, $chat_completions:path, $chat_completions_streaming:path) => {
+    (
+        $client:ident,
+        ($prepare_chat_completions:path, $chat_completions:path, $chat_completions_streaming:path),
+        ($prepare_embeddings:path, $embeddings:path),
+        ($prepare_rerank:path, $rerank:path),
+    ) => {
         #[async_trait::async_trait]
         impl $crate::client::Client for $crate::client::$client {
             client_common_fns!();
@@ -171,9 +175,9 @@ macro_rules! impl_client_trait {
                 client: &reqwest::Client,
                 data: $crate::client::ChatCompletionsData,
             ) -> anyhow::Result<$crate::client::ChatCompletionsOutput> {
-                let request_data = self.prepare_chat_completions(data)?;
+                let request_data = $prepare_chat_completions(self, data)?;
                 let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
-                $chat_completions(builder).await
+                $chat_completions(builder, self.model()).await
             }
 
             async fn chat_completions_streaming_inner(
@@ -182,36 +186,9 @@ macro_rules! impl_client_trait {
                 handler: &mut $crate::client::SseHandler,
                 data: $crate::client::ChatCompletionsData,
             ) -> Result<()> {
-                let request_data = self.prepare_chat_completions(data)?;
+                let request_data = $prepare_chat_completions(self, data)?;
                 let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
-                $chat_completions_streaming(builder, handler).await
-            }
-        }
-    };
-    ($client:ident, $chat_completions:path, $chat_completions_streaming:path, $embeddings:path) => {
-        #[async_trait::async_trait]
-        impl $crate::client::Client for $crate::client::$client {
-            client_common_fns!();
-
-            async fn chat_completions_inner(
-                &self,
-                client: &reqwest::Client,
-                data: $crate::client::ChatCompletionsData,
-            ) -> anyhow::Result<$crate::client::ChatCompletionsOutput> {
-                let request_data = self.prepare_chat_completions(data)?;
-                let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
-                $chat_completions(builder).await
-            }
-
-            async fn chat_completions_streaming_inner(
-                &self,
-                client: &reqwest::Client,
-                handler: &mut $crate::client::SseHandler,
-                data: $crate::client::ChatCompletionsData,
-            ) -> Result<()> {
-                let request_data = self.prepare_chat_completions(data)?;
-                let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
-                $chat_completions_streaming(builder, handler).await
+                $chat_completions_streaming(builder, handler, self.model()).await
             }
 
             async fn embeddings_inner(
@@ -219,46 +196,9 @@ macro_rules! impl_client_trait {
                 client: &reqwest::Client,
                 data: $crate::client::EmbeddingsData,
             ) -> Result<$crate::client::EmbeddingsOutput> {
-                let request_data = self.prepare_embeddings(data)?;
+                let request_data = $prepare_embeddings(self, data)?;
                 let builder = self.request_builder(client, request_data, ApiType::Embeddings);
-                $embeddings(builder).await
-            }
-        }
-    };
-    ($client:ident, $chat_completions:path, $chat_completions_streaming:path, $embeddings:path, $rerank:path) => {
-        #[async_trait::async_trait]
-        impl $crate::client::Client for $crate::client::$client {
-            client_common_fns!();
-
-            async fn chat_completions_inner(
-                &self,
-                client: &reqwest::Client,
-                data: $crate::client::ChatCompletionsData,
-            ) -> anyhow::Result<$crate::client::ChatCompletionsOutput> {
-                let request_data = self.prepare_chat_completions(data)?;
-                let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
-                $chat_completions(builder).await
-            }
-
-            async fn chat_completions_streaming_inner(
-                &self,
-                client: &reqwest::Client,
-                handler: &mut $crate::client::SseHandler,
-                data: $crate::client::ChatCompletionsData,
-            ) -> Result<()> {
-                let request_data = self.prepare_chat_completions(data)?;
-                let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
-                $chat_completions_streaming(builder, handler).await
-            }
-
-            async fn embeddings_inner(
-                &self,
-                client: &reqwest::Client,
-                data: $crate::client::EmbeddingsData,
-            ) -> Result<$crate::client::EmbeddingsOutput> {
-                let request_data = self.prepare_embeddings(data)?;
-                let builder = self.request_builder(client, request_data, ApiType::Embeddings);
-                $embeddings(builder).await
+                $embeddings(builder, self.model()).await
             }
 
             async fn rerank_inner(
@@ -266,9 +206,9 @@ macro_rules! impl_client_trait {
                 client: &reqwest::Client,
                 data: $crate::client::RerankData,
             ) -> Result<$crate::client::RerankOutput> {
-                let request_data = self.prepare_rerank(data)?;
+                let request_data = $prepare_rerank(self, data)?;
                 let builder = self.request_builder(client, request_data, ApiType::Rerank);
-                $rerank(builder).await
+                $rerank(builder, self.model()).await
             }
         }
     };
@@ -286,9 +226,7 @@ macro_rules! config_get_fn {
                         format!("{}_{}", env_prefix, stringify!($field_name)).to_ascii_uppercase();
                     std::env::var(&env_name).ok()
                 })
-                .ok_or_else(|| {
-                    anyhow::anyhow!("Miss '{}' in client configuration", stringify!($field_name))
-                })
+                .ok_or_else(|| anyhow::anyhow!("Miss '{}'", stringify!($field_name)))
         }
     };
 }

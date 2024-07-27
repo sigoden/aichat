@@ -1,13 +1,11 @@
 use super::access_token::*;
-use super::rag_dedicated::*;
+use super::openai_compatible::*;
 use super::*;
 
 use anyhow::{anyhow, bail, Context, Result};
-use async_trait::async_trait;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::env;
 
 const API_BASE: &str = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1";
 const ACCESS_TOKEN_URL: &str = "https://aip.baidubce.com/oauth/2.0/token";
@@ -24,93 +22,15 @@ pub struct ErnieConfig {
 }
 
 impl ErnieClient {
+    config_get_fn!(api_key, get_api_key);
+    config_get_fn!(secret_key, get_secret_key);
     pub const PROMPTS: [PromptAction<'static>; 2] = [
         ("api_key", "API Key:", true, PromptKind::String),
         ("secret_key", "Secret Key:", true, PromptKind::String),
     ];
-
-    fn prepare_chat_completions(&self, data: ChatCompletionsData) -> Result<RequestData> {
-        let access_token = get_access_token(self.name())?;
-
-        let url = format!(
-            "{API_BASE}/wenxinworkshop/chat/{}?access_token={access_token}",
-            &self.model.name(),
-        );
-
-        let body = build_chat_completions_body(data, &self.model);
-
-        let request_data = RequestData::new(url, body);
-
-        Ok(request_data)
-    }
-
-    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
-        let access_token = get_access_token(self.name())?;
-
-        let url = format!(
-            "{API_BASE}/wenxinworkshop/embeddings/{}?access_token={access_token}",
-            &self.model.name(),
-        );
-
-        let body = json!({
-            "input": data.texts,
-        });
-
-        let request_data = RequestData::new(url, body);
-
-        Ok(request_data)
-    }
-
-    fn prepare_rerank(&self, data: RerankData) -> Result<RequestData> {
-        let access_token = get_access_token(self.name())?;
-
-        let url = format!(
-            "{API_BASE}/wenxinworkshop/reranker/{}?access_token={access_token}",
-            &self.model.name(),
-        );
-
-        let RerankData {
-            query,
-            documents,
-            top_n,
-        } = data;
-
-        let body = json!({
-            "query": query,
-            "documents": documents,
-            "top_n": top_n
-        });
-
-        let request_data = RequestData::new(url, body);
-
-        Ok(request_data)
-    }
-
-    async fn prepare_access_token(&self) -> Result<()> {
-        let client_name = self.name();
-        if !is_valid_access_token(client_name) {
-            let env_prefix = Self::name(&self.config).to_ascii_uppercase();
-            let api_key = self.config.api_key.clone();
-            let api_key = api_key
-                .or_else(|| env::var(format!("{env_prefix}_API_KEY")).ok())
-                .ok_or_else(|| anyhow!("Miss api_key"))?;
-
-            let secret_key = self.config.secret_key.clone();
-            let secret_key = secret_key
-                .or_else(|| env::var(format!("{env_prefix}_SECRET_KEY")).ok())
-                .ok_or_else(|| anyhow!("Miss secret_key"))?;
-
-            let client = self.build_client()?;
-            let token = fetch_access_token(&client, &api_key, &secret_key)
-                .await
-                .with_context(|| "Failed to fetch access token")?;
-            set_access_token(client_name, token, 86400);
-        }
-        Ok(())
-    }
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 impl Client for ErnieClient {
     client_common_fns!();
 
@@ -119,10 +39,10 @@ impl Client for ErnieClient {
         client: &ReqwestClient,
         data: ChatCompletionsData,
     ) -> Result<ChatCompletionsOutput> {
-        self.prepare_access_token().await?;
-        let request_data = self.prepare_chat_completions(data)?;
+        prepare_access_token(self, client).await?;
+        let request_data = prepare_chat_completions(self, data)?;
         let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
-        chat_completions(builder).await
+        chat_completions(builder, &self.model).await
     }
 
     async fn chat_completions_streaming_inner(
@@ -131,10 +51,10 @@ impl Client for ErnieClient {
         handler: &mut SseHandler,
         data: ChatCompletionsData,
     ) -> Result<()> {
-        self.prepare_access_token().await?;
-        let request_data = self.prepare_chat_completions(data)?;
+        prepare_access_token(self, client).await?;
+        let request_data = prepare_chat_completions(self, data)?;
         let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
-        chat_completions_streaming(builder, handler).await
+        chat_completions_streaming(builder, handler, &self.model).await
     }
 
     async fn embeddings_inner(
@@ -142,20 +62,95 @@ impl Client for ErnieClient {
         client: &ReqwestClient,
         data: EmbeddingsData,
     ) -> Result<EmbeddingsOutput> {
-        self.prepare_access_token().await?;
-        let request_data = self.prepare_embeddings(data)?;
+        prepare_access_token(self, client).await?;
+        let request_data = prepare_embeddings(self, data)?;
         let builder = self.request_builder(client, request_data, ApiType::Embeddings);
-        embeddings(builder).await
+        embeddings(builder, &self.model).await
     }
 
     async fn rerank_inner(&self, client: &ReqwestClient, data: RerankData) -> Result<RerankOutput> {
-        let request_data = self.prepare_rerank(data)?;
+        prepare_access_token(self, client).await?;
+        let request_data = prepare_rerank(self, data)?;
         let builder = self.request_builder(client, request_data, ApiType::Rerank);
-        rerank(builder).await
+        rerank(builder, &self.model).await
     }
 }
 
-async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutput> {
+fn prepare_chat_completions(self_: &ErnieClient, data: ChatCompletionsData) -> Result<RequestData> {
+    let access_token = get_access_token(self_.name())?;
+
+    let url = format!(
+        "{API_BASE}/wenxinworkshop/chat/{}?access_token={access_token}",
+        self_.model.name(),
+    );
+
+    let body = build_chat_completions_body(data, &self_.model);
+
+    let request_data = RequestData::new(url, body);
+
+    Ok(request_data)
+}
+
+fn prepare_embeddings(self_: &ErnieClient, data: EmbeddingsData) -> Result<RequestData> {
+    let access_token = get_access_token(self_.name())?;
+
+    let url = format!(
+        "{API_BASE}/wenxinworkshop/embeddings/{}?access_token={access_token}",
+        self_.model.name(),
+    );
+
+    let body = json!({
+        "input": data.texts,
+    });
+
+    let request_data = RequestData::new(url, body);
+
+    Ok(request_data)
+}
+
+fn prepare_rerank(self_: &ErnieClient, data: RerankData) -> Result<RequestData> {
+    let access_token = get_access_token(self_.name())?;
+
+    let url = format!(
+        "{API_BASE}/wenxinworkshop/reranker/{}?access_token={access_token}",
+        self_.model.name(),
+    );
+
+    let RerankData {
+        query,
+        documents,
+        top_n,
+    } = data;
+
+    let body = json!({
+        "query": query,
+        "documents": documents,
+        "top_n": top_n
+    });
+
+    let request_data = RequestData::new(url, body);
+
+    Ok(request_data)
+}
+
+async fn prepare_access_token(self_: &ErnieClient, client: &ReqwestClient) -> Result<()> {
+    let client_name = self_.name();
+    if !is_valid_access_token(client_name) {
+        let api_key = self_.get_api_key()?;
+        let secret_key = self_.get_secret_key()?;
+
+        let token = fetch_access_token(client, &api_key, &secret_key)
+            .await
+            .with_context(|| "Failed to fetch access token")?;
+        set_access_token(client_name, token, 86400);
+    }
+    Ok(())
+}
+
+async fn chat_completions(
+    builder: RequestBuilder,
+    _model: &Model,
+) -> Result<ChatCompletionsOutput> {
     let data: Value = builder.send().await?.json().await?;
     maybe_catch_error(&data)?;
     debug!("non-stream-data: {data}");
@@ -165,6 +160,7 @@ async fn chat_completions(builder: RequestBuilder) -> Result<ChatCompletionsOutp
 async fn chat_completions_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
+    _model: &Model,
 ) -> Result<()> {
     let handle = |message: SseMmessage| -> Result<bool> {
         let data: Value = serde_json::from_str(&message.data)?;
@@ -188,7 +184,7 @@ async fn chat_completions_streaming(
     sse_stream(builder, handle).await
 }
 
-async fn embeddings(builder: RequestBuilder) -> Result<EmbeddingsOutput> {
+async fn embeddings(builder: RequestBuilder, _model: &Model) -> Result<EmbeddingsOutput> {
     let data: Value = builder.send().await?.json().await?;
     maybe_catch_error(&data)?;
     let res_body: EmbeddingsResBody =
@@ -207,10 +203,10 @@ struct EmbeddingsResBodyEmbedding {
     embedding: Vec<f32>,
 }
 
-async fn rerank(builder: RequestBuilder) -> Result<RerankOutput> {
+async fn rerank(builder: RequestBuilder, _model: &Model) -> Result<RerankOutput> {
     let data: Value = builder.send().await?.json().await?;
     maybe_catch_error(&data)?;
-    let res_body: RagDedicatedRerankResBody =
+    let res_body: GenericRerankResBody =
         serde_json::from_value(data).context("Invalid rerank data")?;
     Ok(res_body.results)
 }

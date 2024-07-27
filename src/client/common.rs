@@ -8,7 +8,6 @@ use crate::{
 };
 
 use anyhow::{bail, Context, Result};
-use async_trait::async_trait;
 use fancy_regex::Regex;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
@@ -25,7 +24,7 @@ lazy_static! {
     static ref ESCAPE_SLASH_RE: Regex = Regex::new(r"(?<!\\)/").unwrap();
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 pub trait Client: Sync + Send {
     fn global_config(&self) -> &GlobalConfig;
 
@@ -110,6 +109,35 @@ pub trait Client: Sync + Send {
             .context("Failed to call rerank api")
     }
 
+    async fn chat_completions_inner(
+        &self,
+        client: &ReqwestClient,
+        data: ChatCompletionsData,
+    ) -> Result<ChatCompletionsOutput>;
+
+    async fn chat_completions_streaming_inner(
+        &self,
+        client: &ReqwestClient,
+        handler: &mut SseHandler,
+        data: ChatCompletionsData,
+    ) -> Result<()>;
+
+    async fn embeddings_inner(
+        &self,
+        _client: &ReqwestClient,
+        _data: EmbeddingsData,
+    ) -> Result<EmbeddingsOutput> {
+        bail!("The client doesn't support embeddings api")
+    }
+
+    async fn rerank_inner(
+        &self,
+        _client: &ReqwestClient,
+        _data: RerankData,
+    ) -> Result<RerankOutput> {
+        bail!("The client doesn't support rerank api")
+    }
+
     fn request_builder(
         &self,
         client: &reqwest::Client,
@@ -146,35 +174,6 @@ pub trait Client: Sync + Send {
                 }
             }
         }
-    }
-
-    async fn chat_completions_inner(
-        &self,
-        client: &ReqwestClient,
-        data: ChatCompletionsData,
-    ) -> Result<ChatCompletionsOutput>;
-
-    async fn chat_completions_streaming_inner(
-        &self,
-        client: &ReqwestClient,
-        handler: &mut SseHandler,
-        data: ChatCompletionsData,
-    ) -> Result<()>;
-
-    async fn embeddings_inner(
-        &self,
-        _client: &ReqwestClient,
-        _data: EmbeddingsData,
-    ) -> Result<EmbeddingsOutput> {
-        bail!("The client doesn't support embeddings api")
-    }
-
-    async fn rerank_inner(
-        &self,
-        _client: &ReqwestClient,
-        _data: RerankData,
-    ) -> Result<RerankOutput> {
-        bail!("The client doesn't support rerank api")
     }
 }
 
@@ -446,6 +445,22 @@ where
     handler.done()?;
 
     Ok(())
+}
+
+pub fn noop_prepare_embeddings<T>(_client: &T, _data: EmbeddingsData) -> Result<RequestData> {
+    bail!("The client doesn't support embeddings api")
+}
+
+pub async fn noop_embeddings(_builder: RequestBuilder, _model: &Model) -> Result<EmbeddingsOutput> {
+    bail!("The client doesn't support embeddings api")
+}
+
+pub fn noop_prepare_rerank<T>(_client: &T, _data: RerankData) -> Result<RequestData> {
+    bail!("The client doesn't support rerank api")
+}
+
+pub async fn noop_rerank(_builder: RequestBuilder, _model: &Model) -> Result<RerankOutput> {
+    bail!("The client doesn't support rerank api")
 }
 
 pub fn catch_error(data: &Value, status: u16) -> Result<()> {

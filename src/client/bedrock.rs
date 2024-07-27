@@ -3,7 +3,6 @@ use super::*;
 use crate::utils::{base64_decode, encode_uri, hex_encode, hmac_sha256, sha256};
 
 use anyhow::{bail, Context, Result};
-use async_trait::async_trait;
 use aws_smithy_eventstream::frame::{DecodedFrame, MessageFrameDecoder};
 use aws_smithy_eventstream::smithy::parse_response_headers;
 use bytes::BytesMut;
@@ -148,7 +147,7 @@ impl BedrockClient {
     }
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 impl Client for BedrockClient {
     client_common_fns!();
 

@@ -30,49 +30,56 @@ impl AzureOpenAIClient {
             PromptKind::Integer,
         ),
     ];
-
-    fn prepare_chat_completions(&self, data: ChatCompletionsData) -> Result<RequestData> {
-        let api_base = self.get_api_base()?;
-        let api_key = self.get_api_key()?;
-
-        let url = format!(
-            "{}/openai/deployments/{}/chat/completions?api-version=2024-02-01",
-            &api_base,
-            self.model.name()
-        );
-
-        let body = openai_build_chat_completions_body(data, &self.model);
-
-        let mut request_data = RequestData::new(url, body);
-
-        request_data.header("api-key", api_key);
-
-        Ok(request_data)
-    }
-
-    fn prepare_embeddings(&self, data: EmbeddingsData) -> Result<RequestData> {
-        let api_base = self.get_api_base()?;
-        let api_key = self.get_api_key()?;
-
-        let url = format!(
-            "{}/openai/deployments/{}/embeddings?api-version=2024-02-01",
-            &api_base,
-            self.model.name()
-        );
-
-        let body = openai_build_embeddings_body(data, &self.model);
-
-        let mut request_data = RequestData::new(url, body);
-
-        request_data.header("api-key", api_key);
-
-        Ok(request_data)
-    }
 }
 
 impl_client_trait!(
     AzureOpenAIClient,
-    openai_chat_completions,
-    openai_chat_completions_streaming,
-    openai_embeddings
+    (
+        prepare_chat_completions,
+        openai_chat_completions,
+        openai_chat_completions_streaming
+    ),
+    (prepare_embeddings, openai_embeddings),
+    (noop_prepare_rerank, noop_rerank),
 );
+
+fn prepare_chat_completions(
+    self_: &AzureOpenAIClient,
+    data: ChatCompletionsData,
+) -> Result<RequestData> {
+    let api_base = self_.get_api_base()?;
+    let api_key = self_.get_api_key()?;
+
+    let url = format!(
+        "{}/openai/deployments/{}/chat/completions?api-version=2024-02-01",
+        &api_base,
+        self_.model.name()
+    );
+
+    let body = openai_build_chat_completions_body(data, &self_.model);
+
+    let mut request_data = RequestData::new(url, body);
+
+    request_data.header("api-key", api_key);
+
+    Ok(request_data)
+}
+
+fn prepare_embeddings(self_: &AzureOpenAIClient, data: EmbeddingsData) -> Result<RequestData> {
+    let api_base = self_.get_api_base()?;
+    let api_key = self_.get_api_key()?;
+
+    let url = format!(
+        "{}/openai/deployments/{}/embeddings?api-version=2024-02-01",
+        &api_base,
+        self_.model.name()
+    );
+
+    let body = openai_build_embeddings_body(data, &self_.model);
+
+    let mut request_data = RequestData::new(url, body);
+
+    request_data.header("api-key", api_key);
+
+    Ok(request_data)
+}
