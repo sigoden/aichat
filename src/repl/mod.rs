@@ -479,7 +479,7 @@ Type ".help" for additional help.
     }
 
     fn create_edit_mode(config: &GlobalConfig) -> Box<dyn EditMode> {
-        let edit_mode: Box<dyn EditMode> = if config.read().keybindings.is_vi() {
+        let edit_mode: Box<dyn EditMode> = if config.read().keybindings == "vi" {
             let mut normal_keybindings = default_vi_normal_keybindings();
             let mut insert_keybindings = default_vi_insert_keybindings();
             Self::extra_keybindings(&mut normal_keybindings);

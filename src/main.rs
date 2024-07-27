@@ -33,9 +33,12 @@ use inquire::{Select, Text};
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use simplelog::{format_description, ConfigBuilder, LevelFilter, SimpleLogger, WriteLogger};
-use std::io::{stderr, stdin, Read};
-use std::process;
-use std::sync::Arc;
+use std::{
+    env,
+    io::{stderr, stdin, Read},
+    process,
+    sync::Arc,
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
