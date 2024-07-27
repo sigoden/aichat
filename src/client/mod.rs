@@ -1,7 +1,8 @@
-#[macro_use]
-mod common;
 mod access_token;
+mod common;
 mod message;
+#[macro_use]
+mod macros;
 mod model;
 mod prompt_format;
 mod stream;
