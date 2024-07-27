@@ -218,10 +218,8 @@ impl Config {
                 None => {
                     if *IS_STDOUT_TERMINAL {
                         create_config_file(&config_path)?;
-                        Self::load_from_file(&config_path)?
-                    } else {
-                        bail!("Not config");
                     }
+                    Self::load_from_file(&config_path)?
                 }
             }
         } else {
