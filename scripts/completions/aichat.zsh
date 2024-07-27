@@ -36,11 +36,6 @@ _aichat() {
 '*--file[Include files with the message]:FILE:_files' \
 '-S[Turn off stream mode]' \
 '--no-stream[Turn off stream mode]' \
-'-w[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
-'--wrap[Control text wrapping (no, auto, <max-width>)]:WRAP: ' \
-'-H[Turn off syntax highlighting]' \
-'--no-highlight[Turn off syntax highlighting]' \
-'--light-theme[Use light theme]' \
 '--dry-run[Display the message without sending it]' \
 '--info[Display information]' \
 '--list-models[List all available chat models]' \
