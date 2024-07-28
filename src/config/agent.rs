@@ -68,7 +68,7 @@ impl Agent {
             println!("The agent has the documents, initializing RAG...");
             let mut document_paths = vec![];
             for path in &definition.documents {
-                if Rag::is_url_path(path) {
+                if is_url(path) {
                     document_paths.push(path.to_string());
                 } else {
                     let new_path = safe_join_path(&functions_dir, path)
