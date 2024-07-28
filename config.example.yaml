@@ -4,6 +4,7 @@ temperature: null                # Set default temperature parameter
 top_p: null                      # Set default top-p parameter, range (0, 1)
 
 # ---- behavior ----
+stream: true                     # Use stream style by default
 save: true                       # Indicates whether to persist the message
 keybindings: emacs               # Choose keybinding style (emacs, vi)
 buffer_editor: null              # Command used to edit the current input with ctrl+o, env: EDITOR

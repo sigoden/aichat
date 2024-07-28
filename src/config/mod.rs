@@ -89,6 +89,7 @@ pub struct Config {
     pub top_p: Option<f64>,
 
     pub dry_run: bool,
+    pub stream: bool,
     pub save: bool,
     pub keybindings: String,
     pub buffer_editor: Option<String>,
@@ -156,6 +157,7 @@ impl Default for Config {
             top_p: None,
 
             dry_run: false,
+            stream: true,
             save: false,
             keybindings: "emacs".into(),
             buffer_editor: None,
@@ -516,6 +518,7 @@ impl Config {
             ("temperature", format_option_value(&role.temperature())),
             ("top_p", format_option_value(&role.top_p())),
             ("dry_run", self.dry_run.to_string()),
+            ("stream", self.stream.to_string()),
             ("save", self.save.to_string()),
             ("keybindings", self.keybindings.clone()),
             ("wrap", wrap),
@@ -570,6 +573,18 @@ impl Config {
                 let value = parse_value(value)?;
                 self.set_top_p(value);
             }
+            "dry_run" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                self.dry_run = value;
+            }
+            "stream" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                self.stream = value;
+            }
+            "save" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                self.save = value;
+            }
             "rag_reranker_model" => {
                 self.rag_reranker_model = if value == "null" {
                     None
@@ -593,25 +608,17 @@ impl Config {
                 let value = parse_value(value)?;
                 self.set_use_tools(value);
             }
-            "compress_threshold" => {
-                let value = parse_value(value)?;
-                self.set_compress_threshold(value);
-            }
-            "save" => {
-                let value = value.parse().with_context(|| "Invalid value")?;
-                self.save = value;
-            }
             "save_session" => {
                 let value = parse_value(value)?;
                 self.set_save_session(value);
             }
+            "compress_threshold" => {
+                let value = parse_value(value)?;
+                self.set_compress_threshold(value);
+            }
             "highlight" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 self.highlight = value;
-            }
-            "dry_run" => {
-                let value = value.parse().with_context(|| "Invalid value")?;
-                self.dry_run = value;
             }
             _ => bail!("Unknown key `{key}`"),
         }
@@ -1229,6 +1236,7 @@ impl Config {
                     "temperature",
                     "top_p",
                     "dry_run",
+                    "stream",
                     "save",
                     "save_session",
                     "compress_threshold",
@@ -1251,6 +1259,7 @@ impl Config {
                     None => vec![],
                 },
                 "dry_run" => complete_bool(self.dry_run),
+                "stream" => complete_bool(self.stream),
                 "save" => complete_bool(self.save),
                 "save_session" => {
                     let save_session = if let Some(session) = &self.session {
@@ -1338,12 +1347,6 @@ impl Config {
         Ok(RenderOptions::new(theme, wrap, self.wrap_code, truecolor))
     }
 
-    pub fn markdown_render(&self, text: &str) -> Result<String> {
-        let render_options = self.render_options()?;
-        let mut markdown_render = MarkdownRender::init(render_options)?;
-        Ok(markdown_render.render(text))
-    }
-
     pub fn render_prompt_left(&self) -> String {
         let variables = self.generate_prompt_context();
         let left_prompt = self.left_prompt.as_deref().unwrap_or(LEFT_PROMPT);
@@ -1354,6 +1357,17 @@ impl Config {
         let variables = self.generate_prompt_context();
         let right_prompt = self.right_prompt.as_deref().unwrap_or(RIGHT_PROMPT);
         render_prompt(right_prompt, &variables)
+    }
+
+    pub fn print_markdown(&self, text: &str) -> Result<()> {
+        if *IS_STDOUT_TERMINAL {
+            let render_options = self.render_options()?;
+            let mut markdown_render = MarkdownRender::init(render_options)?;
+            println!("{}", markdown_render.render(text));
+        } else {
+            println!("{text}");
+        }
+        Ok(())
     }
 
     fn generate_prompt_context(&self) -> HashMap<&str, String> {
@@ -1381,6 +1395,9 @@ impl Config {
         }
         if self.dry_run {
             output.insert("dry_run", "true".to_string());
+        }
+        if self.stream {
+            output.insert("stream", "true".to_string());
         }
         if self.save {
             output.insert("save", "true".to_string());
@@ -1556,6 +1573,9 @@ impl Config {
 
         if let Some(Some(v)) = read_env_bool("dry_run") {
             self.dry_run = v;
+        }
+        if let Some(Some(v)) = read_env_bool("stream") {
+            self.stream = v;
         }
         if let Some(Some(v)) = read_env_bool("save") {
             self.save = v;

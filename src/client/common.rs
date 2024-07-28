@@ -397,7 +397,28 @@ pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(St
     }
 }
 
-pub async fn chat_completion_streaming(
+pub async fn call_chat_completions(
+    input: &Input,
+    client: &dyn Client,
+    config: &GlobalConfig,
+) -> Result<(String, Vec<ToolResult>)> {
+    let task = client.chat_completions(input.clone());
+    let ret = run_with_spinner(task, "Generating").await;
+    match ret {
+        Ok(ret) => {
+            let ChatCompletionsOutput {
+                text, tool_calls, ..
+            } = ret;
+            if !text.is_empty() {
+                config.read().print_markdown(&text)?;
+            }
+            Ok((text, eval_tool_calls(config, tool_calls)?))
+        }
+        Err(err) => Err(err),
+    }
+}
+
+pub async fn call_chat_completions_streaming(
     input: &Input,
     client: &dyn Client,
     config: &GlobalConfig,
@@ -406,23 +427,23 @@ pub async fn chat_completion_streaming(
     let (tx, rx) = unbounded_channel();
     let mut handler = SseHandler::new(tx, abort.clone());
 
-    let (send_ret, rend_ret) = tokio::join!(
+    let (send_ret, render_ret) = tokio::join!(
         client.chat_completions_streaming(input, &mut handler),
         render_stream(rx, config, abort.clone()),
     );
-    if let Err(err) = rend_ret {
+    if let Err(err) = render_ret {
         render_error(err, config.read().highlight);
     }
-    let (output, calls) = handler.take();
+    let (text, tool_calls) = handler.take();
     match send_ret {
         Ok(_) => {
-            if !output.is_empty() && !output.ends_with('\n') {
+            if !text.is_empty() && !text.ends_with('\n') {
                 println!();
             }
-            Ok((output, eval_tool_calls(config, calls)?))
+            Ok((text, eval_tool_calls(config, tool_calls)?))
         }
         Err(err) => {
-            if !output.is_empty() {
+            if !text.is_empty() {
                 println!();
             }
             Err(err)

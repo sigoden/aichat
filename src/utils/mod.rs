@@ -16,7 +16,7 @@ pub use self::path::*;
 pub use self::prompt_input::*;
 pub use self::render_prompt::render_prompt;
 pub use self::request::*;
-pub use self::spinner::{create_spinner, Spinner};
+pub use self::spinner::*;
 
 use anyhow::{Context, Result};
 use fancy_regex::Regex;
