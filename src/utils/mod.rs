@@ -145,6 +145,10 @@ pub fn temp_file(prefix: &str, suffix: &str) -> PathBuf {
     ))
 }
 
+pub fn is_url(path: &str) -> bool {
+    path.starts_with("http://") || path.starts_with("https://")
+}
+
 pub fn set_proxy(
     builder: reqwest::ClientBuilder,
     proxy: Option<&String>,

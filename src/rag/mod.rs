@@ -14,7 +14,7 @@ use anyhow::bail;
 use anyhow::{anyhow, Context, Result};
 use hnsw_rs::prelude::*;
 use indexmap::{IndexMap, IndexSet};
-use inquire::{required, validator::Validation, Select, Text};
+use inquire::{required, validator::Validation, Confirm, Select, Text};
 use path_absolutize::Absolutize;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -62,7 +62,7 @@ impl Rag {
         let loaders = config.read().document_loaders.clone();
         let spinner = create_spinner("Starting").await;
         tokio::select! {
-            ret = rag.load_paths(loaders, &paths, Some(spinner.clone())) => {
+            ret = rag.sync_documents(loaders, &paths, Some(spinner.clone())) => {
                 spinner.stop();
                 ret?;
             }
@@ -114,7 +114,7 @@ impl Rag {
         let spinner = create_spinner("Starting").await;
         let paths = self.data.document_paths.clone();
         tokio::select! {
-            ret = self.load_paths(loaders, &paths, Some(spinner.clone())) => {
+            ret = self.sync_documents(loaders, &paths, Some(spinner.clone())) => {
                 spinner.stop();
                 ret?;
             }
@@ -258,7 +258,7 @@ impl Rag {
         Ok(output)
     }
 
-    pub async fn load_paths<T: AsRef<str>>(
+    pub async fn sync_documents<T: AsRef<str>>(
         &mut self,
         loaders: HashMap<String, String>,
         paths: &[T],
@@ -271,21 +271,32 @@ impl Rag {
         let mut document_paths = vec![];
         let mut files = vec![];
         let paths_len = paths.len();
+        let mut has_error = false;
         for (index, path) in paths.iter().enumerate() {
             let path = path.as_ref();
             println!("Load {path} [{}/{paths_len}]", index + 1);
-            if Self::is_url_path(path) {
-                if let Some(path) = path.strip_suffix("**") {
-                    files.extend(load_recursive_url(&loaders, path).await?);
-                } else {
-                    files.push(load_url(&loaders, path).await?);
+            match load_document(&loaders, path).await {
+                Ok((path, document_files)) => {
+                    files.extend(document_files);
+                    document_paths.push(path);
                 }
-                document_paths.push(path.to_string());
-            } else {
-                let path = Path::new(path);
-                let path = path.absolutize()?.display().to_string();
-                files.extend(load_path(&loaders, &path).await?);
-                document_paths.push(path);
+                Err(err) => {
+                    has_error = true;
+                    println!("{}", warning_text(&format!("Error: {err:?}")));
+                }
+            }
+        }
+
+        if has_error {
+            let mut aborted = true;
+            if *IS_STDOUT_TERMINAL && !document_paths.is_empty() {
+                let ans = Confirm::new("Some documents failed to load. Continue?")
+                    .with_default(false)
+                    .prompt()?;
+                aborted = !ans;
+            }
+            if aborted {
+                bail!("Aborted");
             }
         }
 
@@ -365,10 +376,6 @@ impl Rag {
         self.bm25 = self.data.build_bm25();
 
         Ok(())
-    }
-
-    pub fn is_url_path(path: &str) -> bool {
-        path.starts_with("http://") || path.starts_with("https://")
     }
 
     async fn hybird_search(
@@ -706,6 +713,26 @@ fn add_documents() -> Result<Vec<String>> {
         })
         .collect();
     Ok(paths)
+}
+
+async fn load_document(
+    loaders: &HashMap<String, String>,
+    path: &str,
+) -> Result<(String, Vec<(String, RagMetadata)>)> {
+    let mut files = vec![];
+    if is_url(path) {
+        if let Some(path) = path.strip_suffix("**") {
+            files.extend(load_recursive_url(loaders, path).await?);
+        } else {
+            files.push(load_url(loaders, path).await?);
+        }
+        Ok((path.to_string(), files))
+    } else {
+        let path = Path::new(path);
+        let path = path.absolutize()?.display().to_string();
+        files.extend(load_path(loaders, &path).await?);
+        Ok((path.to_string(), files))
+    }
 }
 
 fn progress(spinner: &Option<Spinner>, message: String) {
