@@ -452,10 +452,9 @@ _build_body() {
         file="${BODY_FILE:-"tmp/body/$1.json"}"
         if [[ -f "$file" ]]; then
             cat "$file" | \
-            sed \
-                -e 's/"model": ".*"/"model": "'"$argc_model"'"/' \
-                -e 's/"stream": \(true\|false\)/"stream": '$stream'/' \
-
+            sed -E \
+                -e 's%"model": ".*"%"model": "'"$argc_model"'"%' \
+                -e 's%"stream": (true|false)%"stream": '$stream'%' \
 
         fi
     else

@@ -556,23 +556,10 @@
 
 - platform: qianwen
   # docs:
-  #   - https://help.aliyun.com/zh/dashscope/developer-reference/tongyiqianwen-large-language-models/
-  #   - https://help.aliyun.com/zh/dashscope/developer-reference/qwen-vl-plus/
+  #   - https://help.aliyun.com/zh/dashscope/developer-reference/model-introduction
+  #   - https://help.aliyun.com/zh/dashscope/developer-reference/tongyi-thousand-questions-metering-and-billing
+  #   - https://help.aliyun.com/zh/dashscope/developer-reference/use-qwen-by-api
   models:
-    - name: qwen-long
-      max_input_tokens: 1000000
-      input_price: 0.07
-      output_price: 0.28
-    - name: qwen-turbo
-      max_input_tokens: 8000
-      input_price: 0.28
-      output_price: 0.84
-      supports_function_calling: true
-    - name: qwen-plus
-      max_input_tokens: 32000
-      input_price: 0.56
-      output_price: 1.68
-      supports_function_calling: true
     - name: qwen-max
       max_input_tokens: 8000
       input_price: 5.6
@@ -582,13 +569,28 @@
       input_price: 5.6
       output_price: 16.8
       max_input_tokens: 30000
-    - name: qwen-vl-plus
-      input_price: 1.12
-      output_price: 1.12
-      supports_vision: true
+      supports_function_calling: true
+    - name: qwen-plus
+      max_input_tokens: 32000
+      input_price: 0.56
+      output_price: 1.68
+      supports_function_calling: true
+    - name: qwen-turbo
+      max_input_tokens: 8000
+      input_price: 0.28
+      output_price: 0.84
+      supports_function_calling: true
+    - name: qwen-long
+      max_input_tokens: 1000000
+      input_price: 0.07
+      output_price: 0.28
     - name: qwen-vl-max
       input_price: 2.8
       output_price: 2.8
+      supports_vision: true
+    - name: qwen-vl-plus
+      input_price: 1.12
+      output_price: 1.12
       supports_vision: true
     - name: text-embedding-v2
       type: embedding
