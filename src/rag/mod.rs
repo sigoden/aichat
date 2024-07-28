@@ -274,7 +274,7 @@ impl Rag {
         let mut has_error = false;
         for (index, path) in paths.iter().enumerate() {
             let path = path.as_ref();
-            println!("Loading {path} [{}/{paths_len}]", index + 1);
+            println!("Load {path} [{}/{paths_len}]", index + 1);
             match load_document(&loaders, path).await {
                 Ok((path, document_files)) => {
                     files.extend(document_files);
@@ -296,7 +296,7 @@ impl Rag {
                 aborted = !ans;
             }
             if aborted {
-                bail!("Loadding Aborted");
+                bail!("Aborted");
             }
         }
 
