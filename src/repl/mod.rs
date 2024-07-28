@@ -6,7 +6,7 @@ use self::completer::ReplCompleter;
 use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
-use crate::client::chat_completion_streaming;
+use crate::client::{call_chat_completions, call_chat_completions_streaming};
 use crate::config::{AssertState, Config, GlobalConfig, Input, StateFlags};
 use crate::function::need_send_tool_results;
 use crate::render::render_error;
@@ -286,8 +286,7 @@ impl Repl {
                     }
                     None => {
                         let banner = self.config.read().agent_banner()?;
-                        let output = self.config.read().markdown_render(&banner)?;
-                        println!("{output}");
+                        self.config.read().print_markdown(&banner)?;
                     }
                 },
                 ".variable" => match args {
@@ -569,8 +568,12 @@ async fn ask(
 
     let client = input.create_client()?;
     config.write().before_chat_completion(&input)?;
-    let (output, tool_results) =
-        chat_completion_streaming(&input, client.as_ref(), config, abort_signal.clone()).await?;
+    let (output, tool_results) = if config.read().stream {
+        call_chat_completions_streaming(&input, client.as_ref(), config, abort_signal.clone())
+            .await?
+    } else {
+        call_chat_completions(&input, client.as_ref(), config).await?
+    };
     config
         .write()
         .after_chat_completion(&input, &output, &tool_results)?;

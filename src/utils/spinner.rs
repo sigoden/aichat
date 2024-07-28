@@ -1,7 +1,9 @@
+use super::IS_STDOUT_TERMINAL;
+
 use anyhow::Result;
 use crossterm::{cursor, queue, style, terminal};
-use is_terminal::IsTerminal;
 use std::{
+    future::Future,
     io::{stdout, Write},
     time::Duration,
 };
@@ -10,7 +12,6 @@ use tokio::{sync::mpsc, time::interval};
 pub struct SpinnerInner {
     index: usize,
     message: String,
-    is_not_terminal: bool,
 }
 
 impl SpinnerInner {
@@ -20,12 +21,11 @@ impl SpinnerInner {
         SpinnerInner {
             index: 0,
             message: message.to_string(),
-            is_not_terminal: !stdout().is_terminal(),
         }
     }
 
     fn step(&mut self) -> Result<()> {
-        if self.is_not_terminal || self.message.is_empty() {
+        if !*IS_STDOUT_TERMINAL || self.message.is_empty() {
             return Ok(());
         }
         let mut writer = stdout();
@@ -50,7 +50,7 @@ impl SpinnerInner {
     }
 
     fn clear_message(&mut self) -> Result<()> {
-        if self.is_not_terminal || self.message.is_empty() {
+        if !*IS_STDOUT_TERMINAL || self.message.is_empty() {
             return Ok(());
         }
         self.message.clear();
@@ -125,4 +125,18 @@ async fn run_spinner(message: String, mut rx: mpsc::UnboundedReceiver<SpinnerEve
         }
     }
     Ok(())
+}
+
+pub async fn run_with_spinner<F, T>(task: F, spinner_message: &str) -> Result<T>
+where
+    F: Future<Output = Result<T>>,
+{
+    if *IS_STDOUT_TERMINAL {
+        let spinner = create_spinner(spinner_message).await;
+        let ret = task.await;
+        spinner.stop();
+        ret
+    } else {
+        task.await
+    }
 }
