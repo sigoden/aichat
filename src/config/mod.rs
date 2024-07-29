@@ -49,7 +49,6 @@ const FUNCTIONS_DIR_NAME: &str = "functions";
 const FUNCTIONS_FILE_NAME: &str = "functions.json";
 const FUNCTIONS_BIN_DIR_NAME: &str = "bin";
 const AGENTS_DIR_NAME: &str = "agents";
-const AGENT_RAG_FILE_NAME: &str = "rag.bin";
 const AGENT_VARIABLES_FILE_NAME: &str = "variables.yaml";
 
 pub const TEMP_ROLE_NAME: &str = "%%";
@@ -331,12 +330,9 @@ impl Config {
     }
 
     pub fn rag_file(&self, name: &str) -> Result<PathBuf> {
-        let path = if self.agent.is_none() {
-            Self::rags_dir()?.join(format!("{name}.bin"))
-        } else {
-            Self::rags_dir()?
-                .join(AGENTS_DIR_NAME)
-                .join(format!("{name}.bin"))
+        let path = match &self.agent {
+            Some(agent) => Self::agent_rag_file(agent.name(), name)?,
+            None => Self::rags_dir()?.join(format!("{name}.bin")),
         };
         Ok(path)
     }
@@ -356,8 +352,8 @@ impl Config {
         Ok(Self::agent_config_dir(name)?.join(CONFIG_FILE_NAME))
     }
 
-    pub fn agent_rag_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_config_dir(name)?.join(AGENT_RAG_FILE_NAME))
+    pub fn agent_rag_file(agent_name: &str, rag_name: &str) -> Result<PathBuf> {
+        Ok(Self::agent_config_dir(agent_name)?.join(format!("{rag_name}.bin")))
     }
 
     pub fn agent_variables_file(name: &str) -> Result<PathBuf> {
