@@ -2,7 +2,6 @@ use ansi_colours::AsRGB;
 use anyhow::{anyhow, Context, Result};
 use crossterm::style::{Color, Stylize};
 use crossterm::terminal;
-use lazy_static::lazy_static;
 use std::collections::HashMap;
 use syntect::highlighting::{Color as SyntectColor, FontStyle, Style, Theme};
 use syntect::parsing::SyntaxSet;
@@ -11,7 +10,7 @@ use syntect::{easy::HighlightLines, parsing::SyntaxReference};
 /// Comes from https://github.com/sharkdp/bat/raw/5e77ca37e89c873e4490b42ff556370dc5c6ba4f/assets/syntaxes.bin
 const SYNTAXES: &[u8] = include_bytes!("../../assets/syntaxes.bin");
 
-lazy_static! {
+lazy_static::lazy_static! {
     static ref LANG_MAPS: HashMap<String, String> = {
         let mut m = HashMap::new();
         m.insert("csharp".into(), "C#".into());

@@ -2,7 +2,6 @@ use super::*;
 
 use anyhow::{bail, Result};
 use http::header::CONTENT_TYPE;
-use lazy_static::lazy_static;
 use std::{collections::HashMap, time::Duration};
 use tokio::io::AsyncWriteExt;
 
@@ -11,7 +10,7 @@ pub const RECURSIVE_URL_LOADER: &str = "recursive_url";
 pub const MEDIA_URL_EXTENSION: &str = "media_url";
 pub const DEFAULT_EXTENSION: &str = "txt";
 
-lazy_static! {
+lazy_static::lazy_static! {
     static ref CLIENT: Result<reqwest::Client> = {
         let builder = reqwest::ClientBuilder::new().timeout(Duration::from_secs(30));
         let builder = set_proxy(builder, None)?;

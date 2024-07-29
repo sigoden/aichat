@@ -1,10 +1,9 @@
 use anyhow::{anyhow, Result};
 use chrono::Utc;
 use indexmap::IndexMap;
-use lazy_static::lazy_static;
 use parking_lot::RwLock;
 
-lazy_static! {
+lazy_static::lazy_static! {
     static ref ACCESS_TOKENS: RwLock<IndexMap<String, (String, i64)>> =
         RwLock::new(IndexMap::new());
 }

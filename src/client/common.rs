@@ -10,7 +10,6 @@ use crate::{
 use anyhow::{bail, Context, Result};
 use fancy_regex::Regex;
 use indexmap::IndexMap;
-use lazy_static::lazy_static;
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -19,7 +18,7 @@ use tokio::sync::mpsc::unbounded_channel;
 
 const MODELS_YAML: &str = include_str!("../../models.yaml");
 
-lazy_static! {
+lazy_static::lazy_static! {
     pub static ref ALL_MODELS: Vec<BuiltinModels> = serde_yaml::from_str(MODELS_YAML).unwrap();
     static ref ESCAPE_SLASH_RE: Regex = Regex::new(r"(?<!\\)/").unwrap();
 }

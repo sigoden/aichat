@@ -24,12 +24,11 @@ use crate::function::{eval_tool_calls, need_send_tool_results};
 use crate::render::render_error;
 use crate::repl::Repl;
 use crate::utils::{
-    create_abort_signal, create_spinner, detect_shell, extract_block, get_env_name, run_command,
-    run_with_spinner, AbortSignal, Shell, CODE_BLOCK_RE, IS_STDOUT_TERMINAL,
+    create_abort_signal, create_spinner, extract_block, get_env_name, run_command,
+    run_with_spinner, AbortSignal, Shell, CODE_BLOCK_RE, IS_STDOUT_TERMINAL, SHELL,
 };
 
 use anyhow::{bail, Result};
-use async_recursion::async_recursion;
 use clap::Parser;
 use inquire::{Select, Text};
 use is_terminal::IsTerminal;
@@ -161,8 +160,7 @@ async fn run(
     let is_repl = config.read().working_mode.is_repl();
     if cli.execute && !is_repl {
         let input = create_input(&config, text, &cli.file).await?;
-        let shell = detect_shell();
-        shell_execute(&config, &shell, input).await?;
+        shell_execute(&config, &SHELL, input).await?;
         return Ok(());
     }
     config.write().apply_prelude()?;
@@ -176,7 +174,7 @@ async fn run(
     }
 }
 
-#[async_recursion]
+#[async_recursion::async_recursion]
 async fn start_directive(
     config: &GlobalConfig,
     input: Input,
