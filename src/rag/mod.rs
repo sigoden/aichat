@@ -79,7 +79,7 @@ impl Rag {
     }
 
     pub fn load(config: &GlobalConfig, name: &str, path: &Path) -> Result<Self> {
-        let err = || format!("Failed to load rag '{name}'");
+        let err = || format!("Failed to load rag '{name}' at '{}'", path.display());
         let file = std::fs::File::open(path).with_context(err)?;
         let reader = BufReader::new(file);
         let data: RagData = bincode::deserialize_from(reader).with_context(err)?;

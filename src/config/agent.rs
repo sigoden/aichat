@@ -36,7 +36,7 @@ impl Agent {
         let definition_file_path = functions_dir.join("index.yaml");
         let functions_file_path = functions_dir.join("functions.json");
         let variables_path = Config::agent_variables_file(name)?;
-        let rag_path = Config::agent_rag_file(name)?;
+        let rag_path = Config::agent_rag_file(name, "rag")?;
         let config_path = Config::agent_config_file(name)?;
         let agent_config = if config_path.exists() {
             AgentConfig::load(&config_path)?
