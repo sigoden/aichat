@@ -1,9 +1,6 @@
 use super::*;
 
-use crate::{
-    client::{Message, MessageContent, MessageRole, Model},
-    utils::{detect_os, detect_shell},
-};
+use crate::client::{Message, MessageContent, MessageRole, Model};
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -315,17 +312,17 @@ fn parse_structure_prompt(prompt: &str) -> (&str, Vec<(&str, &str)>) {
 }
 
 fn shell_prompt() -> String {
-    let os = detect_os();
-    let shell = detect_shell();
-    let shell = shell.name.as_str();
+    let os = OS.as_str();
+    let shell = SHELL.name.as_str();
     let combinator = if shell == "powershell" {
-        "\nIf multiple steps required try to combine them together using ';'.\nIf it already combined with '&&' try to replace it with ';'.".to_string()
+        "If multiple steps required try to combine them together using ';'.\nIf it already combined with '&&' try to replace it with ';'.".to_string()
     } else {
-        "\nIf multiple steps required try to combine them together using '&&'.".to_string()
+        "If multiple steps required try to combine them together using '&&'.".to_string()
     };
     format!(
         r#"Provide only {shell} commands for {os} without any description.
-Ensure the output is a valid {shell} command. {combinator}
+Ensure the output is a valid {shell} command.
+{combinator}
 If there is a lack of details, provide most logical solution.
 Output plain text only, without any markdown formatting."#
     )

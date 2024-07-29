@@ -21,11 +21,10 @@ pub use self::spinner::*;
 use anyhow::{Context, Result};
 use fancy_regex::Regex;
 use is_terminal::IsTerminal;
-use lazy_static::lazy_static;
 use std::{env, path::PathBuf, process};
 use unicode_segmentation::UnicodeSegmentation;
 
-lazy_static! {
+lazy_static::lazy_static! {
     pub static ref CODE_BLOCK_RE: Regex = Regex::new(r"(?ms)```\w*(.*)```").unwrap();
     pub static ref IS_STDOUT_TERMINAL: bool = std::io::stdout().is_terminal();
 }

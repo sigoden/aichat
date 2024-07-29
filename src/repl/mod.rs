@@ -13,9 +13,7 @@ use crate::render::render_error;
 use crate::utils::{create_abort_signal, set_text, temp_file, AbortSignal};
 
 use anyhow::{bail, Context, Result};
-use async_recursion::async_recursion;
 use fancy_regex::Regex;
-use lazy_static::lazy_static;
 use nu_ansi_term::Color;
 use reedline::{
     default_emacs_keybindings, default_vi_insert_keybindings, default_vi_normal_keybindings,
@@ -25,14 +23,14 @@ use reedline::{
 use reedline::{MenuBuilder, Signal};
 use std::{env, process};
 
-lazy_static! {
+lazy_static::lazy_static! {
     static ref SPLIT_FILES_TEXT_ARGS_RE: Regex =
         Regex::new(r"(?m) (-- |--\n|--\r\n|--\r|--$)").unwrap();
 }
 
 const MENU_NAME: &str = "completion_menu";
 
-lazy_static! {
+lazy_static::lazy_static! {
     static ref REPL_COMMANDS: [ReplCommand; 28] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
@@ -549,7 +547,7 @@ impl Validator for ReplValidator {
     }
 }
 
-#[async_recursion]
+#[async_recursion::async_recursion]
 async fn ask(
     config: &GlobalConfig,
     abort_signal: AbortSignal,

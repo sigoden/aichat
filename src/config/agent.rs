@@ -409,7 +409,7 @@ fn builtin_variables() -> Vec<(&'static str, String)> {
         ("__os__", env::consts::OS.to_string()),
         ("__os_family__", env::consts::FAMILY.to_string()),
         ("__arch__", env::consts::ARCH.to_string()),
-        ("__shell__", detect_shell().name),
+        ("__shell__", SHELL.name.clone()),
         ("__locale__", sys_locale::get_locale().unwrap_or_default()),
         (
             "__now__",

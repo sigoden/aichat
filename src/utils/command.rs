@@ -4,13 +4,18 @@ use std::{collections::HashMap, env, ffi::OsStr, path::Path, process::Command};
 
 use anyhow::{anyhow, bail, Context, Result};
 
+lazy_static::lazy_static! {
+    pub static ref OS: String = detect_os();
+    pub static ref SHELL: Shell = detect_shell();
+}
+
 pub fn detect_os() -> String {
     let os = env::consts::OS;
     if os == "linux" {
         if let Ok(contents) = std::fs::read_to_string("/etc/os-release") {
             for line in contents.lines() {
                 if let Some(id) = line.strip_prefix("ID=") {
-                    return format!("{os}/{id}");
+                    return format!("{os} ({id})");
                 }
             }
         }
