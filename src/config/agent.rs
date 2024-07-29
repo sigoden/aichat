@@ -279,6 +279,9 @@ impl AgentDefinition {
         for variable in &self.variables {
             output = output.replace(&format!("{{{{{}}}}}", variable.name), &variable.value)
         }
+        for (key, value) in builtin_variables() {
+            output = output.replace(&format!("{{{{{}}}}}", key), &value);
+        }
         output
     }
 
@@ -394,4 +397,28 @@ fn save_variables(variables_path: &Path, variables: &[AgentVariable]) -> Result<
     fs::write(variables_path, content)
         .with_context(|| format!("Failed to save variables to '{}'", variables_path.display()))?;
     Ok(())
+}
+
+fn builtin_variables() -> Vec<(&'static str, String)> {
+    vec![
+        ("__os__", env::consts::OS.to_string()),
+        ("__os_family__", env::consts::FAMILY.to_string()),
+        ("__arch__", env::consts::ARCH.to_string()),
+        ("__shell__", detect_shell().name),
+        ("__locale__", sys_locale::get_locale().unwrap_or_default()),
+        (
+            "__now__",
+            time::OffsetDateTime::now_utc()
+                .format(simplelog::format_description!(
+                    "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:3]Z"
+                ))
+                .unwrap_or_default(),
+        ),
+        (
+            "__cwd__",
+            env::current_dir()
+                .map(|v| v.display().to_string())
+                .unwrap_or_default(),
+        ),
+    ]
 }
