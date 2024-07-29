@@ -861,6 +861,9 @@ impl Config {
     pub fn clear_session_messages(&mut self) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
             session.clear_messages();
+            if let Some(prompt) = self.agent.as_ref().map(|v| v.interpolated_instructions()) {
+                session.update_role_prompt(&prompt);
+            }
         } else {
             bail!("No session")
         }

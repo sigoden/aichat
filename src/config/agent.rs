@@ -11,8 +11,6 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-const TOOLS_PLACEHOLDER: &str = "__TOOLS__";
-
 #[derive(Debug, Clone, Serialize)]
 pub struct Agent {
     name: String,
@@ -94,7 +92,9 @@ impl Agent {
     }
 
     pub fn export(&self) -> Result<String> {
-        let mut value = serde_json::json!(self);
+        let mut agent = self.clone();
+        agent.definition.instructions = self.interpolated_instructions();
+        let mut value = serde_json::json!(agent);
         value["functions_dir"] = Config::agent_functions_dir(&self.name)?
             .display()
             .to_string()
@@ -135,6 +135,10 @@ impl Agent {
         &self.definition.conversation_starters
     }
 
+    pub fn interpolated_instructions(&self) -> String {
+        self.definition.interpolated_instructions()
+    }
+
     pub fn variables(&self) -> &[AgentVariable] {
         &self.definition.variables
     }
@@ -154,7 +158,7 @@ impl Agent {
 
 impl RoleLike for Agent {
     fn to_role(&self) -> Role {
-        let prompt = self.definition.interpolated_instructions();
+        let prompt = self.interpolated_instructions();
         let mut role = Role::new("", &prompt);
         role.sync(self);
         role
@@ -286,7 +290,8 @@ impl AgentDefinition {
     }
 
     fn replace_tools_placeholder(&mut self, functions: &Functions) {
-        if self.instructions.contains(TOOLS_PLACEHOLDER) {
+        let tools_placeholder: &str = "{{__tools__}}";
+        if self.instructions.contains(tools_placeholder) {
             let tools = functions
                 .declarations()
                 .iter()
@@ -300,7 +305,7 @@ impl AgentDefinition {
                 })
                 .collect::<Vec<String>>()
                 .join("\n");
-            self.instructions = self.instructions.replace(TOOLS_PLACEHOLDER, &tools);
+            self.instructions = self.instructions.replace(tools_placeholder, &tools);
         }
     }
 }

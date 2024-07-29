@@ -249,6 +249,10 @@ impl Session {
         self.dirty = true;
     }
 
+    pub fn update_role_prompt(&mut self, prompt: &str) {
+        self.role_prompt = prompt.to_string();
+    }
+
     pub fn clear_role(&mut self) {
         self.role_name.clear();
         self.role_prompt.clear();
