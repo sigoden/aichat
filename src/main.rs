@@ -54,19 +54,10 @@ async fn main() -> Result<()> {
     } else {
         WorkingMode::Command
     };
-    let mut model_id = cli.model.clone();
-    if model_id.is_none() {
-        if let Ok(v) = env::var(get_env_name("model")) {
-            model_id = Some(v);
-        }
-    }
     setup_logger(working_mode.is_serve())?;
-    let config = Arc::new(RwLock::new(Config::init(
-        working_mode,
-        model_id.as_deref(),
-    )?));
+    let config = Arc::new(RwLock::new(Config::init(working_mode)?));
     let highlight = config.read().highlight;
-    if let Err(err) = run(config, cli, text, model_id).await {
+    if let Err(err) = run(config, cli, text).await {
         let highlight = stderr().is_terminal() && highlight;
         render_error(err, highlight);
         std::process::exit(1);
@@ -74,12 +65,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn run(
-    config: GlobalConfig,
-    cli: Cli,
-    text: Option<String>,
-    model_id: Option<String>,
-) -> Result<()> {
+async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()> {
     let abort_signal = create_abort_signal();
 
     if let Some(addr) = cli.serve {
@@ -143,7 +129,7 @@ async fn run(
         println!("{sessions}");
         return Ok(());
     }
-    if let Some(model_id) = &model_id {
+    if let Some(model_id) = &cli.model {
         config.write().set_model(model_id)?;
     }
     if cli.no_stream {
