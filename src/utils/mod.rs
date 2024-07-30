@@ -38,6 +38,10 @@ pub fn get_env_name(key: &str) -> String {
     format!("{}_{key}", env!("CARGO_CRATE_NAME"),).to_ascii_uppercase()
 }
 
+pub fn normalize_env_name(value: &str) -> String {
+    value.replace('-', "_").to_ascii_uppercase()
+}
+
 pub fn estimate_token_length(text: &str) -> usize {
     let words: Vec<&str> = text.unicode_words().collect();
     let mut output: f32 = 0.0;

@@ -342,7 +342,7 @@ impl Config {
     }
 
     pub fn agent_config_dir(name: &str) -> Result<PathBuf> {
-        match env::var(format!("{}_CONFIG_DIR", convert_env_prefix(name))) {
+        match env::var(format!("{}_CONFIG_DIR", normalize_env_name(name))) {
             Ok(value) => Ok(PathBuf::from(value)),
             Err(_) => Ok(Self::agents_config_dir()?.join(name)),
         }
@@ -365,7 +365,7 @@ impl Config {
     }
 
     pub fn agent_functions_dir(name: &str) -> Result<PathBuf> {
-        match env::var(format!("{}_FUNCTIONS_DIR", convert_env_prefix(name))) {
+        match env::var(format!("{}_FUNCTIONS_DIR", normalize_env_name(name))) {
             Ok(value) => Ok(PathBuf::from(value)),
             Err(_) => Ok(Self::agents_functions_dir()?.join(name)),
         }
@@ -1903,8 +1903,4 @@ fn complete_option_bool(value: Option<bool>) -> Vec<String> {
         Some(false) => vec!["true".to_string(), "null".to_string()],
         None => vec!["true".to_string(), "false".to_string()],
     }
-}
-
-fn convert_env_prefix(value: &str) -> String {
-    value.replace('-', "_").to_ascii_uppercase()
 }

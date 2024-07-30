@@ -156,23 +156,44 @@ impl ToolCall {
 
     pub fn eval(&self, config: &GlobalConfig) -> Result<Value> {
         let function_name = self.name.clone();
-        let (call_name, cmd_name, mut cmd_args) = match &config.read().agent {
+        let (call_name, cmd_name, mut cmd_args, mut envs) = match &config.read().agent {
             Some(agent) => match agent.functions().find(&function_name) {
                 Some(function) => {
                     if function.agent {
+                        let envs: HashMap<String, String> = agent
+                            .variables()
+                            .iter()
+                            .map(|v| {
+                                (
+                                    format!("LLM_AGENT_VAR_{}", normalize_env_name(&v.name)),
+                                    v.value.clone(),
+                                )
+                            })
+                            .collect();
                         (
                             format!("{}:{}", agent.name(), function_name),
                             agent.name().to_string(),
                             vec![function_name],
+                            envs,
                         )
                     } else {
-                        (function_name.clone(), function_name, vec![])
+                        (
+                            function_name.clone(),
+                            function_name,
+                            vec![],
+                            Default::default(),
+                        )
                     }
                 }
                 None => bail!("Unexpected call {function_name} {}", self.arguments),
             },
             None => match config.read().functions.contains(&function_name) {
-                true => (function_name.clone(), function_name, vec![]),
+                true => (
+                    function_name.clone(),
+                    function_name,
+                    vec![],
+                    Default::default(),
+                ),
                 false => bail!("Unexpected call: {function_name} {}", self.arguments),
             },
         };
@@ -193,7 +214,6 @@ impl ToolCall {
         cmd_args.push(json_data.to_string());
         let prompt = format!("Call {cmd_name} {}", cmd_args.join(" "));
 
-        let mut envs = HashMap::new();
         let bin_dir = Config::functions_bin_dir()?;
         if bin_dir.exists() {
             envs.insert("PATH".into(), prepend_env_path(&bin_dir)?);
