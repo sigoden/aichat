@@ -211,12 +211,12 @@ impl Default for Config {
 pub type GlobalConfig = Arc<RwLock<Config>>;
 
 impl Config {
-    pub fn init(working_mode: WorkingMode, model_id: Option<&str>) -> Result<Self> {
+    pub fn init(working_mode: WorkingMode) -> Result<Self> {
         let config_path = Self::config_file()?;
         let mut config = if !config_path.exists() {
-            match model_id {
-                Some(v) => Self::load_dynamic(v)?,
-                None => {
+            match env::var(get_env_name("platform")) {
+                Ok(v) => Self::load_dynamic(&v)?,
+                Err(_) => {
                     if *IS_STDOUT_TERMINAL {
                         create_config_file(&config_path)?;
                     }
@@ -1563,6 +1563,9 @@ impl Config {
     }
 
     fn load_envs(&mut self) {
+        if let Ok(v) = env::var(get_env_name("model")) {
+            self.model_id = v;
+        }
         if let Some(v) = read_env_value::<f64>("temperature") {
             self.temperature = v;
         }
