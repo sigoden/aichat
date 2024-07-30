@@ -139,6 +139,10 @@ impl Agent {
         self.definition.interpolated_instructions()
     }
 
+    pub fn agent_prelude(&self) -> Option<&str> {
+        self.config.agent_prelude.as_deref()
+    }
+
     pub fn variables(&self) -> &[AgentVariable] {
         &self.definition.variables
     }
@@ -211,7 +215,9 @@ pub struct AgentConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    use_tools: Option<String>,
+    pub use_tools: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub agent_prelude: Option<String>,
 }
 
 impl AgentConfig {
