@@ -464,7 +464,7 @@ impl Config {
         if role.top_p().is_none() && self.top_p.is_some() {
             role.set_top_p(self.top_p);
         }
-        if role.use_tools().is_none() && self.use_tools.is_some() && self.agent.is_none() {
+        if role.use_tools().is_none() && self.use_tools.is_some() {
             role.set_use_tools(self.use_tools.clone())
         }
         role
@@ -1028,11 +1028,15 @@ impl Config {
             bail!("Already in a agent, please run '.exit agent' first to exit the current agent.");
         }
         let agent = Agent::init(config, name, abort_signal).await?;
+        let session = session.map(|v| v.to_string()).or_else(|| {
+            agent
+                .agent_prelude()
+                .map(|v| v.to_string())
+                .or_else(|| config.read().agent_prelude.clone())
+                .and_then(|v| if v.is_empty() { None } else { Some(v) })
+        });
         config.write().rag = agent.rag();
         config.write().agent = Some(agent);
-        let session = session
-            .map(|v| v.to_string())
-            .or_else(|| config.read().agent_prelude.clone());
         if let Some(session) = session {
             config.write().use_session(Some(&session))?;
         }
@@ -1085,7 +1089,12 @@ impl Config {
             WorkingMode::Serve => return Ok(()),
         };
         let prelude = match prelude {
-            Some(v) => v.to_string(),
+            Some(v) => {
+                if v.is_empty() {
+                    return Ok(());
+                }
+                v.to_string()
+            }
             None => return Ok(()),
         };
 
