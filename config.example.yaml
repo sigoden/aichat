@@ -26,14 +26,15 @@ summarize_prompt: 'Summarize the discussion briefly in 200 words or less to use 
 # Text prompt used for including the summary of the entire session
 summary_prompt: 'This is a summary of the chat history as a recap: '
 
-# ---- function-calling & agent ----
+# ---- function-calling ----
 # Visit https://github.com/sigoden/llm-functions for setup instructions
 function_calling: true           # Enables or disables function calling (Globally).
 mapping_tools:                   # Alias for a tool or toolset
-  # fs: 'fs_cat,fs_ls,fs_mkdir,fs_rm,fs_write'
+  fs: 'fs_cat,fs_ls,fs_mkdir,fs_rm,fs_write'
 use_tools: null                  # Which tools to use by default
 
 # ---- RAG ----
+# See [RAG-Guide](https://github.com/sigoden/aichat/wiki/RAG-Guide) for more details.
 rag_embedding_model: null                   # Specifies the embedding model to use
 rag_reranker_model: null                    # Specifies the rerank model to use
 rag_top_k: 4                                # Specifies the number of documents to retrieve
@@ -57,22 +58,19 @@ rag_template: |
 
   Given the context information, answer the query.
   Query: __INPUT__
-
 # Define document loaders to control how RAG and `.file`/`--file` load files of specific formats.
 document_loaders:
   # You can add custom loaders using the following syntax:
   #   <file-extension>: <command-to-load-the-file>
   # Note: Use `$1` for input file and `$2` for output file. If `$2` is omitted, use stdout as output.
   pdf: 'pdftotext $1 -'                         # Load .pdf file, see https://poppler.freedesktop.org
-  docx: 'pandoc --to plain $1'                  # Load .docx file
-  # xlsx: 'ssconvert $1 $2'                     # Load .xlsx file
-  # html: 'pandoc --to plain $1'                # Load .html file
+  docx: 'pandoc --to plain $1'                  # Load .docx file, see https://pandoc.org for install
   recursive_url: 'rag-crawler $1 $2'            # Load websites, see https://github.com/sigoden/rag-crawler
 
 # ---- apperence ----
 highlight: true                  # Controls syntax highlighting
 light_theme: false               # Activates a light color theme when true. env: AICHAT_LIGHT_THEME
-# Custom REPL prompt, see https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt for more details
+# Custom REPL left/right prompts, see https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt for more details
 left_prompt:
   '{color.green}{?session {?agent {agent}>}{session}{?role /}}{!session {?agent {agent}>}}{role}{?rag @{rag}}{color.cyan}{?session )}{!session >}{color.reset} '
 right_prompt:
@@ -90,14 +88,14 @@ clients:
   #       supports_function_calling: true
   #     - name: xxxx                                  # Embedding model
   #       type: embedding
-  #       max_input_tokens: 2048
+  #       # max_input_tokens: 2048
   #       default_chunk_size: 1500                        
   #       max_batch_size: 100
   #     - name: xxxx                                  # Reranker model
   #       type: reranker 
-  #       max_input_tokens: 2048
-  #   patch:                                          # Patch api request
-  #     chat_completions:                             # Api types, one of chat_completions, embeddings, and rerank
+  #       # max_input_tokens: 2048
+  #   patch:                                          # Patch api
+  #     chat_completions:                             # Api type, possible values: chat_completions, embeddings, and rerank
   #       <regex>:                                    # The regex to match model names, e.g. '.*' 'gpt-4o' 'gpt-4o|gpt-4-.*'
   #         url:  ''                                  # Patch request url
   #         body:                                     # Patch request body
@@ -105,20 +103,20 @@ clients:
   #         headers:                                  # Patch request headers
   #           <key>: <value>
   #   extra:
-  #     proxy: socks5://127.0.0.1:1080                # Set https/socks5 proxy. ENV: HTTPS_PROXY/ALL_PROXY
+  #     proxy: socks5://127.0.0.1:1080                # Set proxy
   #     connect_timeout: 10                           # Set timeout in seconds for connect to api
 
   # See https://platform.openai.com/docs/quickstart
   - type: openai
-    api_key: sk-xxx                                   # ENV: {client}_API_KEY
-    api_base: https://api.openai.com/v1               # ENV: {client}_API_BASE
+    api_key: sk-xxx
+    api_base: https://api.openai.com/v1               # Optional
     organization_id: org-xxx                          # Optional
 
   # For any platform compatible with OpenAI's API
   - type: openai-compatible
     name: local
-    api_base: http://localhost:8080/v1                # ENV: {client}_API_BASE
-    api_key: xxx                                      # ENV: {client}_API_KEY
+    api_base: http://localhost:8080/v1
+    api_key: xxx                                      # Optional
     chat_endpoint: /chat/completions                  # Optional
     models:
       - name: llama3
@@ -126,7 +124,7 @@ clients:
 
   # See https://ai.google.dev/docs
   - type: gemini
-    api_key: xxx                                      # ENV: {client}_API_KEY
+    api_key: xxx
     patch:
       chat_completions:
         '.*':
@@ -143,53 +141,57 @@ clients:
 
   # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
   - type: claude
-    api_key: sk-ant-xxx                               # ENV: {client}_API_KEY
+    api_key: sk-ant-xxx
 
   # See https://docs.mistral.ai/
   - type: openai-compatible
     name: mistral
     api_base: https://api.mistral.ai/v1
-    api_key: xxx                                      # ENV: {client}_API_KEY
+    api_key: xxx
 
   # See https://docs.cohere.com/docs/the-cohere-platform
   - type: cohere
-    api_key: xxx                                      # ENV: {client}_API_KEY
+    api_key: xxx
 
   # See https://docs.perplexity.ai/docs/getting-started
   - type: openai-compatible
     name: perplexity
     api_base: https://api.perplexity.ai
-    api_key: pplx-xxx                                 # ENV: {client}_API_KEY
+    api_key: pplx-xxx
 
   # See https://console.groq.com/docs/quickstart
   - type: openai-compatible
     name: groq
     api_base: https://api.groq.com/openai/v1
-    api_key: gsk_xxx                                  # ENV: {client}_API_KEY
+    api_key: gsk_xxx
 
   # See https://github.com/jmorganca/ollama
   - type: ollama
-    api_base: http://localhost:11434                  # ENV: {client}_API_BASE
-    api_auth: Basic xxx                               # ENV: {client}_API_AUTH
-    models:                                           # Required
-      - name: llama3
+    api_base: http://localhost:11434
+    api_auth: Basic xxx                               # optional
+    models:
+      - name: llama3.1
         max_input_tokens: 8192
-      - name: all-minilm:l6-v2
+        supports_function_calling: true
+      - name: nomic-embed-text:latest
         type: embedding
-        max_chunk_size: 1000
+        default_chunk_size: 1000
+        max_batch_size: 50
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
   - type: azure-openai
-    api_base: https://{RESOURCE}.openai.azure.com     # ENV: {client}_API_BASE
-    api_key: xxx                                      # ENV: {client}_API_KEY
-    models:                                           # Required
-      - name: gpt-35-turbo                            # Model deployment name
-        max_input_tokens: 8192
+    api_base: https://{RESOURCE}.openai.azure.com
+    api_key: xxx
+    models:
+      - name: gpt-4o                                  # Model deployment name
+        max_input_tokens: 128000
+        supports_vision: true
+        supports_function_calling: true
 
   # See https://cloud.google.com/vertex-ai
   - type: vertexai
-    project_id: xxx                                   # ENV: {client}_PROJECT_ID
-    location: xxx                                     # ENV: {client}_LOCATION
+    project_id: xxx
+    location: xxx
     # Specifies a application-default-credentials (adc) file, Optional field
     # Run `gcloud auth application-default login` to init the adc file
     # see https://cloud.google.com/docs/authentication/external/set-up-adc
@@ -208,98 +210,89 @@ clients:
               - category: HARM_CATEGORY_DANGEROUS_CONTENT
                 threshold: BLOCK_ONLY_HIGH
 
-  # See https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-claude
-  - type: vertexai-claude
-    project_id: xxx                                   # ENV: {client}_PROJECT_ID
-    location: xxx                                     # ENV: {client}_LOCATION
-    # Specifies a application-default-credentials (adc) file, Optional field
-    # Run `gcloud auth application-default login` to init the adc file
-    # see https://cloud.google.com/docs/authentication/external/set-up-adc
-    adc_file: <path-to/gcloud/application_default_credentials.json> 
-
   # See https://docs.aws.amazon.com/bedrock/latest/userguide/
   - type: bedrock
-    access_key_id: xxx                                # ENV: {client}_ACCESS_KEY_ID
-    secret_access_key: xxx                            # ENV: {client}_SECRET_ACCESS_KEY
-    region: xxx                                       # ENV: {client}_REGION
+    access_key_id: xxx
+    secret_access_key: xxx
+    region: xxx
 
   # See https://developers.cloudflare.com/workers-ai/
   - type: cloudflare
-    account_id: xxx                                   # ENV: {client}_ACCOUNT_ID
-    api_key: xxx                                      # ENV: {client}_API_KEY
+    account_id: xxx
+    api_key: xxx
 
   # See https://replicate.com/docs
   - type: replicate
-    api_key: xxx                                      # ENV: {client}_API_KEY
+    api_key: xxx
 
   # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
   - type: ernie
-    api_key: xxx                                      # ENV: {client}_API_KEY
-    secret_key: xxxx                                  # ENV: {client}_SECRET_KEY
+    api_key: xxx
+    secret_key: xxxx
 
   # See https://help.aliyun.com/zh/dashscope/
   - type: qianwen
-    api_key: sk-xxx                                   # ENV: {client}_API_KEY
+    api_key: sk-xxx
 
   # See https://platform.moonshot.cn/docs/intro
   - type: openai-compatible
     name: moonshot
     api_base: https://api.moonshot.cn/v1
-    api_key: sk-xxx                                   # ENV: {client}_API_KEY
+    api_key: sk-xxx
 
   # See https://platform.deepseek.com/api-docs/
   - type: openai-compatible
     name: deepseek
-    api_key: sk-xxx                                   # ENV: {client}_API_KEY
+    api_key: sk-xxx
 
   # See https://open.bigmodel.cn/dev/howuse/introduction
   - type: openai-compatible
     name: zhipuai
-    api_key: xxx                                      # ENV: {client}_API_KEY
+    api_key: xxx
 
   # See https://platform.lingyiwanwu.com/docs
   - type: openai-compatible
     name: lingyiwanwu
-    api_key: xxx                                      # ENV: {client}_API_KEY
+    api_key: xxx
 
   # See https://deepinfra.com/docs
   - type: openai-compatible
     name: deepinfra
     api_base: https://api.deepinfra.com/v1/openai
-    api_key: xxx                                      # ENV: {client}_API_KEY
+    api_key: xxx
 
   # See https://readme.fireworks.ai/docs/quickstart
   - type: openai-compatible
     name: fireworks
     api_base: https://api.fireworks.ai/inference/v1
-    api_key: xxx                                      # ENV: {client}_API_KEY
+    api_key: xxx
 
   # See https://openrouter.ai/docs#quick-start
   - type: openai-compatible
     name: openrouter
     api_base: https://openrouter.ai/api/v1
-    api_key: xxx                                      # ENV: {client}_API_KEY
+    api_key: xxx
 
   # See https://octo.ai/docs/getting-started/quickstart
   - type: openai-compatible
     name: octoai
     api_base: https://text.octoai.run/v1
-    api_key: xxx                                      # ENV: {client}_API_KEY
+    api_key: xxx
 
   # See https://docs.together.ai/docs/quickstart
   - type: openai-compatible
     name: together
     api_base: https://api.together.xyz/v1
-    api_key: xxx                                      # ENV: {client}_API_KEY
+    api_key: xxx
 
   # See https://jina.ai
   - type: openai-compatible
     name: jina
     api_base: https://api.jina.ai/v1
-    api_key: xxx                                      # ENV: {client}_API_KEY
+    api_key: xxx
 
   # See https://docs.voyageai.com/docs/introduction
   - type: openai-compatible
     name: voyageai
     api_base: https://api.voyageai.ai/v1
-    api_key: xxx                                      # ENV: {client}_API_KEY
+    api_key: xxx
