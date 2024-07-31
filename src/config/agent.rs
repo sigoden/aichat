@@ -208,7 +208,10 @@ impl RoleLike for Agent {
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct AgentConfig {
-    #[serde(rename(serialize = "model", deserialize = "model"))]
+    #[serde(
+        rename(serialize = "model", deserialize = "model"),
+        skip_serializing_if = "Option::is_none"
+    )]
     pub model_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f64>,

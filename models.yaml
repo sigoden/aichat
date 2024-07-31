@@ -835,12 +835,16 @@
       max_input_tokens: 32768
       input_price: 0.5
       output_price: 0.5
-    - name: accounts/fireworks/models/qwen2-72b-instruct
-      max_input_tokens: 32768
-      input_price: 0.9
-      output_price: 0.9
     - name: accounts/fireworks/models/gemma2-9b-it
       max_input_tokens: 8192
+      input_price: 0.2
+      output_price: 0.2
+    - name: accounts/fireworks/models/deepseek-coder-v2-instruct
+      max_input_tokens: 131072
+      input_price: 2.7
+      output_price: 2.7
+    - name: accounts/fireworks/models/deepseek-coder-v2-lite-instruct
+      max_input_tokens: 163840
       input_price: 0.2
       output_price: 0.2
     - name: accounts/fireworks/models/phi-3-vision-128k-instruct
