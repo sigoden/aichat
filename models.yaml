@@ -18,7 +18,7 @@
       supports_function_calling: true
     - name: gpt-4o-mini
       max_input_tokens: 128000
-      max_output_tokens: 4096
+      max_output_tokens: 16384
       input_price: 0.15
       output_price: 0.6
       supports_vision: true
@@ -60,7 +60,7 @@
   #   - get max_output_tokens info from list models api
   models:
     - name: gemini-1.5-pro-latest
-      max_input_tokens: 1048576
+      max_input_tokens: 2097152
       max_output_tokens: 8192
       input_price: 3.5
       output_price: 10.5
@@ -209,26 +209,30 @@
   #   - https://docs.perplexity.ai/docs/pricing
   #   - https://docs.perplexity.ai/reference/post_chat_completions
   models:
-    - name: llama-3-sonar-small-32k-online
-      max_input_tokens: 28000
-      input_price: 0.2
-      output_price: 0.2
-    - name: llama-3-sonar-large-32k-online
-      max_input_tokens: 28000
+    - name: llama-3.1-sonar-large-128k-online
+      max_input_tokens: 127072
       input_price: 1
       output_price: 1
-    - name: llama-3-70b-instruct
-      max_input_tokens: 8192
+    - name: llama-3.1-sonar-large-128k-chat
+      max_input_tokens: 131072
       input_price: 1
       output_price: 1
-    - name: llama-3-8b-instruct
-      max_input_tokens: 8192
+    - name: llama-3.1-sonar-small-128k-online
+      max_input_tokens: 127072
       input_price: 0.2
       output_price: 0.2
-    - name: mixtral-8x7b-instruct
-      max_input_tokens: 16384
-      input_price: 0.6
-      output_price: 0.6
+    - name: llama-3.1-sonar-small-128k-chat
+      max_input_tokens: 131072
+      input_price: 0.2
+      output_price: 0.2
+    - name: llama-3.1-70b-instruct
+      max_input_tokens: 131072
+      input_price: 1
+      output_price: 1
+    - name: llama-3.1-8b-instruct
+      max_input_tokens: 131072
+      input_price: 0.2
+      output_price: 0.2
 
 - platform: groq
   # docs:
@@ -284,7 +288,7 @@
   #   - get max_output_tokens info from models doc
   models:
     - name: gemini-1.5-pro-001
-      max_input_tokens: 1000000
+      max_input_tokens: 2097152
       max_output_tokens: 8192
       input_price: 1.25
       output_price: 3.75
@@ -1036,14 +1040,22 @@
       max_input_tokens: 32768
       input_price: 0.14
       output_price: 0.28
-    - name: perplexity/llama-3-sonar-small-32k-online
-      max_input_tokens: 28000
-      input_price: 0.2
-      output_price: 0.2
-    - name: perplexity/llama-3-sonar-large-32k-online
-      max_input_tokens: 28000
+    - name: perplexity/llama-3.1-sonar-large-128k-online
+      max_input_tokens: 131072
       input_price: 1
       output_price: 1
+    - name: perplexity/llama-3.1-sonar-large-128k-chat
+      max_input_tokens: 131072
+      input_price: 1
+      output_price: 1
+    - name: perplexity/llama-3.1-sonar-small-128k-online
+      max_input_tokens: 131072
+      input_price: 0.2
+      output_price: 0.2
+    - name: perplexity/llama-3.1-sonar-small-128k-chat
+      max_input_tokens: 131072
+      input_price: 0.2
+      output_price: 0.2
     - name: 01-ai/yi-large
       max_input_tokens: 32768
       input_price: 3
