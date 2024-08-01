@@ -247,11 +247,12 @@ models-cohere() {
 }
 
 # @cmd Chat with ollama api
+# @env OLLAMA_BASE_URL=http://127.0.0.1:11434
 # @option -m --model=llama3.1:latest $OLLAMA_MODEL
 # @flag -S --no-stream
 # @arg text~
 chat-ollama() {
-    _wrapper curl -i http://localhost:11434/api/chat \
+    _wrapper curl -i $OLLAMA_BASE_URL/api/chat \
 -X POST \
 -H 'Content-Type: application/json' \
 -d "$(_build_body ollama "$@")"
