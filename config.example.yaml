@@ -4,10 +4,10 @@ temperature: null                # Set default temperature parameter
 top_p: null                      # Set default top-p parameter, range (0, 1)
 
 # ---- behavior ----
-stream: true                     # Use stream style by default
+stream: true                     # Controls whether to use the stream-style API.
 save: true                       # Indicates whether to persist the message
 keybindings: emacs               # Choose keybinding style (emacs, vi)
-buffer_editor: null              # Command used to edit the current input with ctrl+o, env: EDITOR
+editor: null                     # Command used to edit buffer, session.yaml and config.yaml. env: EDITOR
 wrap: no                         # Controls text wrapping (no, auto, <max-width>)
 wrap_code: false                 # Enables or disables wrapping of code blocks
 
