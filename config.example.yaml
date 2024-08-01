@@ -7,7 +7,7 @@ top_p: null                      # Set default top-p parameter, range (0, 1)
 stream: true                     # Controls whether to use the stream-style API.
 save: true                       # Indicates whether to persist the message
 keybindings: emacs               # Choose keybinding style (emacs, vi)
-editor: null                     # Command used to edit buffer, session.yaml and config.yaml. env: EDITOR
+editor: null                     # Specifies the command used to edit input buffer or session.yaml. env: EDITOR
 wrap: no                         # Controls text wrapping (no, auto, <max-width>)
 wrap_code: false                 # Enables or disables wrapping of code blocks
 
