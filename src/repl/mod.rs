@@ -435,7 +435,7 @@ Type ".help" for additional help.
             .with_validator(Box::new(ReplValidator))
             .with_ansi_colors(true);
 
-        if let Some(cmd) = config.read().buffer_editor() {
+        if let Ok(cmd) = config.read().editor() {
             let temp_file = temp_file("-repl-", ".txt");
             let command = process::Command::new(cmd);
             editor = editor.with_buffer_editor(command, temp_file);

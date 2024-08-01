@@ -91,7 +91,7 @@ pub struct Config {
     pub stream: bool,
     pub save: bool,
     pub keybindings: String,
-    pub buffer_editor: Option<String>,
+    pub editor: Option<String>,
     pub wrap: Option<String>,
     pub wrap_code: bool,
 
@@ -159,7 +159,7 @@ impl Default for Config {
             stream: true,
             save: false,
             keybindings: "emacs".into(),
-            buffer_editor: None,
+            editor: None,
             wrap: None,
             wrap_code: false,
 
@@ -841,10 +841,7 @@ impl Config {
             Some(session) => session.name().to_string(),
             None => bail!("No session"),
         };
-        let editor = match self.buffer_editor() {
-            Some(editor) => editor,
-            None => bail!("No editor, please set $EDITOR/$VISUAL."),
-        };
+        let editor = self.editor()?;
         let session_path = self.session_file(&name)?;
         self.save_session(Some(&name))?;
         edit_file(&editor, &session_path).with_context(|| {
@@ -1191,10 +1188,11 @@ impl Config {
         }
     }
 
-    pub fn buffer_editor(&self) -> Option<String> {
-        self.buffer_editor
+    pub fn editor(&self) -> Result<String> {
+        self.editor
             .clone()
             .or_else(|| env::var("VISUAL").ok().or_else(|| env::var("EDITOR").ok()))
+            .ok_or_else(|| anyhow!("No editor, please configure `editor` or set $EDITOR/$VISUAL environment variable."))
     }
 
     pub fn repl_complete(
@@ -1596,8 +1594,8 @@ impl Config {
                 self.keybindings = v;
             }
         }
-        if let Some(v) = read_env_value::<String>("buffer_editor") {
-            self.buffer_editor = v;
+        if let Some(v) = read_env_value::<String>("editor") {
+            self.editor = v;
         }
         if let Some(v) = read_env_value::<String>("wrap") {
             self.wrap = v;
