@@ -39,24 +39,23 @@ AIChat offers users a wide and diverse selection of Large Language Models (LLMs)
 - **OpenAI:** GPT-4/GPT-3.5 (paid, chat, embedding, vision, function-calling)
 - **Gemini:** Gemini-1.5/Gemini-1.0 (free, paid, chat, embedding, vision, function-calling)
 - **Claude:** Claude-3.5/Claude-3 (paid, chat, vision, function-calling)
-- **Ollama:** (free, local, chat, embedding)
-- **Groq:** Llama-3/Mixtral/Gemma (free, chat, function-calling)
+- **Ollama:** (free, local, chat, embedding, vision, function-calling)
+- **Groq:** Llama-3.1/Mixtral/Gemma2 (free, chat, function-calling)
 - **Azure-OpenAI:** GPT-4/GPT-3.5 (paid, chat, embedding, vision, function-calling)
-- **VertexAI:** Gemini-1.5/Gemini-1.0 (paid, chat, embedding, vision, function-calling)
-- **VertexAI-Claude:** Claude-3.5/Claude-3 (paid, chat, vision, function-calling)
-- **Bedrock:** Llama-3/Claude-3.5/Claude-3/Mistral (paid)
-- **Mistral:** (paid, chat, embedding)
+- **VertexAI:** Gemini/Claude/Mistral (paid, chat, embedding, vision, function-calling)
+- **Bedrock:** Llama3.1/Claude3.5/Mistral/Command-R+ (paid, chat, embedding, function-calling)
+- **Mistral:** (paid, chat, embedding, function-calling)
 - **Cohere:** Command-R/Command-R+ (paid, chat, embedding, reranker, function-calling)
-- **Perplexity:** Llama-3/Mixtral (paid)
+- **Perplexity:** Llama-3/Mixtral (paid, chat, online)
 - **Cloudflare:** (free, chat, embedding)
-- **OpenRouter:** (paid)
-- **Replicate:** (paid)
+- **OpenRouter:** (paid, chat, function-calling)
+- **Replicate:** (paid, chat)
 - **Ernie:** (paid, chat, embedding, reranker, function-calling)
 - **Qianwen:** Qwen (paid, chat, embedding, vision, function-calling)
 - **Moonshot:** (paid, chat, function-calling)
-- **Deepseek:** (paid, chat)
+- **Deepseek:** (paid, chat, function-calling)
 - **ZhipuAI:** GLM-4 (paid, chat, embedding, vision, function-calling)
-- **LingYiWanWu:** Yi-* (paid, chat, vision)
+- **LingYiWanWu:** Yi-Large (paid, chat, vision, function-calling)
 - **Jina:**  (free, paid, embedding, reranker)
 - **VoyageAI:**  (paid, embedding, reranker)
 - **OpenAI-Compatible Platforms** 
@@ -86,7 +85,7 @@ With sessions, AIChat conducts context-aware conversations.
 
 Seamlessly integrates document interactions into your chat experience.
 
-![aichat-rag](https://github.com/sigoden/aichat/assets/4012553/6f3e5908-9c95-4d7d-aa9c-7e973ecf9354)
+![aichat-rag](https://github.com/user-attachments/assets/81b81409-460a-4aec-9e08-a3c3da5492d0)
 
 ### Function Calling
 
@@ -98,7 +97,7 @@ We have created a new repository [https://github.com/sigoden/llm-functions](http
 
 Here's a glimpse of How to use the tools.
 
-![aichat-tool](https://github.com/sigoden/aichat/assets/4012553/f9d7f827-9a2a-4ea1-8b8c-19e1c93178d4)
+![aichat-tool](https://github.com/user-attachments/assets/7459a111-7258-4ef0-a2dd-624d0f1b4f92)
 
 #### Agents
 
@@ -106,7 +105,7 @@ Agent = Prompt (Role) + Tools (Function Callings) + Knowndge (RAG). It's also kn
 
 Here's a glimpse of how to use the agents.
 
-![aichat-agent](https://github.com/sigoden/aichat/assets/4012553/7308a423-2ee5-4847-be1b-a53538bc98dc)
+![aichat-agent](https://github.com/user-attachments/assets/0b7e687d-e642-4e8a-b1c1-d2d9b2da2b6b)
 
 ### Local Server
 
@@ -152,8 +151,9 @@ AIChat supports custom dark and light themes, which highlight response text and 
 
 ![aichat-themes](https://github.com/sigoden/aichat/assets/4012553/29fa8b79-031e-405d-9caa-70d24fa0acf8)
 
-## Documents
+## Wikis
 
+- [Configuration Guide](https://github.com/sigoden/aichat/wiki/Configuration-Guide)
 - [Command-Line Guide](https://github.com/sigoden/aichat/wiki/Command-Line-Guide)
 - [Chat-REPL Guide](https://github.com/sigoden/aichat/wiki/Chat-REPL-Guide)
 - [Role Guide](https://github.com/sigoden/aichat/wiki/Role-Guide)
@@ -161,6 +161,7 @@ AIChat supports custom dark and light themes, which highlight response text and 
 - [Environment Variables](https://github.com/sigoden/aichat/wiki/Environment-Variables)
 - [Custom Theme](https://github.com/sigoden/aichat/wiki/Custom-Theme)
 - [Custom REPL Prompt](https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt)
+- [FAQ](https://github.com/sigoden/aichat/wiki/FAQ)
 
 ## License
 

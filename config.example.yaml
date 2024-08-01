@@ -7,7 +7,7 @@ top_p: null                      # Set default top-p parameter, range (0, 1)
 stream: true                     # Controls whether to use the stream-style API.
 save: true                       # Indicates whether to persist the message
 keybindings: emacs               # Choose keybinding style (emacs, vi)
-editor: null                     # Specifies the command used to edit input buffer or session.yaml. env: EDITOR
+editor: null                     # Specifies the command used to edit input buffer or session. (e.g. vim, emacs, nano).
 wrap: no                         # Controls text wrapping (no, auto, <max-width>)
 wrap_code: false                 # Enables or disables wrapping of code blocks
 
@@ -31,7 +31,7 @@ summary_prompt: 'This is a summary of the chat history as a recap: '
 function_calling: true           # Enables or disables function calling (Globally).
 mapping_tools:                   # Alias for a tool or toolset
   fs: 'fs_cat,fs_ls,fs_mkdir,fs_rm,fs_write'
-use_tools: null                  # Which tools to use by default
+use_tools: null                  # Which tools to use by default. (e.g. 'fs,web_search')
 
 # ---- RAG ----
 # See [RAG-Guide](https://github.com/sigoden/aichat/wiki/RAG-Guide) for more details.
@@ -63,9 +63,9 @@ document_loaders:
   # You can add custom loaders using the following syntax:
   #   <file-extension>: <command-to-load-the-file>
   # Note: Use `$1` for input file and `$2` for output file. If `$2` is omitted, use stdout as output.
-  pdf: 'pdftotext $1 -'                         # Load .pdf file, see https://poppler.freedesktop.org
-  docx: 'pandoc --to plain $1'                  # Load .docx file, see https://pandoc.org for install
-  recursive_url: 'rag-crawler $1 $2'            # Load websites, see https://github.com/sigoden/rag-crawler
+  pdf: 'pdftotext $1 -'                         # Load .pdf file, see https://poppler.freedesktop.org to set up pdftotext
+  docx: 'pandoc --to plain $1'                  # Load .docx file, see https://pandoc.org to set up pandoc
+  recursive_url: 'rag-crawler $1 $2'            # Load websites, see https://github.com/sigoden/rag-crawler to set up rag-crawler
 
 # ---- apperence ----
 highlight: true                  # Controls syntax highlighting
