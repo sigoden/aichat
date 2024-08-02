@@ -4,7 +4,7 @@
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 [![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/mr3ZZUB9hG)
 
-AIChat is an all-in-one AI CLI tool featuring Chat-REPL, Shell Assistant, RAG, Function Calling, AI Agents, and More.
+AIChat is an all-in-one AI CLI tool featuring Chat-REPL, Shell Assistant, RAG, AI Tools & Agents, and More. 
 
 ## Install
 
@@ -32,9 +32,9 @@ The [config.example.yaml](https://github.com/sigoden/aichat/blob/main/config.exa
 
 ## Features
 
-### 20+ Platforms
+### Multi-Platform Support
 
-AIChat offers users a wide and diverse selection of Large Language Models (LLMs):
+Effortlessly connect with over 20 leading LLM platforms through a unified interface:
 
 - **OpenAI:** GPT-4/GPT-3.5 (paid, chat, embedding, vision, function-calling)
 - **Gemini:** Gemini-1.5/Gemini-1.0 (free, paid, chat, embedding, vision, function-calling)
@@ -60,30 +60,47 @@ AIChat offers users a wide and diverse selection of Large Language Models (LLMs)
 - **VoyageAI:**  (paid, embedding, reranker)
 - **OpenAI-Compatible Platforms** 
 
+### CMD & REPL Modes
+
+AIChat supports both CMD and REPL modes to meet the needs and tastes of different users.
+
+| CMD                         | REPL                   |
+| --------------------------- | ---------------------- |
+| `-m, --model <model>`       | `.model <model>`       |
+| `-r, --role <role>`         | `.role <role>`         |
+| `    --prompt <prompt>`     | `.prompt <text>`       |
+| `-s, --session [<session>]` | `.session [<session>]` |
+| `-a, --agent <agent>`       | `.agent <agent>`       |
+| `-R, --rag <rag>`           | `.rag <rag>`           |
+| `-f, --file <file/url>`     | `.file <file/url>`     |
+| `    --info`                | `.info`                |
+
+![aichat-cmd-mode](https://github.com/user-attachments/assets/a1e34430-67e7-46f2-a235-1069392d8b71)
+![aichat-repl-mode](https://github.com/user-attachments/assets/310e4bf2-f656-43d7-af51-a7afe41098f3)
+
 ### Shell Assistant
 
-Simply input what you want to do in natural language, and aichat will prompt and run the command that achieves your intent.
+Supercharge your command line experience. Simply describe your desired actions in natural language, and let AIChat translate your requests into precise shell commands. 
 
 ![aichat-execute](https://github.com/sigoden/aichat/assets/4012553/f99bcd8f-26be-468f-a35e-197e65260f91)
 
-**AIChat is aware of OS and shell you are using, it will provide shell command for specific system you have.**
+**OS-Aware Intelligence:** AIChat tailors commands to your specific operating system and shell environment.
 
-### Role
+### Custom Roles
 
-Customizable roles allow users to tailor the behavior of LLMs, enhancing productivity and ensuring the tool aligns with specific needs and workflows.
+Define custom roles to tailor LLM behaviors, enhancing interactions and boosting productivity.
 
 ![aichat-role](https://github.com/sigoden/aichat/assets/4012553/76004a01-3b29-4116-bbab-40b4978388f5)
 
-### Session
+### Session Management
 
-By default, AIChat behaves in a one-off request/response manner.
-With sessions, AIChat conducts context-aware conversations.
+Maintain context-aware conversations through sessions, ensuring continuity in interactions.
 
 ![aichat-session](https://github.com/sigoden/aichat/assets/4012553/1444c5c9-ea67-4ad2-80df-a76954e8cce0)
 
 ### RAG
 
-Seamlessly integrates document interactions into your chat experience.
+Integrate external documents into your AI conversations for more accurate and contextually relevant responses.
 
 ![aichat-rag](https://github.com/user-attachments/assets/81b81409-460a-4aec-9e08-a3c3da5492d0)
 
@@ -95,15 +112,15 @@ We have created a new repository [https://github.com/sigoden/llm-functions](http
 
 #### Tools
 
-Here's a glimpse of How to use the tools.
+Integrate external tools to automate tasks, retrieve information, and perform actions directly within your workflow.
 
 ![aichat-tool](https://github.com/user-attachments/assets/7459a111-7258-4ef0-a2dd-624d0f1b4f92)
 
 #### Agents
 
-Agent = Prompt (Role) + Tools (Function Callings) + Knowndge (RAG). It's also known as OpenAI's GPTs.
+While tools excel at specific tasks, agents offer a more sophisticated approach to problem-solving and user interaction.
 
-Here's a glimpse of how to use the agents.
+Agent = Prompt (Role) + Tools (Function Callings) + Knowndge (RAG). It's also known as OpenAI's GPTs.
 
 ![aichat-agent](https://github.com/user-attachments/assets/0b7e687d-e642-4e8a-b1c1-d2d9b2da2b6b)
 
@@ -151,7 +168,7 @@ AIChat supports custom dark and light themes, which highlight response text and 
 
 ![aichat-themes](https://github.com/sigoden/aichat/assets/4012553/29fa8b79-031e-405d-9caa-70d24fa0acf8)
 
-## Wikis
+## Documentation
 
 - [Configuration Guide](https://github.com/sigoden/aichat/wiki/Configuration-Guide)
 - [Command-Line Guide](https://github.com/sigoden/aichat/wiki/Command-Line-Guide)
