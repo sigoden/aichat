@@ -237,7 +237,7 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
         body["p"] = v.into();
     }
     if stream {
-        body["stream"] = true.into();
+        body["stream"] = stream.into();
     }
 
     if let Some(tool_results) = tool_results {

@@ -165,7 +165,7 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
     });
 
     if stream {
-        body["stream"] = true.into();
+        body["stream"] = stream.into();
     }
 
     Ok(body)

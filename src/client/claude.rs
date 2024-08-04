@@ -253,7 +253,7 @@ pub fn claude_build_chat_completions_body(
         body["top_p"] = v.into();
     }
     if stream {
-        body["stream"] = true.into();
+        body["stream"] = stream.into();
     }
     if let Some(functions) = functions {
         body["tools"] = functions

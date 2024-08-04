@@ -240,7 +240,7 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
         body["top_p"] = v.into();
     }
     if stream {
-        body["stream"] = true.into();
+        body["stream"] = stream.into();
     }
     if let Some(functions) = functions {
         body["tools"] = functions

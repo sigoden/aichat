@@ -266,7 +266,7 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Valu
     }
 
     if stream {
-        body["stream"] = true.into();
+        body["stream"] = stream.into();
     }
 
     if let Some(functions) = functions {
