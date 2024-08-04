@@ -40,7 +40,7 @@ register_client!(
     (qianwen, "qianwen", QianwenConfig, QianwenClient),
 );
 
-pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 14] = [
+pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 15] = [
     ("deepinfra", "https://api.deepinfra.com/v1/openai"),
     ("deepseek", "https://api.deepseek.com"),
     ("fireworks", "https://api.fireworks.ai/inference/v1"),
@@ -55,4 +55,5 @@ pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 14] = [
     ("together", "https://api.together.xyz/v1"),
     ("zhipuai", "https://open.bigmodel.cn/api/paas/v4"),
     ("voyageai", "https://api.voyageai.com/v1"),
+    ("huggingface", "https://api-inference.huggingface.co/v1"),
 ];

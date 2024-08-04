@@ -1239,3 +1239,14 @@
       type: reranker
       max_input_tokens: 8000
       input_price: 0.05
+
+- platform: huggingface
+  # docs:
+  #   - https://huggingface.co/blog/tgi-messages-api
+  #   - models with warm inference are typically supported https://huggingface.co/models?inference=warm&pipeline_tag=text-generation&sort=trending
+  models:
+    - name: meta-llama/Meta-Llama-3-8B-Instruct
+    - name: microsoft/Phi-3-mini-4k-instruct
+    - name: google/gemma-2-2b-it
+    - name: meta-llama/Meta-Llama-3.1-8B-Instruct # hugging face pro only
+    - name: arcee-ai/arcee-lite

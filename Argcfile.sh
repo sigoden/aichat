@@ -92,6 +92,7 @@ OPENAI_COMPATIBLE_PLATFORMS=( \
   together,meta-llama/Llama-3-8b-chat-hf,https://api.together.xyz/v1 \
   zhipuai,glm-4-0520,https://open.bigmodel.cn/api/paas/v4 \
   lingyiwanwu,yi-large,https://api.lingyiwanwu.com/v1 \
+  huggingface,meta-llama/Meta-Llama-3-8B-Instruct,https://api-inference.huggingface.co/v1 \
 )
 
 # @cmd Chat with any LLM api 

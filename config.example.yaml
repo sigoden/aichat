@@ -296,3 +296,9 @@ clients:
     name: voyageai
     api_base: https://api.voyageai.ai/v1
     api_key: xxx
+
+  # See https://huggingface.co/blog/tgi-messages-api
+  - type: openai-compatible
+    name: huggingface
+    api_base: https://api-inference.huggingface.co/v1
+    api_key: xxx

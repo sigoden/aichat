@@ -58,6 +58,7 @@ Effortlessly connect with over 20 leading LLM platforms through a unified interf
 - **LingYiWanWu:** Yi-Large (paid, chat, vision, function-calling)
 - **Jina:**  (free, paid, embedding, reranker)
 - **VoyageAI:**  (paid, embedding, reranker)
+- **Huggingface:** (free, chat)
 - **OpenAI-Compatible Platforms** 
 
 ### CMD & REPL Modes
