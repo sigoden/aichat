@@ -1,0 +1,39 @@
+# Rust build artifacts
+/target
+**/*.rs.bk
+
+# Cargo.lock for libraries
+# Uncomment this line if your project is a library
+# Cargo.lock
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# Test coverage
+coverage/
+
+# Documentation
+/doc
+
+# Any local configuration files
+config.local.yaml
+
+# Git directory
+.git/
+.gitignore
+
+# Docker files (optional, depending on your needs)
+# Dockerfile
+# .dockerignore

@@ -1,5 +1,8 @@
-# Use a more recent version of the official Rust image as a parent image
-FROM rust:1.74 AS builder
+# Use Alpine Linux for the builder stage
+FROM rust:1.74-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache musl-dev openssl-dev
 
 # Set the working directory in the container
 WORKDIR /usr/src/app
@@ -10,11 +13,11 @@ COPY . .
 # Build the application
 RUN cargo build --release
 
-# Use a more recent base image for the final image
-FROM debian:bookworm-slim
+# Use Alpine Linux for the final stage
+FROM alpine:3.18
 
-# Install any needed packages
-RUN apt-get update && apt-get install -y libssl-dev ca-certificates && rm -rf /var/lib/apt/lists/*
+# Install runtime dependencies
+RUN apk add --no-cache libgcc openssl ca-certificates
 
 # Copy the built executable from the builder stage
 COPY --from=builder /usr/src/app/target/release/aichat /usr/local/bin/aichat
@@ -32,4 +35,4 @@ VOLUME ["/root/.config/aichat"]
 EXPOSE 8000
 
 # Set the entrypoint to directly call aichat
-ENTRYPOINT ["aichat"]
+ENTRYPOINT ["/usr/local/bin/aichat"]
