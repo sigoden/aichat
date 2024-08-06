@@ -168,6 +168,72 @@ AIChat supports custom dark and light themes, which highlight response text and 
 
 ![aichat-themes](https://github.com/sigoden/aichat/assets/4012553/29fa8b79-031e-405d-9caa-70d24fa0acf8)
 
+## Docker Usage
+
+To build the Docker image locally:
+
+```bash
+docker build -t aichat:latest .
+```
+
+After you've built the image, you can run AIChat using Docker in various modes:
+
+### One-time Execution
+
+```bash
+docker run --rm -it -e OPENAI_API_KEY=$OPENAI_API_KEY -e AICHAT_PLATFORM=openai aichat:latest -m openai:gpt-4o-mini "Hello, how are you?"
+```
+
+This command:
+- Runs the container interactively and removes it after execution (`--rm -it`)
+- Passes the OpenAI API key and platform from your environment
+- Uses the GPT-4o-mini model (OpenAI's newest)
+- Sends a one-time prompt
+
+Note: Providing both `OPENAI_API_KEY` and `AICHAT_PLATFORM` allows the container to run without a config file. For more information on environment variables, see the [Environment Variables documentation](https://github.com/sigoden/aichat/wiki/Environment-Variables#client-related-envs).
+
+### REPL Mode
+
+```bash
+docker run -it -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY aichat:latest -m openrouter:meta-llama/llama-3.1-8b-instruct:free
+```
+
+This command starts an interactive REPL session using OpenRouter's currently-free Llama 3.1 model.
+
+Note: When first run, the container will prompt to create a config file in Docker's storage location. Subsequent runs of the same container will reuse this config.
+
+### Serve Mode
+
+```bash
+docker run -d -p 8000:8000 -e OPENAI_API_KEY=$OPENAI_API_KEY aichat:latest -m openai:gpt-4o-mini --serve 0.0.0.0
+```
+
+This command:
+- Runs the container in detached mode (`-d`)
+- Maps port 8000 to access the playground and API
+- Starts the AIChat server with the GPT-4o-mini model, listening on all interfaces
+
+Note: The `0.0.0.0` address is necessary to make the server accessible from outside the Docker container.
+
+Access the playground at `http://localhost:8000/playground` and the API at `http://localhost:8000/v1/chat/completions`.
+
+### Persistent Data
+
+To persist configuration and session data:
+
+```bash
+docker run -v $HOME/.config/aichat:/root/.config/aichat -e OPENAI_API_KEY=$OPENAI_API_KEY aichat:latest
+```
+
+This command mounts the user's own configuration location, allowing the container and any local install to share metadata. This ensures that your configuration, sessions, and other data are consistent between the Docker container and a local installation of AIChat.
+
+### Environment Variables
+
+- `AICHAT_PLATFORM`: The AI platform to use (e.g., 'openai', 'openrouter')
+- `AICHAT_<CLIENT>_<CONFIG>`: Client-specific configuration (e.g., `AICHAT_OPENAI_API_KEY`, `AICHAT_OPENROUTER_API_KEY`)
+
+Replace environment variables with your actual API keys and adjust the model and platform as needed.
+
 ## Documentation
 
 - [Configuration Guide](https://github.com/sigoden/aichat/wiki/Configuration-Guide)
