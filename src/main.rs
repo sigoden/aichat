@@ -198,8 +198,6 @@ async fn start_directive(
         .write()
         .after_chat_completion(&input, &output, &tool_results)?;
 
-    config.write().exit_session()?;
-
     if need_send_tool_results(&tool_results) {
         start_directive(
             config,
@@ -207,10 +205,11 @@ async fn start_directive(
             code_mode,
             abort_signal,
         )
-        .await
-    } else {
-        Ok(())
+        .await?;
     }
+
+    config.write().exit_session()?;
+    Ok(())
 }
 
 async fn start_interactive(config: &GlobalConfig) -> Result<()> {
