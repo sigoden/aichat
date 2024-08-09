@@ -114,9 +114,13 @@ pub async fn claude_chat_completions_streaming(
                 }
                 "content_block_stop" => {
                     if !function_name.is_empty() {
-                        let arguments: Value = function_arguments.parse().with_context(|| {
-                            format!("Tool call '{function_name}' is invalid: arguments must be in valid JSON format")
-                        })?;
+                        let arguments: Value = if function_arguments.is_empty() {
+                            json!({})
+                        } else {
+                            function_arguments.parse().with_context(|| {
+                                format!("Tool call '{function_name}' is invalid: arguments must be in valid JSON format")
+                            })?
+                        };
                         handler.tool_call(ToolCall::new(
                             function_name.clone(),
                             arguments,
