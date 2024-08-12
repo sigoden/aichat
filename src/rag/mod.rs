@@ -371,6 +371,10 @@ impl Rag {
         self.data.add(next_file_id, files, document_ids, embeddings);
         self.data.document_paths = document_paths;
 
+        if self.data.files.is_empty() {
+            bail!("No RAG files");
+        }
+
         progress(&spinner, "Building store".into());
         self.hnsw = self.data.build_hnsw();
         self.bm25 = self.data.build_bm25();

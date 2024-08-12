@@ -65,7 +65,6 @@ document_loaders:
   # Note: Use `$1` for input file and `$2` for output file. If `$2` is omitted, use stdout as output.
   pdf: 'pdftotext $1 -'                         # Load .pdf file, see https://poppler.freedesktop.org to set up pdftotext
   docx: 'pandoc --to plain $1'                  # Load .docx file, see https://pandoc.org to set up pandoc
-  recursive_url: 'rag-crawler $1 $2'            # Load websites, see https://github.com/sigoden/rag-crawler to set up rag-crawler
 
 # ---- apperence ----
 highlight: true                  # Controls syntax highlighting
