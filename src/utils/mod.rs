@@ -121,6 +121,17 @@ pub fn fuzzy_match(text: &str, pattern: &str) -> bool {
     pattern_index == pattern_chars.len()
 }
 
+pub fn pretty_error(err: &anyhow::Error) -> String {
+    let mut output = vec![];
+    output.push(err.to_string());
+    output.push("Caused by:".to_string());
+    for (i, cause) in err.chain().skip(1).enumerate() {
+        output.push(format!("    {i}: {cause}"));
+    }
+    output.push(String::new());
+    output.join("\n")
+}
+
 pub fn error_text(input: &str) -> String {
     nu_ansi_term::Style::new()
         .fg(nu_ansi_term::Color::Red)

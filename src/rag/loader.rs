@@ -11,15 +11,20 @@ pub async fn load_recursive_url(
     path: &str,
 ) -> Result<Vec<(String, RagMetadata)>> {
     let extension = RECURSIVE_URL_LOADER;
-    let loader_command = loaders
-        .get(extension)
-        .with_context(|| format!("Document loader '{extension}' not configured"))?;
-    let contents = run_loader_command(path, extension, loader_command)?;
-    let pages: Vec<WebPage> = serde_json::from_str(&contents).context(r#"The crawler response is invalid. It should follow the JSON format: `[{"path":"...", "text":"..."}]`."#)?;
+    let pages: Vec<Page> = match loaders.get(extension) {
+        Some(loader_command) => {
+            let contents = run_loader_command(path, extension, loader_command)?;
+            serde_json::from_str(&contents).context(r#"The crawler response is invalid. It should follow the JSON format: `[{"path":"...", "text":"..."}]`."#)?
+        }
+        None => {
+            let options = CrawlOptions::preset(path);
+            crawl_website(path, options).await?
+        }
+    };
     let output = pages
         .into_iter()
         .map(|v| {
-            let WebPage { path, text } = v;
+            let Page { path, text } = v;
             let mut metadata: RagMetadata = Default::default();
             metadata.insert(PATH_METADATA.into(), path);
             metadata.insert(EXTENSION_METADATA.into(), "md".into());
@@ -27,12 +32,6 @@ pub async fn load_recursive_url(
         })
         .collect();
     Ok(output)
-}
-
-#[derive(Debug, Deserialize)]
-struct WebPage {
-    path: String,
-    text: String,
 }
 
 pub async fn load_path(
