@@ -372,7 +372,7 @@ impl Rag {
         self.data.document_paths = document_paths;
 
         if self.data.files.is_empty() {
-            bail!("No documents");
+            bail!("No RAG files");
         }
 
         progress(&spinner, "Building store".into());
