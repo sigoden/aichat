@@ -749,6 +749,8 @@ impl Config {
                 if self.model.id() != model_id {
                     let model = Model::retrieve_chat(self, model_id)?;
                     role.set_model(&model);
+                } else {
+                    role.set_model(&self.model);
                 }
             }
             None => role.set_model(&self.model),
