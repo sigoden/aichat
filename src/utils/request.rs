@@ -207,7 +207,7 @@ pub async fn crawl_website(start_url: &str, options: CrawlOptions) -> Result<Vec
                         .map_err(|_| anyhow!("Invalid crawl page at {}", path))?;
                     let mut page = crawl_page(&normalized_start_url, &path, options)
                         .await
-                        .with_context(|| format!("Failed to crawl page {}", url.as_str()))?;
+                        .with_context(|| format!("Failed to crawl {}", url.as_str()))?;
                     page.0 = url.as_str().to_string();
                     Ok(page)
                 }
@@ -312,8 +312,10 @@ async fn crawl_gh_tree(start_url: &Url, exclude: &[String]) -> Result<Vec<String
     let paths = tree
         .iter()
         .flat_map(|v| {
+            let typ = v["type"].as_str()?;
             let path = v["path"].as_str()?;
-            if (path.ends_with(".md") || path.ends_with(".MD"))
+            if typ == "blob"
+                && (path.ends_with(".md") || path.ends_with(".MD"))
                 && path.starts_with(&root_path)
                 && !should_exclude_link(path, exclude)
             {
@@ -397,11 +399,11 @@ fn should_exclude_link(link: &str, exclude: &[String]) -> bool {
     let name = parts.last().unwrap_or(&"").to_lowercase();
 
     for exclude_name in exclude {
-        let yes = match EXTENSION_RE.is_match(exclude_name) {
+        let cond = match EXTENSION_RE.is_match(exclude_name) {
             Ok(true) => exclude_name.to_lowercase() == name.to_lowercase(),
             _ => exclude_name.to_lowercase() == EXTENSION_RE.replace(&name, "").to_lowercase(),
         };
-        if yes {
+        if cond {
             return true;
         }
     }
