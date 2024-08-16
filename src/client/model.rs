@@ -187,10 +187,6 @@ impl Model {
         self.data.supports_vision
     }
 
-    pub fn supports_function_calling(&self) -> bool {
-        self.data.supports_function_calling
-    }
-
     pub fn default_chunk_size(&self) -> usize {
         self.data.default_chunk_size.unwrap_or(1000)
     }
