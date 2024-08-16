@@ -1116,7 +1116,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn select_functions(&self, model: &Model, role: &Role) -> Option<Vec<FunctionDeclaration>> {
+    pub fn select_functions(&self, role: &Role) -> Option<Vec<FunctionDeclaration>> {
         let mut functions = vec![];
         if self.function_calling {
             if let Some(use_tools) = role.use_tools() {
@@ -1175,12 +1175,6 @@ impl Config {
                         .filter(|v| !tool_names.contains(&v.name)),
                 );
                 functions = agent_functions;
-            }
-            if !functions.is_empty() && !model.supports_function_calling() {
-                functions.clear();
-                if *IS_STDOUT_TERMINAL {
-                    eprintln!("{}", warning_text("WARNING: This LLM or client does not support function calling, despite the context requiring it."));
-                }
             }
         };
         if functions.is_empty() {
