@@ -47,7 +47,7 @@ fn prepare_chat_completions(
         .get_api_base()
         .unwrap_or_else(|_| API_BASE.to_string());
 
-    let url = format!("{api_base}/chat/completions");
+    let url = format!("{}/chat/completions", api_base.trim_end_matches('/'));
 
     let body = openai_build_chat_completions_body(data, &self_.model);
 

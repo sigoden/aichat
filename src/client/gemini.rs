@@ -6,12 +6,13 @@ use reqwest::RequestBuilder;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta/models/";
+const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta";
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct GeminiConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
+    pub api_base: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
     pub patch: Option<RequestPatch>,
@@ -20,6 +21,7 @@ pub struct GeminiConfig {
 
 impl GeminiClient {
     config_get_fn!(api_key, get_api_key);
+    config_get_fn!(api_base, get_api_base);
 
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
@@ -41,13 +43,22 @@ fn prepare_chat_completions(
     data: ChatCompletionsData,
 ) -> Result<RequestData> {
     let api_key = self_.get_api_key()?;
+    let api_base = self_
+        .get_api_base()
+        .unwrap_or_else(|_| API_BASE.to_string());
 
     let func = match data.stream {
         true => "streamGenerateContent",
         false => "generateContent",
     };
 
-    let url = format!("{API_BASE}{}:{}?key={}", self_.model.name(), func, api_key);
+    let url = format!(
+        "{}/models/{}:{}?key={}",
+        api_base.trim_end_matches('/'),
+        self_.model.name(),
+        func,
+        api_key
+    );
 
     let body = gemini_build_chat_completions_body(data, &self_.model)?;
 
@@ -58,9 +69,13 @@ fn prepare_chat_completions(
 
 fn prepare_embeddings(self_: &GeminiClient, data: EmbeddingsData) -> Result<RequestData> {
     let api_key = self_.get_api_key()?;
+    let api_base = self_
+        .get_api_base()
+        .unwrap_or_else(|_| API_BASE.to_string());
 
     let url = format!(
-        "{API_BASE}{}:embedContent?key={}",
+        "{}/models/{}:embedContent?key={}",
+        api_base.trim_end_matches('/'),
         self_.model.name(),
         api_key
     );

@@ -11,6 +11,7 @@ const API_BASE: &str = "https://api.cloudflare.com/client/v4";
 pub struct CloudflareConfig {
     pub name: Option<String>,
     pub account_id: Option<String>,
+    pub api_base: Option<String>,
     pub api_key: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
@@ -21,6 +22,7 @@ pub struct CloudflareConfig {
 impl CloudflareClient {
     config_get_fn!(account_id, get_account_id);
     config_get_fn!(api_key, get_api_key);
+    config_get_fn!(api_base, get_api_base);
 
     pub const PROMPTS: [PromptAction<'static>; 2] = [
         ("account_id", "Account ID:", true, PromptKind::String),
@@ -45,9 +47,13 @@ fn prepare_chat_completions(
 ) -> Result<RequestData> {
     let account_id = self_.get_account_id()?;
     let api_key = self_.get_api_key()?;
+    let api_base = self_
+        .get_api_base()
+        .unwrap_or_else(|_| API_BASE.to_string());
 
     let url = format!(
-        "{API_BASE}/accounts/{account_id}/ai/run/{}",
+        "{}/accounts/{account_id}/ai/run/{}",
+        api_base.trim_end_matches('/'),
         self_.model.name()
     );
 

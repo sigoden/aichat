@@ -36,7 +36,6 @@ impl OpenAICompatibleClient {
     ];
 }
 
-
 impl_client_trait!(
     OpenAICompatibleClient,
     (
@@ -55,11 +54,16 @@ fn prepare_chat_completions(
     let api_key = self_.get_api_key().ok();
     let api_base = get_api_base_ext(self_)?;
 
-    let chat_endpoint = self_
-        .config
-        .chat_endpoint
-        .as_deref()
-        .unwrap_or("/chat/completions");
+    let chat_endpoint = match self_.config.chat_endpoint.clone() {
+        Some(v) => {
+            if v.starts_with('/') {
+                v
+            } else {
+                format!("/{}", v)
+            }
+        }
+        None => "/chat/completions".into(),
+    };
 
     let url = format!("{api_base}{chat_endpoint}");
 
@@ -126,7 +130,7 @@ fn get_api_base_ext(self_: &OpenAICompatibleClient) -> Result<String> {
             }
         }
     };
-    Ok(api_base)
+    Ok(api_base.trim_end_matches('/').to_string())
 }
 
 pub async fn generic_rerank(builder: RequestBuilder, _model: &Model) -> Result<RerankOutput> {
