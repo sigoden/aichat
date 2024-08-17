@@ -11,19 +11,19 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::borrow::BorrowMut;
 
-const CHAT_COMPLETIONS_API_URL: &str =
-    "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation";
+const API_BASE: &str = "https://dashscope.aliyuncs.com/api/v1";
 
-const CHAT_COMPLETIONS_API_URL_VL: &str =
-    "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
+const CHAT_COMPLETIONS_ENDPOINT: &str = "/services/aigc/text-generation/generation";
 
-const EMBEDDINGS_API_URL: &str =
-    "https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding";
+const CHAT_COMPLETIONS_VL_ENDPOINT: &str = "/services/aigc/multimodal-generation/generation";
+
+const EMBEDDINGS_ENDPOINT: &str = "/services/embeddings/text-embedding/text-embedding";
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct QianwenConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
+    pub api_base: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
     pub patch: Option<RequestPatch>,
@@ -32,6 +32,7 @@ pub struct QianwenConfig {
 
 impl QianwenClient {
     config_get_fn!(api_key, get_api_key);
+    config_get_fn!(api_base, get_api_base);
 
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
@@ -82,12 +83,21 @@ fn prepare_chat_completions(
     data: ChatCompletionsData,
 ) -> Result<RequestData> {
     let api_key = self_.get_api_key()?;
+    let api_base = self_
+        .get_api_base()
+        .unwrap_or_else(|_| API_BASE.to_string());
 
     let stream = data.stream;
 
     let url = match self_.model().supports_vision() {
-        true => CHAT_COMPLETIONS_API_URL_VL,
-        false => CHAT_COMPLETIONS_API_URL,
+        true => format!(
+            "{}{CHAT_COMPLETIONS_VL_ENDPOINT}",
+            api_base.trim_end_matches('/'),
+        ),
+        false => format!(
+            "{}{CHAT_COMPLETIONS_ENDPOINT}",
+            api_base.trim_end_matches('/'),
+        ),
     };
 
     let (body, has_upload) = build_chat_completions_body(data, &self_.model)?;
@@ -108,6 +118,11 @@ fn prepare_chat_completions(
 
 fn prepare_embeddings(self_: &QianwenClient, data: EmbeddingsData) -> Result<RequestData> {
     let api_key = self_.get_api_key()?;
+    let api_base = self_
+        .get_api_base()
+        .unwrap_or_else(|_| API_BASE.to_string());
+
+    let url = format!("{}{EMBEDDINGS_ENDPOINT}", api_base.trim_end_matches('/'),);
 
     let text_type = match data.query {
         true => "query",
@@ -124,7 +139,7 @@ fn prepare_embeddings(self_: &QianwenClient, data: EmbeddingsData) -> Result<Req
         }
     });
 
-    let mut request_data = RequestData::new(EMBEDDINGS_API_URL, body);
+    let mut request_data = RequestData::new(url, body);
 
     request_data.bearer_auth(api_key);
 

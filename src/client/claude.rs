@@ -5,12 +5,13 @@ use reqwest::RequestBuilder;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-const API_BASE: &str = "https://api.anthropic.com/v1/messages";
+const API_BASE: &str = "https://api.anthropic.com/v1";
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ClaudeConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
+    pub api_base: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
     pub patch: Option<RequestPatch>,
@@ -19,6 +20,7 @@ pub struct ClaudeConfig {
 
 impl ClaudeClient {
     config_get_fn!(api_key, get_api_key);
+    config_get_fn!(api_base, get_api_base);
 
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
@@ -40,10 +42,14 @@ fn prepare_chat_completions(
     data: ChatCompletionsData,
 ) -> Result<RequestData> {
     let api_key = self_.get_api_key().ok();
+    let api_base = self_
+        .get_api_base()
+        .unwrap_or_else(|_| API_BASE.to_string());
 
+    let url = format!("{}/messages", api_base.trim_end_matches('/'));
     let body = claude_build_chat_completions_body(data, &self_.model)?;
 
-    let mut request_data = RequestData::new(API_BASE, body);
+    let mut request_data = RequestData::new(url, body);
 
     request_data.header("anthropic-version", "2023-06-01");
     if let Some(api_key) = api_key {

@@ -1,19 +1,18 @@
-use super::*;
 use super::openai_compatible::*;
+use super::*;
 
 use anyhow::{bail, Context, Result};
 use reqwest::RequestBuilder;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-const CHAT_COMPLETIONS_API_URL: &str = "https://api.cohere.ai/v1/chat";
-const EMBEDDINGS_API_URL: &str = "https://api.cohere.ai/v1/embed";
-const RERANK_API_URL: &str = "https://api.cohere.ai/v1/rerank";
+const API_BASE: &str = "https://api.cohere.ai/v1";
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct CohereConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
+    pub api_base: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
     pub patch: Option<RequestPatch>,
@@ -22,6 +21,7 @@ pub struct CohereConfig {
 
 impl CohereClient {
     config_get_fn!(api_key, get_api_key);
+    config_get_fn!(api_base, get_api_base);
 
     pub const PROMPTS: [PromptAction<'static>; 1] =
         [("api_key", "API Key:", true, PromptKind::String)];
@@ -43,10 +43,14 @@ fn prepare_chat_completions(
     data: ChatCompletionsData,
 ) -> Result<RequestData> {
     let api_key = self_.get_api_key()?;
+    let api_base = self_
+        .get_api_base()
+        .unwrap_or_else(|_| API_BASE.to_string());
 
+    let url = format!("{}/chat", api_base.trim_end_matches('/'));
     let body = build_chat_completions_body(data, &self_.model)?;
 
-    let mut request_data = RequestData::new(CHAT_COMPLETIONS_API_URL, body);
+    let mut request_data = RequestData::new(url, body);
 
     request_data.bearer_auth(api_key);
 
@@ -55,6 +59,11 @@ fn prepare_chat_completions(
 
 fn prepare_embeddings(self_: &CohereClient, data: EmbeddingsData) -> Result<RequestData> {
     let api_key = self_.get_api_key()?;
+    let api_base = self_
+        .get_api_base()
+        .unwrap_or_else(|_| API_BASE.to_string());
+
+    let url = format!("{}/embed", api_base.trim_end_matches('/'));
 
     let input_type = match data.query {
         true => "search_query",
@@ -67,7 +76,7 @@ fn prepare_embeddings(self_: &CohereClient, data: EmbeddingsData) -> Result<Requ
         "input_type": input_type,
     });
 
-    let mut request_data = RequestData::new(EMBEDDINGS_API_URL, body);
+    let mut request_data = RequestData::new(url, body);
 
     request_data.bearer_auth(api_key);
 
@@ -76,10 +85,14 @@ fn prepare_embeddings(self_: &CohereClient, data: EmbeddingsData) -> Result<Requ
 
 fn prepare_rerank(self_: &CohereClient, data: RerankData) -> Result<RequestData> {
     let api_key = self_.get_api_key()?;
+    let api_base = self_
+        .get_api_base()
+        .unwrap_or_else(|_| API_BASE.to_string());
 
+    let url = format!("{}/rerank", api_base.trim_end_matches('/'));
     let body = generic_build_rerank_body(data, &self_.model);
 
-    let mut request_data = RequestData::new(RERANK_API_URL, body);
+    let mut request_data = RequestData::new(url, body);
 
     request_data.bearer_auth(api_key);
 
