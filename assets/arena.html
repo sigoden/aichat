@@ -121,6 +121,7 @@
 
     .chat-message-content .error {
       color: red;
+      background: none;
     }
 
     .chat-message-content .message-text {
@@ -1028,7 +1029,7 @@
     }
 
     function renderMarkdown(text, error = '') {
-      return marked.marked(text) + (error ? `<p class="error">${error}</p>` : '');
+      return marked.marked(text) + (error ? `<pre class="error">${error}</pre>` : '');
     }
 
     function calculateOffsets(pieces) {
