@@ -67,7 +67,7 @@ impl SseHandler {
     }
 
     fn safe_ret(&self, ret: Result<()>) -> Result<()> {
-        if ret.is_err() && self.abort.aborted() {
+        if self.abort.aborted() {
             return Ok(());
         }
         ret
