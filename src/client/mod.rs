@@ -40,10 +40,11 @@ register_client!(
     (qianwen, "qianwen", QianwenConfig, QianwenClient),
 );
 
-pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 14] = [
+pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 15] = [
     ("deepinfra", "https://api.deepinfra.com/v1/openai"),
     ("deepseek", "https://api.deepseek.com"),
     ("fireworks", "https://api.fireworks.ai/inference/v1"),
+    ("github", "https://models.inference.ai.azure.com"),
     ("groq", "https://api.groq.com/openai/v1"),
     ("jina", "https://api.jina.ai/v1"),
     ("lingyiwanwu", "https://api.lingyiwanwu.com/v1"),

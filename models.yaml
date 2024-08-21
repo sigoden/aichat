@@ -724,6 +724,44 @@
     input_price: 0.14
     output_price: 0.14
 
+- platform: github
+  # docs:
+  #   - https://github.com/marketplace/models
+  #   - https://deepinfra.com/pricing
+  models:
+    - name: gpt-4o
+      max_input_tokens: 128000
+      supports_function_calling: true
+    - name: gpt-4o-mini
+      max_input_tokens: 128000
+      supports_function_calling: true
+    - name: meta-llama-3.1-405b-instruct
+      max_input_tokens: 128000
+    - name: meta-llama-3.1-70b-instruct
+      max_input_tokens: 128000
+    - name: meta-llama-3.1-8b-instruct
+      max_input_tokens: 128000
+    - name: meta-llama-3-70b-instruct
+      max_input_tokens: 8192
+    - name: meta-llama-3-8b-instruct
+      max_input_tokens: 8192
+    - name: mistral-large-2407
+      max_input_tokens: 128000
+      supports_function_calling: true
+    - name: mistral-nemo
+      max_input_tokens: 128000
+      supports_function_calling: true
+    - name: cohere-command-r-plus
+      max_input_tokens: 128000
+      supports_function_calling: true
+    - name: cohere-command-r
+      max_input_tokens: 128000
+      supports_function_calling: true
+    - name: phi-3-medium-128k-instruct
+      max_input_tokens: 128000
+    - name: phi-3-mini-128k-instruct
+      max_input_tokens: 128000
+
 - platform: deepinfra
   # docs:
   #   - https://deepinfra.com/models
