@@ -73,7 +73,7 @@
       output_price: 10.5
       supports_vision: true
       supports_function_calling: true
-    - name: models/gemini-1.5-pro-exp-0801
+    - name: gemini-1.5-pro-exp-0801
       max_input_tokens: 2097152
       max_output_tokens: 8192
       supports_vision: true
@@ -281,6 +281,12 @@
       input_price: 0.19
       output_price: 0.19
       supports_function_calling: true
+    - name: llama-3.1-405b-reasoning
+      max_input_tokens: 8192
+    - name: llama-3.1-70b-versatile
+      max_input_tokens: 8192
+    - name: llama-3.1-8b-instant
+      max_input_tokens: 8192
     - name: mixtral-8x7b-32768
       max_input_tokens: 32768
       input_price: 0.24
@@ -290,12 +296,6 @@
       input_price: 0.2
       output_price: 0.2
       supports_function_calling: true
-    - name: llama-3.1-405b-reasoning
-      max_input_tokens: 16384
-    - name: llama-3.1-70b-versatile
-      max_input_tokens: 8192
-    - name: llama-3.1-8b-instant
-      max_input_tokens: 8192
 
 - platform: vertexai
   # docs:
