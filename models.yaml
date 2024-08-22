@@ -11,9 +11,9 @@
   models:
     - name: gpt-4o
       max_input_tokens: 128000
-      max_output_tokens: 4096
-      input_price: 5
-      output_price: 15
+      max_output_tokens: 16384
+      input_price: 2.5
+      output_price: 10
       supports_vision: true
       supports_function_calling: true
     - name: gpt-4o-mini
@@ -21,6 +21,13 @@
       max_output_tokens: 16384
       input_price: 0.15
       output_price: 0.6
+      supports_vision: true
+      supports_function_calling: true
+    - name: chatgpt-4o-latest
+      max_input_tokens: 128000
+      max_output_tokens: 16384
+      input_price: 5
+      output_price: 15
       supports_vision: true
       supports_function_calling: true
     - name: gpt-4-turbo
@@ -66,11 +73,16 @@
       output_price: 10.5
       supports_vision: true
       supports_function_calling: true
+    - name: models/gemini-1.5-pro-exp-0801
+      max_input_tokens: 2097152
+      max_output_tokens: 8192
+      supports_vision: true
+      supports_function_calling: true
     - name: gemini-1.5-flash-latest
       max_input_tokens: 1048576
       max_output_tokens: 8192
-      input_price: 0.35
-      output_price: 1.05
+      input_price: 0.075
+      output_price: 0.3
       supports_vision: true
       supports_function_calling: true
     - name: gemini-1.0-pro-latest
@@ -82,6 +94,8 @@
     - name: text-embedding-004
       type: embedding
       max_input_tokens: 2048
+      input_price: 0
+      output_price: 0
       default_chunk_size: 1500
       max_batch_size: 5
 
@@ -161,10 +175,11 @@
       output_price: 0.7
     - name: mistral-embed
       type: embedding
+      max_input_tokens: 8092
       input_price: 0.1
       output_vector_size: 1024
-      max_input_tokens: 8092
       default_chunk_size: 2000
+      max_batch_size: 3
 
 - platform: cohere
   # docs:
@@ -209,6 +224,10 @@
   #   - https://docs.perplexity.ai/docs/pricing
   #   - https://docs.perplexity.ai/reference/post_chat_completions
   models:
+    - name: llama-3.1-sonar-huge-128k-online
+      max_input_tokens: 127072
+      input_price: 5
+      output_price: 5
     - name: llama-3.1-sonar-large-128k-online
       max_input_tokens: 127072
       input_price: 1
@@ -297,8 +316,8 @@
     - name: gemini-1.5-flash-001
       max_input_tokens: 1000000
       max_output_tokens: 8192
-      input_price: 0.125
-      output_price: 0.375
+      input_price: 0.01875
+      output_price: 0.0375
       supports_vision: true
       supports_function_calling: true
     - name: gemini-1.0-pro-002
@@ -652,6 +671,11 @@
       input_price: 14
       output_price: 14
       supports_function_calling: true
+    - name: glm-4-long
+      max_input_tokens: 1000000
+      input_price: 0.14
+      output_price: 0.14
+      supports_function_calling: true
     - name: glm-4-alltools
       max_input_tokens: 2048
       input_price: 14
@@ -677,52 +701,53 @@
       input_price: 7
       output_price: 7
       supports_vision: true
-    - name: embedding-2
+    - name: embedding-3
       type: embedding
-      max_input_tokens: 512
+      max_input_tokens: 8192 
       input_price: 0.07
-      output_vector_size: 1024
-      default_chunk_size: 1000
+      output_vector_size: 2048
+      default_chunk_size: 2000
+      max_batch_size: 3
 
 - platform: lingyiwanwu
   # docs:
   #   - https://platform.lingyiwanwu.com/docs#%E6%A8%A1%E5%9E%8B
   #   - https://platform.lingyiwanwu.com/docs#%E8%AE%A1%E8%B4%B9%E5%8D%95%E5%85%83
   models:
-  - name: yi-large 
-    max_input_tokens: 32768
-    input_price: 2.8
-    output_price: 2.8
-  - name: yi-large-fc
-    max_input_tokens: 32768
-    input_price: 2.8
-    output_price: 2.8
-    supports_function_calling: true
-  - name: yi-large-rag
-    max_input_tokens: 16384
-    input_price: 3.5
-    output_price: 3.5
-  - name: yi-large-turbo
-    max_input_tokens: 16384
-    input_price: 1.68
-    output_price: 1.68
-  - name: yi-medium-200k
-    max_input_tokens: 200000
-    input_price: 1.68
-    output_price: 1.68
-  - name: yi-vision
-    max_input_tokens: 4096
-    input_price: 0.84
-    output_price: 0.84
-    supports_vision: true
-  - name: yi-medium 
-    max_input_tokens: 16384
-    input_price: 0.35
-    output_price: 0.35
-  - name: yi-spark
-    max_input_tokens: 16384
-    input_price: 0.14
-    output_price: 0.14
+    - name: yi-large 
+      max_input_tokens: 32768
+      input_price: 2.8
+      output_price: 2.8
+    - name: yi-large-fc
+      max_input_tokens: 32768
+      input_price: 2.8
+      output_price: 2.8
+      supports_function_calling: true
+    - name: yi-large-rag
+      max_input_tokens: 16384
+      input_price: 3.5
+      output_price: 3.5
+    - name: yi-large-turbo
+      max_input_tokens: 16384
+      input_price: 1.68
+      output_price: 1.68
+    - name: yi-medium-200k
+      max_input_tokens: 200000
+      input_price: 1.68
+      output_price: 1.68
+    - name: yi-vision
+      max_input_tokens: 16384
+      input_price: 0.84
+      output_price: 0.84
+      supports_vision: true
+    - name: yi-medium 
+      max_input_tokens: 16384
+      input_price: 0.35
+      output_price: 0.35
+    - name: yi-spark
+      max_input_tokens: 16384
+      input_price: 0.14
+      output_price: 0.14
 
 - platform: github
   # docs:
@@ -761,12 +786,28 @@
       max_input_tokens: 128000
     - name: phi-3-mini-128k-instruct
       max_input_tokens: 128000
+    - name: cohere-embed-v3-english
+      type: embedding
+      max_input_tokens: 512
+      output_vector_size: 1024
+      default_chunk_size: 1000
+      max_batch_size: 96
+    - name: cohere-embed-v3-multilingual
+      type: embedding
+      max_input_tokens: 512
+      output_vector_size: 1024
+      default_chunk_size: 1000
+      max_batch_size: 96
 
 - platform: deepinfra
   # docs:
   #   - https://deepinfra.com/models
   #   - https://deepinfra.com/pricing
   models:
+    - name: meta-llama/Meta-Llama-3.1-405B-Instruct
+      max_input_tokens: 32000
+      input_price: 2.7
+      output_price: 2.7
     - name: meta-llama/Meta-Llama-3.1-70B-Instruct
       max_input_tokens: 128000
       input_price: 0.52
@@ -930,48 +971,22 @@
   # docs:
   #   - https://openrouter.ai/docs#models
   models:
-    - name: meta-llama/llama-3.1-405b-instruct
-      max_input_tokens: 131072
-      input_price: 3
-      output_price: 3
-    - name: meta-llama/llama-3.1-70b-instruct
-      max_input_tokens: 131072
-      input_price: 0.75
-      output_price: 0.75
-    - name: meta-llama/llama-3.1-8b-instruct
-      max_input_tokens: 131072
-      input_price: 0.09
-      output_price: 0.09
-    - name: meta-llama/llama-3-70b-instruct
-      max_input_tokens: 8192
-      input_price: 0.59
-      output_price: 0.79
-    - name: meta-llama/llama-3-8b-instruct
-      max_input_tokens: 8192
-      input_price: 0.07
-      output_price: 0.07
-    - name: microsoft/phi-3-medium-128k-instruct
-      max_input_tokens: 128000
-      input_price: 1
-      output_price: 1
-    - name: microsoft/phi-3-mini-128k-instruct
-      max_input_tokens: 128000
-      input_price: 0.1
-      output_price: 0.1
-    - name: qwen/qwen-2-72b-instruct
-      max_input_tokens: 32768
-      input_price: 0.9
-      output_price: 0.9
     - name: openai/gpt-4o
       max_input_tokens: 128000
-      input_price: 5
-      output_price: 15
+      input_price: 2.5
+      output_price: 10
       supports_vision: true
       supports_function_calling: true
     - name: openai/gpt-4o-mini
       max_input_tokens: 128000
       input_price: 0.15
       output_price: 0.6
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/chatgpt-4o-latest
+      max_input_tokens: 128000
+      input_price: 5
+      output_price: 15
       supports_vision: true
       supports_function_calling: true
     - name: openai/gpt-4-turbo
@@ -987,6 +1002,12 @@
       supports_function_calling: true
     - name: google/gemini-pro-1.5
       max_input_tokens: 2800000
+      input_price: 2.5
+      output_price: 7.5
+      supports_vision: true
+      supports_function_calling: true
+    - name: google/gemini-pro-1.5-exp
+      max_input_tokens: 4000000
       input_price: 2.5
       output_price: 7.5
       supports_vision: true
@@ -1038,6 +1059,26 @@
       output_price: 1.25
       supports_vision: true
       supports_function_calling: true
+    - name: meta-llama/llama-3.1-405b-instruct
+      max_input_tokens: 131072
+      input_price: 3
+      output_price: 3
+    - name: meta-llama/llama-3.1-70b-instruct
+      max_input_tokens: 131072
+      input_price: 0.75
+      output_price: 0.75
+    - name: meta-llama/llama-3.1-8b-instruct
+      max_input_tokens: 131072
+      input_price: 0.09
+      output_price: 0.09
+    - name: meta-llama/llama-3-70b-instruct
+      max_input_tokens: 8192
+      input_price: 0.59
+      output_price: 0.79
+    - name: meta-llama/llama-3-8b-instruct
+      max_input_tokens: 8192
+      input_price: 0.07
+      output_price: 0.07
     - name: mistralai/mistral-large
       max_input_tokens: 128000
       input_price: 3
@@ -1078,8 +1119,12 @@
       max_input_tokens: 32768
       input_price: 0.14
       output_price: 0.28
+    - name: perplexity/llama-3.1-sonar-huge-128k-online
+      max_input_tokens: 127072
+      input_price: 5
+      output_price: 5
     - name: perplexity/llama-3.1-sonar-large-128k-online
-      max_input_tokens: 131072
+      max_input_tokens: 127072
       input_price: 1
       output_price: 1
     - name: perplexity/llama-3.1-sonar-large-128k-chat
@@ -1087,7 +1132,7 @@
       input_price: 1
       output_price: 1
     - name: perplexity/llama-3.1-sonar-small-128k-online
-      max_input_tokens: 131072
+      max_input_tokens: 127072
       input_price: 0.2
       output_price: 0.2
     - name: perplexity/llama-3.1-sonar-small-128k-chat
@@ -1098,6 +1143,32 @@
       max_input_tokens: 32768
       input_price: 3
       output_price: 3
+    - name: 01-ai/yi-large-fc
+      max_input_tokens: 16384
+      input_price: 3
+      output_price: 3
+      supports_function_calling: true
+    - name: 01-ai/yi-vision
+      max_input_tokens: 4096
+      input_price: 0.84
+      output_price: 0.84
+      supports_vision: true
+    - name: microsoft/phi-3.5-mini-128k-instruct
+      max_input_tokens: 128000
+      input_price: 0.1
+      output_price: 0.1
+    - name: microsoft/phi-3-medium-128k-instruct
+      max_input_tokens: 128000
+      input_price: 1
+      output_price: 1
+    - name: microsoft/phi-3-mini-128k-instruct
+      max_input_tokens: 128000
+      input_price: 0.1
+      output_price: 0.1
+    - name: qwen/qwen-2-72b-instruct
+      max_input_tokens: 32768
+      input_price: 0.9
+      output_price: 0.9
 
 - platform: octoai
   # docs:
@@ -1229,6 +1300,10 @@
     - name: jina-reranker-v2-base-multilingual
       type: reranker
       max_input_tokens: 1024
+      input_price: 0.02
+    - name: jina-reranker-v1-turbo-en
+      type: reranker
+      max_input_tokens: 8192
       input_price: 0.02
     - name: jina-reranker-v1-base-en
       type: reranker
