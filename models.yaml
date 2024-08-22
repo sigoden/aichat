@@ -786,6 +786,18 @@
       max_input_tokens: 128000
     - name: phi-3-mini-128k-instruct
       max_input_tokens: 128000
+    - name: cohere-embed-v3-english
+      type: embedding
+      max_input_tokens: 512
+      output_vector_size: 1024
+      default_chunk_size: 1000
+      max_batch_size: 96
+    - name: cohere-embed-v3-multilingual
+      type: embedding
+      max_input_tokens: 512
+      output_vector_size: 1024
+      default_chunk_size: 1000
+      max_batch_size: 96
 
 - platform: deepinfra
   # docs:
