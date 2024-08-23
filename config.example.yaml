@@ -118,8 +118,15 @@ clients:
     api_key: xxx                                      # Optional
     chat_endpoint: /chat/completions                  # Optional
     models:
-      - name: llama3
-        max_input_tokens: 8192
+      - name: llama3.1
+        max_input_tokens: 128000
+        supports_function_calling: true
+      - name: jina-embeddings-v2-base-en
+        type: embedding
+        default_chunk_size: 1500
+        max_batch_size: 100
+      - name: jina-reranker-v2-base-multilingual
+        type: reranker
 
   # See https://ai.google.dev/docs
   - type: gemini
@@ -173,9 +180,14 @@ clients:
     api_auth: Basic xxx                               # optional
     models:
       - name: llama3.1
-        max_input_tokens: 8192
+        max_input_tokens: 128000
         supports_function_calling: true
-      - name: nomic-embed-text:latest
+      - name: gemma2
+        max_input_tokens: 8192
+      - name: mistral-nemo
+        max_input_tokens: 128000
+        supports_function_calling: true
+      - name: nomic-embed-text
         type: embedding
         default_chunk_size: 1000
         max_batch_size: 50
