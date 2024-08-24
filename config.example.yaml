@@ -157,6 +157,12 @@ clients:
     api_base: https://api.mistral.ai/v1
     api_key: xxx
 
+  # See https://docs.ai21.com/docs/quickstart
+  - type: openai-compatible
+    name: ai12
+    api_key: xxx
+    api_base: https://api.ai21.com/studio/v1
+
   # See https://docs.cohere.com/docs/the-cohere-platform
   - type: cohere
     api_key: xxx

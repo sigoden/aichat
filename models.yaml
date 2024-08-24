@@ -108,7 +108,7 @@
   models:
     - name: claude-3-5-sonnet-20240620
       max_input_tokens: 200000
-      max_output_tokens: 4096
+      max_output_tokens: 8192
       require_max_tokens: true
       input_price: 3
       output_price: 15
@@ -180,6 +180,22 @@
       output_vector_size: 1024
       default_chunk_size: 2000
       max_batch_size: 3
+
+- platform: ai21
+  # docs:
+  #   - https://docs.ai21.com/reference/jamba-15-api-ref
+  #   - https://www.ai21.com/pricing
+  models:
+    - name: jamba-1.5-large
+      max_input_tokens: 256000
+      input_price: 2
+      output_price: 8
+      supports_function_calling: true
+    - name: jamba-1.5-mini
+      max_input_tokens: 256000
+      input_price: 0.2
+      output_price: 0.4
+      supports_function_calling: true
 
 - platform: cohere
   # docs:
@@ -328,7 +344,7 @@
       supports_function_calling: true
     - name: claude-3-5-sonnet@20240620
       max_input_tokens: 200000
-      max_output_tokens: 4096
+      max_output_tokens: 8192
       require_max_tokens: true
       input_price: 3
       output_price: 15
@@ -397,7 +413,7 @@
   models:
     - name: anthropic.claude-3-5-sonnet-20240620-v1:0
       max_input_tokens: 200000
-      max_output_tokens: 4096
+      max_output_tokens: 8192
       require_max_tokens: true
       input_price: 3
       output_price: 15
@@ -752,7 +768,6 @@
 - platform: github
   # docs:
   #   - https://github.com/marketplace/models
-  #   - https://deepinfra.com/pricing
   models:
     - name: gpt-4o
       max_input_tokens: 128000
@@ -1101,6 +1116,16 @@
       max_input_tokens: 32768
       input_price: 0.24
       output_price: 0.24
+    - name: ai21/jamba-1-5-large
+      max_input_tokens: 256000
+      input_price: 2
+      output_price: 8
+      supports_function_calling: true
+    - name: ai21/jamba-1-5-mini
+      max_input_tokens: 256000
+      input_price: 0.2
+      output_price: 0.4
+      supports_function_calling: true
     - name: cohere/command-r-plus
       max_input_tokens: 128000
       input_price: 3
