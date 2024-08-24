@@ -206,6 +206,7 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
                             },
                         })
                     }).collect();
+                    let text = if text.is_empty() { Value::Null } else { text.into() };
                     let mut messages = vec![
                         json!({ "role": MessageRole::Assistant, "content": text, "tool_calls": tool_calls })
                     ];

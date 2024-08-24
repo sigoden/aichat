@@ -79,20 +79,21 @@ test-server() {
 }
 
 OPENAI_COMPATIBLE_PLATFORMS=( \
-  openai,gpt-3.5-turbo,https://api.openai.com/v1 \
-  deepinfra,meta-llama/Meta-Llama-3-8B-Instruct,https://api.deepinfra.com/v1/openai \
+  openai,gpt-4o-mini,https://api.openai.com/v1 \
+  ai21,jamba-1.5-mini,https://api.ai21.com/studio/v1 \
+  deepinfra,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.deepinfra.com/v1/openai \
   deepseek,deepseek-chat,https://api.deepseek.com \
-  fireworks,accounts/fireworks/models/llama-v3-8b-instruct,https://api.fireworks.ai/inference/v1 \
+  fireworks,accounts/fireworks/models/llama-v3p1-8b-instruct,https://api.fireworks.ai/inference/v1 \
   groq,llama3-8b-8192,https://api.groq.com/openai/v1 \
-  mistral,mistral-small-latest,https://api.mistral.ai/v1 \
+  mistral,open-mistral-nemo,https://api.mistral.ai/v1 \
   moonshot,moonshot-v1-8k,https://api.moonshot.cn/v1 \
-  openrouter,meta-llama/llama-3-8b-instruct,https://openrouter.ai/api/v1 \
-  octoai,meta-llama-3-8b-instruct,https://text.octoai.run/v1 \
-  perplexity,llama-3-8b-instruct,https://api.perplexity.ai \
-  together,meta-llama/Llama-3-8b-chat-hf,https://api.together.xyz/v1 \
+  openrouter,openai/gpt-4o-mini,https://openrouter.ai/api/v1 \
+  octoai,meta-llama-3.1-8b-instruct,https://text.octoai.run/v1 \
+  perplexity,llama-3.1-8b-instruct,https://api.perplexity.ai \
+  together,meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo,https://api.together.xyz/v1 \
   zhipuai,glm-4-0520,https://open.bigmodel.cn/api/paas/v4 \
   lingyiwanwu,yi-large,https://api.lingyiwanwu.com/v1 \
-  github,meta-llama-3.1-8b-instruct,https://models.inference.ai.azure.com \
+  github,gpt-4o-mini,https://models.inference.ai.azure.com \
 )
 
 # @cmd Chat with any LLM api 
@@ -280,49 +281,6 @@ chat-vertexai() {
 -d "$(_build_body vertexai "$@")" 
 }
 
-# @cmd Chat with vertexai-claude api
-# @env require-tools gcloud
-# @env VERTEXAI_PROJECT_ID!
-# @env VERTEXAI_LOCATION!
-# @option -m --model=claude-3-haiku@20240307 $VERTEXAI_CLAUDE_MODEL
-# @flag -S --no-stream
-# @arg text~
-chat-vertexai-claude() {
-    api_key="$(gcloud auth print-access-token)"
-    url=https://$VERTEXAI_LOCATION-aiplatform.googleapis.com/v1/projects/$VERTEXAI_PROJECT_ID/locations/$VERTEXAI_LOCATION/publishers/anthropic/models/$argc_model:streamRawPredict
-    _wrapper curl -i $url \
--X POST \
--H "Authorization: Bearer $api_key" \
--H 'Content-Type: application/json' \
--d "$(_build_body vertexai-claude "$@")" 
-}
-
-# @cmd Chat with bedrock api
-# @meta require-tools aws
-# @option -m --model=mistral.mistral-7b-instruct-v0:2 $BEDROCK_MODEL
-# @env AWS_REGION=us-east-1
-chat-bedrock() {
-    file="$(mktemp)"
-    case "$argc_model" in
-        mistral.* | meta.*)
-            body='{"prompt":"'"$*"'"}'
-            ;;
-        anthropic.*)
-            body="$(_build_body bedrock-claude "$@")"
-            ;;
-        *)
-            _die "Invalid model: $argc_model"
-            ;;
-    esac
-
-    _wrapper aws bedrock-runtime invoke-model \
-        --model-id $argc_model \
-        --region $AWS_REGION \
-        --body "$(echo "$body" | base64)" \
-        "$file"
-    cat "$file"
-}
-
 # @cmd Chat with cloudflare api
 # @env CLOUDFLARE_API_KEY!
 # @option -m --model=@cf/meta/llama-3-8b-instruct $CLOUDFLARE_MODEL
@@ -484,20 +442,6 @@ _build_body() {
         claude)
             echo '{
     "model": "'$argc_model'",
-    "messages": [
-        {
-            "role": "user",
-            "content": "'"$*"'"
-        }
-    ],
-    "max_tokens": 4096,
-    "stream": '$stream'
-}'
-
-            ;;
-        vertexai-claude|bedrock-claude)
-            echo '{
-    "anthropic_version": "vertex-2023-10-16",
     "messages": [
         {
             "role": "user",
