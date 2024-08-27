@@ -236,6 +236,9 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
     if let Some(v) = model.max_tokens_param() {
         body["options"]["num_predict"] = v.into();
     }
+    if let Some(v) = model.max_input_tokens() {
+        body["options"]["num_ctx"] = v.into();
+    }
     if let Some(v) = temperature {
         body["options"]["temperature"] = v.into();
     }
