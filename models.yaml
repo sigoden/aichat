@@ -413,7 +413,7 @@
   models:
     - name: anthropic.claude-3-5-sonnet-20240620-v1:0
       max_input_tokens: 200000
-      max_output_tokens: 8192
+      max_output_tokens: 4096
       require_max_tokens: true
       input_price: 3
       output_price: 15
