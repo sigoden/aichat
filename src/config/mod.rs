@@ -1808,9 +1808,6 @@ impl Config {
 
     fn load_functions(&mut self) -> Result<()> {
         self.functions = Functions::init(&Self::functions_file()?)?;
-        if self.functions.is_empty() {
-            self.function_calling = false;
-        }
         Ok(())
     }
 
