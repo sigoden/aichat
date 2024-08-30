@@ -51,15 +51,10 @@ pub struct Session {
 
 impl Session {
     pub fn new(config: &Config, name: &str) -> Self {
-        let save_session = if name == TEMP_SESSION_NAME {
-            None
-        } else {
-            config.save_session
-        };
         let role = config.extract_role();
         let mut session = Self {
             name: name.to_string(),
-            save_session,
+            save_session: config.save_session,
             ..Default::default()
         };
         session.set_role(role);
@@ -188,8 +183,9 @@ impl Session {
             .map(|(name, value)| format!("{name:<20}{value}"))
             .collect();
 
+        lines.push(String::new());
+
         if !self.is_empty() {
-            lines.push("".into());
             let resolve_url_fn = |url: &str| resolve_data_url(&self.data_urls, url.to_string());
 
             for message in &self.messages {
@@ -313,6 +309,10 @@ impl Session {
                         })
                         .prompt()?;
                 }
+            } else if save_session == Some(true) && session_name == TEMP_SESSION_NAME {
+                let now = chrono::Local::now();
+                let formatted_time = now.format("%Y%m%dT%H:%M:%S").to_string();
+                session_name = format!("{TEMP_SESSION_NAME}-{formatted_time}");
             }
             let session_path = session_dir.join(format!("{session_name}.yaml"));
             self.save(&session_name, &session_path, is_repl)?;

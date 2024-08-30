@@ -991,6 +991,9 @@ impl Config {
                 for entry in rd.flatten() {
                     let name = entry.file_name();
                     if let Some(name) = name.to_string_lossy().strip_suffix(".yaml") {
+                        if name.starts_with(TEMP_SESSION_NAME) {
+                            continue;
+                        }
                         names.push(name.to_string());
                     }
                 }

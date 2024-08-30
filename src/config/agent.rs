@@ -420,14 +420,7 @@ fn builtin_variables() -> Vec<(&'static str, String)> {
         ("__arch__", env::consts::ARCH.to_string()),
         ("__shell__", SHELL.name.clone()),
         ("__locale__", sys_locale::get_locale().unwrap_or_default()),
-        (
-            "__now__",
-            time::OffsetDateTime::now_utc()
-                .format(simplelog::format_description!(
-                    "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:3]Z"
-                ))
-                .unwrap_or_default(),
-        ),
+        ("__now__", now()),
         (
             "__cwd__",
             env::current_dir()
