@@ -31,7 +31,7 @@ lazy_static::lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static::lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 28] = [
+    static ref REPL_COMMANDS: [ReplCommand; 30] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
@@ -42,13 +42,23 @@ lazy_static::lazy_static! {
         ),
         ReplCommand::new(
             ".role",
-            "Switch to a specific role",
+            "Create or switch to a specific role",
             AssertState::False(StateFlags::SESSION | StateFlags::AGENT)
         ),
         ReplCommand::new(
             ".info role",
             "View role info",
             AssertState::True(StateFlags::ROLE),
+        ),
+        ReplCommand::new(
+            ".edit role",
+            "Edit the current role",
+            AssertState::TrueFalse(StateFlags::ROLE, StateFlags::SESSION_EMPTY | StateFlags::SESSION),
+        ),
+        ReplCommand::new(
+            ".save role",
+            "Save the current role to file",
+            AssertState::True(StateFlags::ROLE)
         ),
         ReplCommand::new(
             ".exit role",
@@ -66,19 +76,19 @@ lazy_static::lazy_static! {
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION),
         ),
         ReplCommand::new(
-            ".save session",
-            "Save the current session to file",
-            AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
-        ),
-        ReplCommand::new(
             ".edit session",
-            "Edit the current session with an editor",
+            "Edit the current session",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
         ReplCommand::new(
             ".clear messages",
             "Erase messages in the current session",
             AssertState::True(StateFlags::SESSION)
+        ),
+        ReplCommand::new(
+            ".save session",
+            "Save the current session to file",
+            AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
         ReplCommand::new(
             ".exit session",
@@ -219,24 +229,24 @@ impl Repl {
                 ".info" => match args {
                     Some("role") => {
                         let info = self.config.read().role_info()?;
-                        println!("{}", info);
+                        print!("{}", info);
                     }
                     Some("session") => {
                         let info = self.config.read().session_info()?;
-                        println!("{}", info);
+                        print!("{}", info);
                     }
                     Some("rag") => {
                         let info = self.config.read().rag_info()?;
-                        println!("{}", info);
+                        print!("{}", info);
                     }
                     Some("agent") => {
                         let info = self.config.read().agent_info()?;
-                        println!("{}", info);
+                        print!("{}", info);
                     }
                     Some(_) => unknown_command()?,
                     None => {
                         let output = self.config.read().sysinfo()?;
-                        println!("{}", output);
+                        print!("{}", output);
                     }
                 },
                 ".model" => match args {
@@ -259,10 +269,19 @@ impl Repl {
                             ask(&self.config, self.abort_signal.clone(), input, false).await?;
                         }
                         None => {
-                            self.config.write().use_role(args)?;
+                            let name = args;
+                            if Config::has_role(name) {
+                                self.config.write().use_role(name)?;
+                            } else {
+                                self.config.write().new_role(name)?;
+                            }
                         }
                     },
-                    None => println!(r#"Usage: .role <name> [text]..."#),
+                    None => println!(
+                        r#"Usage:
+    .role <name>                    # If the role exists, switch to it; otherwise, create a new role
+    .role <name> [text]...          # Temporarily switch to the role, send the text, and switch back"#
+                    ),
                 },
                 ".session" => {
                     self.config.write().use_session(args)?;
@@ -300,6 +319,9 @@ impl Repl {
                         Some((subcmd, args)) => (subcmd, Some(args.trim())),
                         None => (v, None),
                     }) {
+                        Some(("role", name)) => {
+                            self.config.write().save_role(name)?;
+                        }
                         Some(("session", name)) => {
                             self.config.write().save_session(name)?;
                         }
@@ -313,6 +335,9 @@ impl Repl {
                         Some((subcmd, args)) => (subcmd, Some(args.trim())),
                         None => (v, None),
                     }) {
+                        Some(("role", _)) => {
+                            self.config.write().edit_role()?;
+                        }
                         Some(("session", _)) => {
                             self.config.write().edit_session()?;
                         }

@@ -76,7 +76,7 @@ impl Server {
         let config = config.read();
         let clients = config.clients.clone();
         let model = config.model.clone();
-        let roles = config.roles.clone();
+        let roles = Config::all_roles();
         let mut models = list_models(&config);
         let mut default_model = model.clone();
         default_model.data_mut().name = DEFAULT_MODEL_NAME.into();

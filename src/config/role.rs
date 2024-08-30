@@ -2,14 +2,56 @@ use super::*;
 
 use crate::client::{Message, MessageContent, MessageRole, Model};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
+use fancy_regex::Regex;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 pub const SHELL_ROLE: &str = "%shell%";
 pub const EXPLAIN_SHELL_ROLE: &str = "%explain-shell%";
 pub const CODE_ROLE: &str = "%code%";
+pub const FUNCTIONS_ROLE: &str = "%functions%";
 
 pub const INPUT_PLACEHOLDER: &str = "__INPUT__";
+
+lazy_static::lazy_static! {
+    pub static ref BUILTIN_ROLES: Vec<Role> = {
+        [
+            (SHELL_ROLE, shell_prompt()),
+            (
+                EXPLAIN_SHELL_ROLE,
+                r#"Provide a terse, single sentence description of the given shell command.
+Describe each argument and option of the command.
+Provide short responses in about 80 words.
+APPLY MARKDOWN formatting when possible."#
+                    .into(),
+            ),
+            (
+                CODE_ROLE,
+                r#"Provide only code without comments or explanations.
+### INPUT:
+async sleep in js
+### OUTPUT:
+```javascript
+async function timeout(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+```
+"#
+                .into(),
+            ),
+            (FUNCTIONS_ROLE, r#"---
+use_tools: all
+---
+    "#.into()),
+        ]
+        .into_iter()
+        .map(|(name, content)| Role::new(name, &content))
+        .collect()
+    };
+
+    static ref RE_METADATA: Regex = Regex::new(r"(?s)-{3,}\s*(.*?)\s*-{3,}\s*(.*)").unwrap();
+}
 
 pub trait RoleLike {
     fn to_role(&self) -> Role;
@@ -46,57 +88,82 @@ pub struct Role {
 }
 
 impl Role {
-    pub fn new(name: &str, prompt: &str) -> Self {
-        Self {
-            name: name.into(),
-            prompt: prompt.into(),
+    pub fn new(name: &str, content: &str) -> Self {
+        let mut metadata = "";
+        let mut prompt = content.trim();
+        if let Ok(Some(caps)) = RE_METADATA.captures(content) {
+            if let (Some(metadata_value), Some(prompt_value)) = (caps.get(1), caps.get(2)) {
+                metadata = metadata_value.as_str().trim();
+                prompt = prompt_value.as_str().trim();
+            }
+        }
+        let mut role = Self {
+            name: name.to_string(),
+            prompt: prompt.to_string(),
             ..Default::default()
+        };
+        if !metadata.is_empty() {
+            if let Ok(value) = serde_yaml::from_str::<Value>(metadata) {
+                if let Some(value) = value.as_object() {
+                    for (key, value) in value {
+                        match key.as_str() {
+                            "model" => role.model_id = value.as_str().map(|v| v.to_string()),
+                            "temperature" => role.temperature = value.as_f64(),
+                            "top_p" => role.top_p = value.as_f64(),
+                            "use_tools" => role.use_tools = value.as_str().map(|v| v.to_string()),
+                            _ => (),
+                        }
+                    }
+                }
+            }
+        }
+        role
+    }
+
+    pub fn export(&self) -> String {
+        let mut metadata = vec![];
+        if let Some(model) = self.model_id() {
+            metadata.push(format!("model: {}", model));
+        }
+        if let Some(temperature) = self.temperature() {
+            metadata.push(format!("temperature: {}", temperature));
+        }
+        if let Some(top_p) = self.top_p() {
+            metadata.push(format!("top_p: {}", top_p));
+        }
+        if let Some(use_tools) = self.use_tools() {
+            metadata.push(format!("use_tools: {}", use_tools));
+        }
+        if metadata.is_empty() {
+            format!("{}\n", self.prompt)
+        } else if self.prompt.is_empty() {
+            format!("---\n{}\n---\n", metadata.join("\n"))
+        } else {
+            format!("---\n{}\n---\n\n{}\n", metadata.join("\n"), self.prompt)
         }
     }
 
-    pub fn builtin() -> Vec<Role> {
-        [
-            (SHELL_ROLE, shell_prompt(), None),
-            (
-                EXPLAIN_SHELL_ROLE,
-                r#"Provide a terse, single sentence description of the given shell command.
-Describe each argument and option of the command.
-Provide short responses in about 80 words.
-APPLY MARKDOWN formatting when possible."#
-                    .into(),
-                None,
-            ),
-            (
-                CODE_ROLE,
-                r#"Provide only code without comments or explanations.
-### INPUT:
-async sleep in js
-### OUTPUT:
-```javascript
-async function timeout(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-```
-"#
-                .into(),
-                None,
-            ),
-            ("%functions%", String::new(), Some("all".into())),
-        ]
-        .into_iter()
-        .map(|(name, prompt, use_tools)| Self {
-            name: name.into(),
-            prompt,
-            use_tools,
-            ..Default::default()
-        })
-        .collect()
-    }
+    pub fn save(&mut self, role_name: &str, role_path: &Path, is_repl: bool) -> Result<()> {
+        ensure_parent_exists(role_path)?;
 
-    pub fn export(&self) -> Result<String> {
-        let output = serde_yaml::to_string(&self)
-            .with_context(|| format!("Unable to show info about role {}", &self.name))?;
-        Ok(output.trim_end().to_string())
+        let content = self.export();
+        std::fs::write(role_path, content).with_context(|| {
+            format!(
+                "Failed to write role {} to {}",
+                self.name,
+                role_path.display()
+            )
+        })?;
+
+        if is_repl {
+            println!("✨ Saved role to '{}'", role_path.display());
+        }
+
+        if role_name != self.name {
+            self.name = role_name.to_string();
+        }
+
+        Ok(())
     }
 
     pub fn sync<T: RoleLike>(&mut self, role_like: &T) {
@@ -148,21 +215,6 @@ async function timeout(ms) {
 
     pub fn is_embedded_prompt(&self) -> bool {
         self.prompt.contains(INPUT_PLACEHOLDER)
-    }
-
-    pub fn complete_prompt_args(&mut self, name: &str) {
-        self.name = name.to_string();
-        self.prompt = complete_prompt_args(&self.prompt, &self.name);
-    }
-
-    pub fn match_name(&self, name: &str) -> bool {
-        if self.name.contains(':') {
-            let role_name_parts: Vec<&str> = self.name.split(':').collect();
-            let name_parts: Vec<&str> = name.split(':').collect();
-            role_name_parts[0] == name_parts[0] && role_name_parts.len() == name_parts.len()
-        } else {
-            self.name == name
-        }
     }
 
     pub fn echo_messages(&self, input: &Input) -> String {
@@ -239,6 +291,9 @@ impl RoleLike for Role {
     }
 
     fn set_model(&mut self, model: &Model) {
+        if !self.model().id().is_empty() {
+            self.model_id = Some(model.id().to_string());
+        }
         self.model = model.clone();
     }
 
@@ -253,14 +308,6 @@ impl RoleLike for Role {
     fn set_use_tools(&mut self, value: Option<String>) {
         self.use_tools = value;
     }
-}
-
-fn complete_prompt_args(prompt: &str, name: &str) -> String {
-    let mut prompt = prompt.trim().to_string();
-    for (i, arg) in name.split(':').skip(1).enumerate() {
-        prompt = prompt.replace(&format!("__ARG{}__", i + 1), arg);
-    }
-    prompt
 }
 
 fn parse_structure_prompt(prompt: &str) -> (&str, Vec<(&str, &str)>) {
@@ -331,18 +378,6 @@ Output plain text only, without any markdown formatting."#
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_merge_prompt_name() {
-        assert_eq!(
-            complete_prompt_args("convert __ARG1__", "convert:foo"),
-            "convert foo"
-        );
-        assert_eq!(
-            complete_prompt_args("convert __ARG1__ to __ARG2__", "convert:foo:bar"),
-            "convert foo to bar"
-        );
-    }
 
     #[test]
     fn test_parse_structure_prompt1() {

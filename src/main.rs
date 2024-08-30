@@ -78,11 +78,8 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         return Ok(());
     }
     if cli.list_roles {
-        config
-            .read()
-            .roles
-            .iter()
-            .for_each(|v| println!("{}", v.name()));
+        let roles = Config::list_roles(true).join("\n");
+        println!("{roles}");
         return Ok(());
     }
     if cli.list_agents {
