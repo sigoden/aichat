@@ -88,7 +88,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         return Ok(());
     }
     if cli.list_rags {
-        let rags = config.read().list_rags().join("\n");
+        let rags = Config::list_rags().join("\n");
         println!("{rags}");
         return Ok(());
     }

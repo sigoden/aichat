@@ -9,8 +9,8 @@ pub use self::role::{Role, RoleLike, BUILTIN_ROLES, CODE_ROLE, EXPLAIN_SHELL_ROL
 use self::session::Session;
 
 use crate::client::{
-    create_client_config, list_chat_models, list_client_types, list_reranker_models, ClientConfig,
-    Model, OPENAI_COMPATIBLE_PLATFORMS,
+    create_client_config, init_client, list_chat_models, list_client_types, list_reranker_models,
+    ClientConfig, Model, OPENAI_COMPATIBLE_PLATFORMS,
 };
 use crate::function::{FunctionDeclaration, Functions, ToolResult};
 use crate::rag::Rag;
@@ -1095,7 +1095,44 @@ impl Config {
         Ok(())
     }
 
-    pub fn list_rags(&self) -> Vec<String> {
+    pub async fn search_rag(
+        config: &GlobalConfig,
+        rag: &Rag,
+        text: &str,
+        abort_signal: AbortSignal,
+    ) -> Result<String> {
+        let (top_k, min_score_vector_search, min_score_keyword_search) = {
+            let config = config.read();
+            (
+                config.rag_top_k,
+                config.rag_min_score_vector_search,
+                config.rag_min_score_keyword_search,
+            )
+        };
+        let rerank = match config.read().rag_reranker_model.clone() {
+            Some(reranker_model_id) => {
+                let min_score = config.read().rag_min_score_rerank;
+                let rerank_model = Model::retrieve_reranker(&config.read(), &reranker_model_id)?;
+                let rerank_client = init_client(config, Some(rerank_model))?;
+                Some((rerank_client, min_score))
+            }
+            None => None,
+        };
+        let embeddings = rag
+            .search(
+                text,
+                top_k,
+                min_score_vector_search,
+                min_score_keyword_search,
+                rerank,
+                abort_signal,
+            )
+            .await?;
+        let text = config.read().rag_template(&embeddings, text);
+        Ok(text)
+    }
+
+    pub fn list_rags() -> Vec<String> {
         let rags_dir = match Self::rags_dir() {
             Ok(dir) => dir,
             Err(_) => return vec![],
@@ -1327,7 +1364,7 @@ impl Config {
                     .into_iter()
                     .map(|v| (v, None))
                     .collect(),
-                ".rag" => self.list_rags().into_iter().map(|v| (v, None)).collect(),
+                ".rag" => Self::list_rags().into_iter().map(|v| (v, None)).collect(),
                 ".agent" => list_agents().into_iter().map(|v| (v, None)).collect(),
                 ".starter" => match &self.agent {
                     Some(agent) => agent

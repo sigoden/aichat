@@ -1,4 +1,4 @@
-use crate::{client::*, config::*, utils::*};
+use crate::{client::*, config::*, function::*, rag::*, utils::*};
 
 use anyhow::{anyhow, bail, Result};
 use bytes::Bytes;
@@ -65,20 +65,18 @@ pub async fn run(config: GlobalConfig, addr: Option<String>) -> Result<()> {
 }
 
 struct Server {
-    clients: Vec<ClientConfig>,
-    model: Model,
+    config: Config,
     models: Vec<Value>,
     roles: Vec<Role>,
+    rags: Vec<String>,
 }
 
 impl Server {
     fn new(config: &GlobalConfig) -> Self {
-        let config = config.read();
-        let clients = config.clients.clone();
-        let model = config.model.clone();
-        let roles = Config::all_roles();
+        let mut config = config.read().clone();
+        config.functions = Functions::default();
         let mut models = list_models(&config);
-        let mut default_model = model.clone();
+        let mut default_model = config.model.clone();
         default_model.data_mut().name = DEFAULT_MODEL_NAME.into();
         models.insert(0, &default_model);
         let models: Vec<Value> = models
@@ -101,12 +99,13 @@ impl Server {
             })
             .collect();
         Self {
-            clients,
-            model,
-            roles,
+            config,
             models,
+            roles: Config::all_roles(),
+            rags: Config::list_rags(),
         }
     }
+
     async fn run(self: Arc<Self>, listener: TcpListener) -> Result<oneshot::Sender<()>> {
         let (tx, rx) = oneshot::channel();
         tokio::spawn(async move {
@@ -164,6 +163,10 @@ impl Server {
             self.list_models()
         } else if path == "/v1/roles" {
             self.list_roles()
+        } else if path == "/v1/rags" {
+            self.list_rags()
+        } else if path == "/v1/rags/search" {
+            self.search_rag(req).await
         } else if path == "/playground" || path == "/playground.html" {
             self.playground_page()
         } else if path == "/arena" || path == "/arena.html" {
@@ -220,6 +223,43 @@ impl Server {
         Ok(res)
     }
 
+    fn list_rags(&self) -> Result<AppResponse> {
+        let data = json!({ "data": self.rags });
+        let res = Response::builder()
+            .header("Content-Type", "application/json; charset=utf-8")
+            .body(Full::new(Bytes::from(data.to_string())).boxed())?;
+        Ok(res)
+    }
+
+    async fn search_rag(&self, req: hyper::Request<Incoming>) -> Result<AppResponse> {
+        let req_body = req.collect().await?.to_bytes();
+        let req_body: Value = serde_json::from_slice(&req_body)
+            .map_err(|err| anyhow!("Invalid request json, {err}"))?;
+
+        debug!("search rag request: {req_body}");
+        let SearchRagReqBody { name, input } = serde_json::from_value(req_body)
+            .map_err(|err| anyhow!("Invalid request body, {err}"))?;
+
+        let config = Arc::new(RwLock::new(self.config.clone()));
+
+        let abort_signal = create_abort_signal();
+
+        let rag = config
+            .read()
+            .rag_file(&name)
+            .ok()
+            .and_then(|rag_path| Rag::load(&config, &name, &rag_path).ok())
+            .ok_or_else(|| anyhow!("Invalid rag"))?;
+
+        let rag_result = Config::search_rag(&config, &rag, &input, abort_signal).await?;
+
+        let data = json!({ "data": rag_result });
+        let res = Response::builder()
+            .header("Content-Type", "application/json; charset=utf-8")
+            .body(Full::new(Bytes::from(data.to_string())).boxed())?;
+        Ok(res)
+    }
+
     async fn chat_completions(&self, req: hyper::Request<Incoming>) -> Result<AppResponse> {
         let req_body = req.collect().await?.to_bytes();
         let req_body: Value = serde_json::from_slice(&req_body)
@@ -238,16 +278,15 @@ impl Server {
             stream,
         } = req_body;
 
-        let config = Config {
-            clients: self.clients.to_vec(),
-            model: self.model.clone(),
-            ..Default::default()
-        };
+        let config = self.config.clone();
+
+        let default_model = config.model.clone();
+
         let config = Arc::new(RwLock::new(config));
 
         let (model_name, change) = if model == DEFAULT_MODEL_NAME {
-            (self.model.id(), true)
-        } else if self.model.id() == model {
+            (default_model.id(), true)
+        } else if default_model.id() == model {
             (model, false)
         } else {
             (model, true)
@@ -261,7 +300,7 @@ impl Server {
         if max_tokens.is_some() {
             client.model_mut().set_max_tokens(max_tokens, true);
         }
-        let abort = create_abort_signal();
+        let abort_signal = create_abort_signal();
         let http_client = client.build_client()?;
 
         let completion_id = generate_completion_id();
@@ -280,7 +319,7 @@ impl Server {
             tokio::spawn(async move {
                 let is_first = Arc::new(AtomicBool::new(true));
                 let (sse_tx, sse_rx) = unbounded_channel();
-                let mut handler = SseHandler::new(sse_tx, abort);
+                let mut handler = SseHandler::new(sse_tx, abort_signal);
                 async fn map_event(
                     mut sse_rx: UnboundedReceiver<SseEvent>,
                     tx: &UnboundedSender<ResEvent>,
@@ -399,11 +438,8 @@ impl Server {
             model: embedding_model_id,
         } = req_body;
 
-        let config = Config {
-            clients: self.clients.to_vec(),
-            ..Default::default()
-        };
-        let config = Arc::new(RwLock::new(config));
+        let config = Arc::new(RwLock::new(self.config.clone()));
+
         let embedding_model = Model::retrieve_embedding(&config.read(), &embedding_model_id)?;
 
         let texts = match input {
@@ -442,6 +478,12 @@ impl Server {
             .body(Full::new(Bytes::from(output.to_string())).boxed())?;
         Ok(res)
     }
+}
+
+#[derive(Debug, Deserialize)]
+struct SearchRagReqBody {
+    name: String,
+    input: String,
 }
 
 #[derive(Debug, Deserialize)]
