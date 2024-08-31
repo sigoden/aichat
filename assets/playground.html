@@ -503,7 +503,7 @@
       <div class="settings">
         <div class="control">
           <label for="role">Role</label>
-          <select id="role" x-model="settings.role" :disabled="sessionMode" @change="handleRoleChange">
+          <select id="role" x-model="settings.role" :disabled="sessionMode">
             <template x-for="role in roles">
               <option :value="role.name" :selected="role.name == settings.role" x-text="role.name"></option>
             </template>
@@ -517,7 +517,7 @@
 
         <div class="control">
           <label for="max_output_tokens"
-            x-text="'Max Output Tokens' + (currentModel.max_output_token ? ' [1, ' + currentModel.max_output_token + ']' : '')">Max
+            x-text="'Max Output Tokens' + (modelData.max_output_token ? ' [1, ' + modelData.max_output_token + ']' : '')">Max
             Output Tokens</label>
           <input type="number" id="max_output_tokens" x-model="settings.max_output_tokens">
         </div>
@@ -536,9 +536,9 @@
     </div>
     <div class="main-panel" x-ref="main-panel">
       <div class="chat-header">
-        <select id="model" x-model="settings.model_id">
+        <select id="model" x-model="settings.model">
           <template x-for="model in models" :key="model.id">
-            <option :value="model.id" :selected="model.id == settings.model_id" x-text="model.id"></option>
+            <option :value="model.id" :selected="model.id == settings.model" x-text="model.id"></option>
           </template>
         </select>
         <div class="toolbar">
@@ -671,7 +671,7 @@
           </template>
           <template x-if="!asking">
             <div class="input-toolbox">
-              <div class="image-btn" x-show="currentModel.supports_vision">
+              <div class="image-btn" x-show="modelData.supports_vision">
                 <input type="file" multiple accept=".jpg,.jpeg,.png,.webp" @change="handleImageUpload">
                 <svg fill="currentColor" viewBox="0 0 16 16">
                   <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
@@ -694,13 +694,12 @@
     <div id="toast" class="toast"></div>
   </div>
   <script>
-    const QUERY = parseQueryString(location.search);
+    const QUERY = parseQueryString();
     const API_BASE = QUERY.api_base || "./v1";
     const API_KEY = QUERY.api_key || "";
     const CHAT_COMPLETIONS_URL = API_BASE + "/chat/completions";
     const MODELS_API = API_BASE + "/models";
     const ROLES_API = API_BASE + "/roles";
-    const SETTINGS_STORAGE_KEY = "__settings__";
 
     document.addEventListener("alpine:init", () => {
       setupMarked();
@@ -710,28 +709,18 @@
     function setupApp() {
       let msgIdx = 0;
       let defaultSettings = {
-        model_id: "default",
-        role: "",
+        model: QUERY.model || "default",
+        role: QUERY.role || "",
         prompt: "",
-        max_output_tokens: null,
-        temperature: null,
-        top_p: null,
+        max_output_tokens: parseInt(QUERY.max_output_tokens) || null,
+        temperature: QUERY.temperature ? parseFloat(QUERY.temperature) : null,
+        top_p: QUERY.top_p ? parseFloat(QUERY.top_p) : null,
       };
-      try {
-        const persistSettings = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY)) || {};
-        const sanitizedPersistSettings = Object.keys(defaultSettings).reduce((acc, cur) => {
-          if (persistSettings.hasOwnProperty(cur)) {
-            acc[cur] = persistSettings[cur];
-          }
-          return acc;
-        }, {});
-        defaultSettings = { ...defaultSettings, ...sanitizedPersistSettings };
-      } catch { }
 
       Alpine.data("app", () => ({
         models: [],
         roles: [{ name: "", prompt: "" }],
-        currentModel: {},
+        modelData: {},
         messages: [],
         hoveredMessageIndex: null,
         input: "",
@@ -757,15 +746,19 @@
             }).catch(() => { }),
           ])
           this.$watch("input", () => this.autosizeInput(this.$refs.input));
-          this.$watch("settings", () => {
-            localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(this.settings));
-          });
-          this.$watch("settings.model_id", () => this.handleModelIdChange());
-          this.handleModelIdChange();
-        },
-
-        handleRoleChange(event) {
-          this.settings.prompt = this.roles.find(role => role.name === event.target.value).prompt;
+          this.$watch("settings", () => this.updateUrl());
+          this.$watch("settings.model", () => this.handleModelChange());
+          if (this.models.find(model => model.id === this.settings.model)) {
+            this.handleModelChange();
+          } else {
+            this.settings.model = "default";
+          }
+          this.$watch("settings.role", () => this.handleRoleChange())
+          if (this.roles.find(role => role.name === this.settings.role)) {
+            this.handleRoleChange();
+          } else {
+            this.settings.role = "";
+          }
         },
 
         handleAsk() {
@@ -840,8 +833,12 @@
           this.askAbortController?.abort();
         },
 
-        handleModelIdChange() {
-          this.currentModel = retrieveModel(this.models, this.settings.model_id);
+        handleModelChange() {
+          this.modelData = retrieveModel(this.models, this.settings.model);
+        },
+
+        handleRoleChange() {
+          this.settings.prompt = this.roles.find(role => role.name === this.settings.role).prompt;
         },
 
         handleScrollChatBody(event) {
@@ -921,6 +918,18 @@
           const urls = await Promise.all(Array.from(files).map(file => convertImageToDataURL(file)));
           this.images.push(...urls);
           event.target.value = "";
+        },
+
+        updateUrl() {
+          const newUrl = new URL(location.href);
+          ["model", "role", "max_output_tokens", "temperature", "top_p"].forEach(key => {
+            if (this.settings[key] || typeof this.settings[key] === "number") {
+              newUrl.searchParams.set(key, this.settings[key]);
+            } else {
+              newUrl.searchParams.delete(key);
+            }
+          });
+          history.replaceState(null, '', newUrl.toString());
         },
 
         autoScrollChatBodyToBottom() {
@@ -1022,7 +1031,7 @@
             }
           }
           const body = {
-            model: this.settings.model_id,
+            model: this.settings.model,
             messages: messages,
             stream: true,
           };
@@ -1031,7 +1040,7 @@
               body[body_key || setting_key] = this.settings[setting_key];
             }
           });
-          const { max_output_token, require_max_tokens } = this.currentModel;
+          const { max_output_token, require_max_tokens } = this.modelData;
           if (!body["max_tokens"] && require_max_tokens) {
             body["max_tokens"] = max_output_token;
           };
@@ -1228,20 +1237,13 @@
       return input.replace(/([&<>'"])/g, char => escapeMap[char]);
     }
 
-    function parseQueryString(queryString) {
-      const params = {};
-      if (!queryString) {
-        return params;
-      }
-      const queries = queryString[0] === '?' ? queryString.substring(1) : queryString;
-      const pairs = queries.split('&');
-
-      pairs.forEach(pair => {
-        const [key, value] = pair.split('=');
-        params[decodeURIComponent(key)] = decodeURIComponent(value ? value.replace(/\+/g, ' ') : '');
+    function parseQueryString() {
+      const params = new URLSearchParams(location.search);
+      const queryObject = {};
+      params.forEach((value, key) => {
+        queryObject[key] = value;
       });
-
-      return params;
+      return queryObject;
     }
 
     function chunkArray(array, chunkSize) {
