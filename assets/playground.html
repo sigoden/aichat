@@ -977,9 +977,9 @@
           let succeed = false;
           try {
             if (this.settings.rag) {
-              const input = body.messages[body.messages.length - 1];
-              if (typeof input.content === "string") {
-                input.content = await this.searchRag(this.settings.rag, input.content);
+              const message = body.messages[body.messages.length - 1];
+              if (message.role === "user" && typeof message.content === "string") {
+                message.content = await this.searchRag(this.settings.rag, message.content);
               }
             }
             const stream = await fetchChatCompletions(CHAT_COMPLETIONS_URL, body, this.askAbortController.signal)
