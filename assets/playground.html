@@ -502,6 +502,15 @@
       </div>
       <div class="settings">
         <div class="control">
+          <label for="role">RAG</label>
+          <select id="role" x-model="settings.rag" :disabled="sessionMode">
+            <template x-for="rag in rags">
+              <option :value="rag" :selected="rag == settings.rag" x-text="rag"></option>
+            </template>
+          </select>
+        </div>
+
+        <div class="control">
           <label for="role">Role</label>
           <select id="role" x-model="settings.role" :disabled="sessionMode">
             <template x-for="role in roles">
@@ -700,6 +709,8 @@
     const CHAT_COMPLETIONS_URL = API_BASE + "/chat/completions";
     const MODELS_API = API_BASE + "/models";
     const ROLES_API = API_BASE + "/roles";
+    const RAGS_API = API_BASE + "/rags";
+    const SEARCH_RAG_API = API_BASE + "/rags/search";
 
     document.addEventListener("alpine:init", () => {
       setupMarked();
@@ -710,6 +721,7 @@
       let msgIdx = 0;
       let defaultSettings = {
         model: QUERY.model || "default",
+        rag: QUERY.rag || "",
         role: QUERY.role || "",
         prompt: "",
         max_output_tokens: parseInt(QUERY.max_output_tokens) || null,
@@ -719,6 +731,7 @@
 
       Alpine.data("app", () => ({
         models: [],
+        rags: [""],
         roles: [{ name: "", prompt: "" }],
         modelData: {},
         messages: [],
@@ -741,6 +754,9 @@
               toast("No model available");
               console.error("Failed to load models", err);
             }),
+            fetchJSON(RAGS_API).then(rags => {
+              this.rags.push(...rags);
+            }).catch(() => { }),
             fetchJSON(ROLES_API).then(roles => {
               this.roles.push(...roles.filter(v => !!v.prompt));
             }).catch(() => { }),
@@ -752,6 +768,9 @@
             this.handleModelChange();
           } else {
             this.settings.model = "default";
+          }
+          if (!this.rags.find(rag => rag === this.settings.rag)) {
+            this.settings.rag = "";
           }
           this.$watch("settings.role", () => this.handleRoleChange())
           if (this.roles.find(role => role.name === this.settings.role)) {
@@ -922,7 +941,7 @@
 
         updateUrl() {
           const newUrl = new URL(location.href);
-          ["model", "role", "max_output_tokens", "temperature", "top_p"].forEach(key => {
+          ["model", "rag", "role", "max_output_tokens", "temperature", "top_p"].forEach(key => {
             if (this.settings[key] || typeof this.settings[key] === "number") {
               newUrl.searchParams.set(key, this.settings[key]);
             } else {
@@ -957,6 +976,12 @@
           const body = this.buildBody();
           let succeed = false;
           try {
+            if (this.settings.rag) {
+              const message = body.messages[body.messages.length - 1];
+              if (message.role === "user" && typeof message.content === "string") {
+                message.content = await this.searchRag(this.settings.rag, message.content);
+              }
+            }
             const stream = await fetchChatCompletions(CHAT_COMPLETIONS_URL, body, this.askAbortController.signal)
             for await (const chunk of stream) {
               lastMessage.state = "streaming";
@@ -981,6 +1006,20 @@
             this.sessionMode = true;
           }
           this.asking = false;
+        },
+
+        async searchRag(name, input) {
+          const res = await fetch(SEARCH_RAG_API, {
+            method: "POST",
+            headers: getHeaders(),
+            signal: this.askAbortController.signal,
+            body: JSON.stringify({
+              name,
+              input
+            })
+          });
+          const data = await res.json();
+          return data.data;
         },
 
         buildBody() {
