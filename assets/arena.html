@@ -392,9 +392,9 @@
       <template x-for="(chat, index) in chats" :key="index">
         <div class="chat-panel">
           <div class="chat-header">
-            <select x-cloak id="model" x-model="chat.model_id" @change="handleModelIdChange">
-              <template x-for="model in models" :key="model.id">
-                <option :value="model.id" :selected="model.id == chat.model_id" x-text="model.id"></option>
+            <select x-cloak id="model" x-model="chat.model" @change="handleModelChange">
+              <template x-for="model in chatModels" :key="model.id">
+                <option :value="model.id" :selected="model.id == chat.model" x-text="model.id"></option>
               </template>
             </select>
           </div>
@@ -548,13 +548,12 @@
     <div id="toast" class="toast"></div>
   </div>
   <script>
-    const QUERY = parseQueryString(location.search);
+    const QUERY = parseQueryString();
     const NUM = parseInt(QUERY.num) || 2
     const API_BASE = QUERY.api_base || "./v1";
     const API_KEY = QUERY.api_key || "";
     const CHAT_COMPLETIONS_URL = API_BASE + "/chat/completions";
     const MODELS_API = API_BASE + "/models";
-    const MODEL_IDS_STORAGE_KEY = "__model_ids__";
 
     document.addEventListener("alpine:init", () => {
       setupMarked();
@@ -568,12 +567,12 @@
       let msgIdx = 0;
 
       Alpine.data("app", () => ({
-        models: [],
+        chatModels: [],
         input: "",
         images: [],
         asking: 0,
         chats: Array.from(Array(NUM)).map(_ => ({
-          model_id: "",
+          model: "",
           messages: [],
           hoveredMessageIndex: null,
           askAbortController: null,
@@ -584,20 +583,20 @@
         async init() {
           try {
             const models = await fetchJSON(MODELS_API);
-            this.models = models.filter(v => !v.type || v.type === "chat");
+            this.chatModels = models.filter(v => !v.type || v.type === "chat");
           } catch (err) {
             toast("No available model");
             console.error("Failed to load models", err);
           }
-          let model_ids = []
-          try {
-            model_ids = JSON.parse(localStorage.getItem(MODEL_IDS_STORAGE_KEY)) || [];
-          } catch { }
+          let models = []
+          if (QUERY.models) {
+            models = QUERY.models.split(",");
+          }
           $chatPanels = document.querySelectorAll('.chat-panel');
           $scrollToBottomBtns = document.querySelectorAll('.scroll-to-bottom-btn');
           const offsets = calculateOffsets(NUM);
           for (let i = 0; i < NUM; i++) {
-            this.chats[i].model_id = model_ids[i] || "default";
+            this.chats[i].model = models[i] || "default";
             $chatPanels[i].style.width = (100 / NUM) + '%';
             if (i > 0) {
               $chatPanels[i].style.borderLeft = '1px solid var(--border-primary)';
@@ -611,7 +610,7 @@
         },
 
         get supportsVision() {
-          return this.chats.every(v => !!retrieveModel(this.models, v.model_id)?.supports_vision)
+          return this.chats.every(v => !!retrieveModel(this.chatModels, v.model)?.supports_vision)
         },
 
         handleAsk() {
@@ -697,9 +696,8 @@
           }
         },
 
-        handleModelIdChange() {
-          let model_ids = this.chats.map(v => v.model_id);
-          localStorage.setItem(MODEL_IDS_STORAGE_KEY, JSON.stringify(model_ids));
+        handleModelChange() {
+          this.updateUrl();
         },
 
         handleScrollChatBody(event, index) {
@@ -770,6 +768,13 @@
           const urls = await Promise.all(Array.from(files).map(file => convertImageToDataURL(file)));
           this.images.push(...urls);
           event.target.value = "";
+        },
+
+        updateUrl() {
+          const newUrl = new URL(location.href);
+          const models = this.chats.map(v => v.model).join(",");
+          newUrl.searchParams.set("models", models);
+          history.replaceState(null, '', newUrl.toString());
         },
 
         autoHeightChatPanel() {
@@ -852,11 +857,11 @@
             }
           }
           const body = {
-            model: chat.model_id,
+            model: chat.model,
             messages: messages,
             stream: true,
           };
-          const { max_output_token, require_max_tokens } = retrieveModel(this.models, chat.model_id);
+          const { max_output_token, require_max_tokens } = retrieveModel(this.chatModels, chat.model);
           if (!body["max_tokens"] && require_max_tokens) {
             body["max_tokens"] = max_output_token;
           };
@@ -1005,20 +1010,13 @@
       return input.replace(/([&<>'"])/g, char => escapeMap[char]);
     }
 
-    function parseQueryString(queryString) {
-      const params = {};
-      if (!queryString) {
-        return params;
-      }
-      const queries = queryString[0] === '?' ? queryString.substring(1) : queryString;
-      const pairs = queries.split('&');
-
-      pairs.forEach(pair => {
-        const [key, value] = pair.split('=');
-        params[decodeURIComponent(key)] = decodeURIComponent(value ? value.replace(/\+/g, ' ') : '');
+    function parseQueryString() {
+      const params = new URLSearchParams(location.search);
+      const queryObject = {};
+      params.forEach((value, key) => {
+        queryObject[key] = value;
       });
-
-      return params;
+      return queryObject;
     }
 
     function chunkArray(array, chunkSize) {
