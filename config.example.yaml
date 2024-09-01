@@ -116,8 +116,6 @@ clients:
     name: local
     api_base: http://localhost:8080/v1
     api_key: xxx                                      # Optional
-    chat_endpoint: /chat/completions                  # Optional
-    embeddings_endpoint: /embeddings                  # Optional
     models:
       - name: llama3.1
         max_input_tokens: 128000
