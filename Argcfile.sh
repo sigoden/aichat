@@ -89,7 +89,9 @@ OPENAI_COMPATIBLE_PLATFORMS=( \
   moonshot,moonshot-v1-8k,https://api.moonshot.cn/v1 \
   openrouter,openai/gpt-4o-mini,https://openrouter.ai/api/v1 \
   octoai,meta-llama-3.1-8b-instruct,https://text.octoai.run/v1 \
+  ollama,llama3.1:latest,http://localhost:11434/v1 \
   perplexity,llama-3.1-8b-instruct,https://api.perplexity.ai \
+  qianwen,qwen-turbo,https://dashscope.aliyuncs.com/compatible-mode/v1 \
   together,meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo,https://api.together.xyz/v1 \
   zhipuai,glm-4-0520,https://open.bigmodel.cn/api/paas/v4 \
   lingyiwanwu,yi-large,https://api.lingyiwanwu.com/v1 \
@@ -248,18 +250,6 @@ models-cohere() {
 
 }
 
-# @cmd Chat with ollama api
-# @env OLLAMA_BASE_URL=http://127.0.0.1:11434
-# @option -m --model=llama3.1:latest $OLLAMA_MODEL
-# @flag -S --no-stream
-# @arg text~
-chat-ollama() {
-    _wrapper curl -i $OLLAMA_BASE_URL/api/chat \
--X POST \
--H 'Content-Type: application/json' \
--d "$(_build_body ollama "$@")"
-}
-
 # @cmd Chat with vertexai api
 # @env require-tools gcloud
 # @env VERTEXAI_PROJECT_ID!
@@ -347,26 +337,6 @@ chat-ernie() {
 }
 
 
-# @cmd Chat with qianwen api
-# @env QIANWEN_API_KEY!
-# @option -m --model=qwen-turbo $QIANWEN_MODEL
-# @flag -S --no-stream
-# @arg text~
-chat-qianwen() {
-    stream_args="-H X-DashScope-SSE:enable"
-    parameters_args='{"incremental_output": true}'
-    if [[ -n "$argc_no_stream" ]]; then
-        stream_args=""
-        parameters_args='{}'
-    fi
-    url=https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation
-    _wrapper curl -i "$url" \
--X POST \
--H "Authorization: Bearer $QIANWEN_API_KEY" \
--H 'Content-Type: application/json' $stream_args  \
--d "$(_build_body qianwen "$@")"
-}
-
 _argc_before() {
     stream="true"
     if [[ -n "$argc_no_stream" ]]; then
@@ -420,7 +390,7 @@ _build_body() {
     else
         shift
         case "$kind" in
-        openai|ollama)
+        openai)
             echo '{
     "model": "'$argc_model'",
     "messages": [
@@ -483,20 +453,6 @@ _build_body() {
 	"input": {
       "prompt": "'"$*"'"
 	}
-}'
-            ;;
-        qianwen)
-            echo '{
-    "model": "'$argc_model'",
-    "parameters": '"$parameters_args"',
-    "input":{
-        "messages": [
-            {
-                "role": "user",
-                "content": "'"$*"'"
-            }
-        ]
-    }
 }'
             ;;
         *)

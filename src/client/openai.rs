@@ -249,7 +249,7 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
                                 })
                             ]
 
-                        }).collect() 
+                        }).collect()
                     }
                 },
                 _ => vec![json!({ "role": role, "content": content })]
