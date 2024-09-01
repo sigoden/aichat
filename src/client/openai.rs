@@ -111,7 +111,7 @@ pub async fn openai_chat_completions_streaming(
                 handler.tool_call(ToolCall::new(
                     function_name.clone(),
                     json!(function_arguments),
-                    Some(function_id.clone()),
+                    normalize_function_id(&function_id),
                 ))?;
             }
             return Ok(true);
@@ -131,7 +131,7 @@ pub async fn openai_chat_completions_streaming(
                     handler.tool_call(ToolCall::new(
                         function_name.clone(),
                         json!(function_arguments),
-                        Some(function_id.clone()),
+                        normalize_function_id(&function_id),
                     ))?;
                 }
                 function_name.clear();
@@ -140,7 +140,11 @@ pub async fn openai_chat_completions_streaming(
                 function_index = index;
             }
             if let Some(name) = function.get("name").and_then(|v| v.as_str()) {
-                function_name = name.to_string();
+                if name.starts_with(&function_name) {
+                    function_name = name.to_string();
+                } else {
+                    function_name.push_str(name);
+                }
             }
             if let Some(arguments) = function.get("arguments").and_then(|v| v.as_str()) {
                 function_arguments.push_str(arguments);
@@ -196,30 +200,57 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
             let Message { role, content } = message;
             match content {
                 MessageContent::ToolResults((tool_results, text)) => {
-                    let tool_calls: Vec<_> = tool_results.iter().map(|tool_result| {
-                        json!({
-                            "id": tool_result.call.id,
-                            "type": "function",
-                            "function": {
-                                "name": tool_result.call.name,
-                                "arguments": tool_result.call.arguments,
-                            },
-                        })
-                    }).collect();
-                    let text = if text.is_empty() { Value::Null } else { text.into() };
-                    let mut messages = vec![
-                        json!({ "role": MessageRole::Assistant, "content": text, "tool_calls": tool_calls })
-                    ];
-                    for tool_result in tool_results {
-                        messages.push(
+                    if let Some(true) = tool_results.first().map(|v| v.call.id.is_some()) {
+                        let tool_calls: Vec<_> = tool_results.iter().map(|tool_result| {
                             json!({
-                                "role": "tool",
-                                "content": tool_result.output.to_string(),
-                                "tool_call_id": tool_result.call.id,
+                                "id": tool_result.call.id,
+                                "type": "function",
+                                "function": {
+                                    "name": tool_result.call.name,
+                                    "arguments": tool_result.call.arguments,
+                                },
                             })
-                        );
+                        }).collect();
+                        let text = if text.is_empty() { Value::Null } else { text.into() };
+                        let mut messages = vec![
+                            json!({ "role": MessageRole::Assistant, "content": text, "tool_calls": tool_calls })
+                        ];
+                        for tool_result in tool_results {
+                            messages.push(
+                                json!({
+                                    "role": "tool",
+                                    "content": tool_result.output.to_string(),
+                                    "tool_call_id": tool_result.call.id,
+                                })
+                            );
+                        }
+                        messages
+                    } else {
+                       tool_results.into_iter().flat_map(|tool_result| {
+                            vec![
+                                json!({
+                                    "role": MessageRole::Assistant,
+                                    "content": null,
+                                    "tool_calls": [
+                                        {
+                                            "id": tool_result.call.id,
+                                            "type": "function",
+                                            "function": {
+                                                "name": tool_result.call.name,
+                                                "arguments": tool_result.call.arguments,
+                                            },
+                                        }
+                                    ]
+                                }),
+                                json!({
+                                    "role": "tool",
+                                    "content": tool_result.output.to_string(),
+                                    "tool_call_id": tool_result.call.id,
+                                })
+                            ]
+
+                        }).collect() 
                     }
-                    messages
                 },
                 _ => vec![json!({ "role": role, "content": content })]
             }
@@ -302,4 +333,12 @@ pub fn openai_extract_chat_completions(data: &Value) -> Result<ChatCompletionsOu
         output_tokens: data["usage"]["completion_tokens"].as_u64(),
     };
     Ok(output)
+}
+
+fn normalize_function_id(value: &str) -> Option<String> {
+    if value.is_empty() {
+        None
+    } else {
+        Some(value.to_string())
+    }
 }
