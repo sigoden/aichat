@@ -1,13 +1,11 @@
-# notes:
-#   - do not submit pull requests to add new models; this list will be updated in batches with new releases.
+# Notes:
+#  - do not submit pull requests to add new models; this list will be updated in batches with new releases.
 
+# Links:
+#  - https://platform.openai.com/docs/models
+#  - https://openai.com/pricing
+#  - https://platform.openai.com/docs/api-reference/chat
 - platform: openai
-  # docs:
-  #   - https://platform.openai.com/docs/models
-  #   - https://openai.com/pricing
-  #   - https://platform.openai.com/docs/api-reference/chat
-  # notes
-  #   - get max_output_tokens info from api error
   models:
     - name: gpt-4o
       max_input_tokens: 128000
@@ -63,13 +61,11 @@
       default_chunk_size: 3000
       max_batch_size: 100
 
+# Links:
+#  - https://ai.google.dev/models/gemini
+#  - https://ai.google.dev/pricing
+#  - https://ai.google.dev/api/rest/v1beta/models/streamGenerateContent
 - platform: gemini 
-  # docs:
-  #   - https://ai.google.dev/models/gemini
-  #   - https://ai.google.dev/pricing
-  #   - https://ai.google.dev/api/rest/v1beta/models/streamGenerateContent
-  # notes:
-  #   - get max_output_tokens info from list models api
   models:
     - name: gemini-1.5-pro-latest
       max_input_tokens: 2097152
@@ -118,12 +114,10 @@
       default_chunk_size: 1500
       max_batch_size: 5
 
+# Links:
+#  - https://docs.anthropic.com/claude/docs/models-overview
+#  - https://docs.anthropic.com/claude/reference/messages-streaming
 - platform: claude
-  # docs:
-  #   - https://docs.anthropic.com/claude/docs/models-overview
-  #   - https://docs.anthropic.com/claude/reference/messages-streaming
-  # notes:
-  #   - get max_output_tokens info from models doc
   models:
     - name: claude-3-5-sonnet-20240620
       max_input_tokens: 200000
@@ -158,13 +152,11 @@
       supports_vision: true
       supports_function_calling: true
 
+# Links:
+#  - https://docs.mistral.ai/getting-started/models/
+#  - https://mistral.ai/technology/#pricing
+#  - https://docs.mistral.ai/api/
 - platform: mistral
-  # docs:
-  #   - https://docs.mistral.ai/getting-started/models/
-  #   - https://mistral.ai/technology/#pricing
-  #   - https://docs.mistral.ai/api/
-  # notes:
-  #   - unable to get max_output_tokens info
   models:
     - name: mistral-large-latest
       max_input_tokens: 128000
@@ -191,10 +183,11 @@
       default_chunk_size: 2000
       max_batch_size: 3
 
+# Links:
+#  - https://docs.ai21.com/docs/jamba-15-models
+#  - https://www.ai21.com/pricing
+#  - https://docs.ai21.com/reference/jamba-15-api-ref
 - platform: ai21
-  # docs:
-  #   - https://docs.ai21.com/reference/jamba-15-api-ref
-  #   - https://www.ai21.com/pricing
   models:
     - name: jamba-1.5-large
       max_input_tokens: 256000
@@ -207,11 +200,11 @@
       output_price: 0.4
       supports_function_calling: true
 
+# Links:
+#  - https://docs.cohere.com/docs/command-r-plus
+#  - https://cohere.com/pricing
+#  - https://docs.cohere.com/reference/chat
 - platform: cohere
-  # docs:
-  #   - https://docs.cohere.com/docs/command-r-plus
-  #   - https://cohere.com/pricing
-  #   - https://docs.cohere.com/reference/chat
   models:
     - name: command-r-plus
       max_input_tokens: 128000
@@ -252,11 +245,11 @@
       type: reranker
       max_input_tokens: 4096
 
+# Links:
+#  - https://docs.perplexity.ai/guides/model-cards
+#  - https://docs.perplexity.ai/guides/pricing
+#  - https://docs.perplexity.ai/api-reference/chat-completions
 - platform: perplexity
-  # docs:
-  #   - https://docs.perplexity.ai/guides/model-cards
-  #   - https://docs.perplexity.ai/guides/pricing
-  #   - https://docs.perplexity.ai/api-reference/chat-completions
   models:
     - name: llama-3.1-sonar-huge-128k-online
       max_input_tokens: 127072
@@ -287,13 +280,10 @@
       input_price: 0.2
       output_price: 0.2
 
+# Links:
+#  - https://console.groq.com/docs/models
+#  - https://console.groq.com/docs/api-reference#chat
 - platform: groq
-  # docs:
-  #   - https://console.groq.com/docs/models
-  #   - https://wow.groq.com
-  #   - https://console.groq.com/docs/text-chat
-  # notes:
-  #   - all models are free with rate limits
   models:
     - name: llama3-70b-8192
       max_input_tokens: 8192
@@ -329,10 +319,10 @@
       output_price: 0
       supports_function_calling: true
 
+# Links:
+#  - https://ollama.com/library
+#  - https://github.com/ollama/ollama/blob/main/docs/openai.md
 - platform: ollama
-  # docs:
-  #   - https://ollama.com/library
-  #   - https://github.com/ollama/ollama/blob/main/docs/openai.md
   models:
     - name: llama3.1
       max_input_tokens: 128000
@@ -353,14 +343,12 @@
       default_chunk_size: 1000
       max_batch_size: 50
 
+# Links:
+#  - https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
+#  - https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/explore-models
+#  - https://cloud.google.com/vertex-ai/generative-ai/pricing
+#  - https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/gemini
 - platform: vertexai
-  # docs:
-  #   - https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
-  #   - https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/explore-models
-  #   - https://cloud.google.com/vertex-ai/generative-ai/pricing
-  #   - https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/gemini
-  # notes:
-  #   - get max_output_tokens info from models doc
   models:
     - name: gemini-1.5-pro-001
       max_input_tokens: 2097152
@@ -441,13 +429,11 @@
       default_chunk_size: 1500
       max_batch_size: 5
 
+# Links:
+#  - https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html#model-ids-arns
+#  - https://aws.amazon.com/bedrock/pricing/
+#  - https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html
 - platform: bedrock
-  # docs:
-  #   - https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html#model-ids-arns
-  #   - https://aws.amazon.com/bedrock/pricing/
-  #   - https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html
-  # notes:
-  #   - except for Claude, other models do not support streaming function calling
   models:
     - name: anthropic.claude-3-5-sonnet-20240620-v1:0
       max_input_tokens: 200000
@@ -532,9 +518,9 @@
       default_chunk_size: 1000
       max_batch_size: 96
 
+# Links:
+#  - https://developers.cloudflare.com/workers-ai/models/
 - platform: cloudflare
-  # docs:
-  #   - https://developers.cloudflare.com/workers-ai/models/
   models:
     - name: '@cf/meta/llama-3.1-8b-instruct'
       max_input_tokens: 6144
@@ -555,11 +541,11 @@
       default_chunk_size: 1000
       max_batch_size: 100
 
+# Links:
+#  - https://replicate.com/explore
+#  - https://replicate.com/pricing
+#  - https://replicate.com/docs/reference/http#create-a-prediction-using-an-official-model
 - platform: replicate
-  # docs:
-  #   - https://replicate.com/explore
-  #   - https://replicate.com/pricing
-  #   - https://replicate.com/docs/reference/http
   models:
     - name: meta/meta-llama-3.1-405b-instruct
       max_input_tokens: 128000
@@ -579,10 +565,10 @@
       input_price: 0.05
       output_price: 0.25
 
+# Links:
+#  - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu
+#  - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7
 - platform: ernie
-  # docs:
-  #   - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu
-  #   - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7
   models:
     - name: ernie-4.0-turbo-8k-preview
       max_input_tokens: 8192
@@ -620,11 +606,11 @@
       max_input_tokens: 1024
       input_price: 0.28
 
+# Links:
+#  - https://help.aliyun.com/zh/dashscope/developer-reference/model-introduction
+#  - https://help.aliyun.com/zh/dashscope/developer-reference/tongyi-thousand-questions-metering-and-billing
+#  - https://help.aliyun.com/zh/dashscope/developer-reference/use-qwen-by-api
 - platform: qianwen
-  # docs:
-  #   - https://help.aliyun.com/zh/dashscope/developer-reference/model-introduction
-  #   - https://help.aliyun.com/zh/dashscope/developer-reference/tongyi-thousand-questions-metering-and-billing
-  #   - https://help.aliyun.com/zh/dashscope/developer-reference/use-qwen-by-api
   models:
     - name: qwen-max
       max_input_tokens: 8000
@@ -671,11 +657,11 @@
       default_chunk_size: 1500
       max_batch_size: 25
 
+# Links:
+#  - https://platform.moonshot.cn/docs/intro
+#  - https://platform.moonshot.cn/docs/pricing/chat
+#  - https://platform.moonshot.cn/docs/api/chat
 - platform: moonshot
-  # docs:
-  #   - https://platform.moonshot.cn/docs/intro
-  #   - https://platform.moonshot.cn/docs/pricing
-  #   - https://platform.moonshot.cn/docs/api-reference
   models:
     - name: moonshot-v1-8k
       max_input_tokens: 8000
@@ -693,10 +679,10 @@
       output_price: 8.4
       supports_function_calling: true
 
+# Links:
+#  - https://platform.deepseek.com/api-docs/quick_start/pricing
+#  - https://platform.deepseek.com/api-docs/api/create-chat-completion
 - platform: deepseek
-  # docs:
-  #   - https://platform.deepseek.com/api-docs/
-  #   - https://platform.deepseek.com/api-docs/pricing
   models:
     - name: deepseek-chat 
       max_input_tokens: 32768 
@@ -709,10 +695,11 @@
       output_price: 0.28
       supports_function_calling: true
 
+# Links:
+#  - https://open.bigmodel.cn/dev/howuse/model
+#  - https://open.bigmodel.cn/pricing
+#  - https://open.bigmodel.cn/dev/api#glm-4
 - platform: zhipuai
-  # docs:
-  #   - https://open.bigmodel.cn/dev/howuse/model
-  #   - https://open.bigmodel.cn/pricing
   models:
     - name: glm-4-plus
       max_input_tokens: 128000
@@ -756,10 +743,10 @@
       default_chunk_size: 2000
       max_batch_size: 3
 
+# Links:
+#  - https://platform.lingyiwanwu.com/docs#%E6%A8%A1%E5%9E%8B%E4%B8%8E%E8%AE%A1%E8%B4%B9
+#  - https://platform.lingyiwanwu.com/docs/api-reference#create-chat-completion
 - platform: lingyiwanwu
-  # docs:
-  #   - https://platform.lingyiwanwu.com/docs#%E6%A8%A1%E5%9E%8B
-  #   - https://platform.lingyiwanwu.com/docs#%E8%AE%A1%E8%B4%B9%E5%8D%95%E5%85%83
   models:
     - name: yi-large 
       max_input_tokens: 32768
@@ -796,9 +783,9 @@
       output_price: 0.84
       supports_vision: true
 
+# Links:
+#  - https://github.com/marketplace/models
 - platform: github
-  # docs:
-  #   - https://github.com/marketplace/models
   models:
     - name: gpt-4o
       max_input_tokens: 128000
@@ -853,10 +840,10 @@
       default_chunk_size: 1000
       max_batch_size: 96
 
+# Links:
+#  - https://deepinfra.com/models
+#  - https://deepinfra.com/pricing
 - platform: deepinfra
-  # docs:
-  #   - https://deepinfra.com/models
-  #   - https://deepinfra.com/pricing
   models:
     - name: meta-llama/Meta-Llama-3.1-405B-Instruct
       max_input_tokens: 32000
@@ -929,10 +916,10 @@
       default_chunk_size: 1000
       max_batch_size: 100
 
+# Links:
+#  - https://fireworks.ai/models
+#  - https://fireworks.ai/pricing
 - platform: fireworks
-  # docs:
-  #   - https://fireworks.ai/models
-  #   - https://fireworks.ai/pricing
   models:
     - name: accounts/fireworks/models/llama-v3p1-405b-instruct
       max_input_tokens: 131072
@@ -992,9 +979,9 @@
       default_chunk_size: 1000
       max_batch_size: 100
 
+# Links:
+#  - https://openrouter.ai/docs#models
 - platform: openrouter
-  # docs:
-  #   - https://openrouter.ai/docs#models
   models:
     - name: openai/gpt-4o
       max_input_tokens: 128000
@@ -1229,10 +1216,10 @@
       input_price: 0.9
       output_price: 0.9
 
+# Links:
+#  - https://octo.ai/docs/getting-started/inference-models
+#  - https://octo.ai/docs/getting-started/pricing-and-billing
 - platform: octoai
-  # docs:
-  #   - https://octo.ai/docs/getting-started/inference-models
-  #   - https://octo.ai/docs/getting-started/pricing-and-billing
   models:
     - name: meta-llama-3.1-405b-instruct
       max_input_tokens: 131072
@@ -1257,11 +1244,11 @@
       default_chunk_size: 1000
       max_batch_size: 100
 
+# Links:
+#  - https://docs.together.ai/docs/inference-models
+#  - https://docs.together.ai/docs/embedding-models
+#  - https://www.together.ai/pricing
 - platform: together
-  # docs:
-  #   - https://docs.together.ai/docs/inference-models
-  #   - https://docs.together.ai/docs/embedding-models
-  #   - https://www.together.ai/pricing
   models:
     - name: meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo
       max_input_tokens: 32768
@@ -1300,10 +1287,10 @@
       default_chunk_size: 1000
       max_batch_size: 100
 
+# Links:
+#  - https://jina.ai/
+#  - https://api.jina.ai/redoc
 - platform: jina
-  # docs:
-  #   - https://jina.ai/
-  #   - https://api.jina.ai/redoc
   models:
     - name: jina-clip-v1
       type: embedding
@@ -1346,11 +1333,11 @@
       max_input_tokens: 8192
       input_price: 0.02
 
+# Links:
+#  - https://docs.voyageai.com/docs/embeddings
+#  - https://docs.voyageai.com/docs/pricing
+#  - https://docs.voyageai.com/reference/
 - platform: voyageai
-  # docs:
-  #   - https://docs.voyageai.com/docs/embeddings
-  #   - https://docs.voyageai.com/docs/pricing
-  #   - https://docs.voyageai.com/reference/embeddings-api
   models:
     - name: voyage-large-2-instruct
       type: embedding
