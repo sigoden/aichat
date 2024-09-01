@@ -12,6 +12,7 @@ pub struct OpenAICompatibleConfig {
     pub api_base: Option<String>,
     pub api_key: Option<String>,
     pub chat_endpoint: Option<String>,
+    pub embeddings_endpoint: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
     pub patch: Option<RequestPatch>,
@@ -82,7 +83,18 @@ fn prepare_embeddings(self_: &OpenAICompatibleClient, data: EmbeddingsData) -> R
     let api_key = self_.get_api_key().ok();
     let api_base = get_api_base_ext(self_)?;
 
-    let url = format!("{api_base}/embeddings");
+    let embeddings_endpoint = match self_.config.embeddings_endpoint.clone() {
+        Some(v) => {
+            if v.starts_with('/') {
+                v
+            } else {
+                format!("/{}", v)
+            }
+        }
+        None => "/embeddings".into(),
+    };
+
+    let url = format!("{api_base}{embeddings_endpoint}");
 
     let body = openai_build_embeddings_body(data, &self_.model);
 

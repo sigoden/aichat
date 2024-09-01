@@ -117,6 +117,7 @@ clients:
     api_base: http://localhost:8080/v1
     api_key: xxx                                      # Optional
     chat_endpoint: /chat/completions                  # Optional
+    embeddings_endpoint: /embeddings                  # Optional
     models:
       - name: llama3.1
         max_input_tokens: 128000
@@ -181,9 +182,9 @@ clients:
     api_base: https://api.groq.com/openai/v1
 
   # See https://github.com/jmorganca/ollama
-  - type: ollama
-    api_base: http://localhost:11434
-    api_auth: Basic xxx                               # optional
+  - type: openai-compatible
+    name: ollama
+    api_base: http://localhost:11434/v1
     models:
       - name: llama3.1
         max_input_tokens: 128000
@@ -252,9 +253,10 @@ clients:
     secret_key: xxxx
 
   # See https://help.aliyun.com/zh/dashscope/
-  - type: qianwen
+  - type: openai-compatible
+    name: qianwen
     api_key: sk-xxx
-    api_base: https://dashscope.aliyuncs.com/api/v1   # Optional
+    api_base: https://dashscope.aliyuncs.com/compatible-mode/v1
 
   # See https://platform.moonshot.cn/docs/intro
   - type: openai-compatible

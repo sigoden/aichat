@@ -25,7 +25,6 @@ register_client!(
     (gemini, "gemini", GeminiConfig, GeminiClient),
     (claude, "claude", ClaudeConfig, ClaudeClient),
     (cohere, "cohere", CohereConfig, CohereClient),
-    (ollama, "ollama", OllamaConfig, OllamaClient),
     (
         azure_openai,
         "azure-openai",
@@ -37,10 +36,9 @@ register_client!(
     (cloudflare, "cloudflare", CloudflareConfig, CloudflareClient),
     (replicate, "replicate", ReplicateConfig, ReplicateClient),
     (ernie, "ernie", ErnieConfig, ErnieClient),
-    (qianwen, "qianwen", QianwenConfig, QianwenClient),
 );
 
-pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 16] = [
+pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 18] = [
     ("ai21", "https://api.ai21.com/studio/v1"),
     ("deepinfra", "https://api.deepinfra.com/v1/openai"),
     ("deepseek", "https://api.deepseek.com"),
@@ -53,7 +51,12 @@ pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 16] = [
     ("moonshot", "https://api.moonshot.cn/v1"),
     ("openrouter", "https://openrouter.ai/api/v1"),
     ("octoai", "https://text.octoai.run/v1"),
+    ("ollama", "http://localhost:11434/v1"),
     ("perplexity", "https://api.perplexity.ai"),
+    (
+        "qianwen",
+        "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    ),
     ("together", "https://api.together.xyz/v1"),
     ("zhipuai", "https://open.bigmodel.cn/api/paas/v4"),
     ("voyageai", "https://api.voyageai.com/v1"),
