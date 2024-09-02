@@ -228,6 +228,12 @@ clients:
     api_base: https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/ai/v1
     api_key: xxx
 
+  # See https://huggingface.co/inference-api/serverless
+  - type: openai-compatible
+    name: huggingface
+    api_base: https://api-inference.huggingface.co/v1
+    api_key: hf_xxx
+
   # See https://replicate.com/docs
   - type: replicate
     api_key: xxx
@@ -302,6 +308,8 @@ clients:
     name: together
     api_base: https://api.together.xyz/v1
     api_key: xxx
+
+  # ----- RAG dedicated -----
 
   # See https://jina.ai
   - type: openai-compatible

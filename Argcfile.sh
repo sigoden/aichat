@@ -85,7 +85,10 @@ OPENAI_COMPATIBLE_PLATFORMS=( \
   deepinfra,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.deepinfra.com/v1/openai \
   deepseek,deepseek-chat,https://api.deepseek.com \
   fireworks,accounts/fireworks/models/llama-v3p1-8b-instruct,https://api.fireworks.ai/inference/v1 \
+  github,gpt-4o-mini,https://models.inference.ai.azure.com \
   groq,llama3-8b-8192,https://api.groq.com/openai/v1 \
+  huggingface,meta-llama/Meta-Llama-3-8B-Instruct,https://api-inference.huggingface.co/v1 \
+  lingyiwanwu,yi-large,https://api.lingyiwanwu.com/v1 \
   mistral,open-mistral-nemo,https://api.mistral.ai/v1 \
   moonshot,moonshot-v1-8k,https://api.moonshot.cn/v1 \
   openrouter,openai/gpt-4o-mini,https://openrouter.ai/api/v1 \
@@ -95,8 +98,6 @@ OPENAI_COMPATIBLE_PLATFORMS=( \
   qianwen,qwen-turbo,https://dashscope.aliyuncs.com/compatible-mode/v1 \
   together,meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo,https://api.together.xyz/v1 \
   zhipuai,glm-4-0520,https://open.bigmodel.cn/api/paas/v4 \
-  lingyiwanwu,yi-large,https://api.lingyiwanwu.com/v1 \
-  github,gpt-4o-mini,https://models.inference.ai.azure.com \
 )
 
 # @cmd Chat with any LLM api 
