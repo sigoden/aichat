@@ -1,12 +1,10 @@
 _aichat() {
-    local i cur prev opts cmd
+    local cur prev words cword i opts cmd
     COMPREPLY=()
-    cur="${COMP_WORDS[COMP_CWORD]}"
-    prev="${COMP_WORDS[COMP_CWORD-1]}"
-    cmd=""
-    opts=""
 
-    for i in ${COMP_WORDS[@]}
+    _get_comp_words_by_ref -n : cur prev words cword
+
+    for i in ${words[@]}
     do
         case "${cmd},${i}" in
             ",$1")
@@ -20,33 +18,15 @@ _aichat() {
     case "${cmd}" in
         aichat)
             opts="-m -r -s -a -R -e -c -f -S -h -V --model --prompt --role --session --save-session --agent --rag --serve --execute --code --file --no-stream --dry-run --info --list-models --list-roles --list-sessions --list-agents --list-rags --help --version"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
+            if [[ ${cur} == -* || ${cword} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
-            fi
-
-            # hacking -m or --model completion value that contains colon
-            if [ "$cur" == ":" ] || [ "$prev" == ":" ]; then
-                local option client
-                if [ "$cur" = ":" ]; then
-                    option="${COMP_WORDS[COMP_CWORD-2]}"
-                    client="$prev"
-                else
-                    option="${COMP_WORDS[COMP_CWORD-3]}"
-                    client="${COMP_WORDS[COMP_CWORD-2]}"
-                fi
-                if [ "$option" == "-m" ] || [ "$flag" == "--model" ]; then
-                    if [ "$cur" == ":" ]; then
-                        cur=""
-                    fi
-                    COMPREPLY=($(compgen -W "$("$1" --list-models | sed -n '/'"${client}"'/ s/'"${client%:*}"'://p')" -- "${cur}"))
-                    return 0
-                fi
             fi
 
             case "${prev}" in
                 -m|--model)
                     COMPREPLY=($(compgen -W "$("$1" --list-models)" -- "${cur}"))
+                    __ltrim_colon_completions "$cur"
                     return 0
                     ;;
                 --prompt)
@@ -55,18 +35,22 @@ _aichat() {
                     ;;
                 -r|--role)
                     COMPREPLY=($(compgen -W "$("$1" --list-roles)" -- "${cur}"))
+                    __ltrim_colon_completions "$cur"
                     return 0
                     ;;
                 -s|--session)
                     COMPREPLY=($(compgen -W "$("$1" --list-sessions)" -- "${cur}"))
+                    __ltrim_colon_completions "$cur"
                     return 0
                     ;;
                 -a|--agent)
                     COMPREPLY=($(compgen -W "$("$1" --list-agents)" -- "${cur}"))
+                    __ltrim_colon_completions "$cur"
                     return 0
                     ;;
                 -R|--rag)
                     COMPREPLY=($(compgen -W "$("$1" --list-rags)" -- "${cur}"))
+                    __ltrim_colon_completions "$cur"
                     return 0
                     ;;
                 -f|--file)
