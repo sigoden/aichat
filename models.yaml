@@ -520,6 +520,7 @@
 
 # Links:
 #  - https://developers.cloudflare.com/workers-ai/models/
+#  - https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/
 - platform: cloudflare
   models:
     - name: '@cf/meta/llama-3.1-8b-instruct'

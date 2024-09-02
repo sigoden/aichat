@@ -364,7 +364,7 @@ pub fn create_config(prompts: &[PromptAction], client: &str) -> Result<(String, 
 
 pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(String, Value)>> {
     match super::OPENAI_COMPATIBLE_PLATFORMS
-        .iter()
+        .into_iter()
         .find(|(name, _)| client == *name)
     {
         None => Ok(None),
@@ -372,13 +372,16 @@ pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(St
             let mut config = json!({
                 "type": OpenAICompatibleClient::NAME,
                 "name": name,
-                "api_base": api_base,
             });
-            let prompts = if ALL_MODELS.iter().any(|v| &v.platform == name) {
-                vec![("api_key", "API Key:", false, PromptKind::String)]
+            let mut prompts = vec![];
+            if api_base.is_empty() {
+                prompts.push(("api_base", "API Base:", true, PromptKind::String));
             } else {
-                vec![
-                    ("api_key", "API Key:", false, PromptKind::String),
+                config["api_base"] = api_base.into();
+            }
+            prompts.push(("api_key", "API Key:", false, PromptKind::String));
+            if !ALL_MODELS.iter().any(|v| v.platform == name) {
+                prompts.extend([
                     ("models[].name", "Model Name:", true, PromptKind::String),
                     (
                         "models[].max_input_tokens",
@@ -386,7 +389,7 @@ pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(St
                         false,
                         PromptKind::Integer,
                     ),
-                ]
+                ]);
             };
             let mut model = client.to_string();
             set_client_config(&prompts, &mut model, &mut config)?;
