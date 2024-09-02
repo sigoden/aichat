@@ -34,7 +34,7 @@ impl_client_trait!(
         gemini_chat_completions,
         gemini_chat_completions_streaming
     ),
-    (prepare_embeddings, gemini_embeddings),
+    (prepare_embeddings, embeddings),
     (noop_prepare_rerank, noop_rerank),
 );
 
@@ -95,7 +95,7 @@ fn prepare_embeddings(self_: &GeminiClient, data: EmbeddingsData) -> Result<Requ
     Ok(request_data)
 }
 
-async fn gemini_embeddings(builder: RequestBuilder, _model: &Model) -> Result<EmbeddingsOutput> {
+async fn embeddings(builder: RequestBuilder, _model: &Model) -> Result<EmbeddingsOutput> {
     let res = builder.send().await?;
     let status = res.status();
     let data: Value = res.json().await?;

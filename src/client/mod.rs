@@ -33,19 +33,19 @@ register_client!(
     ),
     (vertexai, "vertexai", VertexAIConfig, VertexAIClient),
     (bedrock, "bedrock", BedrockConfig, BedrockClient),
-    (cloudflare, "cloudflare", CloudflareConfig, CloudflareClient),
     (replicate, "replicate", ReplicateConfig, ReplicateClient),
     (ernie, "ernie", ErnieConfig, ErnieClient),
 );
 
-pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 18] = [
+pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 20] = [
     ("ai21", "https://api.ai21.com/studio/v1"),
+    ("cloudflare", ""),
     ("deepinfra", "https://api.deepinfra.com/v1/openai"),
     ("deepseek", "https://api.deepseek.com"),
     ("fireworks", "https://api.fireworks.ai/inference/v1"),
     ("github", "https://models.inference.ai.azure.com"),
     ("groq", "https://api.groq.com/openai/v1"),
-    ("jina", "https://api.jina.ai/v1"),
+    ("huggingface", "https://api-inference.huggingface.co/v1"),
     ("lingyiwanwu", "https://api.lingyiwanwu.com/v1"),
     ("mistral", "https://api.mistral.ai/v1"),
     ("moonshot", "https://api.moonshot.cn/v1"),
@@ -59,5 +59,7 @@ pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 18] = [
     ),
     ("together", "https://api.together.xyz/v1"),
     ("zhipuai", "https://open.bigmodel.cn/api/paas/v4"),
+    // RAG-dedicated
+    ("jina", "https://api.jina.ai/v1"),
     ("voyageai", "https://api.voyageai.com/v1"),
 ];
