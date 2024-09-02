@@ -543,6 +543,24 @@
       max_batch_size: 100
 
 # Links:
+#  - https://huggingface.co/models?inference=warm&pipeline_tag=text-generation&other=text-generation-inference&sort=trending
+#  - https://huggingface.co/docs/text-generation-inference/en/reference/api_reference
+- platform: huggingface
+  models:
+    - name: meta-llama/Meta-Llama-3-8B-Instruct
+      max_input_tokens: 8192
+      max_output_tokens: 4096
+      require_max_tokens: true
+      input_price: 0
+      output_price: 0
+    - name: mistralai/Mistral-Nemo-Instruct-2407
+      max_input_tokens: 128000
+      max_output_tokens: 4096
+      require_max_tokens: true
+      input_price: 0
+      output_price: 0
+
+# Links:
 #  - https://replicate.com/explore
 #  - https://replicate.com/pricing
 #  - https://replicate.com/docs/reference/http#create-a-prediction-using-an-official-model
