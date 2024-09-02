@@ -57,8 +57,8 @@ Effortlessly connect with over 20 leading LLM platforms through a unified interf
 - **Deepseek:** (paid, chat, function-calling)
 - **ZhipuAI:** GLM-4 (paid, chat, embedding, vision, function-calling)
 - **LingYiWanWu:** Yi-Large (paid, chat, vision, function-calling)
-- **Jina:**  (free, paid, embedding, reranker)
-- **VoyageAI:**  (paid, embedding, reranker)
+- **Jina:** (free, paid, embedding, reranker)
+- **VoyageAI:** (paid, embedding, reranker)
 - **OpenAI-Compatible Platforms** 
 
 ### CMD & REPL
@@ -76,8 +76,26 @@ AIChat supports both CMD and REPL modes to meet the needs and tastes of differen
 | `-f, --file <file/url>`     | `.file <file/url>`     |
 | `    --info`                | `.info`                |
 
-![aichat-cmd-mode](https://github.com/user-attachments/assets/a1e34430-67e7-46f2-a235-1069392d8b71)
-![aichat-repl-mode](https://github.com/user-attachments/assets/310e4bf2-f656-43d7-af51-a7afe41098f3)
+
+```sh
+aichat                                          # Enter REPL 
+aichat Tell a joke                              # Generate response
+
+aichat -r role1                                 # Enter REPL with the role 'role1'
+aichat -r role1 hello world                     # Generate response with role 'role1'
+
+aichat -e install neovim                        # Execute command
+aichat -c fibonacci in js                       # Generate code
+
+cat data.toml | aichat -c to json > data.json   # Pipe Input/Output
+output=$(aichat -S $input)                      # Run in the script
+
+aichat -f data.txt                              # Use local file
+aichat -f image.png Recognize text              # Use image file
+aichat -f dir/file1 -f dir/file2 Summarize      # Use multi files
+aichat -f dir/ Summarize                        # Use local dir
+aichat -f https://example.com/readme Summarize  # Use website
+```
 
 ### Shell Assistant
 
