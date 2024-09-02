@@ -33,13 +33,13 @@ register_client!(
     ),
     (vertexai, "vertexai", VertexAIConfig, VertexAIClient),
     (bedrock, "bedrock", BedrockConfig, BedrockClient),
-    (cloudflare, "cloudflare", CloudflareConfig, CloudflareClient),
     (replicate, "replicate", ReplicateConfig, ReplicateClient),
     (ernie, "ernie", ErnieConfig, ErnieClient),
 );
 
-pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 18] = [
+pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 19] = [
     ("ai21", "https://api.ai21.com/studio/v1"),
+    ("cloudflare", ""),
     ("deepinfra", "https://api.deepinfra.com/v1/openai"),
     ("deepseek", "https://api.deepseek.com"),
     ("fireworks", "https://api.fireworks.ai/inference/v1"),

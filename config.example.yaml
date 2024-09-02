@@ -223,10 +223,10 @@ clients:
     region: xxx
 
   # See https://developers.cloudflare.com/workers-ai/
-  - type: cloudflare
-    account_id: xxx
+  - type: openai-compatible
+    name: cloudflare
+    api_base: https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/ai/v1
     api_key: xxx
-    api_base: https://api.cloudflare.com/client/v4    # Optional
 
   # See https://replicate.com/docs
   - type: replicate

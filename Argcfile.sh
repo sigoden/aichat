@@ -81,6 +81,7 @@ test-server() {
 OPENAI_COMPATIBLE_PLATFORMS=( \
   openai,gpt-4o-mini,https://api.openai.com/v1 \
   ai21,jamba-1.5-mini,https://api.ai21.com/studio/v1 \
+  cloudflare,@cf/meta/llama-3.1-8b-instruct, \
   deepinfra,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.deepinfra.com/v1/openai \
   deepseek,deepseek-chat,https://api.deepseek.com \
   fireworks,accounts/fireworks/models/llama-v3p1-8b-instruct,https://api.fireworks.ai/inference/v1 \
@@ -111,7 +112,7 @@ chat() {
     fi
     for platform_config in "${OPENAI_COMPATIBLE_PLATFORMS[@]}"; do
         if [[ "$argc_platform" == "${platform_config%%,*}" ]]; then
-            api_base="${platform_config##*,}"
+            _retrieve_api_base
             break
         fi
     done
@@ -141,7 +142,7 @@ chat() {
 models() {
     for platform_config in "${OPENAI_COMPATIBLE_PLATFORMS[@]}"; do
         if [[ "$argc_platform" == "${platform_config%%,*}" ]]; then
-            api_base="${platform_config##*,}"
+            _retrieve_api_base
             break
         fi
     done
@@ -149,7 +150,7 @@ models() {
         env_prefix="$(echo "$argc_platform" | tr '[:lower:]' '[:upper:]')"
         api_key_env="${env_prefix}_API_KEY"
         api_key="${!api_key_env}" 
-        _openai_models
+        _retrieve_models
     else
         argc models-$argc_platform
     fi
@@ -173,7 +174,7 @@ chat-openai-compatible() {
 # @option --api-base! $$
 # @option --api-key! $$
 models-openai-compatible() {
-    _openai_models
+    _retrieve_models
 }
 
 # @cmd Chat with azure-openai api
@@ -271,19 +272,6 @@ chat-vertexai() {
 -d "$(_build_body vertexai "$@")" 
 }
 
-# @cmd Chat with cloudflare api
-# @env CLOUDFLARE_API_KEY!
-# @option -m --model=@cf/meta/llama-3-8b-instruct $CLOUDFLARE_MODEL
-# @flag -S --no-stream
-# @arg text~
-chat-cloudflare() {
-    url="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/ai/run/$argc_model"
-    _wrapper curl -i "$url" \
--X POST \
--H "Authorization: Bearer $CLOUDFLARE_API_KEY" \
--d "$(_build_body cloudflare "$@")" 
-}
-
 # @cmd Chat with replicate api
 # @env REPLICATE_API_KEY!
 # @option -m --model=meta/meta-llama-3-8b-instruct $REPLICATE_MODEL
@@ -336,7 +324,6 @@ chat-ernie() {
 -d "$(_build_body ernie "$@")"
 }
 
-
 _argc_before() {
     stream="true"
     if [[ -n "$argc_no_stream" ]]; then
@@ -344,12 +331,23 @@ _argc_before() {
     fi
 }
 
-_openai_models() {
+_retrieve_models() {
     api_base="${api_base:-"$argc_api_base"}"
     api_key="${api_key:-"$argc_api_key"}"
     _wrapper curl "$api_base/models" \
 -H "Authorization: Bearer $api_key" \
 
+}
+
+_retrieve_api_base() {
+    api_base="${platform_config##*,}"
+    if [[ -z "$api_base" ]]; then
+        key="$(echo $argc_platform |  tr '[:lower:]' '[:upper:]')_API_BASE"
+        api_base="${!key}"
+        if [[ -z "$api_base" ]]; then
+            _die "Miss api_base for $argc_platform; please set $key"
+        fi
+    fi
 }
 
 _choice_model() {
@@ -436,7 +434,7 @@ _build_body() {
     "safetySettings":[{"category":"HARM_CATEGORY_HARASSMENT","threshold":"BLOCK_ONLY_HIGH"},{"category":"HARM_CATEGORY_HATE_SPEECH","threshold":"BLOCK_ONLY_HIGH"},{"category":"HARM_CATEGORY_SEXUALLY_EXPLICIT","threshold":"BLOCK_ONLY_HIGH"},{"category":"HARM_CATEGORY_DANGEROUS_CONTENT","threshold":"BLOCK_ONLY_HIGH"}]
 }'
             ;;
-        ernie|cloudflare)
+        ernie)
             echo '{
     "messages": [
         {
