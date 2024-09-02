@@ -733,9 +733,10 @@ impl Config {
     }
 
     pub fn retrieve_role(&self, name: &str) -> Result<Role> {
-        let mut role = if Self::list_roles(false).contains(&name.to_string()) {
-            let path = Self::role_file(name)?;
-            let content = read_to_string(path)?;
+        let names = Self::list_roles(false);
+        let mut role = if let Some(role_name) = Role::match_name(&names, name) {
+            let path = Self::role_file(&role_name)?;
+            let content = read_to_string(&path)?;
             Role::new(name, &content)
         } else {
             BUILTIN_ROLES
@@ -777,7 +778,9 @@ impl Config {
     }
 
     pub fn upsert_role(&mut self, name: &str) -> Result<()> {
-        let role_path = Self::role_file(name)?;
+        let names = Self::list_roles(false);
+        let role_name = Role::match_name(&names, name).unwrap_or_else(|| name.to_string());
+        let role_path = Self::role_file(&role_name)?;
         ensure_parent_exists(&role_path)?;
         let editor = self.editor()?;
         edit_file(&editor, &role_path)?;
@@ -859,7 +862,8 @@ impl Config {
     }
 
     pub fn has_role(name: &str) -> bool {
-        Self::list_roles(true).iter().any(|v| v == name)
+        let names = Self::list_roles(true);
+        Role::match_name(&names, name).is_some()
     }
 
     pub fn use_session(&mut self, session_name: Option<&str>) -> Result<()> {
