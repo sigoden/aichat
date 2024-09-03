@@ -40,11 +40,12 @@ Effortlessly connect with over 20 leading LLM platforms through a unified interf
 - **Gemini:** Gemini-1.5/Gemini-1.0 (free, paid, chat, embedding, vision, function-calling)
 - **Claude:** Claude-3.5/Claude-3 (paid, chat, vision, function-calling)
 - **Ollama:** (free, local, chat, embedding, vision, function-calling)
-- **Groq:** Llama-3.1/Mixtral/Gemma2 (free, chat, function-calling)
+- **Groq:** Llama-3.1/Gemma2 (free, chat, function-calling)
 - **Azure-OpenAI:** GPT-4/GPT-3.5 (paid, chat, embedding, vision, function-calling)
 - **VertexAI:** Gemini/Claude/Mistral (paid, chat, embedding, vision, function-calling)
 - **Bedrock:** Llama3.1/Claude3.5/Mistral/Command-R+ (paid, chat, embedding, function-calling)
 - **Mistral:** (paid, chat, embedding, function-calling)
+- **AI21:** (paid, chat, function-calling)
 - **Cohere:** Command-R/Command-R+ (paid, chat, embedding, reranker, function-calling)
 - **Perplexity:** Llama-3/Mixtral (paid, chat, online)
 - **Cloudflare:** (free, chat, embedding)
@@ -56,11 +57,11 @@ Effortlessly connect with over 20 leading LLM platforms through a unified interf
 - **Deepseek:** (paid, chat, function-calling)
 - **ZhipuAI:** GLM-4 (paid, chat, embedding, vision, function-calling)
 - **LingYiWanWu:** Yi-Large (paid, chat, vision, function-calling)
-- **Jina:**  (free, paid, embedding, reranker)
-- **VoyageAI:**  (paid, embedding, reranker)
+- **Jina:** (free, paid, embedding, reranker)
+- **VoyageAI:** (paid, embedding, reranker)
 - **OpenAI-Compatible Platforms** 
 
-### CMD & REPL Modes
+### CMD & REPL
 
 AIChat supports both CMD and REPL modes to meet the needs and tastes of different users.
 
@@ -75,8 +76,26 @@ AIChat supports both CMD and REPL modes to meet the needs and tastes of differen
 | `-f, --file <file/url>`     | `.file <file/url>`     |
 | `    --info`                | `.info`                |
 
-![aichat-cmd-mode](https://github.com/user-attachments/assets/a1e34430-67e7-46f2-a235-1069392d8b71)
-![aichat-repl-mode](https://github.com/user-attachments/assets/310e4bf2-f656-43d7-af51-a7afe41098f3)
+
+```sh
+aichat                                          # Enter REPL 
+aichat Tell a joke                              # Generate response
+
+aichat -r role1                                 # Enter REPL with the role 'role1'
+aichat -r role1 hello world                     # Generate response with role 'role1'
+
+aichat -e install neovim                        # Execute command
+aichat -c fibonacci in js                       # Generate code
+
+cat data.toml | aichat -c to json > data.json   # Pipe Input/Output
+output=$(aichat -S $input)                      # Run in the script
+
+aichat -f data.txt                              # Use local file
+aichat -f image.png Recognize text              # Use image file
+aichat -f dir/file1 -f dir/file2 Summarize      # Use multi files
+aichat -f dir/ Summarize                        # Use local dir
+aichat -f https://example.com/readme Summarize  # Use website
+```
 
 ### Shell Assistant
 
@@ -86,7 +105,7 @@ Supercharge your command line experience. Simply describe your desired actions i
 
 **OS-Aware Intelligence:** AIChat tailors commands to your specific operating system and shell environment.
 
-### Custom Roles
+### Prompt & Role
 
 Define custom roles to tailor LLM behaviors, enhancing interactions and boosting productivity.
 
@@ -110,13 +129,13 @@ Function calling supercharges LLMs by connecting them to external tools and data
 
 We have created a new repository [https://github.com/sigoden/llm-functions](https://github.com/sigoden/llm-functions) to help you make the most of this feature.
 
-#### Tools
+#### AI Tool
 
 Integrate external tools to automate tasks, retrieve information, and perform actions directly within your workflow.
 
 ![aichat-tool](https://github.com/user-attachments/assets/7459a111-7258-4ef0-a2dd-624d0f1b4f92)
 
-#### Agents
+#### AI Agent
 
 While tools excel at specific tasks, agents offer a more sophisticated approach to problem-solving and user interaction.
 
