@@ -124,15 +124,15 @@ impl Role {
         if names.contains(&name.to_string()) {
             Some(name.to_string())
         } else {
-            let parts: Vec<&str> = name.split(':').collect();
+            let parts: Vec<&str> = name.split('#').collect();
             let parts_len = parts.len();
             if parts_len < 2 {
                 return None;
             }
-            let prefix = format!("{}:", parts[0]);
+            let prefix = format!("{}#", parts[0]);
             names
                 .iter()
-                .find(|v| v.starts_with(&prefix) && v.split(':').count() == parts_len)
+                .find(|v| v.starts_with(&prefix) && v.split('#').count() == parts_len)
                 .cloned()
         }
     }
@@ -329,7 +329,7 @@ impl RoleLike for Role {
 
 fn complete_prompt_args(prompt: &str, name: &str) -> String {
     let mut prompt = prompt.to_string();
-    for (i, arg) in name.split(':').skip(1).enumerate() {
+    for (i, arg) in name.split('#').skip(1).enumerate() {
         prompt = prompt.replace(&format!("__ARG{}__", i + 1), arg);
     }
     prompt
@@ -407,11 +407,11 @@ mod tests {
     #[test]
     fn test_merge_prompt_name() {
         assert_eq!(
-            complete_prompt_args("convert __ARG1__", "convert:foo"),
+            complete_prompt_args("convert __ARG1__", "convert#foo"),
             "convert foo"
         );
         assert_eq!(
-            complete_prompt_args("convert __ARG1__ to __ARG2__", "convert:foo:bar"),
+            complete_prompt_args("convert __ARG1__ to __ARG2__", "convert#foo#bar"),
             "convert foo to bar"
         );
     }
@@ -419,8 +419,8 @@ mod tests {
     #[test]
     fn test_match_name() {
         let names = vec![
-            "convert:yaml:json".into(),
-            "convert:yaml".into(),
+            "convert#yaml#json".into(),
+            "convert#yaml".into(),
             "convert".into(),
         ];
         assert_eq!(
@@ -428,22 +428,22 @@ mod tests {
             Some("convert".to_string())
         );
         assert_eq!(
-            Role::match_name(&names, "convert:yaml"),
-            Some("convert:yaml".to_string())
+            Role::match_name(&names, "convert#yaml"),
+            Some("convert#yaml".to_string())
         );
         assert_eq!(
-            Role::match_name(&names, "convert:json"),
-            Some("convert:yaml".to_string())
+            Role::match_name(&names, "convert#json"),
+            Some("convert#yaml".to_string())
         );
         assert_eq!(
-            Role::match_name(&names, "convert:yaml:json"),
-            Some("convert:yaml:json".to_string())
+            Role::match_name(&names, "convert#yaml#json"),
+            Some("convert#yaml#json".to_string())
         );
         assert_eq!(
-            Role::match_name(&names, "convert:json:yaml"),
-            Some("convert:yaml:json".to_string())
+            Role::match_name(&names, "convert#json#yaml"),
+            Some("convert#yaml#json".to_string())
         );
-        assert_eq!(Role::match_name(&names, "convert:yaml:json:simple"), None,);
+        assert_eq!(Role::match_name(&names, "convert#yaml#json#simple"), None,);
     }
 
     #[test]

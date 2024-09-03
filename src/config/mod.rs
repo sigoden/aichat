@@ -796,6 +796,9 @@ impl Config {
             },
             None => bail!("No role"),
         };
+        if role_name.contains('#') {
+            bail!("Unable to save role with arguments")
+        }
         if role_name == TEMP_ROLE_NAME {
             role_name = Text::new("Role name:")
                 .with_validator(|input: &str| {
