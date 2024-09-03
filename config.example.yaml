@@ -320,5 +320,5 @@ clients:
   # See https://docs.voyageai.com/docs/introduction
   - type: openai-compatible
     name: voyageai
-    api_base: https://api.voyageai.ai/v1
+    api_base: https://api.voyageai.com/v1
     api_key: xxx
