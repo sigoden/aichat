@@ -109,7 +109,7 @@ clients:
   # See https://platform.openai.com/docs/quickstart
   - type: openai
     api_base: https://api.openai.com/v1               # Optional
-    api_key: sk-xxx
+    api_key: xxx
     organization_id: org-xxx                          # Optional
 
   # For any platform compatible with OpenAI's API
@@ -149,7 +149,7 @@ clients:
   # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
   - type: claude
     api_base: https://api.anthropic.com/v1            # Optional
-    api_key: sk-ant-xxx
+    api_key: xxx
 
   # See https://docs.mistral.ai/
   - type: openai-compatible
@@ -172,13 +172,13 @@ clients:
   - type: openai-compatible
     name: perplexity
     api_base: https://api.perplexity.ai
-    api_key: pplx-xxx
+    api_key: xxx
 
   # See https://console.groq.com/docs/quickstart
   - type: openai-compatible
     name: groq
     api_base: https://api.groq.com/openai/v1
-    api_key: gsk_xxx
+    api_key: xxx
 
   # See https://github.com/jmorganca/ollama
   - type: openai-compatible
@@ -233,7 +233,7 @@ clients:
   - type: openai-compatible
     name: huggingface
     api_base: https://api-inference.huggingface.co/v1
-    api_key: hf_xxx
+    api_key: xxx
 
   # See https://replicate.com/docs
   - type: replicate
@@ -242,25 +242,25 @@ clients:
   # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
   - type: ernie
     api_key: xxx
-    secret_key: xxxx
+    secret_key: xxx
 
   # See https://help.aliyun.com/zh/dashscope/
   - type: openai-compatible
     name: qianwen
     api_base: https://dashscope.aliyuncs.com/compatible-mode/v1
-    api_key: sk-xxx
+    api_key: xxx
 
   # See https://platform.moonshot.cn/docs/intro
   - type: openai-compatible
     name: moonshot
     api_base: https://api.moonshot.cn/v1
-    api_key: sk-xxx
+    api_key: xxx
 
   # See https://platform.deepseek.com/api-docs/
   - type: openai-compatible
     name: deepseek
     api_base: https://api.deepseek.com
-    api_key: sk-xxx
+    api_key: xxx
 
   # See https://open.bigmodel.cn/dev/howuse/introduction
   - type: openai-compatible
@@ -302,6 +302,12 @@ clients:
   - type: openai-compatible
     name: octoai
     api_base: https://text.octoai.run/v1
+    api_key: xxx
+
+  # See https://docs.siliconflow.cn/docs/getting-started
+  - type: openai-compatible
+    name: siliconflow
+    api_base: https://api.siliconflow.cn/v1
     api_key: xxx
 
   # See https://docs.together.ai/docs/quickstart

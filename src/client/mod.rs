@@ -37,7 +37,7 @@ register_client!(
     (ernie, "ernie", ErnieConfig, ErnieClient),
 );
 
-pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 20] = [
+pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 21] = [
     ("ai21", "https://api.ai21.com/studio/v1"),
     ("cloudflare", ""),
     ("deepinfra", "https://api.deepinfra.com/v1/openai"),
@@ -51,12 +51,13 @@ pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 20] = [
     ("moonshot", "https://api.moonshot.cn/v1"),
     ("openrouter", "https://openrouter.ai/api/v1"),
     ("octoai", "https://text.octoai.run/v1"),
-    ("ollama", "http://localhost:11434/v1"),
+    ("ollama", ""),
     ("perplexity", "https://api.perplexity.ai"),
     (
         "qianwen",
         "https://dashscope.aliyuncs.com/compatible-mode/v1",
     ),
+    ("siliconflow", "https://api.siliconflow.cn/v1"),
     ("together", "https://api.together.xyz/v1"),
     ("zhipuai", "https://open.bigmodel.cn/api/paas/v4"),
     // RAG-dedicated

@@ -96,6 +96,7 @@ OPENAI_COMPATIBLE_PLATFORMS=( \
   ollama,llama3.1:latest,http://localhost:11434/v1 \
   perplexity,llama-3.1-8b-instruct,https://api.perplexity.ai \
   qianwen,qwen-turbo,https://dashscope.aliyuncs.com/compatible-mode/v1 \
+  siliconflow,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.siliconflow.cn/v1 \
   together,meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo,https://api.together.xyz/v1 \
   zhipuai,glm-4-0520,https://open.bigmodel.cn/api/paas/v4 \
 )
