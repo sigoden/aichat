@@ -546,7 +546,7 @@
       max_batch_size: 100
 
 # Links:
-#  - https://huggingface.co/models?inference=warm&pipeline_tag=text-generation&other=text-generation-inference&sort=trending
+#  - https://huggingface.co/models?other=text-generation-inference
 #  - https://huggingface.co/docs/text-generation-inference/en/reference/api_reference
 - platform: huggingface
   models:
@@ -1265,6 +1265,67 @@
       max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 100
+
+# Links
+#  - https://siliconflow.cn/zh-cn/models
+#  - https://siliconflow.cn/zh-cn/maaspricing
+#  - https://docs.siliconflow.cn/reference/chat-completions-3
+- platform: siliconflow
+  models:
+    - name: Qwen/Qwen2-72B-Instruct
+      max_input_tokens: 32768
+      input_price: 0
+      output_price: 0
+    - name: meta-llama/Meta-Llama-3.1-405B-Instruct
+      max_input_tokens: 32768
+      input_price: 2.94
+      output_price: 2.94
+    - name: meta-llama/Meta-Llama-3.1-70B-Instruct
+      max_input_tokens: 32768
+      input_price: 0.578
+      output_price: 0.578
+    - name: meta-llama/Meta-Llama-3.1-8B-Instruct
+      max_input_tokens: 32768
+      input_price: 0
+      output_price: 0
+    - name: google/gemma-2-27b-it
+      max_input_tokens: 8192
+      input_price: 0.176
+      output_price: 0.176
+    - name: google/gemma-2-9b-it
+      max_input_tokens: 8192
+      input_price: 0
+      output_price: 0
+    - name: deepseek-ai/DeepSeek-V2-Chat
+      max_input_tokens: 32768
+      input_price: 0.186
+      output_price: 0.186
+    - name: deepseek-ai/DeepSeek-Coder-V2-Instruct
+      max_input_tokens: 32768
+      input_price: 0.186
+      output_price: 0.186
+    - name: BAAI/bge-large-en-v1.5
+      type: embedding
+      input_price: 0
+      max_tokens_per_chunk: 512
+      default_chunk_size: 1000
+      max_batch_size: 100
+    - name: BAAI/bge-large-zh-v1.5
+      type: embedding
+      input_price: 0
+      max_tokens_per_chunk: 512
+      default_chunk_size: 1000
+      max_batch_size: 100
+    - name: BAAI/bge-m3
+      type: embedding
+      input_price: 0
+      max_tokens_per_chunk: 8192
+      default_chunk_size: 2000
+      max_batch_size: 100
+    - name: BAAI/bge-reranker-v2-m3
+      type: reranker
+      max_input_tokens: 8192
+      input_price: 0
 
 # Links:
 #  - https://docs.together.ai/docs/inference-models
