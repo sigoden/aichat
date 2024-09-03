@@ -74,20 +74,33 @@ fn prepare_embeddings(self_: &GeminiClient, data: EmbeddingsData) -> Result<Requ
         .unwrap_or_else(|_| API_BASE.to_string());
 
     let url = format!(
-        "{}/models/{}:embedContent?key={}",
+        "{}/models/{}:batchEmbedContents?key={}",
         api_base.trim_end_matches('/'),
         self_.model.name(),
         api_key
     );
 
+    let model_id = format!("models/{}", self_.model.name());
+
+    let requests: Vec<_> = data
+        .texts
+        .iter()
+        .map(|text| {
+            json!({
+                "model": model_id,
+                "content": {
+                    "parts": [
+                        {
+                            "text": text
+                        }
+                    ]
+                },
+            })
+        })
+        .collect();
+
     let body = json!({
-        "content": {
-            "parts": [
-                {
-                    "text": data.texts[0],
-                }
-            ]
-        }
+        "requests": requests,
     });
 
     let request_data = RequestData::new(url, body);
@@ -104,13 +117,17 @@ async fn embeddings(builder: RequestBuilder, _model: &Model) -> Result<Embedding
     }
     let res_body: EmbeddingsResBody =
         serde_json::from_value(data).context("Invalid embeddings data")?;
-    let output = vec![res_body.embedding.values];
+    let output = res_body
+        .embeddings
+        .into_iter()
+        .map(|embedding| embedding.values)
+        .collect();
     Ok(output)
 }
 
 #[derive(Deserialize)]
 struct EmbeddingsResBody {
-    embedding: EmbeddingsResBodyEmbedding,
+    embeddings: Vec<EmbeddingsResBodyEmbedding>,
 }
 
 #[derive(Deserialize)]
