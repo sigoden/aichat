@@ -1363,25 +1363,25 @@
       max_input_tokens: 16000
       input_price: 0.12
       default_chunk_size: 2000
-      max_batch_size: 128
+      max_batch_size: 120
     - name: voyage-large-2
       type: embedding
       max_input_tokens: 16000
       input_price: 0.12
       default_chunk_size: 3000
-      max_batch_size: 128
+      max_batch_size: 120
     - name: voyage-multilingual-2
       type: embedding
       max_input_tokens: 32000
       input_price: 0.12
       default_chunk_size: 2000
-      max_batch_size: 128
+      max_batch_size: 120
     - name: voyage-code-2
       type: embedding
       max_input_tokens: 16000
       input_price: 0.12
       default_chunk_size: 3000
-      max_batch_size: 128
+      max_batch_size: 120
     - name: rerank-1
       type: reranker
       max_input_tokens: 8000
