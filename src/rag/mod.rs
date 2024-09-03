@@ -498,8 +498,18 @@ impl Rag {
         spinner: Option<Spinner>,
     ) -> Result<EmbeddingsOutput> {
         let EmbeddingsData { texts, query } = data;
+        let size = match self.embedding_model.max_input_tokens() {
+            Some(max_input_tokens) => {
+                let x = max_input_tokens / self.data.chunk_size;
+                match self.embedding_model.max_batch_size() {
+                    Some(y) => x.min(y),
+                    None => x,
+                }
+            }
+            None => self.embedding_model.max_batch_size().unwrap_or(1),
+        };
         let mut output = vec![];
-        let batch_chunks = texts.chunks(self.embedding_model.max_batch_size());
+        let batch_chunks = texts.chunks(size.max(1));
         let batch_chunks_len = batch_chunks.len();
         for (index, texts) in batch_chunks.enumerate() {
             progress(
@@ -667,8 +677,8 @@ fn select_embedding_model(models: &[&Model]) -> Result<String> {
 fn set_chunk_size(model: &Model) -> Result<usize> {
     let default_value = model.default_chunk_size().to_string();
     let help_message = model
-        .max_input_tokens()
-        .map(|v| format!("The model's max_input_token is {v}"));
+        .max_tokens_per_chunk()
+        .map(|v| format!("The model's max_tokens is {v}"));
 
     let mut text = Text::new("Set chunk size:")
         .with_default(&default_value)

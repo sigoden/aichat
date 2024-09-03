@@ -87,12 +87,13 @@ clients:
   #       supports_function_calling: true
   #     - name: xxxx                                  # Embedding model
   #       type: embedding
-  #       # max_input_tokens: 2048
+  #       max_input_tokens: 2048
+  #       max_tokens_per_chunk: 2048
   #       default_chunk_size: 1500                        
   #       max_batch_size: 100
   #     - name: xxxx                                  # Reranker model
   #       type: reranker 
-  #       # max_input_tokens: 2048
+  #       max_input_tokens: 2048
   #   patch:                                          # Patch api
   #     chat_completions:                             # Api type, possible values: chat_completions, embeddings, and rerank
   #       <regex>:                                    # The regex to match model names, e.g. '.*' 'gpt-4o' 'gpt-4o|gpt-4-.*'

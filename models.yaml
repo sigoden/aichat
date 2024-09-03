@@ -50,14 +50,14 @@
       supports_function_calling: true
     - name: text-embedding-3-large
       type: embedding
-      max_input_tokens: 8191
       input_price: 0.13
+      max_tokens_per_chunk: 8191
       default_chunk_size: 3000
       max_batch_size: 100
     - name: text-embedding-3-small
       type: embedding
-      max_input_tokens: 8191
       input_price: 0.02
+      max_tokens_per_chunk: 8191
       default_chunk_size: 3000
       max_batch_size: 100
 
@@ -65,7 +65,7 @@
 #  - https://ai.google.dev/models/gemini
 #  - https://ai.google.dev/pricing
 #  - https://ai.google.dev/api/rest/v1beta/models/streamGenerateContent
-- platform: gemini 
+- platform: gemini
   models:
     - name: gemini-1.5-pro-latest
       max_input_tokens: 2097152
@@ -108,11 +108,10 @@
       supports_function_calling: true
     - name: text-embedding-004
       type: embedding
-      max_input_tokens: 2048
       input_price: 0
       output_price: 0
+      max_tokens_per_chunk: 2048
       default_chunk_size: 1500
-      max_batch_size: 5
 
 # Links:
 #  - https://docs.anthropic.com/claude/docs/models-overview
@@ -180,8 +179,8 @@
       type: embedding
       max_input_tokens: 8092
       input_price: 0.1
+      max_tokens_per_chunk: 8092
       default_chunk_size: 2000
-      max_batch_size: 3
 
 # Links:
 #  - https://docs.ai21.com/docs/jamba-15-models
@@ -228,14 +227,14 @@
       supports_function_calling: true
     - name: embed-english-v3.0
       type: embedding
-      max_input_tokens: 512
       input_price: 0.1
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 96
     - name: embed-multilingual-v3.0
       type: embedding
-      max_input_tokens: 512
       input_price: 0.1
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 96
     - name: rerank-english-v3.0
@@ -340,6 +339,7 @@
       supports_function_calling: true
     - name: nomic-embed-text
       type: embedding
+      max_tokens_per_chunk: 8192
       default_chunk_size: 1000
       max_batch_size: 50
 
@@ -418,14 +418,16 @@
       output_price: 3
     - name: text-embedding-004
       type: embedding
-      max_input_tokens: 3072
+      max_input_tokens: 20000
       input_price: 0.025
+      max_tokens_per_chunk: 2048
       default_chunk_size: 1500
       max_batch_size: 5
     - name: text-multilingual-embedding-002
       type: embedding
-      max_input_tokens: 3072
+      max_input_tokens: 20000
       input_price: 0.2
+      max_tokens_per_chunk: 2048
       default_chunk_size: 1500
       max_batch_size: 5
 
@@ -507,14 +509,14 @@
       supports_function_calling: true
     - name: cohere.embed-english-v3
       type: embedding
-      max_input_tokens: 512
       input_price: 0.1
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 96
     - name: cohere.embed-multilingual-v3
       type: embedding
-      max_input_tokens: 512
       input_price: 0.1
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 96
 
@@ -537,8 +539,8 @@
       output_price: 0
     - name: '@cf/baai/bge-large-en-v1.5'
       type: embedding
-      max_input_tokens: 512
       input_price: 0
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 100
 
@@ -610,14 +612,14 @@
       output_price: 0
     - name: bge_large_zh
       type: embedding
-      max_input_tokens: 512
       input_price: 0.28
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 16
     - name: bge_large_en
       type: embedding
-      max_input_tokens: 512
       input_price: 0.28
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 16
     - name: bce_reranker_base
@@ -665,15 +667,15 @@
       supports_vision: true
     - name: text-embedding-v3
       type: embedding
-      max_input_tokens: 8192
       input_price: 0.1
+      max_tokens_per_chunk: 8192
       default_chunk_size: 2000
       max_batch_size: 6
     - name: text-embedding-v2
       type: embedding
-      max_input_tokens: 2048
       input_price: 0.1
-      default_chunk_size: 1500
+      max_tokens_per_chunk: 2048
+      default_chunk_size: 2000
       max_batch_size: 25
 
 # Links:
@@ -703,12 +705,12 @@
 #  - https://platform.deepseek.com/api-docs/api/create-chat-completion
 - platform: deepseek
   models:
-    - name: deepseek-chat 
-      max_input_tokens: 32768 
+    - name: deepseek-chat
+      max_input_tokens: 32768
       input_price: 0.14
       output_price: 0.28
       supports_function_calling: true
-    - name: deepseek-coder 
+    - name: deepseek-coder
       max_input_tokens: 32768
       input_price: 0.14
       output_price: 0.28
@@ -757,17 +759,17 @@
       supports_vision: true
     - name: embedding-3
       type: embedding
-      max_input_tokens: 8192 
+      max_input_tokens: 8192
       input_price: 0.07
+      max_tokens_per_chunk: 8192
       default_chunk_size: 2000
-      max_batch_size: 3
 
 # Links:
 #  - https://platform.lingyiwanwu.com/docs#%E6%A8%A1%E5%9E%8B%E4%B8%8E%E8%AE%A1%E8%B4%B9
 #  - https://platform.lingyiwanwu.com/docs/api-reference#create-chat-completion
 - platform: lingyiwanwu
   models:
-    - name: yi-large 
+    - name: yi-large
       max_input_tokens: 32768
       input_price: 2.8
       output_price: 2.8
@@ -788,7 +790,7 @@
       max_input_tokens: 200000
       input_price: 1.68
       output_price: 1.68
-    - name: yi-medium 
+    - name: yi-medium
       max_input_tokens: 16384
       input_price: 0.35
       output_price: 0.35
@@ -814,12 +816,12 @@
       supports_function_calling: true
     - name: text-embedding-3-large
       type: embedding
-      max_input_tokens: 8191
+      max_tokens_per_chunk: 8191
       default_chunk_size: 3000
       max_batch_size: 100
     - name: text-embedding-3-small
       type: embedding
-      max_input_tokens: 8191
+      max_tokens_per_chunk: 8191
       default_chunk_size: 3000
       max_batch_size: 100
     - name: meta-llama-3.1-405b-instruct
@@ -850,12 +852,12 @@
       max_input_tokens: 128000
     - name: cohere-embed-v3-english
       type: embedding
-      max_input_tokens: 512
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 96
     - name: cohere-embed-v3-multilingual
       type: embedding
-      max_input_tokens: 512
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 96
 
@@ -906,32 +908,32 @@
       supports_function_calling: true
     - name: BAAI/bge-large-en-v1.5
       type: embedding
-      max_input_tokens: 512
       input_price: 0.01
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 100
     - name: BAAI/bge-m3
       type: embedding
-      max_input_tokens: 8192
       input_price: 0.01
+      max_tokens_per_chunk: 8192
       default_chunk_size: 2000
       max_batch_size: 100
     - name: intfloat/e5-large-v2
       type: embedding
-      max_input_tokens: 512
       input_price: 0.01
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 100
     - name: intfloat/multilingual-e5-large
       type: embedding
-      max_input_tokens: 512
       input_price: 0.01
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 100
     - name: thenlper/gte-large
       type: embedding
-      max_input_tokens: 512
       input_price: 0.01
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 100
 
@@ -981,20 +983,20 @@
       supports_function_calling: true
     - name: nomic-ai/nomic-embed-text-v1.5
       type: embedding
-      max_input_tokens: 8192
       input_price: 0.008
+      max_tokens_per_chunk: 8192
       default_chunk_size: 1500
       max_batch_size: 100
     - name: WhereIsAI/UAE-Large-V1
       type: embedding
-      max_input_tokens: 512
       input_price: 0.016
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 100
     - name: thenlper/gte-large
       type: embedding
-      max_input_tokens: 512
       input_price: 0.016
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 100
 
@@ -1176,11 +1178,11 @@
       input_price: 0.15
       output_price: 0.6
       supports_function_calling: true
-    - name: deepseek/deepseek-chat 
-      max_input_tokens: 32768 
+    - name: deepseek/deepseek-chat
+      max_input_tokens: 32768
       input_price: 0.14
       output_price: 0.28
-    - name: deepseek/deepseek-coder 
+    - name: deepseek/deepseek-coder
       max_input_tokens: 32768
       input_price: 0.14
       output_price: 0.28
@@ -1258,8 +1260,8 @@
       output_price: 0.9
     - name: thenlper/gte-large
       type: embedding
-      max_input_tokens: 512
       input_price: 0.05
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 100
 
@@ -1295,14 +1297,14 @@
       output_price: 0.9
     - name: WhereIsAI/UAE-Large-V1
       type: embedding
-      max_input_tokens: 512
       input_price: 0.016
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 100
     - name: BAAI/bge-large-en-v1.5
       type: embedding
-      max_input_tokens: 512
       input_price: 0.016
+      max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 100
 
@@ -1313,26 +1315,26 @@
   models:
     - name: jina-clip-v1
       type: embedding
-      max_input_tokens: 8192
       input_price: 0.02
+      max_tokens_per_chunk: 8192
       default_chunk_size: 1500
       max_batch_size: 100
     - name: jina-embeddings-v2-base-en
       type: embedding
-      max_input_tokens: 8192
       input_price: 0.02
+      max_tokens_per_chunk: 8192
       default_chunk_size: 1500
       max_batch_size: 100
     - name: jina-embeddings-v2-base-zh
       type: embedding
-      max_input_tokens: 8192
       input_price: 0.02
+      max_tokens_per_chunk: 8192
       default_chunk_size: 1500
       max_batch_size: 100
     - name: jina-colbert-v2
       type: embedding
-      max_input_tokens: 8192
       input_price: 0.02
+      max_tokens_per_chunk: 8192
       default_chunk_size: 1500
       max_batch_size: 100
     - name: jina-reranker-v2-base-multilingual
@@ -1360,26 +1362,30 @@
   models:
     - name: voyage-large-2-instruct
       type: embedding
-      max_input_tokens: 16000
+      max_input_tokens: 120000
       input_price: 0.12
+      max_tokens_per_chunk: 16000
       default_chunk_size: 2000
       max_batch_size: 128
     - name: voyage-large-2
       type: embedding
-      max_input_tokens: 16000
+      max_input_tokens: 120000
       input_price: 0.12
+      max_tokens_per_chunk: 16000
       default_chunk_size: 3000
       max_batch_size: 128
     - name: voyage-multilingual-2
       type: embedding
-      max_input_tokens: 32000
+      max_input_tokens: 120000
       input_price: 0.12
+      max_tokens_per_chunk: 32000
       default_chunk_size: 2000
       max_batch_size: 128
     - name: voyage-code-2
       type: embedding
-      max_input_tokens: 16000
+      max_input_tokens: 120000
       input_price: 0.12
+      max_tokens_per_chunk: 16000
       default_chunk_size: 3000
       max_batch_size: 128
     - name: rerank-1
