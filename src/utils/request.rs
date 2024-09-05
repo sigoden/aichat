@@ -8,8 +8,11 @@ use reqwest::Url;
 use scraper::{Html, Selector};
 use serde::Deserialize;
 use serde_json::Value;
-use std::{collections::HashMap, time::Duration};
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+    time::Duration,
+};
 use tokio::io::AsyncWriteExt;
 use tokio::sync::Semaphore;
 
@@ -136,10 +139,7 @@ pub async fn fetch(
             None => {
                 let contents = res.text().await?;
                 if extension == "html" {
-                    (
-                        html2text::from_read(contents.as_bytes(), usize::MAX),
-                        "md".into(),
-                    )
+                    (html_to_md(&contents), "md".into())
                 } else {
                     (contents, extension)
                 }
@@ -385,10 +385,6 @@ async fn crawl_page(
     };
 
     Ok((path.to_string(), text, links.into_iter().collect()))
-}
-
-fn html_to_md(html: &str) -> String {
-    html2text::from_read(html.as_bytes(), usize::MAX)
 }
 
 fn should_exclude_link(link: &str, exclude: &[String]) -> bool {
