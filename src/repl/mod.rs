@@ -262,7 +262,7 @@ impl Repl {
                     None => println!("Usage: .prompt <text>..."),
                 },
                 ".role" => match args {
-                    Some(args) => match args.split_once(|c| c == '\n' || c == ' ') {
+                    Some(args) => match args.split_once(['\n', ' ']) {
                         Some((name, text)) => {
                             let role = self.config.read().retrieve_role(name.trim())?;
                             let input = Input::from_str(&self.config, text.trim(), Some(role));
