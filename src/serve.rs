@@ -358,7 +358,7 @@ impl Server {
                             is_first.store(false, Ordering::SeqCst)
                         }
                     }
-                    let _ = handler.done();
+                    handler.done();
                 }
                 tokio::join!(
                     map_event(sse_rx, &tx, is_first.clone()),

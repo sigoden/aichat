@@ -3,7 +3,7 @@ use super::*;
 use crate::{
     config::{GlobalConfig, Input},
     function::{eval_tool_calls, FunctionDeclaration, ToolCall, ToolResult},
-    render::{render_error, render_stream},
+    render::render_stream,
     utils::*,
 };
 
@@ -84,11 +84,11 @@ pub trait Client: Sync + Send {
                 let data = input.prepare_completion_data(self.model(), true)?;
                 self.chat_completions_streaming_inner(&client, handler, data).await
             } => {
-                handler.done()?;
+                handler.done();
                 ret.with_context(|| "Failed to call chat-completions api")
             }
             _ = watch_abort_signal(abort_signal) => {
-                handler.done()?;
+                handler.done();
                 Ok(())
             },
         }
@@ -433,9 +433,9 @@ pub async fn call_chat_completions_streaming(
         client.chat_completions_streaming(input, &mut handler),
         render_stream(rx, config, abort.clone()),
     );
-    if let Err(err) = render_ret {
-        render_error(err, config.read().highlight);
-    }
+
+    render_ret?;
+
     let (text, tool_calls) = handler.take();
     match send_ret {
         Ok(_) => {
@@ -465,7 +465,7 @@ where
 {
     let text = f(builder).await?;
     handler.text(&text)?;
-    handler.done()?;
+    handler.done();
 
     Ok(())
 }

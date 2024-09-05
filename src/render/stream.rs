@@ -28,6 +28,9 @@ pub async fn markdown_stream(
 
     disable_raw_mode()?;
 
+    if ret.is_err() {
+        println!();
+    }
     ret
 }
 
@@ -78,7 +81,14 @@ async fn markdown_stream_inner(
                     // tab width hacking
                     text = text.replace('\t', "    ");
 
-                    let (col, mut row) = cursor::position()?;
+                    let mut attempts = 0;
+                    let (col, mut row) = loop {
+                        match cursor::position() {
+                            Ok(pos) => break pos,
+                            Err(_) if attempts < 3 => attempts += 1,
+                            Err(e) => return Err(e.into()),
+                        }
+                    };
 
                     // Fix unexpected duplicate lines on kitty, see https://github.com/sigoden/aichat/issues/105
                     if col == 0 && row > 0 && display_width(&buffer) == columns as usize {
