@@ -32,7 +32,6 @@ use tokio::{
 use tokio_graceful::Shutdown;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
-const DEFAULT_ADDRESS: &str = "127.0.0.1:8000";
 const DEFAULT_MODEL_NAME: &str = "default";
 const PLAYGROUND_HTML: &[u8] = include_bytes!("../assets/playground.html");
 const ARENA_HTML: &[u8] = include_bytes!("../assets/arena.html");
@@ -50,7 +49,7 @@ pub async fn run(config: GlobalConfig, addr: Option<String>) -> Result<()> {
                 addr
             }
         }
-        None => DEFAULT_ADDRESS.to_string(),
+        None => config.read().serve_addr(),
     };
     let server = Arc::new(Server::new(&config));
     let listener = TcpListener::bind(&addr).await?;

@@ -57,6 +57,8 @@ pub const TEMP_SESSION_NAME: &str = "temp";
 
 const CLIENTS_FIELD: &str = "clients";
 
+const SERVE_ADDR: &str = "127.0.0.1:8000";
+
 const SUMMARIZE_PROMPT: &str =
     "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.";
 const SUMMARY_PROMPT: &str = "This is a summary of the chat history as a recap: ";
@@ -126,6 +128,8 @@ pub struct Config {
     pub left_prompt: Option<String>,
     pub right_prompt: Option<String>,
 
+    pub serve_addr: Option<String>,
+
     pub clients: Vec<ClientConfig>,
 
     #[serde(skip)]
@@ -190,6 +194,8 @@ impl Default for Config {
             light_theme: false,
             left_prompt: None,
             right_prompt: None,
+
+            serve_addr: None,
 
             clients: vec![],
 
@@ -390,6 +396,10 @@ impl Config {
             flags |= StateFlags::RAG;
         }
         flags
+    }
+
+    pub fn serve_addr(&self) -> String {
+        self.serve_addr.clone().unwrap_or_else(|| SERVE_ADDR.into())
     }
 
     pub fn log(is_serve: bool) -> Result<(LevelFilter, Option<PathBuf>)> {
@@ -1847,6 +1857,10 @@ impl Config {
         }
         if let Some(v) = read_env_value::<String>("right_prompt") {
             self.right_prompt = v;
+        }
+
+        if let Some(v) = read_env_value::<String>("serve_addr") {
+            self.serve_addr = v;
         }
     }
 
