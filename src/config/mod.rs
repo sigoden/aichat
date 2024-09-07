@@ -800,15 +800,17 @@ impl Config {
 
     pub fn save_role(&mut self, name: Option<&str>) -> Result<()> {
         let mut role_name = match &self.role {
-            Some(role) => match name {
-                Some(v) => v.to_string(),
-                None => role.name().to_string(),
-            },
+            Some(role) => {
+                if role.has_args() {
+                    bail!("Unable to save the role with arguments (whose name contains '#')")
+                }
+                match name {
+                    Some(v) => v.to_string(),
+                    None => role.name().to_string(),
+                }
+            }
             None => bail!("No role"),
         };
-        if role_name.contains('#') {
-            bail!("Unable to save role with arguments")
-        }
         if role_name == TEMP_ROLE_NAME {
             role_name = Text::new("Role name:")
                 .with_validator(|input: &str| {
