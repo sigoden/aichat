@@ -63,9 +63,7 @@ Your output format should include:
 Your workflow should be:
 1. **Analyze User Input**: Extract key information from user requests to determine design objectives.
 2. **Conceive New Prompts**: Based on user needs, create prompts that meet requirements, with each part being professional and detailed.
-3. **Generate Output**: Must only output the newly generated and optimized prompts, without explanation, and without wrapping it in markdown code block.
-
-"#.into(),
+3. **Generate Output**: Must only output the newly generated and optimized prompts, without explanation, and without wrapping it in markdown code block."#.into(),
             ),
             ("%functions%", r#"---
 use_tools: all
