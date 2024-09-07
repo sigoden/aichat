@@ -914,7 +914,7 @@ impl Config {
                         let ans = Confirm::new(
                             "Start a session that incorporates the last question and answer?",
                         )
-                        .with_default(false)
+                        .with_default(true)
                         .prompt()?;
                         if ans {
                             session.add_message(input, output)?;

@@ -498,6 +498,42 @@ Type ".help" for additional help.
             KeyCode::Enter,
             ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
         );
+        keybindings.add_binding(
+            KeyModifiers::CONTROL,
+            KeyCode::Char('s'),
+            ReedlineEvent::Multiple(vec![
+                ReedlineEvent::Edit(vec![
+                    EditCommand::InsertString(".session".to_string()),
+                ]),
+                ReedlineEvent::Submit,
+            ]),
+        );
+        keybindings.add_binding(
+            KeyModifiers::CONTROL,
+            KeyCode::Char('i'),
+            ReedlineEvent::Multiple(vec![
+                ReedlineEvent::Edit(vec![
+                    EditCommand::InsertString(".role ".to_string()),
+                ]),
+                ReedlineEvent::UntilFound(vec![
+                    ReedlineEvent::Menu(MENU_NAME.to_string()),
+                    ReedlineEvent::MenuNext,
+                ]),
+            ]),
+        );
+        keybindings.add_binding(
+            KeyModifiers::CONTROL,
+            KeyCode::Char('m'),
+            ReedlineEvent::Multiple(vec![
+                ReedlineEvent::Edit(vec![
+                    EditCommand::InsertString(".model ".to_string()),
+                ]),
+                ReedlineEvent::UntilFound(vec![
+                    ReedlineEvent::Menu(MENU_NAME.to_string()),
+                    ReedlineEvent::MenuNext,
+                ]),
+            ]),
+        );
     }
 
     fn create_edit_mode(config: &GlobalConfig) -> Box<dyn EditMode> {
