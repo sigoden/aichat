@@ -26,7 +26,7 @@ pub async fn render_stream(
 }
 
 pub fn render_error(err: anyhow::Error, highlight: bool) {
-    let err = format!("{err:?}");
+    let err = format!("Error: {err:?}");
     if highlight {
         eprintln!("{}", error_text(&err));
     } else {
