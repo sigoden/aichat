@@ -338,7 +338,7 @@ impl Config {
     pub fn rag_file(&self, name: &str) -> Result<PathBuf> {
         let path = match &self.agent {
             Some(agent) => Self::agent_rag_file(agent.name(), name)?,
-            None => Self::rags_dir()?.join(format!("{name}.bin")),
+            None => Self::rags_dir()?.join(format!("{name}.yaml")),
         };
         Ok(path)
     }
@@ -359,7 +359,7 @@ impl Config {
     }
 
     pub fn agent_rag_file(agent_name: &str, rag_name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_config_dir(agent_name)?.join(format!("{rag_name}.bin")))
+        Ok(Self::agent_config_dir(agent_name)?.join(format!("{rag_name}.yaml")))
     }
 
     pub fn agent_variables_file(name: &str) -> Result<PathBuf> {
@@ -1186,7 +1186,7 @@ impl Config {
                 let mut names = vec![];
                 for entry in rd.flatten() {
                     let name = entry.file_name();
-                    if let Some(name) = name.to_string_lossy().strip_suffix(".bin") {
+                    if let Some(name) = name.to_string_lossy().strip_suffix(".yaml") {
                         names.push(name.to_string());
                     }
                 }
