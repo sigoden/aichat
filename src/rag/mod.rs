@@ -22,13 +22,13 @@ use std::collections::HashMap;
 use std::{fmt::Debug, io::BufReader, path::Path};
 
 pub struct Rag {
+    config: GlobalConfig,
     name: String,
     path: String,
     embedding_model: Model,
     hnsw: Hnsw<'static, f32, DistCosine>,
     bm25: BM25<DocumentId>,
     data: RagData,
-    embedding_client: Box<dyn Client>,
 }
 
 impl Debug for Rag {
@@ -42,6 +42,20 @@ impl Debug for Rag {
     }
 }
 
+impl Clone for Rag {
+    fn clone(&self) -> Self {
+        Self {
+            config: self.config.clone(),
+            name: self.name.clone(),
+            path: self.path.clone(),
+            embedding_model: self.embedding_model.clone(),
+            hnsw: self.data.build_hnsw(),
+            bm25: self.bm25.clone(),
+            data: self.data.clone(),
+        }
+    }
+}
+
 impl Rag {
     pub async fn init(
         config: &GlobalConfig,
@@ -51,8 +65,18 @@ impl Rag {
         abort_signal: AbortSignal,
     ) -> Result<Self> {
         debug!("init rag: {name}");
-        let (embedding_model, chunk_size, chunk_overlap) = Self::config(config)?;
-        let data = RagData::new(embedding_model.id(), chunk_size, chunk_overlap);
+        let (embedding_model, chunk_size, chunk_overlap) = Self::create_config(config)?;
+        let (reranker_model, top_k) = {
+            let config = config.read();
+            (config.rag_reranker_model.clone(), config.rag_top_k)
+        };
+        let data = RagData::new(
+            embedding_model.id(),
+            chunk_size,
+            chunk_overlap,
+            reranker_model,
+            top_k,
+        );
         let mut rag = Self::create(config, name, save_path, data)?;
         let mut paths = doc_paths.to_vec();
         if paths.is_empty() {
@@ -71,8 +95,7 @@ impl Rag {
                 bail!("Aborted!")
             },
         };
-        if !rag.is_temp() {
-            rag.save(save_path)?;
+        if rag.save()? {
             println!("✨ Saved rag to '{}'", save_path.display());
         }
         Ok(rag)
@@ -90,15 +113,14 @@ impl Rag {
         let hnsw = data.build_hnsw();
         let bm25 = data.build_bm25();
         let embedding_model = Model::retrieve_embedding(&config.read(), &data.embedding_model)?;
-        let embedding_client = init_client(config, Some(embedding_model.clone()))?;
         let rag = Rag {
+            config: config.clone(),
             name: name.to_string(),
             path: path.display().to_string(),
             data,
             embedding_model,
             hnsw,
             bm25,
-            embedding_client,
         };
         Ok(rag)
     }
@@ -106,7 +128,6 @@ impl Rag {
     pub async fn rebuild(
         &mut self,
         config: &GlobalConfig,
-        save_path: &Path,
         abort_signal: AbortSignal,
     ) -> Result<()> {
         debug!("rebuild rag: {}", self.name);
@@ -123,14 +144,13 @@ impl Rag {
                 bail!("Aborted!")
             },
         };
-        if !self.is_temp() {
-            self.save(save_path)?;
-            println!("✨ Saved rag to '{}'", save_path.display());
+        if self.save()? {
+            println!("✨ Saved rag to '{}'", self.path);
         }
         Ok(())
     }
 
-    pub fn config(config: &GlobalConfig) -> Result<(Model, usize, usize)> {
+    pub fn create_config(config: &GlobalConfig) -> Result<(Model, usize, usize)> {
         let (embedding_model_id, chunk_size, chunk_overlap) = {
             let config = config.read();
             (
@@ -194,12 +214,32 @@ impl Rag {
         Ok((embedding_model, chunk_size, chunk_overlap))
     }
 
-    pub fn save(&self, path: &Path) -> Result<()> {
+    pub fn get_config(&self) -> (Option<String>, usize) {
+        (self.data.reranker_model.clone(), self.data.top_k)
+    }
+
+    pub fn set_reranker_model(&mut self, reranker_model: Option<String>) -> Result<()> {
+        self.data.reranker_model = reranker_model;
+        self.save()?;
+        Ok(())
+    }
+
+    pub fn set_top_k(&mut self, top_k: usize) -> Result<()> {
+        self.data.top_k = top_k;
+        self.save()?;
+        Ok(())
+    }
+
+    pub fn save(&self) -> Result<bool> {
+        if self.is_temp() {
+            return Ok(false);
+        }
+        let path = Path::new(&self.path);
         ensure_parent_exists(path)?;
         let mut file = std::fs::File::create(path)?;
         bincode::serialize_into(&mut file, &self.data)
             .with_context(|| format!("Failed to save rag '{}'", self.name))?;
-        Ok(())
+        Ok(true)
     }
 
     pub fn export(&self) -> Result<String> {
@@ -219,6 +259,8 @@ impl Rag {
             "embedding_model": self.embedding_model.id(),
             "chunk_size": self.data.chunk_size,
             "chunk_overlap": self.data.chunk_overlap,
+            "reranker_model": self.data.reranker_model,
+            "top_k": self.data.top_k,
             "document_paths": self.data.document_paths,
             "files": files,
         });
@@ -490,6 +532,7 @@ impl Rag {
         data: EmbeddingsData,
         spinner: Option<Spinner>,
     ) -> Result<EmbeddingsOutput> {
+        let embedding_client = init_client(&self.config, Some(self.embedding_model.clone()))?;
         let EmbeddingsData { texts, query } = data;
         let size = match self.embedding_model.max_input_tokens() {
             Some(max_input_tokens) => {
@@ -513,8 +556,7 @@ impl Rag {
                 texts: texts.to_vec(),
                 query,
             };
-            let chunk_output = self
-                .embedding_client
+            let chunk_output = embedding_client
                 .embeddings(chunk_data)
                 .await
                 .context("Failed to create embedding")?;
@@ -529,6 +571,8 @@ pub struct RagData {
     pub embedding_model: String,
     pub chunk_size: usize,
     pub chunk_overlap: usize,
+    pub reranker_model: Option<String>,
+    pub top_k: usize,
     pub next_file_id: FileId,
     pub document_paths: Vec<String>,
     pub files: IndexMap<FileId, RagFile>,
@@ -549,11 +593,19 @@ impl Debug for RagData {
 }
 
 impl RagData {
-    pub fn new(embedding_model: String, chunk_size: usize, chunk_overlap: usize) -> Self {
+    pub fn new(
+        embedding_model: String,
+        chunk_size: usize,
+        chunk_overlap: usize,
+        reranker_model: Option<String>,
+        top_k: usize,
+    ) -> Self {
         Self {
             embedding_model,
             chunk_size,
             chunk_overlap,
+            reranker_model,
+            top_k,
             next_file_id: 0,
             document_paths: Default::default(),
             files: Default::default(),
