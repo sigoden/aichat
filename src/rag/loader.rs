@@ -6,6 +6,38 @@ use std::collections::HashMap;
 pub const EXTENSION_METADATA: &str = "__extension__";
 pub const PATH_METADATA: &str = "__path__";
 
+pub async fn load_document(
+    loaders: &HashMap<String, String>,
+    path: &str,
+    has_error: &mut bool,
+) -> (String, Vec<(String, RagMetadata)>) {
+    let mut maybe_error = None;
+    let mut files = vec![];
+    if is_url(path) {
+        if let Some(path) = path.strip_suffix("**") {
+            match load_recursive_url(loaders, path).await {
+                Ok(v) => files.extend(v),
+                Err(err) => maybe_error = Some(err),
+            }
+        } else {
+            match load_url(loaders, path).await {
+                Ok(v) => files.push(v),
+                Err(err) => maybe_error = Some(err),
+            }
+        }
+    } else {
+        match load_path(loaders, path, has_error).await {
+            Ok(v) => files.extend(v),
+            Err(err) => maybe_error = Some(err),
+        }
+    }
+    if let Some(err) = maybe_error {
+        *has_error = true;
+        println!("{}", warning_text(&format!("⚠️ {err:?}")));
+    }
+    (path.to_string(), files)
+}
+
 pub async fn load_recursive_url(
     loaders: &HashMap<String, String>,
     path: &str,
@@ -37,7 +69,9 @@ pub async fn load_recursive_url(
 pub async fn load_path(
     loaders: &HashMap<String, String>,
     path: &str,
+    has_error: &mut bool,
 ) -> Result<Vec<(String, RagMetadata)>> {
+    let path = Path::new(path).absolutize()?.display().to_string();
     let file_paths = expand_glob_paths(&[path]).await?;
     let mut output = vec![];
     let file_paths_len = file_paths.len();
@@ -46,10 +80,15 @@ pub async fn load_path(
         1 => output.push(load_file(loaders, &file_paths[0]).await?),
         _ => {
             for path in file_paths {
-                println!("🚀 Loading file {path}");
-                output.push(load_file(loaders, &path).await?)
+                println!("Load {path}");
+                match load_file(loaders, &path).await {
+                    Ok(v) => output.push(v),
+                    Err(err) => {
+                        *has_error = true;
+                        println!("{}", warning_text(&format!("Error: {err:?}")));
+                    }
+                }
             }
-            println!("✨ Load directory completed");
         }
     }
     Ok(output)
