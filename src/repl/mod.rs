@@ -386,7 +386,7 @@ impl Repl {
                 }
                 ".set" => match args {
                     Some(args) => {
-                        self.config.write().update(args)?;
+                        Config::update(&self.config, args)?;
                     }
                     _ => {
                         println!("Usage: .set <key> <value>...")
