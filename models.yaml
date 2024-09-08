@@ -335,6 +335,8 @@
     - name: mistral-large
       max_input_tokens: 128000
       supports_function_calling: true
+    - name: deepseek-coder-v2
+      max_input_tokens: 32768
     - name: phi3
       max_input_tokens: 128000
       supports_function_calling: true
@@ -533,6 +535,12 @@
       input_price: 0
       output_price: 0
     - name: '@cf/meta/llama-3-8b-instruct'
+      max_input_tokens: 6144
+      max_output_tokens: 2048
+      require_max_tokens: true
+      input_price: 0
+      output_price: 0
+    - name: '@hf/thebloke/deepseek-coder-6.7b-instruct-awq'
       max_input_tokens: 6144
       max_output_tokens: 2048
       require_max_tokens: true
@@ -871,29 +879,29 @@
       max_input_tokens: 32000
       input_price: 2.7
       output_price: 2.7
+      supports_function_calling: true
     - name: meta-llama/Meta-Llama-3.1-70B-Instruct
       max_input_tokens: 128000
       input_price: 0.52
       output_price: 0.75
+      supports_function_calling: true
     - name: meta-llama/Meta-Llama-3.1-8B-Instruct
       max_input_tokens: 128000
       input_price: 0.09
       output_price: 0.09
+      supports_function_calling: true
     - name: meta-llama/Meta-Llama-3-70B-Instruct
       max_input_tokens: 8192
       input_price: 0.59
       output_price: 0.79
-      supports_function_calling: true
     - name: meta-llama/Meta-Llama-3-8B-Instruct
       max_input_tokens: 8192
       input_price: 0.08
       output_price: 0.08
-      supports_function_calling: true
     - name: mistralai/Mistral-Nemo-Instruct-2407
       max_input_tokens: 128000
       input_price: 0.13
       output_price: 0.13
-      supports_function_calling: true
     - name: google/gemma-2-27b-it
       max_input_tokens: 8192
       input_price: 0.27
@@ -1119,22 +1127,27 @@
       max_input_tokens: 131072
       input_price: 3
       output_price: 3
+      supports_function_calling: true
     - name: meta-llama/llama-3.1-70b-instruct
       max_input_tokens: 131072
       input_price: 0.75
       output_price: 0.75
+      supports_function_calling: true
     - name: meta-llama/llama-3.1-8b-instruct
       max_input_tokens: 131072
       input_price: 0.09
       output_price: 0.09
+      supports_function_calling: true
     - name: meta-llama/llama-3-70b-instruct
       max_input_tokens: 8192
       input_price: 0.59
       output_price: 0.79
+      supports_function_calling: true
     - name: meta-llama/llama-3-8b-instruct
       max_input_tokens: 8192
       input_price: 0.07
       output_price: 0.07
+      supports_function_calling: true
     - name: mistralai/mistral-large
       max_input_tokens: 128000
       input_price: 3
@@ -1183,10 +1196,12 @@
       max_input_tokens: 32768
       input_price: 0.14
       output_price: 0.28
+      supports_function_calling: true
     - name: deepseek/deepseek-coder
       max_input_tokens: 32768
       input_price: 0.14
       output_price: 0.28
+      supports_function_calling: true
     - name: perplexity/llama-3.1-sonar-huge-128k-online
       max_input_tokens: 127072
       input_price: 5
@@ -1247,18 +1262,21 @@
       max_input_tokens: 131072
       input_price: 3
       output_price: 9
+      supports_function_calling: true
     - name: meta-llama-3.1-70b-instruct
       max_input_tokens: 131072
       input_price: 0.9
       output_price: 0.9
+      supports_function_calling: true
     - name: meta-llama-3.1-8b-instruct
       max_input_tokens: 131072
       input_price: 0.15
       output_price: 0.15
-    - name: meta-llama-3-70b-instruct
-      max_input_tokens: 8192
-      input_price: 0.9
-      output_price: 0.9
+      supports_function_calling: true
+    - name: mistral-nemo-instruct
+      max_input_tokens: 65536
+      input_price: 0.2
+      output_price: 0.2
     - name: thenlper/gte-large
       type: embedding
       input_price: 0.05
@@ -1267,7 +1285,6 @@
       max_batch_size: 100
 
 # Links
-#  - https://siliconflow.cn/zh-cn/models
 #  - https://siliconflow.cn/zh-cn/maaspricing
 #  - https://docs.siliconflow.cn/reference/chat-completions-3
 - platform: siliconflow
