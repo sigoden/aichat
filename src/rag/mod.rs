@@ -275,16 +275,9 @@ impl Rag {
         for (index, path) in paths.iter().enumerate() {
             let path = path.as_ref();
             println!("Load {path} [{}/{paths_len}]", index + 1);
-            match load_document(&loaders, path).await {
-                Ok((path, document_files)) => {
-                    files.extend(document_files);
-                    document_paths.push(path);
-                }
-                Err(err) => {
-                    has_error = true;
-                    println!("{}", warning_text(&format!("Error: {err:?}")));
-                }
-            }
+            let (path, document_files) = load_document(&loaders, path, &mut has_error).await;
+            files.extend(document_files);
+            document_paths.push(path);
         }
 
         if has_error {
@@ -727,26 +720,6 @@ fn add_documents() -> Result<Vec<String>> {
         })
         .collect();
     Ok(paths)
-}
-
-async fn load_document(
-    loaders: &HashMap<String, String>,
-    path: &str,
-) -> Result<(String, Vec<(String, RagMetadata)>)> {
-    let mut files = vec![];
-    if is_url(path) {
-        if let Some(path) = path.strip_suffix("**") {
-            files.extend(load_recursive_url(loaders, path).await?);
-        } else {
-            files.push(load_url(loaders, path).await?);
-        }
-        Ok((path.to_string(), files))
-    } else {
-        let path = Path::new(path);
-        let path = path.absolutize()?.display().to_string();
-        files.extend(load_path(loaders, &path).await?);
-        Ok((path.to_string(), files))
-    }
 }
 
 fn progress(spinner: &Option<Spinner>, message: String) {
