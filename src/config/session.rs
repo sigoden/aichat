@@ -326,10 +326,10 @@ impl Session {
         self.path = Some(session_path.display().to_string());
 
         let content = serde_yaml::to_string(&self)
-            .with_context(|| format!("Failed to serde session {}", self.name))?;
+            .with_context(|| format!("Failed to serde session '{}'", self.name))?;
         write(session_path, content).with_context(|| {
             format!(
-                "Failed to write session {} to {}",
+                "Failed to write session '{}' to '{}'",
                 self.name,
                 session_path.display()
             )
