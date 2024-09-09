@@ -9,8 +9,8 @@ pub use self::role::{Role, RoleLike, BUILTIN_ROLES, CODE_ROLE, EXPLAIN_SHELL_ROL
 use self::session::Session;
 
 use crate::client::{
-    create_client_config, init_client, list_chat_models, list_client_types, list_reranker_models,
-    ClientConfig, Model, OPENAI_COMPATIBLE_PLATFORMS,
+    create_client_config, list_chat_models, list_client_types, list_reranker_models, ClientConfig,
+    Model, OPENAI_COMPATIBLE_PLATFORMS,
 };
 use crate::function::{FunctionDeclaration, Functions, ToolResult};
 use crate::rag::Rag;
@@ -117,7 +117,6 @@ pub struct Config {
     pub rag_chunk_overlap: Option<usize>,
     pub rag_min_score_vector_search: f32,
     pub rag_min_score_keyword_search: f32,
-    pub rag_min_score_rerank: f32,
     pub rag_template: Option<String>,
 
     #[serde(default)]
@@ -185,7 +184,6 @@ impl Default for Config {
             rag_chunk_overlap: None,
             rag_min_score_vector_search: 0.0,
             rag_min_score_keyword_search: 0.0,
-            rag_min_score_rerank: 0.0,
             rag_template: None,
 
             document_loaders: Default::default(),
@@ -1146,21 +1144,12 @@ impl Config {
         abort_signal: AbortSignal,
     ) -> Result<String> {
         let (reranker_model, top_k) = rag.get_config();
-        let (min_score_vector_search, min_score_keyword_search, rag_min_score_rerank) = {
+        let (min_score_vector_search, min_score_keyword_search) = {
             let config = config.read();
             (
                 config.rag_min_score_vector_search,
                 config.rag_min_score_keyword_search,
-                config.rag_min_score_rerank,
             )
-        };
-        let rerank = match reranker_model {
-            Some(reranker_model_id) => {
-                let rerank_model = Model::retrieve_reranker(&config.read(), &reranker_model_id)?;
-                let rerank_client = init_client(config, Some(rerank_model))?;
-                Some((rerank_client, rag_min_score_rerank))
-            }
-            None => None,
         };
         let embeddings = rag
             .search(
@@ -1168,7 +1157,7 @@ impl Config {
                 top_k,
                 min_score_vector_search,
                 min_score_keyword_search,
-                rerank,
+                reranker_model.as_deref(),
                 abort_signal,
             )
             .await?;
@@ -1848,9 +1837,6 @@ impl Config {
         }
         if let Some(Some(v)) = read_env_value::<f32>("rag_min_score_keyword_search") {
             self.rag_min_score_keyword_search = v;
-        }
-        if let Some(Some(v)) = read_env_value::<f32>("rag_min_score_rerank") {
-            self.rag_min_score_rerank = v;
         }
         if let Some(v) = read_env_value::<String>("rag_template") {
             self.rag_template = v;
