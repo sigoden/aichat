@@ -65,6 +65,10 @@ impl SseHandler {
         self.abort.clone()
     }
 
+    pub fn get_tool_calls(&self) -> &[ToolCall] {
+        &self.tool_calls
+    }
+
     pub fn take(self) -> (String, Vec<ToolCall>) {
         let Self {
             buffer, tool_calls, ..
