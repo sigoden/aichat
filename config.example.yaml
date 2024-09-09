@@ -42,7 +42,6 @@ rag_chunk_size: null                        # Specifies the chunk size
 rag_chunk_overlap: null                     # Specifies the chunk overlap
 rag_min_score_vector_search: 0              # Specifies the minimum relevance score for vector-based searching
 rag_min_score_keyword_search: 0             # Specifies the minimum relevance score for keyword-based searching
-rag_min_score_rerank: 0                     # Specifies the minimum relevance score for reranking
 # Defines the query structure using variables like __CONTEXT__ and __INPUT__ to tailor searches to specific needs
 rag_template: |
   Use the following context as your learned knowledge, inside <context></context> XML tags.
@@ -74,6 +73,9 @@ left_prompt:
   '{color.green}{?session {?agent {agent}>}{session}{?role /}}{!session {?agent {agent}>}}{role}{?rag @{rag}}{color.cyan}{?session )}{!session >}{color.reset} '
 right_prompt:
   '{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}'
+
+# ---- misc ----
+serve_addr: 127.0.0.1:8000                  # Default serve listening address 
 
 # ---- clients ----
 clients:

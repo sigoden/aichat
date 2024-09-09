@@ -285,12 +285,12 @@ impl Rag {
         top_k: usize,
         min_score_vector_search: f32,
         min_score_keyword_search: f32,
-        rerank: Option<(Box<dyn Client>, f32)>,
+        rerank_model: Option<&str>,
         abort_signal: AbortSignal,
     ) -> Result<String> {
         let spinner = create_spinner("Searching").await;
         let ret = tokio::select! {
-            ret = self.hybird_search(text, top_k, min_score_vector_search, min_score_keyword_search, rerank) => {
+            ret = self.hybird_search(text, top_k, min_score_vector_search, min_score_keyword_search, rerank_model) => {
                 ret
             }
             _ = watch_abort_signal(abort_signal) => {
@@ -425,7 +425,7 @@ impl Rag {
         top_k: usize,
         min_score_vector_search: f32,
         min_score_keyword_search: f32,
-        rerank: Option<(Box<dyn Client>, f32)>,
+        rerank_model: Option<&str>,
     ) -> Result<Vec<String>> {
         let (vector_search_result, text_search_result) = tokio::join!(
             self.vector_search(query, top_k, min_score_vector_search),
@@ -434,11 +434,14 @@ impl Rag {
         let vector_search_ids = vector_search_result?;
         let keyword_search_ids = text_search_result?;
         debug!(
-            "vector_search_ids: {vector_search_ids:?}, keyword_search_ids: {keyword_search_ids:?}"
+            "vector_search_ids: {:?}, keyword_search_ids: {:?}",
+            pretty_document_ids(&vector_search_ids),
+            pretty_document_ids(&keyword_search_ids)
         );
-        let ids = match rerank {
-            Some((client, min_score)) => {
-                let min_score = min_score as f64;
+        let ids = match rerank_model {
+            Some(model_id) => {
+                let model = Model::retrieve_reranker(&self.config.read(), model_id)?;
+                let client = init_client(&self.config, Some(model))?;
                 let ids: IndexSet<DocumentId> = [vector_search_ids, keyword_search_ids]
                     .concat()
                     .into_iter()
@@ -453,18 +456,12 @@ impl Rag {
                 }
                 let data = RerankData::new(query.to_string(), documents, top_k);
                 let list = client.rerank(data).await?;
-                let ids = list
+                let ids: Vec<_> = list
                     .into_iter()
                     .take(top_k)
-                    .filter_map(|item| {
-                        if item.relevance_score < min_score {
-                            None
-                        } else {
-                            documents_ids.get(item.index).cloned()
-                        }
-                    })
+                    .filter_map(|item| documents_ids.get(item.index).cloned())
                     .collect();
-                debug!("rerank_ids: {ids:?}");
+                debug!("rerank_ids: {:?}", pretty_document_ids(&ids));
                 ids
             }
             None => {
@@ -473,7 +470,7 @@ impl Rag {
                     vec![1.0, 1.0],
                     top_k,
                 );
-                debug!("rrf_ids: {ids:?}");
+                debug!("rrf_ids: {:?}", pretty_document_ids(&ids));
                 ids
             }
         };
@@ -711,6 +708,15 @@ pub fn split_document_id(value: DocumentId) -> (usize, usize) {
     let low = value & low_mask;
     let high = value >> (usize::BITS / 2);
     (high, low)
+}
+
+fn pretty_document_ids(ids: &[DocumentId]) -> Vec<String> {
+    ids.iter()
+        .map(|v| {
+            let (h, l) = split_document_id(*v);
+            format!("{h}-{l}")
+        })
+        .collect()
 }
 
 fn select_embedding_model(models: &[&Model]) -> Result<String> {
