@@ -241,7 +241,7 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
         loop {
             let answer = Select::new(
                 eval_str.trim(),
-                vec!["✅ Execute", "🔄️ Revise", "📖 Explain", "❌ Cancel"],
+                vec!["✅ Execute", "🛠️ Revise", "📖 Explain", "❌ Cancel"],
             )
             .prompt()?;
 
@@ -253,7 +253,7 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
                         process::exit(code);
                     }
                 }
-                "🔄️ Revise" => {
+                "🛠️ Revise" => {
                     let revision = Text::new("Enter your revision:").prompt()?;
                     let text = format!("{}\n{revision}", input.text());
                     input.set_text(text);
