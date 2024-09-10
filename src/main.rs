@@ -241,25 +241,25 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
         loop {
             let answer = Select::new(
                 eval_str.trim(),
-                vec!["✅ Execute", "🔄️ Revise", "📖 Explain", "❌ Cancel"],
+                vec!["Execute", "Revise", "Explain", "Cancel"],
             )
             .prompt()?;
 
             match answer {
-                "✅ Execute" => {
+                "Execute" => {
                     debug!("{} {:?}", shell.cmd, &[&shell.arg, &eval_str]);
                     let code = run_command(&shell.cmd, &[&shell.arg, &eval_str], None)?;
                     if code != 0 {
                         process::exit(code);
                     }
                 }
-                "🔄️ Revise" => {
+                "Revise" => {
                     let revision = Text::new("Enter your revision:").prompt()?;
                     let text = format!("{}\n{revision}", input.text());
                     input.set_text(text);
                     return shell_execute(config, shell, input).await;
                 }
-                "📖 Explain" => {
+                "Explain" => {
                     let role = config.read().retrieve_role(EXPLAIN_SHELL_ROLE)?;
                     let input = Input::from_str(config, &eval_str, Some(role));
                     let abort = create_abort_signal();
@@ -269,6 +269,7 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
                     } else {
                         call_chat_completions(&input, client.as_ref(), config).await?;
                     }
+                    println!();
                     continue;
                 }
                 _ => {}
