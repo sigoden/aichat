@@ -326,7 +326,7 @@ impl Repl {
                             self.config.write().save_session(name)?;
                         }
                         _ => {
-                            println!(r#"Usage: .save session [name]"#)
+                            println!(r#"Usage: .save <role|session> [name]"#)
                         }
                     }
                 }

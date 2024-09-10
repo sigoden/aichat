@@ -298,11 +298,14 @@ impl Session {
                 if !ans {
                     return Ok(());
                 }
-                while session_name == TEMP_SESSION_NAME {
+                if session_name == TEMP_SESSION_NAME {
                     session_name = Text::new("Session name:")
                         .with_validator(|input: &str| {
-                            if input.trim().is_empty() {
-                                Ok(Validation::Invalid("This field is required".into()))
+                            let input = input.trim();
+                            if input.is_empty() {
+                                Ok(Validation::Invalid("This name is required".into()))
+                            } else if input == TEMP_SESSION_NAME {
+                                Ok(Validation::Invalid("This name is reserved".into()))
                             } else {
                                 Ok(Validation::Valid)
                             }
