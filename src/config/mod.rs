@@ -5,7 +5,7 @@ mod session;
 
 pub use self::agent::{list_agents, Agent};
 pub use self::input::Input;
-pub use self::role::{Role, RoleLike, BUILTIN_ROLES, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE};
+pub use self::role::{Role, RoleLike, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE};
 use self::session::Session;
 
 use crate::client::{
@@ -774,11 +774,7 @@ impl Config {
             let content = read_to_string(&path)?;
             Role::new(name, &content)
         } else {
-            BUILTIN_ROLES
-                .iter()
-                .find(|v| v.name() == name)
-                .cloned()
-                .ok_or_else(|| anyhow!("Unknown role `{name}`"))?
+            Role::builtin(name)?
         };
         match role.model_id() {
             Some(model_id) => {
@@ -839,8 +835,11 @@ impl Config {
         if role_name == TEMP_ROLE_NAME {
             role_name = Text::new("Role name:")
                 .with_validator(|input: &str| {
-                    if input.trim().is_empty() {
-                        Ok(Validation::Invalid("This field is required".into()))
+                    let input = input.trim();
+                    if input.is_empty() {
+                        Ok(Validation::Invalid("This name is required".into()))
+                    } else if input == TEMP_ROLE_NAME {
+                        Ok(Validation::Invalid("This name is reserved".into()))
                     } else {
                         Ok(Validation::Valid)
                     }
@@ -862,7 +861,7 @@ impl Config {
     }
 
     pub fn all_roles() -> Vec<Role> {
-        let mut roles: HashMap<String, Role> = BUILTIN_ROLES
+        let mut roles: HashMap<String, Role> = Role::list_builtin_roles()
             .iter()
             .map(|v| (v.name().to_string(), v.clone()))
             .collect();
@@ -894,7 +893,7 @@ impl Config {
             }
         }
         if with_builtin {
-            names.extend(BUILTIN_ROLES.iter().map(|v| v.name().to_string()));
+            names.extend(Role::list_builtin_role_names());
         }
         let mut names: Vec<_> = names.into_iter().collect();
         names.sort_unstable();

@@ -4,6 +4,7 @@ use crate::client::{Message, MessageContent, MessageRole, Model};
 
 use anyhow::Result;
 use fancy_regex::Regex;
+use rust_embed::Embed;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -13,68 +14,11 @@ pub const CODE_ROLE: &str = "%code%";
 
 pub const INPUT_PLACEHOLDER: &str = "__INPUT__";
 
+#[derive(Embed)]
+#[folder = "assets/roles/"]
+struct RolesAsset;
+
 lazy_static::lazy_static! {
-    pub static ref BUILTIN_ROLES: Vec<Role> = {
-        [
-            (SHELL_ROLE, shell_prompt()),
-            (
-                EXPLAIN_SHELL_ROLE,
-                r#"Provide a terse, single sentence description of the given shell command.
-Describe each argument and option of the command.
-Provide short responses in about 80 words.
-APPLY MARKDOWN formatting when possible."#
-                    .into(),
-            ),
-            (
-                CODE_ROLE,
-                r#"Provide only code without comments or explanations.
-### INPUT:
-async sleep in js
-### OUTPUT:
-```javascript
-async function timeout(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-```
-"#
-                .into(),
-            ),
-            (
-                "%create-prompt%",
-                r#"As a professional Prompt Engineer, your role is to create effective and innovative prompts for interacting with AI models.
-
-Your core skills include:
-1. **CO-STAR Framework Application**: Utilize the CO-STAR framework to build efficient prompts, ensuring effective communication with large language models.
-2. **Contextual Awareness**: Construct prompts that adapt to complex conversation contexts, ensuring relevant and coherent responses.
-3. **Chain-of-Thought Prompting**: Create prompts that elicit AI models to demonstrate their reasoning process, enhancing the transparency and accuracy of answers.
-4. **Zero-shot Learning**: Design prompts that enable AI models to perform specific tasks without requiring examples, reducing dependence on training data.
-5. **Few-shot Learning**: Guide AI models to quickly learn and execute new tasks through a few examples.
-
-Your output format should include:
-- **Context**: Provide comprehensive background information for the task to ensure the AI understands the specific scenario and offers relevant feedback.
-- **Objective**: Clearly define the task objective, guiding the AI to focus on achieving specific goals.
-- **Style**: Specify writing styles according to requirements, such as imitating a particular person or industry expert.
-- **Tone**: Set an appropriate emotional tone to ensure the AI's response aligns with the expected emotional context.
-- **Audience**: Tailor AI responses for a specific audience, ensuring content appropriateness and ease of understanding.
-- **Response**: Specify output formats for easy execution of downstream tasks, such as lists, JSON, or professional reports.
-- **Workflow**: Instruct the AI on how to step-by-step complete tasks, clarifying inputs, outputs, and specific actions for each step.
-- **Examples**: Show a case of input and output that fits the scenario.
-
-Your workflow should be:
-1. **Analyze User Input**: Extract key information from user requests to determine design objectives.
-2. **Conceive New Prompts**: Based on user needs, create prompts that meet requirements, with each part being professional and detailed.
-3. **Generate Output**: Must only output the newly generated and optimized prompts, without explanation, and without wrapping it in markdown code block."#.into(),
-            ),
-            ("%functions%", r#"---
-use_tools: all
----
-    "#.into()),
-        ]
-        .into_iter()
-        .map(|(name, content)| Role::new(name, &content))
-        .collect()
-    };
-
     static ref RE_METADATA: Regex = Regex::new(r"(?s)-{3,}\s*(.*?)\s*-{3,}\s*(.*)").unwrap();
 }
 
@@ -122,9 +66,11 @@ impl Role {
                 prompt = prompt_value.as_str().trim();
             }
         }
+        let mut prompt = complete_prompt_args(prompt, name);
+        interpolate_variables(&mut prompt);
         let mut role = Self {
             name: name.to_string(),
-            prompt: complete_prompt_args(prompt, name),
+            prompt,
             ..Default::default()
         };
         if !metadata.is_empty() {
@@ -143,6 +89,25 @@ impl Role {
             }
         }
         role
+    }
+
+    pub fn builtin(name: &str) -> Result<Self> {
+        let content = RolesAsset::get(&format!("{name}.md"))
+            .ok_or_else(|| anyhow!("Unknown role `{name}`"))?;
+        let content = unsafe { std::str::from_utf8_unchecked(&content.data) };
+        Ok(Role::new(name, content))
+    }
+
+    pub fn list_builtin_role_names() -> Vec<String> {
+        RolesAsset::iter()
+            .filter_map(|v| v.strip_suffix(".md").map(|v| v.to_string()))
+            .collect()
+    }
+
+    pub fn list_builtin_roles() -> Vec<Self> {
+        RolesAsset::iter()
+            .filter_map(|v| Role::builtin(&v).ok())
+            .collect()
     }
 
     pub fn match_name(names: &[String], name: &str) -> Option<String> {
@@ -410,23 +375,6 @@ fn parse_structure_prompt(prompt: &str) -> (&str, Vec<(&str, &str)>) {
     }
 
     (prompt, vec![])
-}
-
-fn shell_prompt() -> String {
-    let os = OS.as_str();
-    let shell = SHELL.name.as_str();
-    let combinator = if shell == "powershell" {
-        "If multiple steps required try to combine them together using ';'.\nIf it already combined with '&&' try to replace it with ';'.".to_string()
-    } else {
-        "If multiple steps required try to combine them together using '&&'.".to_string()
-    };
-    format!(
-        r#"Provide only {shell} commands for {os} without any description.
-Ensure the output is a valid {shell} command.
-{combinator}
-If there is a lack of details, provide most logical solution.
-Output plain text only, without any markdown formatting."#
-    )
 }
 
 #[cfg(test)]
