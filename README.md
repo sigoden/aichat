@@ -12,7 +12,7 @@ AIChat is an all-in-one AI CLI tool featuring Chat-REPL, Shell Assistant, RAG, A
 
 - **Rust Developers:** `cargo install aichat`
 - **Homebrew/Linuxbrew Users:** `brew install aichat`
-- **Pacman Users**: `yay -S aichat`
+- **Pacman Users**: `pacman -S aichat`
 - **Windows Scoop Users:** `scoop install aichat`
 - **Android Termux Users:** `pkg install aichat`
 
