@@ -497,6 +497,11 @@ pub fn catch_error(data: &Value, status: u16) -> Result<()> {
             json_str_from_map(error, "message"),
         ) {
             bail!("{message} (type: {typ})");
+        } else if let (Some(typ), Some(message)) = (
+            json_str_from_map(error, "code"),
+            json_str_from_map(error, "message"),
+        ) {
+            bail!("{message} (code: {typ})");
         }
     } else if let Some(error) = data["errors"][0].as_object() {
         if let (Some(code), Some(message)) = (
