@@ -25,35 +25,49 @@ impl Shell {
 }
 
 pub fn detect_shell() -> Shell {
-    let os = env::consts::OS;
-    if os == "windows" {
-        if let Some(ret) = env::var("PSModulePath").ok().and_then(|v| {
-            let v = v.to_lowercase();
-            if v.split(';').count() >= 3 {
-                if v.contains("powershell\\7\\") {
-                    Some(Shell::new("pwsh", "pwsh.exe", "-c"))
-                } else {
-                    Some(Shell::new("powershell", "powershell.exe", "-Command"))
+    let cmd = env::var(get_env_name("shell")).ok().or_else(|| {
+        if cfg!(windows) {
+            if let Ok(ps_module_path) = env::var("PSModulePath") {
+                let ps_module_path = ps_module_path.to_lowercase();
+                if ps_module_path.starts_with(r"c:\users") {
+                    if ps_module_path.contains(r"\powershell\7\") {
+                        return Some("pwsh.exe".to_string());
+                    } else {
+                        return Some("powershell.exe".to_string());
+                    }
                 }
-            } else {
-                None
             }
-        }) {
-            ret
+            None
         } else {
-            Shell::new("cmd", "cmd.exe", "/C")
+            env::var("SHELL").ok()
         }
-    } else {
-        let shell = env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
-        let shell = match shell.rsplit_once('/') {
-            Some((_, v)) => v,
-            None => &shell,
-        };
-        match shell {
-            "bash" | "zsh" | "fish" | "pwsh" => Shell::new(shell, shell, "-c"),
-            _ => Shell::new("sh", "sh", "-c"),
+    });
+    let name = cmd
+        .as_ref()
+        .and_then(|v| Path::new(v).file_stem().and_then(|v| v.to_str()))
+        .map(|v| {
+            if v == "nu" {
+                "nushell".into()
+            } else {
+                v.to_lowercase()
+            }
+        });
+    let (cmd, name) = match (cmd.as_deref(), name.as_deref()) {
+        (Some(cmd), Some(name)) => (cmd, name),
+        _ => {
+            if cfg!(windows) {
+                ("cmd.exe", "cmd")
+            } else {
+                ("/bin/sh", "sh")
+            }
         }
-    }
+    };
+    let shell_arg = match name {
+        "powershel" => "-Command",
+        "cmd" => "/C",
+        _ => "-c",
+    };
+    Shell::new(name, cmd, shell_arg)
 }
 
 pub fn run_command<T: AsRef<OsStr>>(
