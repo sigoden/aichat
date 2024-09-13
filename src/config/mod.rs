@@ -19,7 +19,7 @@ use crate::utils::*;
 
 use anyhow::{anyhow, bail, Context, Result};
 use indexmap::IndexMap;
-use inquire::{validator::Validation, Confirm, Select, Text};
+use inquire::{list_option::ListOption, validator::Validation, Confirm, MultiSelect, Select, Text};
 use parking_lot::RwLock;
 use serde::Deserialize;
 use serde_json::json;
@@ -27,7 +27,9 @@ use simplelog::LevelFilter;
 use std::collections::{HashMap, HashSet};
 use std::{
     env,
-    fs::{create_dir_all, read_dir, read_to_string, remove_file, File, OpenOptions},
+    fs::{
+        create_dir_all, read_dir, read_to_string, remove_dir_all, remove_file, File, OpenOptions,
+    },
     io::Write,
     path::{Path, PathBuf},
     process,
@@ -624,8 +626,76 @@ impl Config {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 config.write().highlight = value;
             }
-            _ => bail!("Unknown key `{key}`"),
+            _ => bail!("Unknown key '{key}'"),
         }
+        Ok(())
+    }
+
+    pub fn delete(config: &GlobalConfig, kind: &str) -> Result<()> {
+        let (dir, file_ext) = match kind {
+            "roles" => (Self::roles_dir()?, Some(".md")),
+            "sessions" => (config.read().sessions_dir()?, Some(".yaml")),
+            "rags" => (Self::rags_dir()?, Some(".yaml")),
+            "agents-config" => (Self::agents_config_dir()?, None),
+            _ => bail!("Unknown kind '{kind}'"),
+        };
+        let names = match read_dir(&dir) {
+            Ok(rd) => {
+                let mut names = vec![];
+                for entry in rd.flatten() {
+                    let name = entry.file_name();
+                    match file_ext {
+                        Some(file_ext) => {
+                            if let Some(name) = name.to_string_lossy().strip_suffix(file_ext) {
+                                names.push(name.to_string());
+                            }
+                        }
+                        None => {
+                            if entry.path().is_dir() {
+                                names.push(name.to_string_lossy().to_string());
+                            }
+                        }
+                    }
+                }
+                names.sort_unstable();
+                names
+            }
+            Err(_) => vec![],
+        };
+
+        if names.is_empty() {
+            bail!("No {kind} to delete")
+        }
+
+        let select_names = MultiSelect::new(&format!("Select {kind} to delete:"), names)
+            .with_validator(|list: &[ListOption<&String>]| {
+                if list.is_empty() {
+                    Ok(Validation::Invalid(
+                        "At least one item must be selected".into(),
+                    ))
+                } else {
+                    Ok(Validation::Valid)
+                }
+            })
+            .prompt()?;
+
+        for name in select_names {
+            match file_ext {
+                Some(ext) => {
+                    let path = dir.join(format!("{name}{ext}"));
+                    remove_file(&path).with_context(|| {
+                        format!("Failed to delete {kind} at '{}'", path.display())
+                    })?;
+                }
+                None => {
+                    let path = dir.join(name);
+                    remove_dir_all(&path).with_context(|| {
+                        format!("Failed to delete {kind} at '{}'", path.display())
+                    })?;
+                }
+            }
+        }
+        println!("✨ Successfully deleted {kind}.");
         Ok(())
     }
 
@@ -1432,6 +1502,10 @@ impl Config {
                 .into_iter()
                 .map(|v| (format!("{v} "), None))
                 .collect(),
+                ".delete" => vec!["roles", "sessions", "rags", "agents-config"]
+                    .into_iter()
+                    .map(|v| (v.to_string(), None))
+                    .collect(),
                 _ => vec![],
             };
             filter = args[0]
@@ -1505,7 +1579,7 @@ impl Config {
             let theme_path = Self::local_path(&theme_filename)?;
             if theme_path.exists() {
                 let theme = ThemeSet::get_theme(&theme_path)
-                    .with_context(|| format!("Invalid theme at {}", theme_path.display()))?;
+                    .with_context(|| format!("Invalid theme at '{}'", theme_path.display()))?;
                 Some(theme)
             } else {
                 let theme = if self.light_theme {
@@ -1703,7 +1777,7 @@ impl Config {
 
     fn load_from_file(config_path: &Path) -> Result<Self> {
         let content = read_to_string(config_path)
-            .with_context(|| format!("Failed to load config at {}", config_path.display()))?;
+            .with_context(|| format!("Failed to load config at '{}'", config_path.display()))?;
         let config: Self = serde_yaml::from_str(&content).map_err(|err| {
             let err_msg = err.to_string();
             let err_msg = if err_msg.starts_with(&format!("{}: ", CLIENTS_FIELD)) {
