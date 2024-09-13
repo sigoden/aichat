@@ -31,7 +31,7 @@ lazy_static::lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static::lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 30] = [
+    static ref REPL_COMMANDS: [ReplCommand; 31] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
@@ -148,6 +148,7 @@ lazy_static::lazy_static! {
             AssertState::pass()
         ),
         ReplCommand::new(".set", "Adjust settings", AssertState::pass()),
+        ReplCommand::new(".delete", "Delete roles/sessions/RAGs/agents-config", AssertState::pass()),
         ReplCommand::new(".copy", "Copy the last response", AssertState::pass()),
         ReplCommand::new(".exit", "Exit the REPL", AssertState::pass()),
     ];
@@ -390,6 +391,14 @@ impl Repl {
                     }
                     _ => {
                         println!("Usage: .set <key> <value>...")
+                    }
+                },
+                ".delete" => match args {
+                    Some(args) => {
+                        Config::delete(&self.config, args)?;
+                    }
+                    _ => {
+                        println!("Usage: .delete [roles|sessions|rags|agents-config]")
                     }
                 },
                 ".copy" => {
