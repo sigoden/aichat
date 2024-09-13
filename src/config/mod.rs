@@ -918,13 +918,7 @@ impl Config {
         }
         let role_path = Self::role_file(&role_name)?;
         if let Some(role) = self.role.as_mut() {
-            let old_name = role.name().to_string();
             role.save(&role_name, &role_path, self.working_mode.is_repl())?;
-            if old_name != role_name {
-                if let Ok(path) = Self::role_file(&old_name) {
-                    let _ = remove_file(&path);
-                }
-            }
         }
 
         Ok(())
@@ -1050,13 +1044,7 @@ impl Config {
         };
         let session_path = self.session_file(&session_name)?;
         if let Some(session) = self.session.as_mut() {
-            let old_name = session.name().to_string();
             session.save(&session_name, &session_path, self.working_mode.is_repl())?;
-            if old_name != session_name {
-                if let Ok(path) = self.session_file(&old_name) {
-                    let _ = remove_file(&path);
-                }
-            }
         }
         Ok(())
     }
