@@ -1441,27 +1441,16 @@ impl Config {
         let mut filter = "";
         if args.len() == 1 {
             values = match cmd {
-                ".role" => Self::list_roles(true)
-                    .into_iter()
-                    .map(|v| (v, None))
-                    .collect(),
+                ".role" => map_completion_values(Self::list_roles(true)),
                 ".model" => list_chat_models(self)
                     .into_iter()
                     .map(|v| (v.id(), Some(v.description())))
                     .collect(),
-                ".session" => self
-                    .list_sessions()
-                    .into_iter()
-                    .map(|v| (v, None))
-                    .collect(),
-                ".rag" => Self::list_rags().into_iter().map(|v| (v, None)).collect(),
-                ".agent" => list_agents().into_iter().map(|v| (v, None)).collect(),
+                ".session" => map_completion_values(self.list_sessions()),
+                ".rag" => map_completion_values(Self::list_rags()),
+                ".agent" => map_completion_values(list_agents()),
                 ".starter" => match &self.agent {
-                    Some(agent) => agent
-                        .conversation_staters()
-                        .iter()
-                        .map(|v| (v.clone(), None))
-                        .collect(),
+                    Some(agent) => map_completion_values(agent.conversation_staters().to_vec()),
                     None => vec![],
                 },
                 ".variable" => match &self.agent {
@@ -1472,28 +1461,31 @@ impl Config {
                         .collect(),
                     None => vec![],
                 },
-                ".set" => vec![
-                    "max_output_tokens",
-                    "temperature",
-                    "top_p",
-                    "dry_run",
-                    "stream",
-                    "save",
-                    "save_session",
-                    "compress_threshold",
-                    "function_calling",
-                    "use_tools",
-                    "rag_reranker_model",
-                    "rag_top_k",
-                    "highlight",
-                ]
-                .into_iter()
-                .map(|v| (format!("{v} "), None))
-                .collect(),
-                ".delete" => vec!["roles", "sessions", "rags", "agents-config"]
-                    .into_iter()
-                    .map(|v| (v.to_string(), None))
-                    .collect(),
+                ".set" => {
+                    let mut values = vec![
+                        "max_output_tokens",
+                        "temperature",
+                        "top_p",
+                        "dry_run",
+                        "stream",
+                        "save",
+                        "save_session",
+                        "compress_threshold",
+                        "function_calling",
+                        "use_tools",
+                        "rag_reranker_model",
+                        "rag_top_k",
+                        "highlight",
+                    ];
+                    values.sort_unstable();
+                    values
+                        .into_iter()
+                        .map(|v| (format!("{v} "), None))
+                        .collect()
+                }
+                ".delete" => {
+                    map_completion_values(vec!["roles", "sessions", "rags", "agents-config"])
+                }
                 _ => vec![],
             };
             filter = args[0]
@@ -2127,6 +2119,10 @@ fn complete_option_bool(value: Option<bool>) -> Vec<String> {
         Some(false) => vec!["true".to_string(), "null".to_string()],
         None => vec!["true".to_string(), "false".to_string()],
     }
+}
+
+fn map_completion_values<T: ToString>(value: Vec<T>) -> Vec<(String, Option<String>)> {
+    value.into_iter().map(|v| (v.to_string(), None)).collect()
 }
 
 fn update_rag<F>(config: &GlobalConfig, f: F) -> Result<()>

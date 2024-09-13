@@ -42,7 +42,7 @@ impl Completer for ReplCompleter {
                     .map(|(v, _)| *v)
                     .collect::<Vec<&str>>()
                     .join(" ");
-                cmd.name.starts_with(&line)
+                cmd.name.starts_with(&line) && cmd.name != ".set"
             })
             .collect();
 
