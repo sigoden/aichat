@@ -465,7 +465,12 @@ impl Config {
             role.clone()
         } else {
             let mut role = Role::default();
-            role.batch_set(&self.model, self.temperature, self.top_p, None);
+            role.batch_set(
+                &self.model,
+                self.temperature,
+                self.top_p,
+                self.use_tools.clone(),
+            );
             role
         };
         if role.temperature().is_none() && self.temperature.is_some() {
@@ -473,9 +478,6 @@ impl Config {
         }
         if role.top_p().is_none() && self.top_p.is_some() {
             role.set_top_p(self.top_p);
-        }
-        if role.use_tools().is_none() && self.use_tools.is_some() {
-            role.set_use_tools(self.use_tools.clone())
         }
         role
     }
@@ -544,12 +546,12 @@ impl Config {
             ("rag_top_k", rag_top_k.to_string()),
             ("highlight", self.highlight.to_string()),
             ("light_theme", self.light_theme.to_string()),
+            ("env_file", display_path(&Self::env_file()?)),
             ("config_file", display_path(&Self::config_file()?)),
             ("roles_dir", display_path(&Self::roles_dir()?)),
-            ("env_file", display_path(&Self::env_file()?)),
-            ("functions_dir", display_path(&Self::functions_dir()?)),
-            ("rags_dir", display_path(&Self::rags_dir()?)),
             ("sessions_dir", display_path(&self.sessions_dir()?)),
+            ("rags_dir", display_path(&Self::rags_dir()?)),
+            ("functions_dir", display_path(&Self::functions_dir()?)),
             ("messages_file", display_path(&self.messages_file()?)),
         ];
         if let Ok((_, Some(log_path))) = Self::log(self.working_mode.is_serve()) {
@@ -1367,20 +1369,21 @@ impl Config {
                     .iter()
                     .map(|v| v.name.to_string())
                     .collect();
-                for item in use_tools.split(',') {
-                    let item = item.trim();
-                    if item == "all" {
-                        tool_names.extend(declaration_names);
-                        break;
-                    } else if let Some(values) = self.mapping_tools.get(item) {
-                        tool_names.extend(
-                            values
-                                .split(',')
-                                .map(|v| v.to_string())
-                                .filter(|v| declaration_names.contains(v)),
-                        )
-                    } else if declaration_names.contains(item) {
-                        tool_names.insert(item.to_string());
+                if use_tools == "all" {
+                    tool_names.extend(declaration_names);
+                } else {
+                    for item in use_tools.split(',') {
+                        let item = item.trim();
+                        if let Some(values) = self.mapping_tools.get(item) {
+                            tool_names.extend(
+                                values
+                                    .split(',')
+                                    .map(|v| v.to_string())
+                                    .filter(|v| declaration_names.contains(v)),
+                            )
+                        } else if declaration_names.contains(item) {
+                            tool_names.insert(item.to_string());
+                        }
                     }
                 }
                 functions = self
@@ -1509,18 +1512,20 @@ impl Config {
                 "function_calling" => complete_bool(self.function_calling),
                 "use_tools" => {
                     let mut prefix = String::new();
+                    let mut ignores = HashSet::new();
                     if let Some((v, _)) = args[1].rsplit_once(',') {
+                        ignores = v.split(',').collect();
                         prefix = format!("{v},");
                     }
                     let mut values = vec![];
                     if prefix.is_empty() {
                         values.push("all".to_string());
                     }
-                    values.extend(self.mapping_tools.keys().map(|v| v.to_string()));
                     values.extend(self.functions.declarations().iter().map(|v| v.name.clone()));
+                    values.extend(self.mapping_tools.keys().map(|v| v.to_string()));
                     values
                         .into_iter()
-                        .filter(|v| !prefix.contains(&format!("{v},")))
+                        .filter(|v| !ignores.contains(v.as_str()))
                         .map(|v| format!("{prefix}{v}"))
                         .collect()
                 }
