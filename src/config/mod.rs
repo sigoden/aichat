@@ -1199,6 +1199,16 @@ impl Config {
         Ok(())
     }
 
+    pub fn rag_sources(config: &GlobalConfig) -> Result<String> {
+        match config.read().rag.as_ref() {
+            Some(rag) => match rag.get_last_sources() {
+                Some(v) => Ok(v),
+                None => bail!("No sources"),
+            },
+            None => bail!("No RAG"),
+        }
+    }
+
     pub fn rag_info(&self) -> Result<String> {
         if let Some(rag) = &self.rag {
             rag.export()
@@ -1226,7 +1236,7 @@ impl Config {
                 config.rag_min_score_keyword_search,
             )
         };
-        let embeddings = rag
+        let (embeddings, ids) = rag
             .search(
                 text,
                 top_k,
@@ -1237,6 +1247,7 @@ impl Config {
             )
             .await?;
         let text = config.read().rag_template(&embeddings, text);
+        rag.set_last_sources(&ids);
         Ok(text)
     }
 

@@ -31,7 +31,7 @@ lazy_static::lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static::lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 32] = [
+    static ref REPL_COMMANDS: [ReplCommand; 33] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
@@ -103,6 +103,11 @@ lazy_static::lazy_static! {
         ReplCommand::new(
             ".rebuild rag",
             "Rebuild the RAG to sync document changes",
+            AssertState::True(StateFlags::RAG),
+        ),
+        ReplCommand::new(
+            ".sources rag",
+            "View the RAG sources in the last query",
             AssertState::True(StateFlags::RAG),
         ),
         ReplCommand::new(
@@ -365,6 +370,20 @@ impl Repl {
                         }
                         _ => {
                             println!(r#"Usage: .rebuild rag"#)
+                        }
+                    }
+                }
+                ".sources" => {
+                    match args.map(|v| match v.split_once(' ') {
+                        Some((subcmd, args)) => (subcmd, Some(args.trim())),
+                        None => (v, None),
+                    }) {
+                        Some(("rag", _)) => {
+                            let output = Config::rag_sources(&self.config)?;
+                            println!("{}", output);
+                        }
+                        _ => {
+                            println!(r#"Usage: .sources rag"#)
                         }
                     }
                 }

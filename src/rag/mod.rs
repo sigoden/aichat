@@ -15,6 +15,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use hnsw_rs::prelude::*;
 use indexmap::{IndexMap, IndexSet};
 use inquire::{required, validator::Validation, Confirm, Select, Text};
+use parking_lot::RwLock;
 use path_absolutize::Absolutize;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -28,6 +29,7 @@ pub struct Rag {
     hnsw: Hnsw<'static, f32, DistCosine>,
     bm25: BM25<DocumentId>,
     data: RagData,
+    last_sources: RwLock<Option<String>>,
 }
 
 impl Debug for Rag {
@@ -51,6 +53,7 @@ impl Clone for Rag {
             hnsw: self.data.build_hnsw(),
             bm25: self.bm25.clone(),
             data: self.data.clone(),
+            last_sources: RwLock::new(None),
         }
     }
 }
@@ -119,6 +122,7 @@ impl Rag {
             embedding_model,
             hnsw,
             bm25,
+            last_sources: RwLock::new(None),
         };
         Ok(rag)
     }
@@ -216,6 +220,27 @@ impl Rag {
         (self.data.reranker_model.clone(), self.data.top_k)
     }
 
+    pub fn get_last_sources(&self) -> Option<String> {
+        self.last_sources.read().clone()
+    }
+
+    pub fn set_last_sources(&self, ids: &[DocumentId]) {
+        let sources: IndexSet<_> = ids
+            .iter()
+            .filter_map(|id| {
+                let (file_index, _) = split_document_id(*id);
+                let file = self.data.files.get(&file_index)?;
+                Some(file.path.clone())
+            })
+            .collect();
+        let sources = if sources.is_empty() {
+            None
+        } else {
+            Some(sources.into_iter().collect::<Vec<_>>().join("\n"))
+        };
+        *self.last_sources.write() = sources;
+    }
+
     pub fn set_reranker_model(&mut self, reranker_model: Option<String>) -> Result<()> {
         self.data.reranker_model = reranker_model;
         self.save()?;
@@ -287,7 +312,7 @@ impl Rag {
         min_score_keyword_search: f32,
         rerank_model: Option<&str>,
         abort_signal: AbortSignal,
-    ) -> Result<String> {
+    ) -> Result<(String, Vec<DocumentId>)> {
         let spinner = create_spinner("Searching").await;
         let ret = tokio::select! {
             ret = self.hybird_search(text, top_k, min_score_vector_search, min_score_keyword_search, rerank_model) => {
@@ -298,8 +323,9 @@ impl Rag {
             },
         };
         spinner.stop();
-        let output = ret?.join("\n\n");
-        Ok(output)
+        let (ids, documents): (Vec<_>, Vec<_>) = ret?.into_iter().unzip();
+        let embeddings = documents.join("\n\n");
+        Ok((embeddings, ids))
     }
 
     pub async fn sync_documents<T: AsRef<str>>(
@@ -426,7 +452,7 @@ impl Rag {
         min_score_vector_search: f32,
         min_score_keyword_search: f32,
         rerank_model: Option<&str>,
-    ) -> Result<Vec<String>> {
+    ) -> Result<Vec<(DocumentId, String)>> {
         let (vector_search_result, text_search_result) = tokio::join!(
             self.vector_search(query, top_k, min_score_vector_search),
             self.keyword_search(query, top_k, min_score_keyword_search)
@@ -478,7 +504,7 @@ impl Rag {
             .into_iter()
             .filter_map(|id| {
                 let document = self.data.get(id)?;
-                Some(document.page_content.clone())
+                Some((id, document.page_content.clone()))
             })
             .collect();
         Ok(output)
