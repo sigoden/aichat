@@ -317,7 +317,7 @@ async fn create_input(
 }
 
 fn setup_logger(is_serve: bool) -> Result<()> {
-    let (log_level, log_path) = Config::log(is_serve)?;
+    let (log_level, log_path) = Config::log_config(is_serve)?;
     if log_level == LevelFilter::Off {
         return Ok(());
     }
