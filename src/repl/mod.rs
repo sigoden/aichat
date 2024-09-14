@@ -31,7 +31,7 @@ lazy_static::lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static::lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 31] = [
+    static ref REPL_COMMANDS: [ReplCommand; 32] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
@@ -58,7 +58,7 @@ lazy_static::lazy_static! {
         ReplCommand::new(
             ".save role",
             "Save the current role to file",
-            AssertState::True(StateFlags::ROLE)
+            AssertState::TrueFalse(StateFlags::ROLE, StateFlags::SESSION_EMPTY | StateFlags::SESSION),
         ),
         ReplCommand::new(
             ".exit role",
@@ -71,6 +71,11 @@ lazy_static::lazy_static! {
             AssertState::False(StateFlags::SESSION_EMPTY | StateFlags::SESSION),
         ),
         ReplCommand::new(
+            ".clear messages",
+            "Erase messages in the current session",
+            AssertState::True(StateFlags::SESSION)
+        ),
+        ReplCommand::new(
             ".info session",
             "View session info",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION),
@@ -79,11 +84,6 @@ lazy_static::lazy_static! {
             ".edit session",
             "Edit the current session",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
-        ),
-        ReplCommand::new(
-            ".clear messages",
-            "Erase messages in the current session",
-            AssertState::True(StateFlags::SESSION)
         ),
         ReplCommand::new(
             ".save session",
@@ -101,13 +101,13 @@ lazy_static::lazy_static! {
             AssertState::False(StateFlags::AGENT)
         ),
         ReplCommand::new(
-            ".info rag",
-            "View RAG info",
+            ".rebuild rag",
+            "Rebuild the RAG to sync document changes",
             AssertState::True(StateFlags::RAG),
         ),
         ReplCommand::new(
-            ".rebuild rag",
-            "Rebuild the RAG to sync document changes",
+            ".info rag",
+            "View RAG info",
             AssertState::True(StateFlags::RAG),
         ),
         ReplCommand::new(
@@ -117,11 +117,6 @@ lazy_static::lazy_static! {
         ),
         ReplCommand::new(".agent", "Use a agent", AssertState::bare()),
         ReplCommand::new(
-            ".info agent",
-            "View agent info",
-            AssertState::True(StateFlags::AGENT),
-        ),
-        ReplCommand::new(
             ".starter",
             "Use the conversation starter",
             AssertState::True(StateFlags::AGENT)
@@ -130,6 +125,16 @@ lazy_static::lazy_static! {
             ".variable",
             "Set agent variable",
             AssertState::True(StateFlags::AGENT)
+        ),
+        ReplCommand::new(
+            ".save agent-config",
+            "Save the current agent config to file",
+            AssertState::True(StateFlags::AGENT)
+        ),
+        ReplCommand::new(
+            ".info agent",
+            "View agent info",
+            AssertState::True(StateFlags::AGENT),
         ),
         ReplCommand::new(
             ".exit agent",
@@ -148,7 +153,7 @@ lazy_static::lazy_static! {
             AssertState::pass()
         ),
         ReplCommand::new(".set", "Adjust runtime configuration", AssertState::pass()),
-        ReplCommand::new(".delete", "Delete roles/sessions/RAGs/agents-config", AssertState::pass()),
+        ReplCommand::new(".delete", "Delete roles/sessions/RAGs/agents", AssertState::pass()),
         ReplCommand::new(".copy", "Copy the last response", AssertState::pass()),
         ReplCommand::new(".exit", "Exit the REPL", AssertState::pass()),
     ];
@@ -326,8 +331,11 @@ impl Repl {
                         Some(("session", name)) => {
                             self.config.write().save_session(name)?;
                         }
+                        Some(("agent-config", _)) => {
+                            self.config.write().save_agent_config()?;
+                        }
                         _ => {
-                            println!(r#"Usage: .save <role|session> [name]"#)
+                            println!(r#"Usage: .save <role|session|aegnt-config> [name]"#)
                         }
                     }
                 }
@@ -343,7 +351,7 @@ impl Repl {
                             self.config.write().edit_session()?;
                         }
                         _ => {
-                            println!(r#"Usage: .edit session"#)
+                            println!(r#"Usage: .edit <role|session>"#)
                         }
                     }
                 }
@@ -398,7 +406,7 @@ impl Repl {
                         Config::delete(&self.config, args)?;
                     }
                     _ => {
-                        println!("Usage: .delete [roles|sessions|rags|agents-config]")
+                        println!("Usage: .delete [roles|sessions|rags|agents]")
                     }
                 },
                 ".copy" => {

@@ -11,6 +11,13 @@ editor: null                     # Specifies the command used to edit input buff
 wrap: no                         # Controls text wrapping (no, auto, <max-width>)
 wrap_code: false                 # Enables or disables wrapping of code blocks
 
+# ---- function-calling ----
+# Visit https://github.com/sigoden/llm-functions for setup instructions
+function_calling: true           # Enables or disables function calling (Globally).
+mapping_tools:                   # Alias for a tool or toolset
+  fs: 'fs_cat,fs_ls,fs_mkdir,fs_rm,fs_write'
+use_tools: null                  # Which tools to use by default. (e.g. 'fs,web_search')
+
 # ---- prelude ----
 prelude: null                    # Set a default role or session to start with (e.g. role:<name>, session:<name>)
 repl_prelude: null               # Overrides the `prelude` setting specifically for conversations started in REPL
@@ -25,13 +32,6 @@ compress_threshold: 4000
 summarize_prompt: 'Summarize the discussion briefly in 200 words or less to use as a prompt for future context.'
 # Text prompt used for including the summary of the entire session
 summary_prompt: 'This is a summary of the chat history as a recap: '
-
-# ---- function-calling ----
-# Visit https://github.com/sigoden/llm-functions for setup instructions
-function_calling: true           # Enables or disables function calling (Globally).
-mapping_tools:                   # Alias for a tool or toolset
-  fs: 'fs_cat,fs_ls,fs_mkdir,fs_rm,fs_write'
-use_tools: null                  # Which tools to use by default. (e.g. 'fs,web_search')
 
 # ---- RAG ----
 # See [RAG-Guide](https://github.com/sigoden/aichat/wiki/RAG-Guide) for more details.

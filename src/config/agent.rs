@@ -39,7 +39,7 @@ impl Agent {
         let agent_config = if config_path.exists() {
             AgentConfig::load(&config_path)?
         } else {
-            AgentConfig::default()
+            AgentConfig::new(&config.read())
         };
         let mut definition = AgentDefinition::load(&definition_file_path)?;
         init_variables(&variables_path, &mut definition.variables)
@@ -89,6 +89,18 @@ impl Agent {
             rag,
             model,
         })
+    }
+
+    pub fn save_config(&self) -> Result<()> {
+        let config_path = Config::agent_config_file(&self.name)?;
+        ensure_parent_exists(&config_path)?;
+        let content = serde_yaml::to_string(&self.config)?;
+        fs::write(&config_path, content).with_context(|| {
+            format!("Failed to save agent config to '{}'", config_path.display())
+        })?;
+
+        println!("✨ Saved agent config to '{}'", config_path.display());
+        Ok(())
     }
 
     pub fn export(&self) -> Result<String> {
@@ -141,6 +153,10 @@ impl Agent {
 
     pub fn agent_prelude(&self) -> Option<&str> {
         self.config.agent_prelude.as_deref()
+    }
+
+    pub fn set_agent_prelude(&mut self, value: Option<String>) {
+        self.config.agent_prelude = value;
     }
 
     pub fn variables(&self) -> &[AgentVariable] {
@@ -208,22 +224,23 @@ impl RoleLike for Agent {
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct AgentConfig {
-    #[serde(
-        rename(serialize = "model", deserialize = "model"),
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(rename(serialize = "model", deserialize = "model"))]
     pub model_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub use_tools: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub agent_prelude: Option<String>,
 }
 
 impl AgentConfig {
+    pub fn new(config: &Config) -> Self {
+        Self {
+            use_tools: config.use_tools.clone(),
+            agent_prelude: config.agent_prelude.clone(),
+            ..Default::default()
+        }
+    }
+
     pub fn load(path: &Path) -> Result<Self> {
         let contents = read_to_string(path)
             .with_context(|| format!("Failed to read agent config file at '{}'", path.display()))?;

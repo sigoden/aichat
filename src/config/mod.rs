@@ -99,6 +99,10 @@ pub struct Config {
     pub wrap: Option<String>,
     pub wrap_code: bool,
 
+    pub function_calling: bool,
+    pub mapping_tools: IndexMap<String, String>,
+    pub use_tools: Option<String>,
+
     pub prelude: Option<String>,
     pub repl_prelude: Option<String>,
     pub agent_prelude: Option<String>,
@@ -107,10 +111,6 @@ pub struct Config {
     pub compress_threshold: usize,
     pub summarize_prompt: Option<String>,
     pub summary_prompt: Option<String>,
-
-    pub function_calling: bool,
-    pub mapping_tools: IndexMap<String, String>,
-    pub use_tools: Option<String>,
 
     pub rag_embedding_model: Option<String>,
     pub rag_reranker_model: Option<String>,
@@ -166,6 +166,10 @@ impl Default for Config {
             wrap: None,
             wrap_code: false,
 
+            function_calling: true,
+            mapping_tools: Default::default(),
+            use_tools: None,
+
             prelude: None,
             repl_prelude: None,
             agent_prelude: None,
@@ -174,10 +178,6 @@ impl Default for Config {
             compress_threshold: 4000,
             summarize_prompt: None,
             summary_prompt: None,
-
-            function_calling: true,
-            mapping_tools: Default::default(),
-            use_tools: None,
 
             rag_embedding_model: None,
             rag_reranker_model: None,
@@ -402,7 +402,7 @@ impl Config {
         self.serve_addr.clone().unwrap_or_else(|| SERVE_ADDR.into())
     }
 
-    pub fn log(is_serve: bool) -> Result<(LevelFilter, Option<PathBuf>)> {
+    pub fn log_config(is_serve: bool) -> Result<(LevelFilter, Option<PathBuf>)> {
         let log_level = env::var(get_env_name("log_level"))
             .ok()
             .and_then(|v| v.parse().ok())
@@ -513,9 +513,13 @@ impl Config {
             .wrap
             .clone()
             .map_or_else(|| String::from("no"), |v| v.to_string());
-        let (rag_reranker_model, rag_top_k) = match self.rag.as_ref() {
+        let (rag_reranker_model, rag_top_k) = match &self.rag {
             Some(rag) => rag.get_config(),
             None => (self.rag_reranker_model.clone(), self.rag_top_k),
+        };
+        let agent_prelude = match &self.agent {
+            Some(agent) => agent.agent_prelude(),
+            None => self.agent_prelude.as_deref(),
         };
         let role = self.extract_role();
         let mut items = vec![
@@ -535,10 +539,11 @@ impl Config {
             ("keybindings", self.keybindings.clone()),
             ("wrap", wrap),
             ("wrap_code", self.wrap_code.to_string()),
-            ("save_session", format_option_value(&self.save_session)),
-            ("compress_threshold", self.compress_threshold.to_string()),
             ("function_calling", self.function_calling.to_string()),
             ("use_tools", format_option_value(&role.use_tools())),
+            ("agent_prelude", format_option_value(&agent_prelude)),
+            ("save_session", format_option_value(&self.save_session)),
+            ("compress_threshold", self.compress_threshold.to_string()),
             (
                 "rag_reranker_model",
                 format_option_value(&rag_reranker_model),
@@ -554,7 +559,7 @@ impl Config {
             ("functions_dir", display_path(&Self::functions_dir()?)),
             ("messages_file", display_path(&self.messages_file()?)),
         ];
-        if let Ok((_, Some(log_path))) = Self::log(self.working_mode.is_serve()) {
+        if let Ok((_, Some(log_path))) = Self::log_config(self.working_mode.is_serve()) {
             items.push(("log_path", display_path(&log_path)));
         }
         let output = items
@@ -597,14 +602,6 @@ impl Config {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 config.write().save = value;
             }
-            "rag_reranker_model" => {
-                let value = parse_value(value)?;
-                Self::set_rag_reranker_model(config, value)?;
-            }
-            "rag_top_k" => {
-                let value = value.parse().with_context(|| "Invalid value")?;
-                Self::set_rag_top_k(config, value)?;
-            }
             "function_calling" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 if value && config.write().functions.is_empty() {
@@ -616,6 +613,10 @@ impl Config {
                 let value = parse_value(value)?;
                 config.write().set_use_tools(value);
             }
+            "agent_prelude" => {
+                let value = parse_value(value)?;
+                config.write().set_agent_prelude(value);
+            }
             "save_session" => {
                 let value = parse_value(value)?;
                 config.write().set_save_session(value);
@@ -623,6 +624,14 @@ impl Config {
             "compress_threshold" => {
                 let value = parse_value(value)?;
                 config.write().set_compress_threshold(value);
+            }
+            "rag_reranker_model" => {
+                let value = parse_value(value)?;
+                Self::set_rag_reranker_model(config, value)?;
+            }
+            "rag_top_k" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                Self::set_rag_top_k(config, value)?;
             }
             "highlight" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
@@ -638,7 +647,7 @@ impl Config {
             "roles" => (Self::roles_dir()?, Some(".md")),
             "sessions" => (config.read().sessions_dir()?, Some(".yaml")),
             "rags" => (Self::rags_dir()?, Some(".yaml")),
-            "agents-config" => (Self::agents_config_dir()?, None),
+            "agents" => (Self::agents_config_dir()?, None),
             _ => bail!("Unknown kind '{kind}'"),
         };
         let names = match read_dir(&dir) {
@@ -719,6 +728,13 @@ impl Config {
         match self.role_like_mut() {
             Some(role_like) => role_like.set_use_tools(value),
             None => self.use_tools = value,
+        }
+    }
+
+    pub fn set_agent_prelude(&mut self, value: Option<String>) {
+        match self.agent.as_mut() {
+            Some(agent) => agent.set_agent_prelude(value),
+            None => self.agent_prelude = value,
         }
     }
 
@@ -1269,13 +1285,9 @@ impl Config {
             bail!("Already in a agent, please run '.exit agent' first to exit the current agent.");
         }
         let agent = Agent::init(config, name, abort_signal).await?;
-        let session = session.map(|v| v.to_string()).or_else(|| {
-            agent
-                .agent_prelude()
-                .map(|v| v.to_string())
-                .or_else(|| config.read().agent_prelude.clone())
-                .and_then(|v| if v.is_empty() { None } else { Some(v) })
-        });
+        let session = session
+            .map(|v| v.to_string())
+            .or_else(|| agent.agent_prelude().map(|v| v.to_string()));
         config.write().rag = agent.rag();
         config.write().agent = Some(agent);
         if let Some(session) = session {
@@ -1312,6 +1324,14 @@ impl Config {
             None => bail!("No agent"),
         };
         Ok(())
+    }
+
+    pub fn save_agent_config(&mut self) -> Result<()> {
+        let agent = match &self.agent {
+            Some(v) => v,
+            None => bail!("No agent"),
+        };
+        agent.save_config()
     }
 
     pub fn exit_agent(&mut self) -> Result<()> {
@@ -1472,10 +1492,11 @@ impl Config {
                         "dry_run",
                         "stream",
                         "save",
-                        "save_session",
-                        "compress_threshold",
                         "function_calling",
                         "use_tools",
+                        "agent_prelude",
+                        "save_session",
+                        "compress_threshold",
                         "rag_reranker_model",
                         "rag_top_k",
                         "highlight",
@@ -1486,9 +1507,7 @@ impl Config {
                         .map(|v| (format!("{v} "), None))
                         .collect()
                 }
-                ".delete" => {
-                    map_completion_values(vec!["roles", "sessions", "rags", "agents-config"])
-                }
+                ".delete" => map_completion_values(vec!["roles", "sessions", "rags", "agents"]),
                 _ => vec![],
             };
             filter = args[0]
@@ -1501,14 +1520,6 @@ impl Config {
                 "dry_run" => complete_bool(self.dry_run),
                 "stream" => complete_bool(self.stream),
                 "save" => complete_bool(self.save),
-                "save_session" => {
-                    let save_session = if let Some(session) = &self.session {
-                        session.save_session()
-                    } else {
-                        self.save_session
-                    };
-                    complete_option_bool(save_session)
-                }
                 "function_calling" => complete_bool(self.function_calling),
                 "use_tools" => {
                     let mut prefix = String::new();
@@ -1528,6 +1539,14 @@ impl Config {
                         .filter(|v| !ignores.contains(v.as_str()))
                         .map(|v| format!("{prefix}{v}"))
                         .collect()
+                }
+                "save_session" => {
+                    let save_session = if let Some(session) = &self.session {
+                        session.save_session()
+                    } else {
+                        self.save_session
+                    };
+                    complete_option_bool(save_session)
                 }
                 "rag_reranker_model" => list_reranker_models(self).iter().map(|v| v.id()).collect(),
                 "highlight" => complete_bool(self.highlight),
@@ -1840,6 +1859,18 @@ impl Config {
             self.wrap_code = v;
         }
 
+        if let Some(Some(v)) = read_env_bool("function_calling") {
+            self.function_calling = v;
+        }
+        if let Ok(v) = env::var(get_env_name("mapping_tools")) {
+            if let Ok(v) = serde_json::from_str(&v) {
+                self.mapping_tools = v;
+            }
+        }
+        if let Some(v) = read_env_value::<String>("use_tools") {
+            self.use_tools = v;
+        }
+
         if let Some(v) = read_env_value::<String>("prelude") {
             self.prelude = v;
         }
@@ -1861,18 +1892,6 @@ impl Config {
         }
         if let Some(v) = read_env_value::<String>("summary_prompt") {
             self.summary_prompt = v;
-        }
-
-        if let Some(Some(v)) = read_env_bool("function_calling") {
-            self.function_calling = v;
-        }
-        if let Ok(v) = env::var(get_env_name("mapping_tools")) {
-            if let Ok(v) = serde_json::from_str(&v) {
-                self.mapping_tools = v;
-            }
-        }
-        if let Some(v) = read_env_value::<String>("use_tools") {
-            self.use_tools = v;
         }
 
         if let Some(v) = read_env_value::<String>("rag_embedding_model") {
