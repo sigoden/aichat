@@ -12,7 +12,7 @@ AIChat is an all-in-one AI CLI tool featuring Chat-REPL, Shell Assistant, RAG, A
 
 - **Rust Developers:** `cargo install aichat`
 - **Homebrew/Linuxbrew Users:** `brew install aichat`
-- **Pacman Users**: `yay -S aichat`
+- **Pacman Users**: `pacman -S aichat`
 - **Windows Scoop Users:** `scoop install aichat`
 - **Android Termux Users:** `pkg install aichat`
 
@@ -129,13 +129,13 @@ Function calling supercharges LLMs by connecting them to external tools and data
 
 We have created a new repository [https://github.com/sigoden/llm-functions](https://github.com/sigoden/llm-functions) to help you make the most of this feature.
 
-#### AI Tool
+#### AI Tools
 
 Integrate external tools to automate tasks, retrieve information, and perform actions directly within your workflow.
 
 ![aichat-tool](https://github.com/user-attachments/assets/7459a111-7258-4ef0-a2dd-624d0f1b4f92)
 
-#### AI Agent
+#### AI Agents
 
 While tools excel at specific tasks, agents offer a more sophisticated approach to problem-solving and user interaction.
 
@@ -151,6 +151,7 @@ AIChat comes with a built-in lightweight http server.
 $ aichat --serve
 Chat Completions API: http://127.0.0.1:8000/v1/chat/completions
 Embeddings API:       http://127.0.0.1:8000/v1/embeddings
+Rerank API:           http://127.0.0.1:8000/v1/rerank
 LLM Playground:       http://127.0.0.1:8000/playground
 LLM Arena:            http://127.0.0.1:8000/arena?num=2
 ```
