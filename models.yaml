@@ -42,6 +42,16 @@
       output_price: 30
       supports_vision: true
       supports_function_calling: true
+    - name: o1-preview
+      max_input_tokens: 128000
+      max_output_tokens: 32768
+      input_price: 15
+      output_price: 60
+    - name: o1-mini
+      max_input_tokens: 128000
+      max_output_tokens: 65536
+      input_price: 3
+      output_price: 12
     - name: gpt-3.5-turbo
       max_input_tokens: 16385
       max_output_tokens: 4096
@@ -176,6 +186,11 @@
       max_input_tokens: 256000
       input_price: 0.25
       output_price: 0.25
+    - name: pixtral-12b-2409
+      max_input_tokens: 128000
+      input_price: 0.15
+      output_price: 0.15
+      supports_vision: true
     - name: mistral-embed
       type: embedding
       max_input_tokens: 8092
@@ -1044,6 +1059,14 @@
       output_price: 30
       supports_vision: true
       supports_function_calling: true
+    - name: openai/o1-preview
+      max_input_tokens: 128000
+      input_price: 15
+      output_price: 60
+    - name: openai/o1-mini
+      max_input_tokens: 128000
+      input_price: 3
+      output_price: 12
     - name: openai/gpt-3.5-turbo
       max_input_tokens: 16385
       input_price: 0.5
@@ -1421,10 +1444,6 @@
       type: reranker
       max_input_tokens: 1024
       input_price: 0
-    - name: jina-reranker-v1-turbo-en
-      type: reranker
-      max_input_tokens: 8192
-      input_price: 0
     - name: jina-reranker-v1-base-en
       type: reranker
       max_input_tokens: 8192
@@ -1440,19 +1459,19 @@
 #  - https://docs.voyageai.com/reference/
 - platform: voyageai
   models:
-    - name: voyage-large-2-instruct
+    - name: voyage-3
       type: embedding
-      max_input_tokens: 120000
-      input_price: 0.12
-      max_tokens_per_chunk: 16000
+      max_input_tokens: 320000
+      input_price: 0.06
+      max_tokens_per_chunk: 32000
       default_chunk_size: 2000
       max_batch_size: 128
-    - name: voyage-large-2
+    - name: voyage-3-lite
       type: embedding
-      max_input_tokens: 120000
-      input_price: 0.12
-      max_tokens_per_chunk: 16000
-      default_chunk_size: 3000
+      max_input_tokens: 1000000
+      input_price: 0.02
+      max_tokens_per_chunk: 32000
+      default_chunk_size: 1000
       max_batch_size: 128
     - name: voyage-multilingual-2
       type: embedding
