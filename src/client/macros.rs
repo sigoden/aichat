@@ -194,7 +194,7 @@ macro_rules! impl_client_trait {
             async fn embeddings_inner(
                 &self,
                 client: &reqwest::Client,
-                data: $crate::client::EmbeddingsData,
+                data: &$crate::client::EmbeddingsData,
             ) -> Result<$crate::client::EmbeddingsOutput> {
                 let request_data = $prepare_embeddings(self, data)?;
                 let builder = self.request_builder(client, request_data, ApiType::Embeddings);
@@ -204,7 +204,7 @@ macro_rules! impl_client_trait {
             async fn rerank_inner(
                 &self,
                 client: &reqwest::Client,
-                data: $crate::client::RerankData,
+                data: &$crate::client::RerankData,
             ) -> Result<$crate::client::RerankOutput> {
                 let request_data = $prepare_rerank(self, data)?;
                 let builder = self.request_builder(client, request_data, ApiType::Rerank);

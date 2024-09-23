@@ -98,7 +98,7 @@ impl BedrockClient {
     fn embeddings_builder(
         &self,
         client: &ReqwestClient,
-        data: EmbeddingsData,
+        data: &EmbeddingsData,
     ) -> Result<RequestBuilder> {
         let access_key_id = self.get_access_key_id()?;
         let secret_access_key = self.get_secret_access_key()?;
@@ -173,7 +173,7 @@ impl Client for BedrockClient {
     async fn embeddings_inner(
         &self,
         client: &ReqwestClient,
-        data: EmbeddingsData,
+        data: &EmbeddingsData,
     ) -> Result<EmbeddingsOutput> {
         let builder = self.embeddings_builder(client, data)?;
         embeddings(builder).await

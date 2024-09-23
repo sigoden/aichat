@@ -66,7 +66,10 @@ fn prepare_chat_completions(
     Ok(request_data)
 }
 
-fn prepare_embeddings(self_: &OpenAICompatibleClient, data: EmbeddingsData) -> Result<RequestData> {
+fn prepare_embeddings(
+    self_: &OpenAICompatibleClient,
+    data: &EmbeddingsData,
+) -> Result<RequestData> {
     let api_key = self_.get_api_key().ok();
     let api_base = get_api_base_ext(self_)?;
 
@@ -83,7 +86,7 @@ fn prepare_embeddings(self_: &OpenAICompatibleClient, data: EmbeddingsData) -> R
     Ok(request_data)
 }
 
-fn prepare_rerank(self_: &OpenAICompatibleClient, data: RerankData) -> Result<RequestData> {
+fn prepare_rerank(self_: &OpenAICompatibleClient, data: &RerankData) -> Result<RequestData> {
     let api_key = self_.get_api_key().ok();
     let api_base = get_api_base_ext(self_)?;
 
@@ -145,7 +148,7 @@ pub struct GenericRerankResBody {
     pub results: RerankOutput,
 }
 
-pub fn generic_build_rerank_body(data: RerankData, model: &Model) -> Value {
+pub fn generic_build_rerank_body(data: &RerankData, model: &Model) -> Value {
     let RerankData {
         query,
         documents,
@@ -158,9 +161,9 @@ pub fn generic_build_rerank_body(data: RerankData, model: &Model) -> Value {
         "documents": documents,
     });
     if model.client_name() == "voyageai" {
-        body["top_k"] = top_n.into()
+        body["top_k"] = (*top_n).into()
     } else {
-        body["top_n"] = top_n.into()
+        body["top_n"] = (*top_n).into()
     }
     body
 }

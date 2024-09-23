@@ -483,7 +483,7 @@ impl Rag {
                     }
                 }
                 let data = RerankData::new(query.to_string(), documents, top_k);
-                let list = client.rerank(data).await?;
+                let list = client.rerank(&data).await?;
                 let ids: Vec<_> = list
                     .into_iter()
                     .take(top_k)
@@ -588,7 +588,7 @@ impl Rag {
                 query,
             };
             let chunk_output = embedding_client
-                .embeddings(chunk_data)
+                .embeddings(&chunk_data)
                 .await
                 .context("Failed to create embedding")?;
             output.extend(chunk_output);

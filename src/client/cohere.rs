@@ -57,7 +57,7 @@ fn prepare_chat_completions(
     Ok(request_data)
 }
 
-fn prepare_embeddings(self_: &CohereClient, data: EmbeddingsData) -> Result<RequestData> {
+fn prepare_embeddings(self_: &CohereClient, data: &EmbeddingsData) -> Result<RequestData> {
     let api_key = self_.get_api_key()?;
     let api_base = self_
         .get_api_base()
@@ -83,7 +83,7 @@ fn prepare_embeddings(self_: &CohereClient, data: EmbeddingsData) -> Result<Requ
     Ok(request_data)
 }
 
-fn prepare_rerank(self_: &CohereClient, data: RerankData) -> Result<RequestData> {
+fn prepare_rerank(self_: &CohereClient, data: &RerankData) -> Result<RequestData> {
     let api_key = self_.get_api_key()?;
     let api_base = self_
         .get_api_base()
