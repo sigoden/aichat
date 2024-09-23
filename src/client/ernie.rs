@@ -60,7 +60,7 @@ impl Client for ErnieClient {
     async fn embeddings_inner(
         &self,
         client: &ReqwestClient,
-        data: EmbeddingsData,
+        data: &EmbeddingsData,
     ) -> Result<EmbeddingsOutput> {
         prepare_access_token(self, client).await?;
         let request_data = prepare_embeddings(self, data)?;
@@ -68,7 +68,11 @@ impl Client for ErnieClient {
         embeddings(builder, &self.model).await
     }
 
-    async fn rerank_inner(&self, client: &ReqwestClient, data: RerankData) -> Result<RerankOutput> {
+    async fn rerank_inner(
+        &self,
+        client: &ReqwestClient,
+        data: &RerankData,
+    ) -> Result<RerankOutput> {
         prepare_access_token(self, client).await?;
         let request_data = prepare_rerank(self, data)?;
         let builder = self.request_builder(client, request_data, ApiType::Rerank);
@@ -91,7 +95,7 @@ fn prepare_chat_completions(self_: &ErnieClient, data: ChatCompletionsData) -> R
     Ok(request_data)
 }
 
-fn prepare_embeddings(self_: &ErnieClient, data: EmbeddingsData) -> Result<RequestData> {
+fn prepare_embeddings(self_: &ErnieClient, data: &EmbeddingsData) -> Result<RequestData> {
     let access_token = get_access_token(self_.name())?;
 
     let url = format!(
@@ -108,7 +112,7 @@ fn prepare_embeddings(self_: &ErnieClient, data: EmbeddingsData) -> Result<Reque
     Ok(request_data)
 }
 
-fn prepare_rerank(self_: &ErnieClient, data: RerankData) -> Result<RequestData> {
+fn prepare_rerank(self_: &ErnieClient, data: &RerankData) -> Result<RequestData> {
     let access_token = get_access_token(self_.name())?;
 
     let url = format!(

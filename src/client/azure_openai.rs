@@ -65,7 +65,7 @@ fn prepare_chat_completions(
     Ok(request_data)
 }
 
-fn prepare_embeddings(self_: &AzureOpenAIClient, data: EmbeddingsData) -> Result<RequestData> {
+fn prepare_embeddings(self_: &AzureOpenAIClient, data: &EmbeddingsData) -> Result<RequestData> {
     let api_base = self_.get_api_base()?;
     let api_key = self_.get_api_key()?;
 

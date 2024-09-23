@@ -471,7 +471,7 @@ impl Server {
         };
         let client = init_client(&config, Some(embedding_model))?;
         let data = client
-            .embeddings(EmbeddingsData {
+            .embeddings(&EmbeddingsData {
                 query: false,
                 texts,
             })
@@ -526,7 +526,7 @@ impl Server {
 
         let client = init_client(&config, Some(reranker_model))?;
         let data = client
-            .rerank(RerankData {
+            .rerank(&RerankData {
                 query,
                 documents: documents.clone(),
                 top_n,

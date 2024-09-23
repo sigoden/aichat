@@ -80,7 +80,7 @@ impl Client for VertexAIClient {
     async fn embeddings_inner(
         &self,
         client: &ReqwestClient,
-        data: EmbeddingsData,
+        data: &EmbeddingsData,
     ) -> Result<Vec<Vec<f32>>> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let request_data = prepare_embeddings(self, data)?;
@@ -148,7 +148,7 @@ fn prepare_chat_completions(
     Ok(request_data)
 }
 
-fn prepare_embeddings(self_: &VertexAIClient, data: EmbeddingsData) -> Result<RequestData> {
+fn prepare_embeddings(self_: &VertexAIClient, data: &EmbeddingsData) -> Result<RequestData> {
     let project_id = self_.get_project_id()?;
     let location = self_.get_location()?;
     let access_token = get_access_token(self_.name())?;
@@ -156,11 +156,7 @@ fn prepare_embeddings(self_: &VertexAIClient, data: EmbeddingsData) -> Result<Re
     let base_url = format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers");
     let url = format!("{base_url}/google/models/{}:predict", self_.model.name());
 
-    let instances: Vec<_> = data
-        .texts
-        .into_iter()
-        .map(|v| json!({"content": v}))
-        .collect();
+    let instances: Vec<_> = data.texts.iter().map(|v| json!({"content": v})).collect();
 
     let body = json!({
         "instances": instances,

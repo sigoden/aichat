@@ -61,7 +61,7 @@ fn prepare_chat_completions(
     Ok(request_data)
 }
 
-fn prepare_embeddings(self_: &OpenAIClient, data: EmbeddingsData) -> Result<RequestData> {
+fn prepare_embeddings(self_: &OpenAIClient, data: &EmbeddingsData) -> Result<RequestData> {
     let api_key = self_.get_api_key()?;
     let api_base = self_
         .get_api_base()
@@ -294,7 +294,7 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
     body
 }
 
-pub fn openai_build_embeddings_body(data: EmbeddingsData, model: &Model) -> Value {
+pub fn openai_build_embeddings_body(data: &EmbeddingsData, model: &Model) -> Value {
     json!({
         "input": data.texts,
         "model": model.name()
@@ -315,9 +315,7 @@ pub fn openai_extract_chat_completions(data: &Value) -> Result<ChatCompletionsOu
                 call["id"].as_str(),
             ) {
                 let arguments: Value = arguments.parse().with_context(|| {
-                    format!(
-                        "Tool call '{name}' is invalid: arguments must be in valid JSON format"
-                    )
+                    format!("Tool call '{name}' is invalid: arguments must be in valid JSON format")
                 })?;
                 tool_calls.push(ToolCall::new(
                     name.to_string(),

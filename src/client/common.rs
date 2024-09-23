@@ -94,14 +94,14 @@ pub trait Client: Sync + Send {
         }
     }
 
-    async fn embeddings(&self, data: EmbeddingsData) -> Result<Vec<Vec<f32>>> {
+    async fn embeddings(&self, data: &EmbeddingsData) -> Result<Vec<Vec<f32>>> {
         let client = self.build_client()?;
         self.embeddings_inner(&client, data)
             .await
             .context("Failed to call embeddings api")
     }
 
-    async fn rerank(&self, data: RerankData) -> Result<RerankOutput> {
+    async fn rerank(&self, data: &RerankData) -> Result<RerankOutput> {
         let client = self.build_client()?;
         self.rerank_inner(&client, data)
             .await
@@ -124,7 +124,7 @@ pub trait Client: Sync + Send {
     async fn embeddings_inner(
         &self,
         _client: &ReqwestClient,
-        _data: EmbeddingsData,
+        _data: &EmbeddingsData,
     ) -> Result<EmbeddingsOutput> {
         bail!("The client doesn't support embeddings api")
     }
@@ -132,7 +132,7 @@ pub trait Client: Sync + Send {
     async fn rerank_inner(
         &self,
         _client: &ReqwestClient,
-        _data: RerankData,
+        _data: &RerankData,
     ) -> Result<RerankOutput> {
         bail!("The client doesn't support rerank api")
     }
@@ -470,7 +470,7 @@ where
     Ok(())
 }
 
-pub fn noop_prepare_embeddings<T>(_client: &T, _data: EmbeddingsData) -> Result<RequestData> {
+pub fn noop_prepare_embeddings<T>(_client: &T, _data: &EmbeddingsData) -> Result<RequestData> {
     bail!("The client doesn't support embeddings api")
 }
 
@@ -478,7 +478,7 @@ pub async fn noop_embeddings(_builder: RequestBuilder, _model: &Model) -> Result
     bail!("The client doesn't support embeddings api")
 }
 
-pub fn noop_prepare_rerank<T>(_client: &T, _data: RerankData) -> Result<RequestData> {
+pub fn noop_prepare_rerank<T>(_client: &T, _data: &RerankData) -> Result<RequestData> {
     bail!("The client doesn't support rerank api")
 }
 
