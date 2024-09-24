@@ -706,7 +706,7 @@ impl Config {
                 }
             }
         }
-        println!("✨ Successfully deleted {kind}.");
+        println!("✨ Successfully deleted {kind}");
         Ok(())
     }
 
