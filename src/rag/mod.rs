@@ -19,7 +19,8 @@ use parking_lot::RwLock;
 use path_absolutize::Absolutize;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{collections::HashMap, fmt::Debug, fs, path::Path};
+use std::{collections::HashMap, fmt::Debug, fs, path::Path, time::Duration};
+use tokio::time::sleep;
 
 const EMBEDDING_RETRY_LIMIT: usize = 3;
 const RERANK_RETRY_LIMIT: usize = 2;
@@ -493,6 +494,7 @@ impl Rag {
                         Ok(result) => break result,
                         Err(e) if retry < RERANK_RETRY_LIMIT => {
                             debug!("retry {} failed: {}", retry, e);
+                            sleep(Duration::from_secs(retry as _)).await;
                             continue;
                         }
                         Err(e) => {
@@ -612,6 +614,7 @@ impl Rag {
                     Ok(v) => break v,
                     Err(e) if retry < EMBEDDING_RETRY_LIMIT => {
                         debug!("retry {} failed: {}", retry, e);
+                        sleep(Duration::from_secs(retry as _)).await;
                         continue;
                     }
                     Err(e) => {
