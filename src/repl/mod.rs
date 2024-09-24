@@ -340,7 +340,7 @@ impl Repl {
                             self.config.write().save_agent_config()?;
                         }
                         _ => {
-                            println!(r#"Usage: .save <role|session|aegnt-config> [name]"#)
+                            println!(r#"Usage: .save <role|session|agent-config> [name]"#)
                         }
                     }
                 }
@@ -425,7 +425,7 @@ impl Repl {
                         Config::delete(&self.config, args)?;
                     }
                     _ => {
-                        println!("Usage: .delete [roles|sessions|rags|agents]")
+                        println!("Usage: .delete <roles|sessions|rags|agents>")
                     }
                 },
                 ".copy" => {
