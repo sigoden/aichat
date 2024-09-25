@@ -84,21 +84,18 @@ async fn list_files(
     if !entry_path.exists() {
         bail!("Not found: {}", entry_path.display());
     }
-    if entry_path.is_file() {
-        add_file(files, suffixes, entry_path);
-        return Ok(());
-    }
-    if !entry_path.is_dir() {
-        bail!("Not a directory: {:?}", entry_path);
-    }
-    let mut reader = tokio::fs::read_dir(entry_path).await?;
-    while let Some(entry) = reader.next_entry().await? {
-        let path = entry.path();
-        if path.is_file() {
-            add_file(files, suffixes, &path);
-        } else if path.is_dir() {
-            list_files(files, &path, suffixes).await?;
+    if entry_path.is_dir() {
+        let mut reader = tokio::fs::read_dir(entry_path).await?;
+        while let Some(entry) = reader.next_entry().await? {
+            let path = entry.path();
+            if path.is_dir() {
+                list_files(files, &path, suffixes).await?;
+            } else {
+                add_file(files, suffixes, &path);
+            }
         }
+    } else {
+        add_file(files, suffixes, entry_path);
     }
     Ok(())
 }
