@@ -247,13 +247,13 @@ impl Config {
     }
 
     pub fn config_dir() -> Result<PathBuf> {
-        let env_name = get_env_name("config_dir");
-        let path = if let Some(v) = env::var_os(env_name) {
+        let path = if let Ok(v) = env::var(get_env_name("config_dir")) {
             PathBuf::from(v)
+        } else if let Ok(v) = env::var("XDG_CONFIG_HOME") {
+            PathBuf::from(v).join(env!("CARGO_CRATE_NAME"))
         } else {
-            let mut dir = dirs::config_dir().ok_or_else(|| anyhow!("Not found config dir"))?;
-            dir.push(env!("CARGO_CRATE_NAME"));
-            dir
+            let dir = dirs::config_dir().ok_or_else(|| anyhow!("Not available config dir"))?;
+            dir.join(env!("CARGO_CRATE_NAME"))
         };
         Ok(path)
     }
