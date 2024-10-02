@@ -137,15 +137,16 @@ pub fn pretty_error(err: &anyhow::Error) -> String {
 }
 
 pub fn error_text(input: &str) -> String {
-    nu_ansi_term::Style::new()
-        .fg(nu_ansi_term::Color::Red)
-        .paint(input)
-        .to_string()
+    color_text(input, nu_ansi_term::Color::Red)
 }
 
 pub fn warning_text(input: &str) -> String {
+    color_text(input, nu_ansi_term::Color::Yellow)
+}
+
+pub fn color_text(input: &str, color: nu_ansi_term::Color) -> String {
     nu_ansi_term::Style::new()
-        .fg(nu_ansi_term::Color::Yellow)
+        .fg(color)
         .paint(input)
         .to_string()
 }
