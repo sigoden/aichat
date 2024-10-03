@@ -274,43 +274,6 @@ chat-vertexai() {
 -d "$(_build_body vertexai "$@")" 
 }
 
-# @cmd Chat with replicate api
-# @env REPLICATE_API_KEY!
-# @option -m --model=meta/meta-llama-3-8b-instruct $REPLICATE_MODEL
-# @flag -S --no-stream
-# @arg text~
-chat-replicate() {
-    url="https://api.replicate.com/v1/models/$argc_model/predictions"
-    res="$(_wrapper curl -s "$url" \
--X POST \
--H "Authorization: Bearer $REPLICATE_API_KEY" \
--H "Content-Type: application/json" \
--d "$(_build_body replicate "$@")" \
-)"
-    echo "$res"
-    if [[ -n "$argc_no_stream" ]]; then
-        prediction_url="$(echo "$res" | jq -r '.urls.get')"
-        while true; do
-            output="$(_wrapper curl -s -H "Authorization: Bearer $REPLICATE_API_KEY" "$prediction_url")"
-            prediction_status=$(printf "%s" "$output" | jq -r .status)
-            if [ "$prediction_status"=="succeeded" ]; then
-                echo "$output"
-                break
-            fi
-            if [ "$prediction_status"=="failed" ]; then
-                exit 1
-            fi
-            sleep 2
-        done
-    else
-        stream_url="$(echo "$res" | jq -r '.urls.stream')"
-    _wrapper curl -i --no-buffer "$stream_url" \
--H "Accept: text/event-stream" \
-
-    fi
-
-}
-
 # @cmd Chat with ernie api
 # @meta require-tools jq
 # @env ERNIE_API_KEY!
@@ -367,7 +330,7 @@ _choice_platform() {
 }
 
 _choice_client() {
-    printf "%s\n" openai gemini claude cohere ollama azure-openai vertexai bedrock cloudflare replicate ernie qianwen moonshot
+    printf "%s\n" openai gemini claude cohere ollama azure-openai vertexai bedrock cloudflare ernie qianwen moonshot
 }
 
 _choice_openai_compatible_platform() {
@@ -445,14 +408,6 @@ _build_body() {
         }
     ],
     "stream": '$stream'
-}'
-            ;;
-        replicate)
-            echo '{
-    "stream": '$stream',
-	"input": {
-      "prompt": "'"$*"'"
-	}
 }'
             ;;
         *)

@@ -50,7 +50,6 @@ Effortlessly connect with over 20 leading LLM platforms through a unified interf
 - **Perplexity:** Llama-3/Mixtral (paid, chat, online)
 - **Cloudflare:** (free, chat, embedding)
 - **OpenRouter:** (paid, chat, function-calling)
-- **Replicate:** (paid, chat)
 - **Ernie:** (paid, chat, embedding, reranker, function-calling)
 - **Qianwen:** Qwen (paid, chat, embedding, vision, function-calling)
 - **Moonshot:** (paid, chat, function-calling)

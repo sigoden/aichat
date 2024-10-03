@@ -85,6 +85,7 @@ pub enum SseEvent {
 
 #[derive(Debug)]
 pub struct SseMmessage {
+    #[allow(unused)]
     pub event: String,
     pub data: String,
 }
