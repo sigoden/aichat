@@ -643,30 +643,6 @@
       output_price: 0
 
 # Links:
-#  - https://replicate.com/explore
-#  - https://replicate.com/pricing
-#  - https://replicate.com/docs/reference/http#create-a-prediction-using-an-official-model
-- platform: replicate
-  models:
-    - name: meta/meta-llama-3.1-405b-instruct
-      max_input_tokens: 128000
-      max_output_tokens: 4096
-      input_price: 9.5
-      output_price: 9.5
-    - name: meta/meta-llama-3-70b-instruct
-      max_input_tokens: 8192
-      max_output_tokens: 4096
-      require_max_tokens: true
-      input_price: 0.65
-      output_price: 2.75
-    - name: meta/meta-llama-3-8b-instruct
-      max_input_tokens: 8192
-      max_output_tokens: 4096
-      require_max_tokens: true
-      input_price: 0.05
-      output_price: 0.25
-
-# Links:
 #  - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu
 #  - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7
 - platform: ernie

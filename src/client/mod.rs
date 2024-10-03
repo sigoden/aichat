@@ -4,7 +4,6 @@ mod message;
 #[macro_use]
 mod macros;
 mod model;
-mod prompt_format;
 mod stream;
 
 pub use crate::function::{ToolCall, ToolResults};
@@ -33,7 +32,6 @@ register_client!(
     ),
     (vertexai, "vertexai", VertexAIConfig, VertexAIClient),
     (bedrock, "bedrock", BedrockConfig, BedrockClient),
-    (replicate, "replicate", ReplicateConfig, ReplicateClient),
     (ernie, "ernie", ErnieConfig, ErnieClient),
 );
 
