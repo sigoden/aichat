@@ -296,12 +296,6 @@ clients:
     api_base: https://openrouter.ai/api/v1
     api_key: xxx
 
-  # See https://octo.ai/docs/getting-started/quickstart
-  - type: openai-compatible
-    name: octoai
-    api_base: https://text.octoai.run/v1
-    api_key: xxx
-
   # See https://docs.siliconflow.cn/docs/getting-started
   - type: openai-compatible
     name: siliconflow
