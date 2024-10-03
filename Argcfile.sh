@@ -92,7 +92,6 @@ OPENAI_COMPATIBLE_PLATFORMS=( \
   mistral,open-mistral-nemo,https://api.mistral.ai/v1 \
   moonshot,moonshot-v1-8k,https://api.moonshot.cn/v1 \
   openrouter,openai/gpt-4o-mini,https://openrouter.ai/api/v1 \
-  octoai,meta-llama-3.1-8b-instruct,https://text.octoai.run/v1 \
   ollama,llama3.1:latest,http://localhost:11434/v1 \
   perplexity,llama-3.1-8b-instruct,https://api.perplexity.ai \
   qianwen,qwen-turbo,https://dashscope.aliyuncs.com/compatible-mode/v1 \

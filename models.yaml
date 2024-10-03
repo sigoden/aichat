@@ -1355,37 +1355,6 @@
       input_price: 0.4
       output_price: 0.4
 
-# Links:
-#  - https://octo.ai/docs/getting-started/inference-models
-#  - https://octo.ai/docs/getting-started/pricing-and-billing
-- platform: octoai
-  models:
-    - name: meta-llama-3.1-405b-instruct
-      max_input_tokens: 131072
-      input_price: 3
-      output_price: 9
-      supports_function_calling: true
-    - name: meta-llama-3.1-70b-instruct
-      max_input_tokens: 131072
-      input_price: 0.9
-      output_price: 0.9
-      supports_function_calling: true
-    - name: meta-llama-3.1-8b-instruct
-      max_input_tokens: 131072
-      input_price: 0.15
-      output_price: 0.15
-      supports_function_calling: true
-    - name: mistral-nemo-instruct
-      max_input_tokens: 65536
-      input_price: 0.2
-      output_price: 0.2
-    - name: thenlper/gte-large
-      type: embedding
-      input_price: 0.05
-      max_tokens_per_chunk: 512
-      default_chunk_size: 1000
-      max_batch_size: 100
-
 # Links
 #  - https://siliconflow.cn/zh-cn/pricing#siliconcloud-1417
 #  - https://docs.siliconflow.cn/api-reference/chat-completions/chat-completions
