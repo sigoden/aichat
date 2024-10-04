@@ -340,8 +340,16 @@ async fn load_paths(
             data_urls.insert(sha256(&data_url), file_path);
             medias.push(data_url)
         } else {
-            let text = read_file(&file_path)
-                .with_context(|| format!("Unable to read file '{file_path}'"))?;
+            let text = match read_file(&file_path) {
+                Ok(text) => text,
+                Err(e) => {
+                    println!(
+                        "{}",
+                        warning_text(&format!("⚠️ Skipping file '{file_path}': {e:?}"))
+                    );
+                    continue;
+                }
+            };
             files.push((file_path, text));
         }
     }
