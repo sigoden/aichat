@@ -1759,7 +1759,7 @@ impl Config {
         }
         let timestamp = now();
         let summary = input.summary();
-        let input_markdown = input.render();
+        let raw_input = input.raw();
         let scope = if self.agent.is_none() {
             let role_name = if input.role().is_derived() {
                 None
@@ -1775,7 +1775,9 @@ impl Config {
         } else {
             String::new()
         };
-        let output = format!("# CHAT: {summary} [{timestamp}]{scope}\n{input_markdown}\n--------\n{output}\n--------\n\n",);
+        let output = format!(
+            "# CHAT: {summary} [{timestamp}]{scope}\n{raw_input}\n--------\n{output}\n--------\n\n",
+        );
         file.write_all(output.as_bytes())
             .with_context(|| "Failed to save message")
     }

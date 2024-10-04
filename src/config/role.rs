@@ -235,7 +235,7 @@ impl Role {
         } else if self.is_embedded_prompt() {
             self.prompt.replace(INPUT_PLACEHOLDER, &input_markdown)
         } else {
-            format!("{}\n\n{}", self.prompt, input.render())
+            format!("{}\n\n{}", self.prompt, input_markdown)
         }
     }
 
