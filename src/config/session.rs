@@ -110,6 +110,10 @@ impl Session {
         self.model().total_tokens(&self.messages)
     }
 
+    pub fn has_user_messages(&self) -> bool {
+        self.messages.iter().any(|v| v.role.is_user())
+    }
+
     pub fn user_messages_len(&self) -> usize {
         self.messages.iter().filter(|v| v.role.is_user()).count()
     }
@@ -372,12 +376,9 @@ impl Session {
                 }
             }
         } else {
-            let mut need_add_msg = true;
             if self.messages.is_empty() {
                 self.messages.extend(input.role().build_messages(input));
-                need_add_msg = false;
-            }
-            if need_add_msg {
+            } else {
                 self.messages
                     .push(Message::new(MessageRole::User, input.message_content()));
             }

@@ -10,7 +10,7 @@ use crate::client::{call_chat_completions, call_chat_completions_streaming};
 use crate::config::{AssertState, Config, GlobalConfig, Input, StateFlags};
 use crate::function::need_send_tool_results;
 use crate::render::render_error;
-use crate::utils::{create_abort_signal, set_text, temp_file, AbortSignal};
+use crate::utils::{create_abort_signal, create_spinner, set_text, temp_file, AbortSignal};
 
 use anyhow::{bail, Context, Result};
 use fancy_regex::Regex;
@@ -31,7 +31,7 @@ lazy_static::lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static::lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 33] = [
+    static ref REPL_COMMANDS: [ReplCommand; 34] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
@@ -73,6 +73,11 @@ lazy_static::lazy_static! {
         ReplCommand::new(
             ".clear messages",
             "Erase messages in the current session",
+            AssertState::True(StateFlags::SESSION)
+        ),
+        ReplCommand::new(
+            ".compress session",
+            "Compress messages in the current session",
             AssertState::True(StateFlags::SESSION)
         ),
         ReplCommand::new(
@@ -357,6 +362,23 @@ impl Repl {
                         }
                         _ => {
                             println!(r#"Usage: .edit <role|session>"#)
+                        }
+                    }
+                }
+                ".compress" => {
+                    match args.map(|v| match v.split_once(' ') {
+                        Some((subcmd, args)) => (subcmd, Some(args.trim())),
+                        None => (v, None),
+                    }) {
+                        Some(("session", _)) => {
+                            let spinner = create_spinner("Compressing").await;
+                            let ret = Config::compress_session(&self.config).await;
+                            spinner.stop();
+                            ret?;
+                            println!("✨ Successfully compressed the session");
+                        }
+                        _ => {
+                            println!(r#"Usage: .compress session"#)
                         }
                     }
                 }
@@ -657,7 +679,7 @@ async fn ask(
                 color.italic().paint("Compressing the session."),
             );
             tokio::spawn(async move {
-                let _ = compress_session(&config).await;
+                let _ = Config::compress_session(&config).await;
                 config.write().end_compressing_session();
             });
         }
@@ -694,14 +716,6 @@ fn parse_command(line: &str) -> Option<(&str, Option<&str>)> {
         }
         _ => None,
     }
-}
-
-async fn compress_session(config: &GlobalConfig) -> Result<()> {
-    let input = Input::from_str(config, config.read().summarize_prompt(), None);
-    let client = input.create_client()?;
-    let summary = client.chat_completions(input).await?.text;
-    config.write().compress_session(&summary);
-    Ok(())
 }
 
 fn split_files_text(args: &str) -> (&str, &str) {

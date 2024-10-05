@@ -1133,11 +1133,28 @@ impl Config {
         false
     }
 
-    pub fn compress_session(&mut self, summary: &str) {
-        if let Some(session) = self.session.as_mut() {
-            let summary_prompt = self.summary_prompt.as_deref().unwrap_or(SUMMARY_PROMPT);
+    pub async fn compress_session(config: &GlobalConfig) -> Result<()> {
+        match config.read().session.as_ref() {
+            Some(session) => {
+                if !session.has_user_messages() {
+                    bail!("No need to compress since there are no messages in the session")
+                }
+            }
+            None => bail!("No session"),
+        }
+        let input = Input::from_str(config, config.read().summarize_prompt(), None);
+        let client = input.create_client()?;
+        let summary = client.chat_completions(input).await?.text;
+        let summary_prompt = config
+            .read()
+            .summary_prompt
+            .clone()
+            .unwrap_or_else(|| SUMMARY_PROMPT.into());
+        if let Some(session) = config.write().session.as_mut() {
             session.compress(format!("{}{}", summary_prompt, summary));
         }
+        config.write().last_message = None;
+        Ok(())
     }
 
     pub fn summarize_prompt(&self) -> &str {
@@ -1155,7 +1172,6 @@ impl Config {
         if let Some(session) = self.session.as_mut() {
             session.set_compressing(false);
         }
-        self.last_message = None;
     }
 
     pub async fn use_rag(
