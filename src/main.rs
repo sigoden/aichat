@@ -151,7 +151,12 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
             input.use_embeddings(abort_signal.clone()).await?;
             start_directive(&config, input, cli.code, abort_signal).await
         }
-        true => start_interactive(&config).await,
+        true => {
+            if !*IS_STDOUT_TERMINAL {
+                bail!("No TTY for REPL")
+            }
+            start_interactive(&config).await
+        }
     }
 }
 
