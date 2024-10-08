@@ -34,7 +34,7 @@ use parking_lot::RwLock;
 use simplelog::{format_description, ConfigBuilder, LevelFilter, SimpleLogger, WriteLogger};
 use std::{
     env,
-    io::{stderr, stdin, Read},
+    io::{stdin, Read},
     process,
     sync::Arc,
 };
@@ -54,10 +54,8 @@ async fn main() -> Result<()> {
     };
     setup_logger(working_mode.is_serve())?;
     let config = Arc::new(RwLock::new(Config::init(working_mode)?));
-    let highlight = config.read().highlight;
     if let Err(err) = run(config, cli, text).await {
-        let highlight = stderr().is_terminal() && highlight;
-        render_error(err, highlight);
+        render_error(err);
         std::process::exit(1);
     }
     Ok(())
