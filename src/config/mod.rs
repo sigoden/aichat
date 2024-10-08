@@ -839,10 +839,14 @@ impl Config {
 
     pub fn role_info(&self) -> Result<String> {
         if let Some(role) = &self.role {
-            Ok(role.export())
-        } else {
-            bail!("No role")
+            return Ok(role.export());
+        } else if let Some(session) = &self.session {
+            let role = session.to_role();
+            if !role.name().is_empty() {
+                return Ok(role.export());
+            }
         }
+        bail!("No role");
     }
 
     pub fn exit_role(&mut self) -> Result<()> {
@@ -1089,8 +1093,8 @@ impl Config {
     pub fn clear_session_messages(&mut self) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
             session.clear_messages();
-            if let Some(prompt) = self.agent.as_ref().map(|v| v.interpolated_instructions()) {
-                session.update_role_prompt(&prompt);
+            if let Some(agent) = self.agent.as_ref() {
+                session.set_agent(agent);
             }
         } else {
             bail!("No session")
