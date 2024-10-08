@@ -1969,10 +1969,8 @@ impl Config {
         if let Some(Some(v)) = read_env_bool("highlight") {
             self.highlight = v;
         }
-        if let Ok(value) = env::var("NO_COLOR") {
-            if let Some(false) = parse_bool(&value) {
-                self.highlight = false;
-            }
+        if *NO_COLOR {
+            self.highlight = false;
         }
         if let Some(Some(v)) = read_env_bool("light_theme") {
             self.light_theme = v;
@@ -2164,14 +2162,6 @@ where
 fn read_env_bool(key: &str) -> Option<Option<bool>> {
     let value = env::var(get_env_name(key)).ok()?;
     Some(parse_bool(&value))
-}
-
-fn parse_bool(value: &str) -> Option<bool> {
-    match value {
-        "1" | "true" => Some(true),
-        "0" | "false" => Some(false),
-        _ => None,
-    }
 }
 
 fn complete_bool(value: bool) -> Vec<String> {
