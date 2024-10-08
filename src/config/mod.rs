@@ -1398,6 +1398,14 @@ impl Config {
                     self.use_session(Some(name)).with_context(err_msg)?;
                 }
             }
+            Some((session_name, role_name)) => {
+                if self.session.is_none() {
+                    self.use_session(Some(session_name)).with_context(err_msg)?;
+                    if let Some(true) = self.session.as_ref().map(|v| v.is_empty()) {
+                        self.use_role(role_name).with_context(err_msg)?;
+                    }
+                }
+            }
             _ => {
                 bail!("{}", err_msg())
             }
