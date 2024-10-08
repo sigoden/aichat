@@ -27,18 +27,19 @@ pub struct Session {
     #[serde(skip_serializing_if = "Option::is_none")]
     compress_threshold: Option<usize>,
 
-    messages: Vec<Message>,
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     data_urls: HashMap<String, String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     compressed_messages: Vec<Message>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    role_name: Option<String>,
+
+    messages: Vec<Message>,
 
     #[serde(skip)]
     model: Model,
     #[serde(skip)]
     role_prompt: String,
-    #[serde(skip)]
-    role_name: String,
     #[serde(skip)]
     name: String,
     #[serde(skip)]
@@ -72,10 +73,14 @@ impl Session {
         session.name = name.to_string();
         session.path = Some(path.display().to_string());
 
+        if let Some(role_name) = &session.role_name {
+            if let Ok(role) = config.retrieve_role(role_name) {
+                session.role_prompt = role.prompt().to_string();
+            }
+        }
+
         if let Some(agent) = &config.agent {
-            session
-                .role_prompt
-                .clone_from(&agent.definition().instructions);
+            session.set_agent(agent);
         }
 
         Ok(session)
@@ -235,17 +240,18 @@ impl Session {
         self.top_p = role.top_p();
         self.use_tools = role.use_tools();
         self.model = role.model().clone();
-        self.role_name = role.name().to_string();
+        self.role_name = Some(role.name().to_string());
         self.role_prompt = role.prompt().to_string();
         self.dirty = true;
     }
 
-    pub fn update_role_prompt(&mut self, prompt: &str) {
-        self.role_prompt = prompt.to_string();
+    pub fn set_agent(&mut self, agent: &Agent) {
+        self.role_prompt
+            .clone_from(&agent.definition().instructions);
     }
 
     pub fn clear_role(&mut self) {
-        self.role_name.clear();
+        self.role_name = None;
         self.role_prompt.clear();
     }
 
@@ -435,7 +441,8 @@ impl Session {
 
 impl RoleLike for Session {
     fn to_role(&self) -> Role {
-        let mut role = Role::new(&self.role_name, &self.role_prompt);
+        let role_name = self.role_name.as_deref().unwrap_or_default();
+        let mut role = Role::new(role_name, &self.role_prompt);
         role.sync(self);
         role
     }
