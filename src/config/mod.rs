@@ -205,7 +205,7 @@ impl Default for Config {
             agent: None,
             model: Default::default(),
             functions: Default::default(),
-            working_mode: WorkingMode::Command,
+            working_mode: WorkingMode::Cmd,
             last_message: None,
         }
     }
@@ -1199,6 +1199,9 @@ impl Config {
             Some(name) => {
                 let rag_path = config.read().rag_file(name)?;
                 if !rag_path.exists() {
+                    if config.read().working_mode.is_cmd() {
+                        bail!("Unknown RAG '{name}'")
+                    }
                     Rag::init(config, name, &rag_path, &[], abort_signal).await?
                 } else {
                     Rag::load(config, name, &rag_path)?
@@ -1376,7 +1379,7 @@ impl Config {
 
     pub fn apply_prelude(&mut self) -> Result<()> {
         let prelude = match self.working_mode {
-            WorkingMode::Command => self.prelude.as_ref(),
+            WorkingMode::Cmd => self.prelude.as_ref(),
             WorkingMode::Repl => self.repl_prelude.as_ref().or(self.prelude.as_ref()),
             WorkingMode::Serve => return Ok(()),
         };
@@ -2043,12 +2046,15 @@ pub fn load_env_file() -> Result<()> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum WorkingMode {
-    Command,
+    Cmd,
     Repl,
     Serve,
 }
 
 impl WorkingMode {
+    pub fn is_cmd(&self) -> bool {
+        *self == WorkingMode::Cmd
+    }
     pub fn is_repl(&self) -> bool {
         *self == WorkingMode::Repl
     }

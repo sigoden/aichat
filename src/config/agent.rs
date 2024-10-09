@@ -32,6 +32,9 @@ impl Agent {
     ) -> Result<Self> {
         let functions_dir = Config::agent_functions_dir(name)?;
         let definition_file_path = functions_dir.join("index.yaml");
+        if !definition_file_path.exists() {
+            bail!("Unknown agent `{name}`");
+        }
         let functions_file_path = functions_dir.join("functions.json");
         let variables_path = Config::agent_variables_file(name)?;
         let rag_path = Config::agent_rag_file(name, "rag")?;
