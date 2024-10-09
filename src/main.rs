@@ -50,7 +50,7 @@ async fn main() -> Result<()> {
     } else if text.is_none() && cli.file.is_empty() {
         WorkingMode::Repl
     } else {
-        WorkingMode::Command
+        WorkingMode::Cmd
     };
     setup_logger(working_mode.is_serve())?;
     let config = Arc::new(RwLock::new(Config::init(working_mode)?));

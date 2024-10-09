@@ -26,5 +26,5 @@ pub async fn render_stream(
 }
 
 pub fn render_error(err: anyhow::Error) {
-    eprintln!("{}", error_text(&pretty_error(&err)));
+    eprint!("{}", error_text(&pretty_error(&err)));
 }
