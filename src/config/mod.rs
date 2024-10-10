@@ -1378,6 +1378,9 @@ impl Config {
     }
 
     pub fn apply_prelude(&mut self) -> Result<()> {
+        if !self.state().is_empty() {
+            return Ok(());
+        }
         let prelude = match self.working_mode {
             WorkingMode::Cmd => self.prelude.as_ref(),
             WorkingMode::Repl => self.repl_prelude.as_ref().or(self.prelude.as_ref()),
@@ -1396,21 +1399,15 @@ impl Config {
         let err_msg = || format!("Invalid prelude '{}", prelude);
         match prelude.split_once(':') {
             Some(("role", name)) => {
-                if self.state().is_empty() {
-                    self.use_role(name).with_context(err_msg)?;
-                }
+                self.use_role(name).with_context(err_msg)?;
             }
             Some(("session", name)) => {
-                if self.session.is_none() {
-                    self.use_session(Some(name)).with_context(err_msg)?;
-                }
+                self.use_session(Some(name)).with_context(err_msg)?;
             }
             Some((session_name, role_name)) => {
-                if self.session.is_none() {
-                    self.use_session(Some(session_name)).with_context(err_msg)?;
-                    if let Some(true) = self.session.as_ref().map(|v| v.is_empty()) {
-                        self.use_role(role_name).with_context(err_msg)?;
-                    }
+                self.use_session(Some(session_name)).with_context(err_msg)?;
+                if let Some(true) = self.session.as_ref().map(|v| v.is_empty()) {
+                    self.use_role(role_name).with_context(err_msg)?;
                 }
             }
             _ => {
