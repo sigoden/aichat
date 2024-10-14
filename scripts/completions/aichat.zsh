@@ -22,7 +22,8 @@ _aichat() {
 '--role[Select a role]:ROLE:->roles' \
 '-s[Start or join a session]:SESSION:->sessions' \
 '--session[Start or join a session]:SESSION:->sessions' \
-'--save-session[Forces the session to be saved]' \
+'--empty-session[Ensure the session is empty]' \
+'--save-session[Force the session to be saved]' \
 '-a[Start a agent]:AGENT:->agents' \
 '--agent[Start a agent]:AGENT:->agents' \
 '-R[Start a RAG]:RAG:->rags' \

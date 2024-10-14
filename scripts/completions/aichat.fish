@@ -2,7 +2,8 @@ complete -c aichat -s m -l model -x -a "(aichat --list-models)" -d 'Select a LLM
 complete -c aichat -l prompt -d 'Use the system prompt'
 complete -c aichat -s r -l role -x -a "(aichat --list-roles)" -d 'Select a role' -r
 complete -c aichat -s s -l session -x  -a"(aichat --list-sessions)" -d 'Start or join a session' -r
-complete -c aichat -l save-session -d 'Forces the session to be saved'
+complete -c aichat -l empty-session -d 'Ensure the session is empty'
+complete -c aichat -l save-session -d 'Force the session to be saved'
 complete -c aichat -s a -l agent -x  -a"(aichat --list-agents)" -d 'Start a agent' -r
 complete -c aichat -s R -l rag -x  -a"(aichat --list-rags)" -d 'Start a RAG' -r
 complete -c aichat -l serve -d 'Serve the LLM API and WebAPP'
