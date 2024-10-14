@@ -71,7 +71,7 @@ lazy_static::lazy_static! {
             AssertState::False(StateFlags::SESSION_EMPTY | StateFlags::SESSION),
         ),
         ReplCommand::new(
-            ".clear messages",
+            ".empty session",
             "Erase messages in the current session",
             AssertState::True(StateFlags::SESSION)
         ),
@@ -382,6 +382,14 @@ impl Repl {
                         }
                     }
                 }
+                ".empty" => match args {
+                    Some("session") => {
+                        self.config.write().empty_session()?;
+                    }
+                    _ => {
+                        println!(r#"Usage: .empty session"#)
+                    }
+                },
                 ".rebuild" => {
                     match args.map(|v| match v.split_once(' ') {
                         Some((subcmd, args)) => (subcmd, Some(args.trim())),
@@ -475,7 +483,7 @@ impl Repl {
                 },
                 ".clear" => match args {
                     Some("messages") => {
-                        self.config.write().empty_session()?;
+                        bail!("Use '.empty session' instead");
                     }
                     _ => unknown_command()?,
                 },
