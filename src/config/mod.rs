@@ -1090,7 +1090,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn clear_session_messages(&mut self) -> Result<()> {
+    pub fn empty_session(&mut self) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
             session.clear_messages();
             if let Some(agent) = self.agent.as_ref() {

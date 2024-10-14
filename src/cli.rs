@@ -15,7 +15,10 @@ pub struct Cli {
     /// Start or join a session
     #[clap(short = 's', long)]
     pub session: Option<Option<String>>,
-    /// Forces the session to be saved
+    /// Ensure the session is empty
+    #[clap(long)]
+    pub empty_session: bool,
+    /// Force the session to be saved
     #[clap(long)]
     pub save_session: bool,
     /// Start a agent

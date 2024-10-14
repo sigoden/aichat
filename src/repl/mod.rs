@@ -475,7 +475,7 @@ impl Repl {
                 },
                 ".clear" => match args {
                     Some("messages") => {
-                        self.config.write().clear_session_messages()?;
+                        self.config.write().empty_session()?;
                     }
                     _ => unknown_command()?,
                 },
