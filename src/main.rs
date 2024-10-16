@@ -245,7 +245,7 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
         return Ok(());
     }
     if *IS_STDOUT_TERMINAL {
-        let options = ["execute", "revise", "describe", "cancel"];
+        let options = ["execute", "revise", "describe", "copy", "quit"];
         let command = color_text(eval_str.trim(), nu_ansi_term::Color::Rgb(255, 165, 0));
         let first_letter_color = nu_ansi_term::Color::Cyan;
         let prompt_text = options
@@ -257,12 +257,14 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
             println!("{command}");
             let answer = Text::new(&format!("{prompt_text}:"))
                 .with_default("e")
-                .with_validator(|input: &str| match matches!(input, "e" | "r" | "d" | "c") {
-                    true => Ok(Validation::Valid),
-                    false => Ok(Validation::Invalid(
-                        "Invalid option, choice one of e, r, d or c".into(),
-                    )),
-                })
+                .with_validator(
+                    |input: &str| match matches!(input, "e" | "r" | "d" | "c" | "q") {
+                        true => Ok(Validation::Valid),
+                        false => Ok(Validation::Invalid(
+                            "Invalid option, choice one of e, r, d, c or q".into(),
+                        )),
+                    },
+                )
                 .prompt()?;
 
             match answer.as_str() {
@@ -291,6 +293,10 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
                     }
                     println!();
                     continue;
+                }
+                "c" => {
+                    set_text(&eval_str)?;
+                    println!("{}", dimmed_text("✓ Copied the command"));
                 }
                 _ => {}
             }
