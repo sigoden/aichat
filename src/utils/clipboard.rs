@@ -9,12 +9,12 @@ pub fn set_text(text: &str) -> anyhow::Result<()> {
     let mut clipboard = CLIPBOARD.lock().unwrap();
     match clipboard.as_mut() {
         Some(clipboard) => clipboard.set_text(text)?,
-        None => anyhow::bail!("No available clipboard"),
+        None => anyhow::bail!("Failed to copy the text; no available clipboard"),
     }
     Ok(())
 }
 
 #[cfg(any(target_os = "android", target_os = "emscripten"))]
 pub fn set_text(_text: &str) -> anyhow::Result<()> {
-    anyhow::bail!("No available clipboard")
+    anyhow::bail!("Failed to copy the text; no available clipboard")
 }

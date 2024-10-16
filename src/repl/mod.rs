@@ -588,7 +588,7 @@ Type ".help" for additional help.
 
     fn copy(&self, text: &str) -> Result<()> {
         if text.is_empty() {
-            bail!("Empty text")
+            bail!("No text to copy")
         }
         set_text(text)?;
         Ok(())
