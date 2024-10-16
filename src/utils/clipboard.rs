@@ -8,7 +8,11 @@ lazy_static::lazy_static! {
 pub fn set_text(text: &str) -> anyhow::Result<()> {
     let mut clipboard = CLIPBOARD.lock().unwrap();
     match clipboard.as_mut() {
-        Some(clipboard) => clipboard.set_text(text)?,
+        Some(clipboard) => {
+            clipboard.set_text(text)?;
+            #[cfg(target_os = "linux")]
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
         None => anyhow::bail!("Failed to copy the text; no available clipboard"),
     }
     Ok(())
