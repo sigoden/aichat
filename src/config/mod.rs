@@ -2104,6 +2104,9 @@ fn create_config_file(config_path: &Path) -> Result<()> {
     config[CLIENTS_FIELD] = clients_config;
 
     let config_data = serde_yaml::to_string(&config).with_context(|| "Failed to create config")?;
+    let config_data = format!(
+        "# see https://github.com/sigoden/aichat/blob/main/config.example.yaml\n\n{config_data}"
+    );
 
     ensure_parent_exists(config_path)?;
     std::fs::write(config_path, config_data).with_context(|| "Failed to write to config file")?;
