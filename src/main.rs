@@ -141,6 +141,9 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     }
     let is_repl = config.read().working_mode.is_repl();
     if cli.execute && !is_repl {
+        if cfg!(target_os = "macos") && !stdin().is_terminal() {
+            bail!("Unable to read the pipe for shell execution on MacOS")
+        }
         let input = create_input(&config, text, &cli.file).await?;
         shell_execute(&config, &SHELL, input).await?;
         return Ok(());
