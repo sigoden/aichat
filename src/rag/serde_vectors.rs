@@ -12,8 +12,8 @@ where
 {
     let encoded_map: IndexMap<String, String> = vectors
         .iter()
-        .map(|(key, vec)| {
-            let (h, l) = split_document_id(*key);
+        .map(|(id, vec)| {
+            let (h, l) = id.split();
             let byte_slice = unsafe {
                 std::slice::from_raw_parts(
                     vec.as_ptr() as *const u8,
@@ -41,7 +41,7 @@ where
             .and_then(|(h, l)| {
                 let h = h.parse::<usize>().ok()?;
                 let l = l.parse::<usize>().ok()?;
-                Some(combine_document_id(h, l))
+                Some(DocumentId::new(h, l))
             })
             .ok_or_else(|| de::Error::custom(format!("Invalid key '{key}'")))?;
 

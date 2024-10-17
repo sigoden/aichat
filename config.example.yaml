@@ -44,19 +44,25 @@ rag_min_score_vector_search: 0              # Specifies the minimum relevance sc
 rag_min_score_keyword_search: 0             # Specifies the minimum relevance score for keyword-based searching
 # Defines the query structure using variables like __CONTEXT__ and __INPUT__ to tailor searches to specific needs
 rag_template: |
-  Use the following context as your learned knowledge, inside <context></context> XML tags.
+  Answer the query based on the context while respecting the rules. (user query, some textual context and rules, all inside xml tags)
+
   <context>
   __CONTEXT__
   </context>
 
-  When answer to user:
-  - If you don't know, just say that you don't know.
-  - If you don't know when you are not sure, ask for clarification.
-  Avoid mentioning that you obtained the information from the context.
-  And answer according to the language of the user's question.
+  <rules>
+  - If you don't know, just say so.
+  - If you are not sure, ask for clarification.
+  - Answer in the same language as the user query.
+  - If the context appears unreadable or of poor quality, tell the user then answer as best as you can.
+  - If the answer is not in the context but you think you know the answer, explain that to the user then answer with your own knowledge.
+  - Answer directly and without using xml tags.
+  </rules>
 
-  Given the context information, answer the query.
-  Query: __INPUT__
+  <user_query>
+  __INPUT__
+  </user_query>
+
 # Define document loaders to control how RAG and `.file`/`--file` load files of specific formats.
 document_loaders:
   # You can add custom loaders using the following syntax:
