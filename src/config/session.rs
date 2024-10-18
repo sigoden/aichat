@@ -247,7 +247,7 @@ impl Session {
 
     pub fn set_agent(&mut self, agent: &Agent) {
         self.role_prompt
-            .clone_from(&agent.definition().instructions);
+            .clone_from(&agent.interpolated_instructions());
     }
 
     pub fn clear_role(&mut self) {
