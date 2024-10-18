@@ -138,10 +138,6 @@ impl Agent {
         &self.functions
     }
 
-    pub fn definition(&self) -> &AgentDefinition {
-        &self.definition
-    }
-
     pub fn rag(&self) -> Option<Arc<Rag>> {
         self.rag.clone()
     }
