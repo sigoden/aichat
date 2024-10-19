@@ -1,8 +1,8 @@
 use super::*;
 
 use crate::client::{
-    init_client, ChatCompletionsData, Client, ImageUrl, Message, MessageContent,
-    MessageContentPart, MessageRole, Model,
+    init_client, patch_system_message, ChatCompletionsData, Client, ImageUrl, Message,
+    MessageContent, MessageContentPart, MessageRole, Model,
 };
 use crate::function::{ToolResult, ToolResults};
 use crate::utils::{base64_encode, sha256, AbortSignal};
@@ -206,7 +206,10 @@ impl Input {
         if !self.medias.is_empty() && !model.supports_vision() {
             bail!("The current model does not support vision. Is the model configured with `supports_vision: true`?");
         }
-        let messages = self.build_messages()?;
+        let mut messages = self.build_messages()?;
+        if model.no_system_message() {
+            patch_system_message(&mut messages);
+        }
         model.guard_max_input_tokens(&messages)?;
         let temperature = self.role().temperature();
         let top_p = self.role().top_p();
