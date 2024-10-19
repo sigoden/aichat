@@ -61,11 +61,11 @@ impl SseHandler {
         Ok(())
     }
 
-    pub fn get_abort(&self) -> AbortSignal {
+    pub fn abort(&self) -> AbortSignal {
         self.abort.clone()
     }
 
-    pub fn get_tool_calls(&self) -> &[ToolCall] {
+    pub fn tool_calls(&self) -> &[ToolCall] {
         &self.tool_calls
     }
 

@@ -67,7 +67,7 @@ pub trait Client: Sync + Send {
         input: &Input,
         handler: &mut SseHandler,
     ) -> Result<()> {
-        let abort_signal = handler.get_abort();
+        let abort_signal = handler.abort();
         let input = input.clone();
         tokio::select! {
             ret = async {
