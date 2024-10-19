@@ -193,12 +193,16 @@ struct EmbeddingsResBodyEmbedding {
 
 pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Value {
     let ChatCompletionsData {
-        messages,
+        mut messages,
         temperature,
         top_p,
         functions,
         stream,
     } = data;
+
+    if model.no_system_message() {
+        patch_system_message(&mut messages);
+    }
 
     let messages: Vec<Value> = messages
         .into_iter()

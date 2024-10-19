@@ -135,6 +135,10 @@ impl Input {
         self.text = text;
     }
 
+    pub fn stream(&self) -> bool {
+        self.config.read().stream && !self.role().model().no_stream()
+    }
+
     pub fn continue_output(&self) -> Option<&str> {
         self.continue_output.as_deref()
     }

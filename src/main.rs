@@ -174,7 +174,7 @@ async fn start_directive(
     let client = input.create_client()?;
     let extract_code = !*IS_STDOUT_TERMINAL && code_mode;
     config.write().before_chat_completion(&input)?;
-    let (output, tool_results) = if !config.read().stream || extract_code {
+    let (output, tool_results) = if !input.stream() || extract_code {
         let task = client.chat_completions(input.clone());
         let ret = run_with_spinner(task, "Generating").await;
         match ret {
@@ -288,7 +288,7 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
                     let role = config.read().retrieve_role(EXPLAIN_SHELL_ROLE)?;
                     let input = Input::from_str(config, &eval_str, Some(role));
                     let abort = create_abort_signal();
-                    if config.read().stream {
+                    if input.stream() {
                         call_chat_completions_streaming(&input, client.as_ref(), config, abort)
                             .await?;
                     } else {

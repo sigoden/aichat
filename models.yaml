@@ -47,11 +47,15 @@
       max_output_tokens: 32768
       input_price: 15
       output_price: 60
+      no_stream: true
+      no_system_message: true
     - name: o1-mini
       max_input_tokens: 128000
       max_output_tokens: 65536
       input_price: 3
       output_price: 12
+      no_stream: true
+      no_system_message: true
     - name: gpt-3.5-turbo
       max_input_tokens: 16385
       max_output_tokens: 4096
@@ -1105,10 +1109,14 @@
       max_input_tokens: 128000
       input_price: 15
       output_price: 60
+      no_stream: true
+      no_system_message: true
     - name: openai/o1-mini
       max_input_tokens: 128000
       input_price: 3
       output_price: 12
+      no_stream: true
+      no_system_message: true
     - name: openai/gpt-3.5-turbo
       max_input_tokens: 16385
       input_price: 0.5
