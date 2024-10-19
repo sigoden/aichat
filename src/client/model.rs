@@ -183,6 +183,14 @@ impl Model {
         self.data.supports_vision
     }
 
+    pub fn no_stream(&self) -> bool {
+        self.data.no_stream
+    }
+
+    pub fn no_system_message(&self) -> bool {
+        self.data.no_system_message
+    }
+
     pub fn max_tokens_per_chunk(&self) -> Option<usize> {
         self.data.max_tokens_per_chunk
     }
@@ -268,6 +276,10 @@ pub struct ModelData {
     pub supports_vision: bool,
     #[serde(default)]
     pub supports_function_calling: bool,
+    #[serde(default)]
+    no_stream: bool,
+    #[serde(default)]
+    no_system_message: bool,
 
     // embedding-only properties
     pub max_tokens_per_chunk: Option<usize>,
