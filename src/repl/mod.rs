@@ -162,9 +162,9 @@ lazy_static::lazy_static! {
             "Regenerate the last response",
             AssertState::pass()
         ),
+        ReplCommand::new(".copy", "Copy the last response", AssertState::pass()),
         ReplCommand::new(".set", "Adjust runtime configuration", AssertState::pass()),
         ReplCommand::new(".delete", "Delete roles/sessions/RAGs/agents", AssertState::pass()),
-        ReplCommand::new(".copy", "Copy the last response", AssertState::pass()),
         ReplCommand::new(".exit", "Exit the REPL", AssertState::pass()),
     ];
     static ref COMMAND_RE: Regex = Regex::new(r"^\s*(\.\S*)\s*").unwrap();
