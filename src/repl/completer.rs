@@ -1,6 +1,6 @@
 use super::{ReplCommand, REPL_COMMANDS};
 
-use crate::config::GlobalConfig;
+use crate::{config::GlobalConfig, utils::fuzzy_match};
 
 use reedline::{Completer, Span, Suggestion};
 use std::collections::HashMap;
@@ -42,7 +42,10 @@ impl Completer for ReplCompleter {
                     .map(|(v, _)| *v)
                     .collect::<Vec<&str>>()
                     .join(" ");
-                cmd.name.starts_with(&line) && cmd.name != ".set"
+                if line == "." {
+                    return true;
+                }
+                line.starts_with(&cmd.name[..2]) && fuzzy_match(cmd.name, &line)
             })
             .collect();
 
