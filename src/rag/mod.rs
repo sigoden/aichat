@@ -10,7 +10,7 @@ mod serde_vectors;
 mod splitter;
 
 use anyhow::{anyhow, bail, Context, Result};
-use bm25::{LanguageMode, SearchEngine, SearchEngineBuilder};
+use bm25::{Language, SearchEngine, SearchEngineBuilder};
 use hnsw_rs::prelude::*;
 use indexmap::{IndexMap, IndexSet};
 use inquire::{required, validator::Validation, Confirm, Select, Text};
@@ -724,7 +724,7 @@ impl RagData {
                 documents.push(bm25::Document::new(id, &document.page_content))
             }
         }
-        SearchEngineBuilder::<DocumentId>::with_documents(LanguageMode::Detect, documents)
+        SearchEngineBuilder::<DocumentId>::with_documents(Language::English, documents)
             .k1(1.5)
             .b(0.75)
             .build()
