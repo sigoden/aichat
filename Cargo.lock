@@ -385,7 +385,6 @@ dependencies = [
  "rayon",
  "rust-stemmers",
  "stop-words",
- "whichlang",
 ]
 
 [[package]]
@@ -3764,12 +3763,6 @@ checksum = "0bd24728e5af82c6c4ec1b66ac4844bdf8156257fccda846ec58b42cd0cdbe6a"
 dependencies = [
  "rustls-pki-types",
 ]
-
-[[package]]
-name = "whichlang"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "213a57fbc76ff74e9dec77cf62e47fa4e4e01dec898dc09cc6873d992eed2ef9"
 
 [[package]]
 name = "widestring"
