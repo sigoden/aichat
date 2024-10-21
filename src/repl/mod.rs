@@ -375,7 +375,7 @@ impl Repl {
                             let ret = Config::compress_session(&self.config).await;
                             spinner.stop();
                             ret?;
-                            println!("✨ Successfully compressed the session");
+                            println!("✨ Successfully compressed the session.");
                         }
                         _ => {
                             println!(r#"Usage: .compress session"#)
@@ -455,7 +455,7 @@ impl Repl {
                         Config::delete(&self.config, args)?;
                     }
                     _ => {
-                        println!("Usage: .delete <roles|sessions|rags|agents>")
+                        println!("Usage: .delete <role|session|rag|agent-data>")
                     }
                 },
                 ".copy" => {

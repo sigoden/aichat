@@ -299,7 +299,7 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
                 }
                 "c" => {
                     set_text(&eval_str)?;
-                    println!("{}", dimmed_text("✓ Copied the command"));
+                    println!("{}", dimmed_text("✓ Copied the command."));
                 }
                 _ => {}
             }

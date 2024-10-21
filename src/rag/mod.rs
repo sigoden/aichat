@@ -99,7 +99,7 @@ impl Rag {
             },
         };
         if rag.save()? {
-            println!("✨ Saved rag to '{}'", save_path.display());
+            println!("✨ Saved rag to '{}'.", save_path.display());
         }
         Ok(rag)
     }
@@ -148,7 +148,7 @@ impl Rag {
             },
         };
         if self.save()? {
-            println!("✨ Saved rag to '{}'", self.path);
+            println!("✨ Saved rag to '{}'.", self.path);
         }
         Ok(())
     }
