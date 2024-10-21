@@ -240,7 +240,7 @@ impl Session {
         self.top_p = role.top_p();
         self.use_tools = role.use_tools();
         self.model = role.model().clone();
-        self.role_name = Some(role.name().to_string());
+        self.role_name = convert_option_string(role.name());
         self.role_prompt = role.prompt().to_string();
         self.dirty = true;
     }
@@ -349,7 +349,7 @@ impl Session {
         })?;
 
         if is_repl {
-            println!("✨ Saved session to '{}'", session_path.display());
+            println!("✨ Saved session to '{}'.", session_path.display());
         }
 
         if self.name() != session_name {

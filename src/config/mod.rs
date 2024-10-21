@@ -300,7 +300,7 @@ impl Config {
                 Ok(value) => Ok(PathBuf::from(value)),
                 Err(_) => Self::local_path(MESSAGES_FILE_NAME),
             },
-            Some(agent) => Ok(Self::agent_config_dir(agent.name())?.join(MESSAGES_FILE_NAME)),
+            Some(agent) => Ok(Self::agent_data_dir(agent.name())?.join(MESSAGES_FILE_NAME)),
         }
     }
 
@@ -310,7 +310,7 @@ impl Config {
                 Ok(value) => Ok(PathBuf::from(value)),
                 Err(_) => Self::local_path(SESSIONS_DIR_NAME),
             },
-            Some(agent) => Ok(Self::agent_config_dir(agent.name())?.join(SESSIONS_DIR_NAME)),
+            Some(agent) => Ok(Self::agent_data_dir(agent.name())?.join(SESSIONS_DIR_NAME)),
         }
     }
 
@@ -348,27 +348,27 @@ impl Config {
         Ok(path)
     }
 
-    pub fn agents_config_dir() -> Result<PathBuf> {
+    pub fn agents_data_dir() -> Result<PathBuf> {
         Self::local_path(AGENTS_DIR_NAME)
     }
 
-    pub fn agent_config_dir(name: &str) -> Result<PathBuf> {
-        match env::var(format!("{}_CONFIG_DIR", normalize_env_name(name))) {
+    pub fn agent_data_dir(name: &str) -> Result<PathBuf> {
+        match env::var(format!("{}_DATA_DIR", normalize_env_name(name))) {
             Ok(value) => Ok(PathBuf::from(value)),
-            Err(_) => Ok(Self::agents_config_dir()?.join(name)),
+            Err(_) => Ok(Self::agents_data_dir()?.join(name)),
         }
     }
 
     pub fn agent_config_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_config_dir(name)?.join(CONFIG_FILE_NAME))
+        Ok(Self::agent_data_dir(name)?.join(CONFIG_FILE_NAME))
     }
 
     pub fn agent_rag_file(agent_name: &str, rag_name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_config_dir(agent_name)?.join(format!("{rag_name}.yaml")))
+        Ok(Self::agent_data_dir(agent_name)?.join(format!("{rag_name}.yaml")))
     }
 
     pub fn agent_variables_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_config_dir(name)?.join(AGENT_VARIABLES_FILE_NAME))
+        Ok(Self::agent_data_dir(name)?.join(AGENT_VARIABLES_FILE_NAME))
     }
 
     pub fn agents_functions_dir() -> Result<PathBuf> {
@@ -649,10 +649,10 @@ impl Config {
 
     pub fn delete(config: &GlobalConfig, kind: &str) -> Result<()> {
         let (dir, file_ext) = match kind {
-            "roles" => (Self::roles_dir()?, Some(".md")),
-            "sessions" => (config.read().sessions_dir()?, Some(".yaml")),
-            "rags" => (Self::rags_dir()?, Some(".yaml")),
-            "agents" => (Self::agents_config_dir()?, None),
+            "role" => (Self::roles_dir()?, Some(".md")),
+            "session" => (config.read().sessions_dir()?, Some(".yaml")),
+            "rag" => (Self::rags_dir()?, Some(".yaml")),
+            "agent-data" => (Self::agents_data_dir()?, None),
             _ => bail!("Unknown kind '{kind}'"),
         };
         let names = match read_dir(&dir) {
@@ -711,7 +711,7 @@ impl Config {
                 }
             }
         }
-        println!("✨ Successfully deleted {kind}");
+        println!("✨ Successfully deleted {kind}.");
         Ok(())
     }
 
@@ -1551,7 +1551,7 @@ impl Config {
                         .map(|v| (format!("{v} "), None))
                         .collect()
                 }
-                ".delete" => map_completion_values(vec!["roles", "sessions", "rags", "agents"]),
+                ".delete" => map_completion_values(vec!["role", "session", "rag", "agent-data"]),
                 _ => vec![],
             };
             filter = args[0]
@@ -2122,7 +2122,7 @@ fn create_config_file(config_path: &Path) -> Result<()> {
         std::fs::set_permissions(config_path, perms)?;
     }
 
-    println!("✨ Saved config file to '{}'\n", config_path.display());
+    println!("✨ Saved config file to '{}'.\n", config_path.display());
 
     Ok(())
 }
