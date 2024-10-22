@@ -167,7 +167,7 @@ impl Role {
         })?;
 
         if is_repl {
-            println!("✨ Saved role to '{}'", role_path.display());
+            println!("✨ Saved role to '{}'.", role_path.display());
         }
 
         if role_name != self.name {

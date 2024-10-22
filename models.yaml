@@ -640,39 +640,39 @@
   models:
     - name: ernie-4.0-turbo-8k-preview
       max_input_tokens: 8192
-      input_price: 4.2
+      input_price: 2.8
       output_price: 8.4
       supports_function_calling: true
     - name: ernie-4.0-8k-preview
       max_input_tokens: 8192
-      input_price: 5.6
-      output_price: 11.2
+      input_price: 4.2
+      output_price: 12.6
       supports_function_calling: true
     - name: ernie-3.5-8k-preview
       max_input_tokens: 8192
-      input_price: 1.68
-      output_price: 1.68
+      input_price: 0.112
+      output_price: 0.28
       supports_function_calling: true
     - name: ernie-speed-pro-128k
       max_input_tokens: 128000
-      input_price: 0.056
-      output_price: 0.112
+      input_price: 0.042
+      output_price: 0.084
     - name: bge_large_zh
       type: embedding
-      input_price: 0.28
+      input_price: 0.07
       max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 16
     - name: bge_large_en
       type: embedding
-      input_price: 0.28
+      input_price: 0.07
       max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 16
     - name: bce_reranker_base
       type: reranker
       max_input_tokens: 1024
-      input_price: 0.28
+      input_price: 0.07
 
 # Links:
 #  - https://help.aliyun.com/zh/dashscope/developer-reference/model-introduction
@@ -960,6 +960,11 @@
       output_price: 0.06
     - name: Qwen/Qwen2.5-72B-Instruct
       max_input_tokens: 32768
+      input_price: 0.35
+      output_price: 0.40
+      supports_function_calling: true
+    - name: nvidia/Llama-3.1-Nemotron-70B-Instruct
+      max_input_tokens: 128000
       input_price: 0.35
       output_price: 0.40
       supports_function_calling: true
@@ -1344,7 +1349,12 @@
       max_input_tokens: 32768
       input_price: 0.4
       output_price: 0.4
-    - name: x-ai/grok-2
+    - name: nvidia/llama-3.1-nemotron-70b-instruct
+      max_input_tokens: 131072
+      input_price: 0.35
+      output_price: 0.4
+      supports_function_calling: true
+    - name: x-ai/grok-beta
       max_input_tokens: 32768
       input_price: 5
       output_price: 10
@@ -1393,6 +1403,10 @@
       input_price: 0.186
       output_price: 0.186
       supports_function_calling: true
+    - name: nvidia/Llama-3.1-Nemotron-70B-Instruct
+      max_input_tokens: 32768
+      input_price: 0.578
+      output_price: 0.578
     - name: BAAI/bge-large-en-v1.5
       type: embedding
       input_price: 0
