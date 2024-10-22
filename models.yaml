@@ -278,6 +278,17 @@
       max_input_tokens: 4096
 
 # Links:
+#  - https://docs.x.ai/docs#models
+#  - https://cohere.com/pricing
+#  - https://docs.x.ai/api/endpoints#chat-completions
+- platform: xai
+  models:
+    - name: grok-beta
+      max_input_tokens: 131072
+      input_price: 5
+      output_price: 10
+
+# Links:
 #  - https://docs.perplexity.ai/guides/model-cards
 #  - https://docs.perplexity.ai/guides/pricing
 #  - https://docs.perplexity.ai/api-reference/chat-completions
