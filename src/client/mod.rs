@@ -35,7 +35,7 @@ register_client!(
     (ernie, "ernie", ErnieConfig, ErnieClient),
 );
 
-pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 20] = [
+pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 21] = [
     ("ai21", "https://api.ai21.com/studio/v1"),
     ("cloudflare", ""),
     ("deepinfra", "https://api.deepinfra.com/v1/openai"),
@@ -56,6 +56,7 @@ pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 20] = [
     ),
     ("siliconflow", "https://api.siliconflow.cn/v1"),
     ("together", "https://api.together.xyz/v1"),
+    ("xai", "https://api.x.ai/v1"),
     ("zhipuai", "https://open.bigmodel.cn/api/paas/v4"),
     // RAG-dedicated
     ("jina", "https://api.jina.ai/v1"),

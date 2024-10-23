@@ -83,7 +83,7 @@ impl Input {
         }
         let ret = load_documents(config, local_paths, remote_urls).await;
         spinner.stop();
-        let (files, medias, data_urls) = ret?;
+        let (files, medias, data_urls) = ret.context("Failed to load files")?;
         let mut texts = vec![];
         if !text.is_empty() {
             texts.push(text.to_string());
