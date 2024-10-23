@@ -135,7 +135,7 @@
 #  - https://docs.anthropic.com/claude/reference/messages-streaming
 - platform: claude
   models:
-    - name: claude-3-5-sonnet-20240620
+    - name: claude-3-5-sonnet-latest
       max_input_tokens: 200000
       max_output_tokens: 8192
       require_max_tokens: true
@@ -143,7 +143,7 @@
       output_price: 15
       supports_vision: true
       supports_function_calling: true
-    - name: claude-3-opus-20240229
+    - name: claude-3-opus-latest
       max_input_tokens: 200000
       max_output_tokens: 4096
       require_max_tokens: true
@@ -421,6 +421,14 @@
       input_price: 0.125
       output_price: 0.375
       supports_function_calling: true
+    - name: claude-3-5-sonnet-v2@20241022
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
     - name: claude-3-5-sonnet@20240620
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -481,7 +489,7 @@
 #  - https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference-support.html
 - platform: bedrock
   models:
-    - name: anthropic.claude-3-5-sonnet-20240620-v1:0
+    - name: anthropic.claude-3-5-sonnet-20241022-v2:0
       max_input_tokens: 200000
       max_output_tokens: 4096
       require_max_tokens: true
@@ -507,37 +515,51 @@
       supports_function_calling: true
     - name: meta.llama3-1-405b-instruct-v1:0
       max_input_tokens: 128000
+      max_output_tokens: 4096
+      require_max_tokens: true
       input_price: 5.32
       output_price: 16
       supports_function_calling: true
     - name: meta.llama3-1-70b-instruct-v1:0
       max_input_tokens: 128000
+      max_output_tokens: 2048
+      require_max_tokens: true
       input_price: 0.99
       output_price: 0.99
       supports_function_calling: true
     - name: meta.llama3-1-8b-instruct-v1:0
       max_input_tokens: 128000
+      max_output_tokens: 2048
+      require_max_tokens: true
       input_price: 0.22
       output_price: 0.22
       supports_function_calling: true
     - name: us.meta.llama3-2-90b-instruct-v1:0
       max_input_tokens: 128000
+      max_output_tokens: 2048
+      require_max_tokens: true
       input_price: 2
       output_price: 2
       supports_function_calling: true
       supports_vision: true
     - name: us.meta.llama3-2-11b-instruct-v1:0
       max_input_tokens: 128000
+      max_output_tokens: 2048
+      require_max_tokens: true
       input_price: 0.35
       output_price: 0.35
       supports_function_calling: true
       supports_vision: true
     - name: us.meta.llama3-2-3b-instruct-v1:0
       max_input_tokens: 128000
+      max_output_tokens: 2048
+      require_max_tokens: true
       input_price: 0.15
       output_price: 0.15
     - name: us.meta.llama3-2-1b-instruct-v1:0
       max_input_tokens: 128000
+      max_output_tokens: 2048
+      require_max_tokens: true
       input_price: 0.1
       output_price: 0.1
     - name: mistral.mistral-large-2407-v1:0
@@ -1183,7 +1205,7 @@
       output_price: 0.06
     - name: anthropic/claude-3.5-sonnet
       max_input_tokens: 200000
-      max_output_tokens: 4096
+      max_output_tokens: 8192
       require_max_tokens: true
       input_price: 3
       output_price: 15
