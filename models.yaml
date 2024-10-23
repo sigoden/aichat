@@ -135,7 +135,7 @@
 #  - https://docs.anthropic.com/claude/reference/messages-streaming
 - platform: claude
   models:
-    - name: claude-3-5-sonnet-20240620
+    - name: claude-3-5-sonnet-latest
       max_input_tokens: 200000
       max_output_tokens: 8192
       require_max_tokens: true
@@ -143,7 +143,7 @@
       output_price: 15
       supports_vision: true
       supports_function_calling: true
-    - name: claude-3-opus-20240229
+    - name: claude-3-opus-latest
       max_input_tokens: 200000
       max_output_tokens: 4096
       require_max_tokens: true
@@ -421,7 +421,7 @@
       input_price: 0.125
       output_price: 0.375
       supports_function_calling: true
-    - name: claude-3-5-sonnet@20240620
+    - name: claude-3-5-sonnet-v2@20241022
       max_input_tokens: 200000
       max_output_tokens: 8192
       require_max_tokens: true
@@ -481,7 +481,7 @@
 #  - https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference-support.html
 - platform: bedrock
   models:
-    - name: anthropic.claude-3-5-sonnet-20240620-v1:0
+    - name: anthropic.claude-3-5-sonnet-20241022-v2:0
       max_input_tokens: 200000
       max_output_tokens: 4096
       require_max_tokens: true
