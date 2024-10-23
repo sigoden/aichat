@@ -145,14 +145,28 @@ pub fn fuzzy_match(text: &str, pattern: &str) -> bool {
 pub fn pretty_error(err: &anyhow::Error) -> String {
     let mut output = vec![];
     output.push(format!("Error: {err}"));
-    for (i, cause) in err.chain().skip(1).enumerate() {
-        if i == 0 {
-            output.push("Caused by:".to_string());
+    let causes: Vec<_> = err.chain().skip(1).collect();
+    let causes_len = causes.len();
+    if causes_len > 0 {
+        output.push("\nCaused by:".to_string());
+        if causes_len == 1 {
+            output.push(format!("    {}", indent_text(causes[0], 4).trim()));
+        } else {
+            for (i, cause) in causes.into_iter().enumerate() {
+                output.push(format!("{i:5}: {}", indent_text(cause, 7).trim()));
+            }
         }
-        output.push(format!("    {i}: {cause}"));
     }
-    output.push(String::new());
     output.join("\n")
+}
+
+pub fn indent_text<T: ToString>(s: T, size: usize) -> String {
+    let indent_str = " ".repeat(size);
+    s.to_string()
+        .split('\n')
+        .map(|line| format!("{}{}", indent_str, line))
+        .collect::<Vec<String>>()
+        .join("\n")
 }
 
 pub fn error_text(input: &str) -> String {

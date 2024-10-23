@@ -82,7 +82,7 @@ async fn list_files(
     suffixes: Option<&Vec<String>>,
 ) -> Result<()> {
     if !entry_path.exists() {
-        bail!("Not found: {}", entry_path.display());
+        bail!("Not found '{}'", entry_path.display());
     }
     if entry_path.is_dir() {
         let mut reader = tokio::fs::read_dir(entry_path).await?;
