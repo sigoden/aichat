@@ -24,7 +24,7 @@ Download pre-built binaries for macOS, Linux, and Windows from [GitHub Releases]
 
 ### Multi-Platform Support
 
-Seamlessly integrate with over 20 leading LLM platforms via a unified interface, including OpenAI, Azure-OpenAI, Gemini (Google AI Studio), VertexAI, Claude, Ollama, Groq, VertexAI, Bedrock, Mistral, AI21, Cohere, Perplexity, Cloudflare, OpenRouter, Baidu Ernie, Qianwen, Moonshot, Deepseek, ZhipuAI, Yi, Jina, VoyageAI, and any OpenAI-Compatible platforms.
+Seamlessly integrate with over 20 leading LLM platforms via a unified interface, including OpenAI, Azure-OpenAI, Gemini (Google AI Studio), VertexAI, Claude, Ollama, Groq, VertexAI, Bedrock, Mistral, AI21, Grok, Cohere, Perplexity, Cloudflare, OpenRouter, Ernie, Qianwen, Moonshot, Deepseek, ZhipuAI, Yi, Jina, VoyageAI, and any OpenAI-Compatible platforms.
 
 ### Shell Assistant
 
