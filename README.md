@@ -1,4 +1,4 @@
-# AIChat: All-in-one AI CLI Tool
+# AIChat: All-in-one LLM CLI Tool
 
 [![CI](https://github.com/sigoden/aichat/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/aichat/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
@@ -24,7 +24,7 @@ Download pre-built binaries for macOS, Linux, and Windows from [GitHub Releases]
 
 ### Multi-Platform Support
 
-Seamlessly integrate with over 20 leading LLM platforms via a unified interface, including OpenAI, Azure-OpenAI, Gemini (Google AI Studio), VertexAI, Claude, Ollama, Groq, VertexAI, Bedrock, Mistral, AI21, Grok, Cohere, Perplexity, Cloudflare, OpenRouter, Ernie, Qianwen, Moonshot, Deepseek, ZhipuAI, Yi, Jina, VoyageAI, and any OpenAI-Compatible platforms.
+Seamlessly integrate with over 20 leading LLM platforms via a unified interface, including OpenAI, Claude, Gemini (Google AI Studio), Ollama, Groq, Azure-OpenAI, VertexAI, Bedrock, Huggingface, Github Models, Mistral, Deepseek, AI21, XAI Grok, Cohere, Perplexity, Cloudflare, OpenRouter, Ernie, Qianwen, Moonshot,  ZhipuAI, Lingyiwanwu, Deepinfra, Fireworks, Siliconflow, Together, Jina, VoyageAI, and any OpenAI-Compatible platforms.
 
 ### Shell Assistant
 
@@ -44,26 +44,21 @@ Bring a powerful Chat-REPL with features such as tab autocompletion, multi-line 
 
 Accept various forms of input, such as stdin, local files & dirs, and remote URLs.
 
-```sh
-# Use stdin
-cat data.txt | aichat
-# Use local file
-aichat -f data.txt
-# Use image file
-aichat -f image.png ocr
-# Use multi files
-aichat -f file1 -f file2 explain
-# Use local dirs
-aichat -f dir/ summarize
-# Use remote URLs
-aichat -f https://example.com/page summarize
-```
+| Input             | Example                              |
+| ----------------- | ------------------------------------ |
+| CMD input         | `aichat hello`                       |
+| Stdin pipe        | `cat data.txt \| aichat`             |
+| Local files       | `aichat -f data.txt`                 |
+| Local images      | `aichat -f image.png`                |
+| Local directories | `aichat -f dir/`                     |
+| Remote URLs       | `aichat -f https://example.com`      |
+| Combine Inputs    | `aichat -f dir/ -f data.txt explain` |
 
 ### Role
 
 Define custom roles to tailor LLM behaviors, enhancing interactions and boosting productivity.
 
-![aichat-role](https://github.com/user-attachments/assets/9e0bb48b-20aa-4ab0-8bff-9306dc1c44a2)
+![aichat-role](https://github.com/user-attachments/assets/023df6d2-409c-40bd-ac93-4174fd72f030)
 
 > The role consists of a prompt and model configuration.
 
@@ -81,8 +76,6 @@ Integrate external documents into your LLM conversations for more accurate and c
 
 
 ![aichat-rag](https://github.com/user-attachments/assets/359f0cb8-ee37-432f-a89f-96a2ebab01f6)
-
-> Supports local files and directories, as well as remote URLs, including entry websites.
 
 ### Function Calling
 
