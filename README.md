@@ -4,7 +4,7 @@
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 [![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/mr3ZZUB9hG)
 
-AIChat is an all-in-one AI CLI tool featuring Chat-REPL, Shell Assistant, RAG, AI Tools & Agents, and More. 
+AIChat is an all-in-one LLM CLI tool featuring Shell Assistant, Chat-REPL, RAG, AI Tools & Agents, and More. 
 
 ## Install
 
@@ -20,107 +20,69 @@ AIChat is an all-in-one AI CLI tool featuring Chat-REPL, Shell Assistant, RAG, A
 
 Download pre-built binaries for macOS, Linux, and Windows from [GitHub Releases](https://github.com/sigoden/aichat/releases), extract them, and add the `aichat` binary to your `$PATH`.
 
-## Get Started
-
-Upon its first launch after installation, AIChat will guide you through the initialization of the configuration file.
-
-![aichat-init-config](https://github.com/sigoden/aichat/assets/4012553/d83c4ac0-1693-4d3c-8a56-a6eabff4ca82)
-
-You can tailor AIChat to your preferences by editing the configuration file.
-
-The [config.example.yaml](https://github.com/sigoden/aichat/blob/main/config.example.yaml) file provides a comprehensive list of all configuration options with detailed explanations.
-
 ## Features
 
 ### Multi-Platform Support
 
-Effortlessly connect with over 20 leading LLM platforms through a unified interface:
-
-- **OpenAI:** GPT-4/GPT-3.5 (paid, chat, embedding, vision, function-calling)
-- **Gemini:** Gemini-1.5/Gemini-1.0 (free, paid, chat, embedding, vision, function-calling)
-- **Claude:** Claude-3.5/Claude-3 (paid, chat, vision, function-calling)
-- **Ollama:** (free, local, chat, embedding, vision, function-calling)
-- **Groq:** Llama-3.1/Gemma2 (free, chat, function-calling)
-- **Azure-OpenAI:** GPT-4/GPT-3.5 (paid, chat, embedding, vision, function-calling)
-- **VertexAI:** Gemini/Claude/Mistral (paid, chat, embedding, vision, function-calling)
-- **Bedrock:** Llama3.1/Claude3.5/Mistral/Command-R+ (paid, chat, embedding, function-calling)
-- **Mistral:** (paid, chat, embedding, function-calling)
-- **AI21:** (paid, chat, function-calling)
-- **Cohere:** Command-R/Command-R+ (paid, chat, embedding, reranker, function-calling)
-- **Perplexity:** Llama-3/Mixtral (paid, chat, online)
-- **Cloudflare:** (free, chat, embedding)
-- **OpenRouter:** (paid, chat, function-calling)
-- **Ernie:** (paid, chat, embedding, reranker, function-calling)
-- **Qianwen:** Qwen (paid, chat, embedding, vision, function-calling)
-- **Moonshot:** (paid, chat, function-calling)
-- **Deepseek:** (paid, chat, function-calling)
-- **ZhipuAI:** GLM-4 (paid, chat, embedding, vision, function-calling)
-- **LingYiWanWu:** Yi-Large (paid, chat, vision, function-calling)
-- **Jina:** (free, paid, embedding, reranker)
-- **VoyageAI:** (paid, embedding, reranker)
-- **OpenAI-Compatible Platforms** 
-
-### CMD & REPL
-
-AIChat supports both CMD and REPL modes to meet the needs and tastes of different users.
-
-| CMD                         | REPL                   |
-| --------------------------- | ---------------------- |
-| `-m, --model <model>`       | `.model <model>`       |
-| `-r, --role <role>`         | `.role <role>`         |
-| `    --prompt <prompt>`     | `.prompt <text>`       |
-| `-s, --session [<session>]` | `.session [<session>]` |
-| `-a, --agent <agent>`       | `.agent <agent>`       |
-| `-R, --rag <rag>`           | `.rag <rag>`           |
-| `-f, --file <file/url>`     | `.file <file/url>`     |
-| `    --info`                | `.info`                |
-
-
-```sh
-aichat                                          # Enter REPL 
-aichat Tell a joke                              # Generate response
-
-aichat -r role1                                 # Enter REPL with the role 'role1'
-aichat -r role1 hello world                     # Generate response with role 'role1'
-
-aichat -e install neovim                        # Execute command
-aichat -c fibonacci in js                       # Generate code
-
-cat data.toml | aichat -c to json > data.json   # Pipe Input/Output
-output=$(aichat -S $input)                      # Run in the script
-
-aichat -f data.txt                              # Use local file
-aichat -f image.png Recognize text              # Use image file
-aichat -f dir/file1 -f dir/file2 Summarize      # Use multi files
-aichat -f dir/ Summarize                        # Use local dir
-aichat -f https://example.com/readme Summarize  # Use website
-```
+Seamlessly integrate with over 20 leading LLM platforms via a unified interface, including OpenAI, Azure-OpenAI, Gemini (Google AI Studio), VertexAI, Claude, Ollama, Groq, VertexAI, Bedrock, Mistral, AI21, Grok, Cohere, Perplexity, Cloudflare, OpenRouter, Ernie, Qianwen, Moonshot, Deepseek, ZhipuAI, Yi, Jina, VoyageAI, and any OpenAI-Compatible platforms.
 
 ### Shell Assistant
 
 Supercharge your command line experience. Simply describe your desired actions in natural language, and let AIChat translate your requests into precise shell commands. 
 
-![aichat-execute](https://github.com/sigoden/aichat/assets/4012553/f99bcd8f-26be-468f-a35e-197e65260f91)
+![aichat-execute](https://github.com/user-attachments/assets/0c77e901-0da2-4151-aefc-a2af96bbb004)
 
 **OS-Aware Intelligence:** AIChat tailors commands to your specific operating system and shell environment.
 
-### Prompt & Role
+### Chat-REPL
+
+Bring a powerful Chat-REPL with features such as tab autocompletion, multi-line support, history search, configurable keybindings, and custom REPL prompt.
+
+![aichat-repl](https://github.com/user-attachments/assets/218fab08-cdae-4c3b-bcf8-39b6651f1362)
+
+### Multi-Form Input
+
+Accept various forms of input, such as stdin, local files & dirs, and remote URLs.
+
+```sh
+# Use stdin
+cat data.txt | aichat
+# Use local file
+aichat -f data.txt
+# Use image file
+aichat -f image.png ocr
+# Use multi files
+aichat -f file1 -f file2 explain
+# Use local dirs
+aichat -f dir/ summarize
+# Use remote URLs
+aichat -f https://example.com/page summarize
+```
+
+### Role
 
 Define custom roles to tailor LLM behaviors, enhancing interactions and boosting productivity.
 
-![aichat-role](https://github.com/sigoden/aichat/assets/4012553/76004a01-3b29-4116-bbab-40b4978388f5)
+![aichat-role](https://github.com/user-attachments/assets/9e0bb48b-20aa-4ab0-8bff-9306dc1c44a2)
 
-### Session Management
+> The role consists of a prompt and model configuration.
+
+### Session
 
 Maintain context-aware conversations through sessions, ensuring continuity in interactions.
 
-![aichat-session](https://github.com/sigoden/aichat/assets/4012553/1444c5c9-ea67-4ad2-80df-a76954e8cce0)
+![aichat-session](https://github.com/user-attachments/assets/56583566-0f43-435f-95b3-730ae55df031)
 
-### RAG
+> The left side uses a session, while the right side does not use a session.
 
-Integrate external documents into your AI conversations for more accurate and contextually relevant responses.
+### RAG (Chat with your documents)
 
-![aichat-rag](https://github.com/user-attachments/assets/81b81409-460a-4aec-9e08-a3c3da5492d0)
+Integrate external documents into your LLM conversations for more accurate and contextually relevant responses.
+
+
+![aichat-rag](https://github.com/user-attachments/assets/359f0cb8-ee37-432f-a89f-96a2ebab01f6)
+
+> Supports local files and directories, as well as remote URLs, including entry websites.
 
 ### Function Calling
 
@@ -134,11 +96,9 @@ Integrate external tools to automate tasks, retrieve information, and perform ac
 
 ![aichat-tool](https://github.com/user-attachments/assets/7459a111-7258-4ef0-a2dd-624d0f1b4f92)
 
-#### AI Agents
+#### AI Agents (CLI version of OpenAI GPTs)
 
-While tools excel at specific tasks, agents offer a more sophisticated approach to problem-solving and user interaction.
-
-Agent = Prompt (Role) + Tools (Function Callings) + Knowndge (RAG). It's also known as OpenAI's GPTs.
+AI Agent = Instructions (Prompt) + Tools (Function Callings) + Documents (RAG).
 
 ![aichat-agent](https://github.com/user-attachments/assets/0b7e687d-e642-4e8a-b1c1-d2d9b2da2b6b)
 
@@ -163,7 +123,7 @@ Test with curl:
 
 ```sh
 curl -X POST -H "Content-Type: application/json" -d '{
-  "model":"claude:claude-3-opus-20240229",
+  "model":"claude:claude-3-5-sonnet-20240620",
   "messages":[{"role":"user","content":"hello"}], 
   "stream":true
 }' http://127.0.0.1:8000/v1/chat/completions
@@ -173,13 +133,13 @@ curl -X POST -H "Content-Type: application/json" -d '{
 
 The LLM Playground is a webapp that allows you to interact with any LLM supported by AIChat directly in your browser.
 
-![aichat-llm-playground](https://github.com/sigoden/aichat/assets/4012553/d2334c03-9a07-41a4-a326-e4ee37477ce3)
+![aichat-llm-playground](https://github.com/user-attachments/assets/dd78614c-49d9-4f76-b8e1-a69f9756a102)
 
 #### LLM Arena
 
 The LLM Arena is a web-based platform where you can compare different LLMs side-by-side. 
 
-![aichat-llm-arena](https://github.com/sigoden/aichat/assets/4012553/eb1eab0c-4685-4142-89c6-089714b4822c)
+![aichat-llm-arena](https://github.com/user-attachments/assets/ab2e0135-363d-44be-8d5f-bb4695fb2c48)
 
 ## Custom Themes
 
