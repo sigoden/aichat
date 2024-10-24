@@ -126,13 +126,13 @@ curl -X POST -H "Content-Type: application/json" -d '{
 
 The LLM Playground is a webapp that allows you to interact with any LLM supported by AIChat directly in your browser.
 
-![aichat-llm-playground](https://github.com/user-attachments/assets/dd78614c-49d9-4f76-b8e1-a69f9756a102)
+![aichat-llm-playground](https://github.com/user-attachments/assets/7f39fb78-a4ca-4007-a685-3a2b7d01dfdd)
 
 #### LLM Arena
 
 The LLM Arena is a web-based platform where you can compare different LLMs side-by-side. 
 
-![aichat-llm-arena](https://github.com/user-attachments/assets/ab2e0135-363d-44be-8d5f-bb4695fb2c48)
+![aichat-llm-arena](https://github.com/user-attachments/assets/edabba53-a1ef-4817-9153-38542ffbfec6)
 
 ## Custom Themes
 
@@ -142,12 +142,12 @@ AIChat supports custom dark and light themes, which highlight response text and 
 
 ## Documentation
 
-- [Configuration Guide](https://github.com/sigoden/aichat/wiki/Configuration-Guide)
-- [Command-Line Guide](https://github.com/sigoden/aichat/wiki/Command-Line-Guide)
 - [Chat-REPL Guide](https://github.com/sigoden/aichat/wiki/Chat-REPL-Guide)
+- [Command-Line Guide](https://github.com/sigoden/aichat/wiki/Command-Line-Guide)
 - [Role Guide](https://github.com/sigoden/aichat/wiki/Role-Guide)
 - [RAG Guide](https://github.com/sigoden/aichat/wiki/RAG-Guide)
 - [Environment Variables](https://github.com/sigoden/aichat/wiki/Environment-Variables)
+- [Configuration Guide](https://github.com/sigoden/aichat/wiki/Configuration-Guide)
 - [Custom Theme](https://github.com/sigoden/aichat/wiki/Custom-Theme)
 - [Custom REPL Prompt](https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt)
 - [FAQ](https://github.com/sigoden/aichat/wiki/FAQ)
