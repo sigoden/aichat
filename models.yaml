@@ -88,21 +88,7 @@
       output_price: 0
       supports_vision: true
       supports_function_calling: true
-    - name: gemini-1.5-pro-exp-0827
-      max_input_tokens: 2097152
-      max_output_tokens: 8192
-      input_price: 0
-      output_price: 0
-      supports_vision: true
-      supports_function_calling: true
     - name: gemini-1.5-flash-latest
-      max_input_tokens: 1048576
-      max_output_tokens: 8192
-      input_price: 0
-      output_price: 0
-      supports_vision: true
-      supports_function_calling: true
-    - name: gemini-1.5-flash-exp-0827
       max_input_tokens: 1048576
       max_output_tokens: 8192
       input_price: 0
@@ -143,12 +129,20 @@
       output_price: 15
       supports_vision: true
       supports_function_calling: true
-    - name: claude-3-opus-latest
+    - name: claude-3-opus-20240229
       max_input_tokens: 200000
       max_output_tokens: 4096
       require_max_tokens: true
       input_price: 15
       output_price: 75
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-3-sonnet-20240229
+      max_input_tokens: 200000
+      max_output_tokens: 4096
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
       supports_vision: true
       supports_function_calling: true
     - name: claude-3-haiku-20240307
@@ -445,6 +439,14 @@
       output_price: 75
       supports_vision: true
       supports_function_calling: true
+    - name: claude-3-sonnet@20240229
+      max_input_tokens: 200000
+      max_output_tokens: 4096
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
     - name: claude-3-haiku@20240307
       max_input_tokens: 200000
       max_output_tokens: 4096
@@ -497,12 +499,20 @@
       output_price: 15
       supports_vision: true
       supports_function_calling: true
-    - name: us.anthropic.claude-3-opus-20240229-v1:0
+    - name: anthropic.claude-3-opus-20240229-v1:0
       max_input_tokens: 200000
       max_output_tokens: 4096
       require_max_tokens: true
       input_price: 15
       output_price: 75
+      supports_vision: true
+      supports_function_calling: true
+    - name: anthropic.claude-3-sonnet-20240229-v1:0
+      max_input_tokens: 200000
+      max_output_tokens: 4096
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
       supports_vision: true
       supports_function_calling: true
     - name: anthropic.claude-3-haiku-20240307-v1:0
@@ -1217,6 +1227,14 @@
       require_max_tokens: true
       input_price: 15
       output_price: 75
+      supports_vision: true
+      supports_function_calling: true
+    - name: anthropic/claude-3-sonnet
+      max_input_tokens: 200000
+      max_output_tokens: 4096
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
       supports_vision: true
       supports_function_calling: true
     - name: anthropic/claude-3-haiku
