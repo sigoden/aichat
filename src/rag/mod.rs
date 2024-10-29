@@ -93,7 +93,7 @@ impl Rag {
                 spinner.stop();
                 ret?;
             }
-            _ = watch_abort_signal(abort_signal) => {
+            _ = wait_abort_signal(&abort_signal) => {
                 spinner.stop();
                 bail!("Aborted!")
             },
@@ -142,7 +142,7 @@ impl Rag {
                 spinner.stop();
                 ret?;
             }
-            _ = watch_abort_signal(abort_signal) => {
+            _ = wait_abort_signal(&abort_signal) => {
                 spinner.stop();
                 bail!("Aborted!")
             },
@@ -320,7 +320,7 @@ impl Rag {
             ret = self.hybird_search(text, top_k, min_score_vector_search, min_score_keyword_search, rerank_model) => {
                 ret
             }
-            _ = watch_abort_signal(abort_signal) => {
+            _ = wait_abort_signal(&abort_signal) => {
                 bail!("Aborted!")
             },
         };

@@ -13,14 +13,12 @@ mod utils;
 extern crate log;
 
 use crate::cli::Cli;
-use crate::client::{
-    call_chat_completions, call_chat_completions_streaming, list_chat_models, ChatCompletionsOutput,
-};
+use crate::client::{call_chat_completions, call_chat_completions_streaming, list_chat_models};
 use crate::config::{
     ensure_parent_exists, list_agents, load_env_file, Config, GlobalConfig, Input, WorkingMode,
     CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE, TEMP_SESSION_NAME,
 };
-use crate::function::{eval_tool_calls, need_send_tool_results};
+use crate::function::need_send_tool_results;
 use crate::render::render_error;
 use crate::repl::Repl;
 use crate::utils::*;
@@ -175,28 +173,9 @@ async fn start_directive(
     let extract_code = !*IS_STDOUT_TERMINAL && code_mode;
     config.write().before_chat_completion(&input)?;
     let (output, tool_results) = if !input.stream() || extract_code {
-        let task = client.chat_completions(input.clone());
-        let ret = run_with_spinner(task, "Generating").await;
-        match ret {
-            Ok(ret) => {
-                let ChatCompletionsOutput {
-                    mut text,
-                    tool_calls,
-                    ..
-                } = ret;
-                if !text.is_empty() {
-                    if extract_code && text.trim_start().starts_with("```") {
-                        text = extract_block(&text);
-                    }
-                    config.read().print_markdown(&text)?;
-                }
-                (text, eval_tool_calls(config, tool_calls)?)
-            }
-            Err(err) => return Err(err),
-        }
+        call_chat_completions(&input, extract_code, client.as_ref()).await?
     } else {
-        call_chat_completions_streaming(&input, client.as_ref(), config, abort_signal.clone())
-            .await?
+        call_chat_completions_streaming(&input, client.as_ref(), abort_signal.clone()).await?
     };
     config
         .write()
@@ -225,15 +204,7 @@ async fn start_interactive(config: &GlobalConfig) -> Result<()> {
 async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -> Result<()> {
     let client = input.create_client()?;
     config.write().before_chat_completion(&input)?;
-    let ret = if *IS_STDOUT_TERMINAL {
-        let spinner = create_spinner("Generating").await;
-        let ret = client.chat_completions(input.clone()).await;
-        spinner.stop();
-        ret
-    } else {
-        client.chat_completions(input.clone()).await
-    };
-    let mut eval_str = ret?.text;
+    let (mut eval_str, _) = call_chat_completions(&input, false, client.as_ref()).await?;
     if let Ok(true) = CODE_BLOCK_RE.is_match(&eval_str) {
         eval_str = extract_block(&eval_str);
     }
@@ -287,12 +258,12 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
                 "d" => {
                     let role = config.read().retrieve_role(EXPLAIN_SHELL_ROLE)?;
                     let input = Input::from_str(config, &eval_str, Some(role));
-                    let abort = create_abort_signal();
+                    let abort_signal = create_abort_signal();
                     if input.stream() {
-                        call_chat_completions_streaming(&input, client.as_ref(), config, abort)
+                        call_chat_completions_streaming(&input, client.as_ref(), abort_signal)
                             .await?;
                     } else {
-                        call_chat_completions(&input, client.as_ref(), config).await?;
+                        call_chat_completions(&input, false, client.as_ref()).await?;
                     }
                     println!();
                     continue;
