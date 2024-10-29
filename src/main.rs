@@ -143,7 +143,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
             bail!("Unable to read the pipe for shell execution on MacOS")
         }
         let input = create_input(&config, text, &cli.file).await?;
-        shell_execute(&config, &SHELL, input).await?;
+        shell_execute(&config, &SHELL, input, abort_signal.clone()).await?;
         return Ok(());
     }
     config.write().apply_prelude()?;
@@ -173,7 +173,7 @@ async fn start_directive(
     let extract_code = !*IS_STDOUT_TERMINAL && code_mode;
     config.write().before_chat_completion(&input)?;
     let (output, tool_results) = if !input.stream() || extract_code {
-        call_chat_completions(&input, extract_code, client.as_ref()).await?
+        call_chat_completions(&input, extract_code, client.as_ref(), abort_signal.clone()).await?
     } else {
         call_chat_completions_streaming(&input, client.as_ref(), abort_signal.clone()).await?
     };
@@ -201,10 +201,21 @@ async fn start_interactive(config: &GlobalConfig) -> Result<()> {
 }
 
 #[async_recursion::async_recursion]
-async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -> Result<()> {
+async fn shell_execute(
+    config: &GlobalConfig,
+    shell: &Shell,
+    mut input: Input,
+    abort_signal: AbortSignal,
+) -> Result<()> {
     let client = input.create_client()?;
     config.write().before_chat_completion(&input)?;
-    let (mut eval_str, _) = call_chat_completions(&input, false, client.as_ref()).await?;
+    let ret = abortable_run_with_spinner(
+        client.chat_completions(input.clone()),
+        "Generating",
+        abort_signal.clone(),
+    )
+    .await;
+    let mut eval_str = ret?.text;
     if let Ok(true) = CODE_BLOCK_RE.is_match(&eval_str) {
         eval_str = extract_block(&eval_str);
     }
@@ -253,17 +264,21 @@ async fn shell_execute(config: &GlobalConfig, shell: &Shell, mut input: Input) -
                     let revision = Text::new("Enter your revision:").prompt()?;
                     let text = format!("{}\n{revision}", input.text());
                     input.set_text(text);
-                    return shell_execute(config, shell, input).await;
+                    return shell_execute(config, shell, input, abort_signal.clone()).await;
                 }
                 "d" => {
                     let role = config.read().retrieve_role(EXPLAIN_SHELL_ROLE)?;
                     let input = Input::from_str(config, &eval_str, Some(role));
-                    let abort_signal = create_abort_signal();
                     if input.stream() {
-                        call_chat_completions_streaming(&input, client.as_ref(), abort_signal)
-                            .await?;
+                        call_chat_completions_streaming(
+                            &input,
+                            client.as_ref(),
+                            abort_signal.clone(),
+                        )
+                        .await?;
                     } else {
-                        call_chat_completions(&input, false, client.as_ref()).await?;
+                        call_chat_completions(&input, false, client.as_ref(), abort_signal.clone())
+                            .await?;
                     }
                     println!();
                     continue;

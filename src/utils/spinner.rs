@@ -1,13 +1,19 @@
-use super::IS_STDOUT_TERMINAL;
+use super::{poll_abort_signal, wait_abort_signal, AbortSignal, IS_STDOUT_TERMINAL};
 
-use anyhow::Result;
-use crossterm::{cursor, queue, style, terminal};
+use anyhow::{bail, Result};
+use crossterm::{
+    cursor, queue, style,
+    terminal::{self, disable_raw_mode, enable_raw_mode},
+};
 use std::{
     future::Future,
     io::{stdout, Write},
     time::Duration,
 };
-use tokio::{sync::mpsc, time::interval};
+use tokio::{
+    sync::{mpsc, oneshot},
+    time::interval,
+};
 
 pub struct SpinnerInner {
     index: usize,
@@ -127,16 +133,80 @@ async fn run_spinner(message: String, mut rx: mpsc::UnboundedReceiver<SpinnerEve
     Ok(())
 }
 
-pub async fn run_with_spinner<F, T>(task: F, spinner_message: &str) -> Result<T>
+pub async fn abortable_run_with_spinner<F, T>(
+    task: F,
+    message: &str,
+    abort_signal: AbortSignal,
+) -> Result<T>
 where
     F: Future<Output = Result<T>>,
 {
     if *IS_STDOUT_TERMINAL {
-        let spinner = create_spinner(spinner_message).await;
-        let ret = task.await;
-        spinner.stop();
-        ret
+        let (done_tx, done_rx) = oneshot::channel();
+        let run_task = async {
+            tokio::select! {
+                ret = task => {
+                    let _ = done_tx.send(());
+                    ret
+                }
+                _ = wait_abort_signal(&abort_signal) => {
+                    let _ = done_tx.send(());
+                    bail!("Aborted.");
+                },
+            }
+        };
+        let (task_ret, spinner_ret) = tokio::join!(
+            run_task,
+            run_abortable_spinner(message, abort_signal.clone(), done_rx)
+        );
+        spinner_ret?;
+        task_ret
     } else {
         task.await
     }
+}
+
+async fn run_abortable_spinner(
+    message: &str,
+    abort_signal: AbortSignal,
+    done_rx: oneshot::Receiver<()>,
+) -> Result<()> {
+    enable_raw_mode()?;
+
+    let ret = run_abortable_spinner_inner(message, abort_signal, done_rx).await;
+
+    disable_raw_mode()?;
+    ret
+}
+
+async fn run_abortable_spinner_inner(
+    message: &str,
+    abort_signal: AbortSignal,
+    mut done_rx: oneshot::Receiver<()>,
+) -> Result<()> {
+    let message = format!(" {message}");
+    let mut spinner = SpinnerInner::new(&message);
+    loop {
+        if abort_signal.aborted() {
+            break;
+        }
+
+        tokio::time::sleep(Duration::from_millis(25)).await;
+
+        match done_rx.try_recv() {
+            Ok(_) | Err(oneshot::error::TryRecvError::Closed) => {
+                break;
+            }
+            _ => {}
+        }
+
+        if poll_abort_signal(&abort_signal)? {
+            break;
+        }
+
+        spinner.step()?;
+    }
+
+    spinner.clear_message()?;
+    Ok(())
 }

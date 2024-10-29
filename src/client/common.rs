@@ -403,9 +403,15 @@ pub async fn call_chat_completions(
     input: &Input,
     extract_code: bool,
     client: &dyn Client,
+    abort_signal: AbortSignal,
 ) -> Result<(String, Vec<ToolResult>)> {
-    let task = client.chat_completions(input.clone());
-    let ret = run_with_spinner(task, "Generating").await;
+    let ret = abortable_run_with_spinner(
+        client.chat_completions(input.clone()),
+        "Generating",
+        abort_signal,
+    )
+    .await;
+
     match ret {
         Ok(ret) => {
             let ChatCompletionsOutput {
@@ -437,6 +443,10 @@ pub async fn call_chat_completions_streaming(
         client.chat_completions_streaming(input, &mut handler),
         render_stream(rx, client.global_config(), abort_signal.clone()),
     );
+
+    if handler.abort().aborted() {
+        bail!("Aborted.");
+    }
 
     render_ret?;
 
