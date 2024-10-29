@@ -10,16 +10,16 @@ use tokio::sync::mpsc::UnboundedSender;
 
 pub struct SseHandler {
     sender: UnboundedSender<SseEvent>,
-    abort: AbortSignal,
+    abort_signal: AbortSignal,
     buffer: String,
     tool_calls: Vec<ToolCall>,
 }
 
 impl SseHandler {
-    pub fn new(sender: UnboundedSender<SseEvent>, abort: AbortSignal) -> Self {
+    pub fn new(sender: UnboundedSender<SseEvent>, abort_signal: AbortSignal) -> Self {
         Self {
             sender,
-            abort,
+            abort_signal,
             buffer: String::new(),
             tool_calls: Vec::new(),
         }
@@ -36,7 +36,7 @@ impl SseHandler {
             .send(SseEvent::Text(text.to_string()))
             .with_context(|| "Failed to send SseEvent:Text");
         if let Err(err) = ret {
-            if self.abort.aborted() {
+            if self.abort_signal.aborted() {
                 return Ok(());
             }
             return Err(err);
@@ -48,7 +48,7 @@ impl SseHandler {
         // debug!("HandleDone");
         let ret = self.sender.send(SseEvent::Done);
         if ret.is_err() {
-            if self.abort.aborted() {
+            if self.abort_signal.aborted() {
                 return;
             }
             warn!("Failed to send SseEvent:Done");
@@ -62,7 +62,7 @@ impl SseHandler {
     }
 
     pub fn abort(&self) -> AbortSignal {
-        self.abort.clone()
+        self.abort_signal.clone()
     }
 
     pub fn tool_calls(&self) -> &[ToolCall] {

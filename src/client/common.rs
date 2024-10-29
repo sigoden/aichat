@@ -87,7 +87,7 @@ pub trait Client: Sync + Send {
                 handler.done();
                 ret.with_context(|| "Failed to call chat-completions api")
             }
-            _ = watch_abort_signal(abort_signal) => {
+            _ = wait_abort_signal(&abort_signal) => {
                 handler.done();
                 Ok(())
             },
@@ -401,20 +401,25 @@ pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(St
 
 pub async fn call_chat_completions(
     input: &Input,
+    extract_code: bool,
     client: &dyn Client,
-    config: &GlobalConfig,
 ) -> Result<(String, Vec<ToolResult>)> {
     let task = client.chat_completions(input.clone());
     let ret = run_with_spinner(task, "Generating").await;
     match ret {
         Ok(ret) => {
             let ChatCompletionsOutput {
-                text, tool_calls, ..
+                mut text,
+                tool_calls,
+                ..
             } = ret;
             if !text.is_empty() {
-                config.read().print_markdown(&text)?;
+                if extract_code && text.trim_start().starts_with("```") {
+                    text = extract_block(&text);
+                }
+                client.global_config().read().print_markdown(&text)?;
             }
-            Ok((text, eval_tool_calls(config, tool_calls)?))
+            Ok((text, eval_tool_calls(client.global_config(), tool_calls)?))
         }
         Err(err) => Err(err),
     }
@@ -423,15 +428,14 @@ pub async fn call_chat_completions(
 pub async fn call_chat_completions_streaming(
     input: &Input,
     client: &dyn Client,
-    config: &GlobalConfig,
-    abort: AbortSignal,
+    abort_signal: AbortSignal,
 ) -> Result<(String, Vec<ToolResult>)> {
     let (tx, rx) = unbounded_channel();
-    let mut handler = SseHandler::new(tx, abort.clone());
+    let mut handler = SseHandler::new(tx, abort_signal.clone());
 
     let (send_ret, render_ret) = tokio::join!(
         client.chat_completions_streaming(input, &mut handler),
-        render_stream(rx, config, abort.clone()),
+        render_stream(rx, client.global_config(), abort_signal.clone()),
     );
 
     render_ret?;
@@ -442,7 +446,7 @@ pub async fn call_chat_completions_streaming(
             if !text.is_empty() && !text.ends_with('\n') {
                 println!();
             }
-            Ok((text, eval_tool_calls(config, tool_calls)?))
+            Ok((text, eval_tool_calls(client.global_config(), tool_calls)?))
         }
         Err(err) => {
             if !text.is_empty() {

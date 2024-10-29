@@ -658,10 +658,9 @@ async fn ask(
     let client = input.create_client()?;
     config.write().before_chat_completion(&input)?;
     let (output, tool_results) = if input.stream() {
-        call_chat_completions_streaming(&input, client.as_ref(), config, abort_signal.clone())
-            .await?
+        call_chat_completions_streaming(&input, client.as_ref(), abort_signal.clone()).await?
     } else {
-        call_chat_completions(&input, client.as_ref(), config).await?
+        call_chat_completions(&input, false, client.as_ref()).await?
     };
     config
         .write()
