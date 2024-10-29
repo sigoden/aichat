@@ -94,6 +94,10 @@ impl Session {
         &self.name
     }
 
+    pub fn role_name(&self) -> Option<&str> {
+        self.role_name.as_deref()
+    }
+
     pub fn dirty(&self) -> bool {
         self.dirty
     }

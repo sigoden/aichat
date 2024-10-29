@@ -390,12 +390,14 @@ impl Config {
             } else {
                 flags |= StateFlags::SESSION;
             }
+            if session.role_name().is_some() {
+                flags |= StateFlags::ROLE;
+            }
+        } else if self.role.is_some() {
+            flags |= StateFlags::ROLE;
         }
         if self.agent.is_some() {
             flags |= StateFlags::AGENT;
-        }
-        if self.role.is_some() {
-            flags |= StateFlags::ROLE;
         }
         if self.rag.is_some() {
             flags |= StateFlags::RAG;
@@ -843,22 +845,24 @@ impl Config {
     }
 
     pub fn role_info(&self) -> Result<String> {
-        if let Some(role) = &self.role {
-            return Ok(role.export());
-        } else if let Some(session) = &self.session {
-            let role = session.to_role();
-            if !role.name().is_empty() {
-                return Ok(role.export());
+        if let Some(session) = &self.session {
+            if session.role_name().is_some() {
+                let role = session.to_role();
+                Ok(role.export())
+            } else {
+                bail!("No session role")
             }
+        } else if let Some(role) = &self.role {
+            Ok(role.export())
+        } else {
+            bail!("No role")
         }
-        bail!("No role");
     }
 
     pub fn exit_role(&mut self) -> Result<()> {
-        if self.role.is_some() {
-            if let Some(session) = self.session.as_mut() {
-                session.clear_role();
-            }
+        if let Some(session) = self.session.as_mut() {
+            session.clear_role();
+        } else if self.role.is_some() {
             self.role = None;
         }
         Ok(())
