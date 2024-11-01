@@ -108,6 +108,7 @@
       input_price: 0
       output_price: 0
       supports_function_calling: true
+      no_system_message: true
     - name: text-embedding-004
       type: embedding
       input_price: 0
@@ -415,6 +416,7 @@
       input_price: 0.125
       output_price: 0.375
       supports_function_calling: true
+      no_system_message: true
     - name: claude-3-5-sonnet-v2@20241022
       max_input_tokens: 200000
       max_output_tokens: 8192
