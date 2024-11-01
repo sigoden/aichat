@@ -833,7 +833,7 @@ impl Config {
 
     pub fn use_role_obj(&mut self, role: Role) -> Result<()> {
         if self.agent.is_some() {
-            bail!("Cannot perform this action because you are using a agent")
+            bail!("Cannot perform this operation because you are using a agent")
         }
         if let Some(session) = self.session.as_mut() {
             session.guard_empty()?;
@@ -861,6 +861,7 @@ impl Config {
 
     pub fn exit_role(&mut self) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
+            session.guard_empty()?;
             session.clear_role();
         } else if self.role.is_some() {
             self.role = None;
@@ -1193,7 +1194,7 @@ impl Config {
         abort_signal: AbortSignal,
     ) -> Result<()> {
         if config.read().agent.is_some() {
-            bail!("Cannot perform this action because you are using a agent")
+            bail!("Cannot perform this operation because you are using a agent")
         }
         let rag = match rag {
             None => {
