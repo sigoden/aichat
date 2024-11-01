@@ -367,7 +367,7 @@ impl Session {
 
     pub fn guard_empty(&self) -> Result<()> {
         if !self.is_empty() {
-            bail!("This action cannot be performed in a session with messages.")
+            bail!("Cannot perform this operation because the session has messages, please `.empty session` first.");
         }
         Ok(())
     }
