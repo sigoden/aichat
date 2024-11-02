@@ -1222,12 +1222,61 @@ impl Config {
         Ok(())
     }
 
+    pub async fn edit_rag_docs(config: &GlobalConfig, abort_signal: AbortSignal) -> Result<()> {
+        let mut rag = match config.read().rag.clone() {
+            Some(v) => v.as_ref().clone(),
+            None => bail!("No RAG"),
+        };
+
+        let document_paths = rag.document_paths();
+        let temp_file = temp_file(&format!("-rag-{}", rag.name()), ".txt");
+        tokio::fs::write(&temp_file, &document_paths.join("\n"))
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to write current document paths to '{}'",
+                    temp_file.display()
+                )
+            })?;
+        let editor = config.read().editor()?;
+        edit_file(&editor, &temp_file)?;
+        let new_document_paths =
+            tokio::fs::read_to_string(&temp_file)
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed to read new document paths from '{}'",
+                        temp_file.display()
+                    )
+                })?;
+        let new_document_paths = new_document_paths
+            .split('\n')
+            .filter_map(|v| {
+                let v = v.trim();
+                if v.is_empty() {
+                    None
+                } else {
+                    Some(v.to_string())
+                }
+            })
+            .collect::<Vec<_>>();
+        if new_document_paths.is_empty() || new_document_paths == document_paths {
+            bail!("No changes")
+        }
+        rag.refresh_document_paths(&new_document_paths, config, abort_signal)
+            .await?;
+        config.write().rag = Some(Arc::new(rag));
+        Ok(())
+    }
+
     pub async fn rebuild_rag(config: &GlobalConfig, abort_signal: AbortSignal) -> Result<()> {
         let mut rag = match config.read().rag.clone() {
             Some(v) => v.as_ref().clone(),
             None => bail!("No RAG"),
         };
-        rag.rebuild(config, abort_signal).await?;
+        let document_paths = rag.document_paths().to_vec();
+        rag.refresh_document_paths(&document_paths, config, abort_signal)
+            .await?;
         config.write().rag = Some(Arc::new(rag));
         Ok(())
     }

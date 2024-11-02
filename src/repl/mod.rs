@@ -31,7 +31,7 @@ lazy_static::lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static::lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 34] = [
+    static ref REPL_COMMANDS: [ReplCommand; 35] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
@@ -104,6 +104,11 @@ lazy_static::lazy_static! {
             ".rag",
             "Init or use the RAG",
             AssertState::False(StateFlags::AGENT)
+        ),
+        ReplCommand::new(
+            ".edit rag-docs",
+            "Edit the RAG documents",
+            AssertState::True(StateFlags::RAG),
         ),
         ReplCommand::new(
             ".rebuild rag",
@@ -360,8 +365,11 @@ impl Repl {
                         Some(("session", _)) => {
                             self.config.write().edit_session()?;
                         }
+                        Some(("rag-docs", _)) => {
+                            Config::edit_rag_docs(&self.config, self.abort_signal.clone()).await?;
+                        }
                         _ => {
-                            println!(r#"Usage: .edit <role|session>"#)
+                            println!(r#"Usage: .edit <role|session|rag-docs>"#)
                         }
                     }
                 }
