@@ -128,17 +128,23 @@ impl Rag {
         Ok(rag)
     }
 
-    pub async fn rebuild(
+    pub fn document_paths(&self) -> &[String] {
+        &self.data.document_paths
+    }
+
+    pub async fn refresh_document_paths<T>(
         &mut self,
+        document_paths: &[T],
         config: &GlobalConfig,
         abort_signal: AbortSignal,
-    ) -> Result<()> {
-        debug!("rebuild rag: {}", self.name);
+    ) -> Result<()>
+    where
+        T: AsRef<str>,
+    {
         let loaders = config.read().document_loaders.clone();
         let spinner = create_spinner("Starting").await;
-        let paths = self.data.document_paths.clone();
         tokio::select! {
-            ret = self.sync_documents(loaders, &paths, Some(spinner.clone())) => {
+            ret = self.sync_documents(loaders, document_paths, Some(spinner.clone())) => {
                 spinner.stop();
                 ret?;
             }
