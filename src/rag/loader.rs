@@ -1,6 +1,7 @@
 use super::*;
 
 use anyhow::{Context, Result};
+use path_absolutize::Absolutize;
 use std::collections::HashMap;
 
 pub const EXTENSION_METADATA: &str = "__extension__";
@@ -11,31 +12,40 @@ pub async fn load_document(
     path: &str,
     has_error: &mut bool,
 ) -> (String, Vec<(String, RagMetadata)>) {
+    let mut path = path.to_string();
     let mut maybe_error = None;
     let mut files = vec![];
-    if is_url(path) {
+    if is_url(&path) {
         if let Some(path) = path.strip_suffix("**") {
             match load_recursive_url(loaders, path).await {
                 Ok(v) => files.extend(v),
                 Err(err) => maybe_error = Some(err),
             }
         } else {
-            match load_url(loaders, path).await {
+            match load_url(loaders, &path).await {
                 Ok(v) => files.push(v),
                 Err(err) => maybe_error = Some(err),
             }
         }
     } else {
-        match load_path(loaders, path, has_error).await {
-            Ok(v) => files.extend(v),
-            Err(err) => maybe_error = Some(err),
-        }
+        match Path::new(&path).absolutize() {
+            Ok(v) => {
+                path = v.display().to_string();
+                match load_path(loaders, &path, has_error).await {
+                    Ok(v) => files.extend(v),
+                    Err(err) => maybe_error = Some(err),
+                }
+            }
+            Err(_) => {
+                maybe_error = Some(anyhow!("Invalid path"));
+            }
+        };
     }
     if let Some(err) = maybe_error {
         *has_error = true;
         println!("{}", warning_text(&format!("⚠️ {err:?}")));
     }
-    (path.to_string(), files)
+    (path, files)
 }
 
 pub async fn load_recursive_url(
@@ -71,7 +81,6 @@ pub async fn load_path(
     path: &str,
     has_error: &mut bool,
 ) -> Result<Vec<(String, RagMetadata)>> {
-    let path = Path::new(path).absolutize()?.display().to_string();
     let file_paths = expand_glob_paths(&[path]).await?;
     let mut output = vec![];
     let file_paths_len = file_paths.len();
