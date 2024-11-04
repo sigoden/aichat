@@ -65,7 +65,10 @@ impl Rag {
         doc_paths: &[String],
         abort_signal: AbortSignal,
     ) -> Result<Self> {
-        debug!("init rag: {name}");
+        if !*IS_STDOUT_TERMINAL {
+            bail!("Failed to init rag in non-interactive mode");
+        }
+        println!("🚀 Initializing RAG...");
         let (embedding_model, chunk_size, chunk_overlap) = Self::create_config(config)?;
         let (reranker_model, top_k) = {
             let config = config.read();
@@ -84,7 +87,6 @@ impl Rag {
         if paths.is_empty() {
             paths = add_documents()?;
         };
-        debug!("doc paths: {paths:?}");
         let loaders = config.read().document_loaders.clone();
         let spinner = create_spinner("Starting").await;
         tokio::select! {
@@ -98,7 +100,7 @@ impl Rag {
             },
         };
         if rag.save()? {
-            println!("✨ Saved rag to '{}'.", save_path.display());
+            println!("✨ Saved RAG to '{}'.", save_path.display());
         }
         Ok(rag)
     }
@@ -177,13 +179,7 @@ impl Rag {
                 if models.is_empty() {
                     bail!("No available embedding model");
                 }
-                if *IS_STDOUT_TERMINAL {
-                    select_embedding_model(&models)?
-                } else {
-                    let value = models[0].id();
-                    println!("Select embedding model: {value}");
-                    value
-                }
+                select_embedding_model(&models)?
             }
         };
         let embedding_model = Model::retrieve_embedding(&config.read(), &embedding_model_id)?;
@@ -193,15 +189,7 @@ impl Rag {
                 println!("Set chunk size: {value}");
                 value
             }
-            None => {
-                if *IS_STDOUT_TERMINAL {
-                    set_chunk_size(&embedding_model)?
-                } else {
-                    let value = embedding_model.default_chunk_size();
-                    println!("Set chunk size: {value}");
-                    value
-                }
-            }
+            None => set_chunk_size(&embedding_model)?,
         };
         let chunk_overlap = match chunk_overlap {
             Some(value) => {
@@ -210,12 +198,7 @@ impl Rag {
             }
             None => {
                 let value = chunk_size / 20;
-                if *IS_STDOUT_TERMINAL {
-                    set_chunk_overlay(value)?
-                } else {
-                    println!("Set chunk overlay: {value}");
-                    value
-                }
+                set_chunk_overlay(value)?
             }
         };
 

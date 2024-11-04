@@ -62,20 +62,29 @@ impl Agent {
         let rag = if rag_path.exists() {
             Some(Arc::new(Rag::load(config, "rag", &rag_path)?))
         } else if !definition.documents.is_empty() {
-            println!("The agent has the documents, initializing RAG...");
-            let mut document_paths = vec![];
-            for path in &definition.documents {
-                if is_url(path) {
-                    document_paths.push(path.to_string());
-                } else {
-                    let new_path = safe_join_path(&functions_dir, path)
-                        .ok_or_else(|| anyhow!("Invalid document path: '{path}'"))?;
-                    document_paths.push(new_path.display().to_string())
-                }
+            let mut ans = false;
+            if *IS_STDOUT_TERMINAL {
+                ans = Confirm::new("The agent has the documents, init RAG?")
+                    .with_default(true)
+                    .prompt()?;
             }
-            Some(Arc::new(
-                Rag::init(config, "rag", &rag_path, &document_paths, abort_signal).await?,
-            ))
+            if ans {
+                let mut document_paths = vec![];
+                for path in &definition.documents {
+                    if is_url(path) {
+                        document_paths.push(path.to_string());
+                    } else {
+                        let new_path = safe_join_path(&functions_dir, path)
+                            .ok_or_else(|| anyhow!("Invalid document path: '{path}'"))?;
+                        document_paths.push(new_path.display().to_string())
+                    }
+                }
+                let rag =
+                    Rag::init(config, "rag", &rag_path, &document_paths, abort_signal).await?;
+                Some(Arc::new(rag))
+            } else {
+                None
+            }
         } else {
             None
         };
@@ -375,7 +384,7 @@ fn init_variables(
                         .prompt()?;
                     variable.value = value;
                 } else {
-                    bail!("Failed to init agent variables in the script mode.");
+                    bail!("Failed to init agent variables in non-interactive mode");
                 }
             }
         }
