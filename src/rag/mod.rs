@@ -15,7 +15,6 @@ use hnsw_rs::prelude::*;
 use indexmap::{IndexMap, IndexSet};
 use inquire::{required, validator::Validation, Confirm, Select, Text};
 use parking_lot::RwLock;
-use path_absolutize::Absolutize;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{collections::HashMap, env, fmt::Debug, fs, hash::Hash, path::Path, time::Duration};
