@@ -31,7 +31,7 @@ lazy_static::lazy_static! {
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static::lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 35] = [
+    static ref REPL_COMMANDS: [ReplCommand; 34] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
@@ -139,11 +139,6 @@ lazy_static::lazy_static! {
         ReplCommand::new(
             ".variable",
             "Set agent variable",
-            AssertState::True(StateFlags::AGENT)
-        ),
-        ReplCommand::new(
-            ".save agent-config",
-            "Save the current agent config to file",
             AssertState::True(StateFlags::AGENT)
         ),
         ReplCommand::new(
@@ -346,11 +341,8 @@ impl Repl {
                         Some(("session", name)) => {
                             self.config.write().save_session(name)?;
                         }
-                        Some(("agent-config", _)) => {
-                            self.config.write().save_agent_config()?;
-                        }
                         _ => {
-                            println!(r#"Usage: .save <role|session|agent-config> [name]"#)
+                            println!(r#"Usage: .save <role|session> [name]"#)
                         }
                     }
                 }

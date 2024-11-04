@@ -51,7 +51,6 @@ const FUNCTIONS_DIR_NAME: &str = "functions";
 const FUNCTIONS_FILE_NAME: &str = "functions.json";
 const FUNCTIONS_BIN_DIR_NAME: &str = "bin";
 const AGENTS_DIR_NAME: &str = "agents";
-const AGENT_VARIABLES_FILE_NAME: &str = "variables.yaml";
 
 pub const TEMP_ROLE_NAME: &str = "%%";
 pub const TEMP_RAG_NAME: &str = "temp";
@@ -365,10 +364,6 @@ impl Config {
 
     pub fn agent_rag_file(agent_name: &str, rag_name: &str) -> Result<PathBuf> {
         Ok(Self::agent_data_dir(agent_name)?.join(format!("{rag_name}.yaml")))
-    }
-
-    pub fn agent_variables_file(name: &str) -> Result<PathBuf> {
-        Ok(Self::agent_data_dir(name)?.join(AGENT_VARIABLES_FILE_NAME))
     }
 
     pub fn agents_functions_dir() -> Result<PathBuf> {
@@ -1417,14 +1412,6 @@ impl Config {
             None => bail!("No agent"),
         };
         Ok(())
-    }
-
-    pub fn save_agent_config(&mut self) -> Result<()> {
-        let agent = match &self.agent {
-            Some(v) => v,
-            None => bail!("No agent"),
-        };
-        agent.save_config()
     }
 
     pub fn exit_agent(&mut self) -> Result<()> {
