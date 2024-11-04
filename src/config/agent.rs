@@ -4,10 +4,7 @@ use crate::{client::Model, function::Functions};
 
 use anyhow::{Context, Result};
 use inquire::{validator::Validation, Text};
-use std::{
-    fs::{self, read_to_string},
-    path::Path,
-};
+use std::{fs::read_to_string, path::Path};
 
 use serde::{Deserialize, Serialize};
 
@@ -36,7 +33,6 @@ impl Agent {
             bail!("Unknown agent `{name}`");
         }
         let functions_file_path = functions_dir.join("functions.json");
-        let variables_path = Config::agent_variables_file(name)?;
         let rag_path = Config::agent_rag_file(name, "rag")?;
         let config_path = Config::agent_config_file(name)?;
         let agent_config = if config_path.exists() {
@@ -45,7 +41,7 @@ impl Agent {
             AgentConfig::new(&config.read())
         };
         let mut definition = AgentDefinition::load(&definition_file_path)?;
-        init_variables(&variables_path, &mut definition.variables)
+        init_variables(&mut definition.variables, &agent_config.variables)
             .context("Failed to init variables")?;
 
         let functions = if functions_file_path.exists() {
@@ -94,18 +90,6 @@ impl Agent {
         })
     }
 
-    pub fn save_config(&self) -> Result<()> {
-        let config_path = Config::agent_config_file(&self.name)?;
-        ensure_parent_exists(&config_path)?;
-        let content = serde_yaml::to_string(&self.config)?;
-        fs::write(&config_path, content).with_context(|| {
-            format!("Failed to save agent config to '{}'", config_path.display())
-        })?;
-
-        println!("✨ Saved agent config to '{}'.", config_path.display());
-        Ok(())
-    }
-
     pub fn export(&self) -> Result<String> {
         let mut agent = self.clone();
         agent.definition.instructions = self.interpolated_instructions();
@@ -118,7 +102,7 @@ impl Agent {
             .display()
             .to_string()
             .into();
-        value["variables_file"] = Config::agent_variables_file(&self.name)?
+        value["config_file"] = Config::agent_config_file(&self.name)?
             .display()
             .to_string()
             .into();
@@ -166,8 +150,6 @@ impl Agent {
         match self.definition.variables.iter_mut().find(|v| v.name == key) {
             Some(variable) => {
                 variable.value = value.to_string();
-                let variables_path = Config::agent_variables_file(&self.name)?;
-                save_variables(&variables_path, self.variables())?;
                 Ok(())
             }
             None => bail!("Unknown variable '{key}'"),
@@ -229,6 +211,8 @@ pub struct AgentConfig {
     pub top_p: Option<f64>,
     pub use_tools: Option<String>,
     pub agent_prelude: Option<String>,
+    #[serde(default)]
+    pub variables: IndexMap<String, String>,
 }
 
 impl AgentConfig {
@@ -364,44 +348,31 @@ fn list_agents_impl() -> Result<Vec<String>> {
     Ok(agents)
 }
 
-fn init_variables(variables_path: &Path, variables: &mut [AgentVariable]) -> Result<()> {
+fn init_variables(
+    variables: &mut [AgentVariable],
+    config_variable: &IndexMap<String, String>,
+) -> Result<()> {
     if variables.is_empty() {
         return Ok(());
     }
-    let variable_values = if variables_path.exists() {
-        let content = read_to_string(variables_path).with_context(|| {
-            format!(
-                "Failed to read variables from '{}'",
-                variables_path.display()
-            )
-        })?;
-        let variable_values: IndexMap<String, String> = serde_yaml::from_str(&content)?;
-        variable_values
-    } else {
-        Default::default()
-    };
-    let mut initialized = false;
     for variable in variables.iter_mut() {
-        match variable_values.get(&variable.name) {
+        match config_variable.get(&variable.name) {
             Some(value) => variable.value = value.to_string(),
             None => {
-                if !initialized {
-                    println!("The agent has the variables and is initializing them...");
-                    initialized = true;
+                if let Some(value) = variable.default.clone() {
+                    variable.value = value;
+                    continue;
                 }
                 if *IS_STDOUT_TERMINAL {
-                    let mut text =
-                        Text::new(&variable.description).with_validator(|input: &str| {
+                    let value = Text::new(&variable.description)
+                        .with_validator(|input: &str| {
                             if input.trim().is_empty() {
                                 Ok(Validation::Invalid("This field is required".into()))
                             } else {
                                 Ok(Validation::Valid)
                             }
-                        });
-                    if let Some(default) = &variable.default {
-                        text = text.with_default(default);
-                    }
-                    let value = text.prompt()?;
+                        })
+                        .prompt()?;
                     variable.value = value;
                 } else {
                     bail!("Failed to init agent variables in the script mode.");
@@ -409,20 +380,5 @@ fn init_variables(variables_path: &Path, variables: &mut [AgentVariable]) -> Res
             }
         }
     }
-    if initialized {
-        save_variables(variables_path, variables)?;
-    }
-    Ok(())
-}
-
-fn save_variables(variables_path: &Path, variables: &[AgentVariable]) -> Result<()> {
-    ensure_parent_exists(variables_path)?;
-    let variable_values: IndexMap<String, String> = variables
-        .iter()
-        .map(|v| (v.name.clone(), v.value.clone()))
-        .collect();
-    let content = serde_yaml::to_string(&variable_values)?;
-    fs::write(variables_path, content)
-        .with_context(|| format!("Failed to save variables to '{}'", variables_path.display()))?;
     Ok(())
 }
