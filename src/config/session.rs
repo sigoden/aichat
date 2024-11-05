@@ -29,7 +29,7 @@ pub struct Session {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     role_name: Option<String>,
-    #[serde(skip_serializing_if = "IndexMap::is_empty")]
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
     agent_variables: IndexMap<String, String>,
 
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]

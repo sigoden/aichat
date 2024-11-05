@@ -42,6 +42,27 @@ pub async fn expand_glob_paths<T: AsRef<str>>(paths: &[T]) -> Result<Vec<String>
     Ok(new_paths)
 }
 
+pub fn list_file_names<T: AsRef<Path>>(dir: Option<T>, ext: &str) -> Vec<String> {
+    let dir = match dir {
+        Some(v) => v,
+        None => return vec![],
+    };
+    match std::fs::read_dir(dir) {
+        Ok(rd) => {
+            let mut names = vec![];
+            for entry in rd.flatten() {
+                let name = entry.file_name();
+                if let Some(name) = name.to_string_lossy().strip_suffix(ext) {
+                    names.push(name.to_string());
+                }
+            }
+            names.sort_unstable();
+            names
+        }
+        Err(_) => vec![],
+    }
+}
+
 pub fn get_patch_extension(path: &str) -> Option<String> {
     Path::new(&path)
         .extension()
