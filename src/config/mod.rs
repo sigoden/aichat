@@ -134,6 +134,7 @@ pub struct Config {
     pub right_prompt: Option<String>,
 
     pub serve_addr: Option<String>,
+    pub user_agent: Option<String>,
 
     pub clients: Vec<ClientConfig>,
 
@@ -200,6 +201,7 @@ impl Default for Config {
             right_prompt: None,
 
             serve_addr: None,
+            user_agent: None,
 
             clients: vec![],
 
@@ -246,6 +248,7 @@ impl Config {
 
         config.setup_model()?;
         config.setup_document_loaders();
+        config.setup_user_agent();
 
         Ok(config)
     }
@@ -2068,6 +2071,9 @@ impl Config {
         if let Some(v) = read_env_value::<String>("serve_addr") {
             self.serve_addr = v;
         }
+        if let Some(v) = read_env_value::<String>("user_agent") {
+            self.user_agent = v;
+        }
     }
 
     fn load_functions(&mut self) -> Result<()> {
@@ -2096,6 +2102,16 @@ impl Config {
                 let (k, v) = (k.to_string(), v.to_string());
                 self.document_loaders.entry(k).or_insert(v);
             });
+    }
+
+    fn setup_user_agent(&mut self) {
+        if let Some("auto") = self.user_agent.as_deref() {
+            self.user_agent = Some(format!(
+                "{}/{}",
+                env!("CARGO_CRATE_NAME"),
+                env!("CARGO_PKG_VERSION")
+            ));
+        }
     }
 }
 

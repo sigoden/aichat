@@ -82,6 +82,7 @@ right_prompt:
 
 # ---- misc ----
 serve_addr: 127.0.0.1:8000                  # Default serve listening address 
+use_agent: null                             # Set Use-Agent HTTP header, use `auto` for aichat/<current-version>
 
 # ---- clients ----
 clients:
