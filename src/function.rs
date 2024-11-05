@@ -163,10 +163,10 @@ impl ToolCall {
                         let envs: HashMap<String, String> = agent
                             .variables()
                             .iter()
-                            .map(|v| {
+                            .map(|(k, v)| {
                                 (
-                                    format!("LLM_AGENT_VAR_{}", normalize_env_name(&v.name)),
-                                    v.value.clone(),
+                                    format!("LLM_AGENT_VAR_{}", normalize_env_name(k)),
+                                    v.clone(),
                                 )
                             })
                             .collect();

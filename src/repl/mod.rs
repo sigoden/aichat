@@ -63,7 +63,7 @@ lazy_static::lazy_static! {
         ReplCommand::new(
             ".exit role",
             "Leave the role",
-            AssertState::True(StateFlags::ROLE),
+            AssertState::TrueFalse(StateFlags::ROLE, StateFlags::SESSION),
         ),
         ReplCommand::new(
             ".session",
@@ -108,7 +108,7 @@ lazy_static::lazy_static! {
         ReplCommand::new(
             ".edit rag-docs",
             "Edit the RAG documents",
-            AssertState::True(StateFlags::RAG),
+            AssertState::TrueFalse(StateFlags::RAG, StateFlags::AGENT),
         ),
         ReplCommand::new(
             ".rebuild rag",
@@ -139,7 +139,7 @@ lazy_static::lazy_static! {
         ReplCommand::new(
             ".variable",
             "Set agent variable",
-            AssertState::True(StateFlags::AGENT)
+            AssertState::TrueFalse(StateFlags::AGENT, StateFlags::SESSION)
         ),
         ReplCommand::new(
             ".info agent",

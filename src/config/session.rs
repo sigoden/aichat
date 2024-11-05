@@ -27,12 +27,15 @@ pub struct Session {
     #[serde(skip_serializing_if = "Option::is_none")]
     compress_threshold: Option<usize>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    role_name: Option<String>,
+    #[serde(skip_serializing_if = "IndexMap::is_empty")]
+    agent_variables: IndexMap<String, String>,
+
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     data_urls: HashMap<String, String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     compressed_messages: Vec<Message>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    role_name: Option<String>,
 
     messages: Vec<Message>,
 
@@ -77,10 +80,6 @@ impl Session {
             if let Ok(role) = config.retrieve_role(role_name) {
                 session.role_prompt = role.prompt().to_string();
             }
-        }
-
-        if let Some(agent) = &config.agent {
-            session.set_agent(agent);
         }
 
         Ok(session)
@@ -249,14 +248,22 @@ impl Session {
         self.dirty = true;
     }
 
-    pub fn set_agent(&mut self, agent: &Agent) {
-        self.role_prompt
-            .clone_from(&agent.interpolated_instructions());
-    }
-
     pub fn clear_role(&mut self) {
         self.role_name = None;
         self.role_prompt.clear();
+    }
+
+    pub fn sync_agent(&mut self, agent: &Agent, set_dirty: bool) {
+        self.role_name = None;
+        self.role_prompt = agent.interpolated_instructions();
+        self.agent_variables = agent.variables().clone();
+        if set_dirty {
+            self.dirty = true;
+        }
+    }
+
+    pub fn agent_variables(&self) -> &IndexMap<String, String> {
+        &self.agent_variables
     }
 
     pub fn set_save_session(&mut self, value: Option<bool>) {
