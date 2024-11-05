@@ -8,11 +8,17 @@ use std::{fs::read_to_string, path::Path};
 
 use serde::{Deserialize, Serialize};
 
+const DEFAULT_AGENT_NAME: &str = "rag";
+
 #[derive(Debug, Clone, Serialize)]
 pub struct Agent {
     name: String,
     config: AgentConfig,
     definition: AgentDefinition,
+    #[serde(skip)]
+    shared_variables: IndexMap<String, String>,
+    #[serde(skip)]
+    session_variables: Option<IndexMap<String, String>>,
     #[serde(skip)]
     functions: Functions,
     #[serde(skip)]
@@ -33,7 +39,7 @@ impl Agent {
             bail!("Unknown agent `{name}`");
         }
         let functions_file_path = functions_dir.join("functions.json");
-        let rag_path = Config::agent_rag_file(name, "rag")?;
+        let rag_path = Config::agent_rag_file(name, DEFAULT_AGENT_NAME)?;
         let config_path = Config::agent_config_file(name)?;
         let agent_config = if config_path.exists() {
             AgentConfig::load(&config_path)?
@@ -41,9 +47,6 @@ impl Agent {
             AgentConfig::new(&config.read())
         };
         let mut definition = AgentDefinition::load(&definition_file_path)?;
-        init_variables(&mut definition.variables, &agent_config.variables)
-            .context("Failed to init variables")?;
-
         let functions = if functions_file_path.exists() {
             Functions::init(&functions_file_path)?
         } else {
@@ -60,7 +63,7 @@ impl Agent {
         };
 
         let rag = if rag_path.exists() {
-            Some(Arc::new(Rag::load(config, "rag", &rag_path)?))
+            Some(Arc::new(Rag::load(config, DEFAULT_AGENT_NAME, &rag_path)?))
         } else if !definition.documents.is_empty() {
             let mut ans = false;
             if *IS_STDOUT_TERMINAL {
@@ -93,16 +96,66 @@ impl Agent {
             name: name.to_string(),
             config: agent_config,
             definition,
+            shared_variables: Default::default(),
+            session_variables: None,
             functions,
             rag,
             model,
         })
     }
 
+    pub fn init_agent_variables(
+        agent_variables: &[AgentVariable],
+        variables: &IndexMap<String, String>,
+    ) -> Result<IndexMap<String, String>> {
+        let mut output = IndexMap::new();
+        if agent_variables.is_empty() {
+            return Ok(output);
+        }
+        let mut printed = false;
+        for agent_variable in agent_variables {
+            let key = agent_variable.name.clone();
+            match variables.get(&key) {
+                Some(value) => {
+                    output.insert(key, value.clone());
+                }
+                None => {
+                    if let Some(value) = agent_variable.default.clone() {
+                        output.insert(key, value);
+                        continue;
+                    }
+                    if *IS_STDOUT_TERMINAL {
+                        if !printed {
+                            println!("🚀 Init agent variables...");
+                            printed = true;
+                        }
+                        let value = Text::new(&agent_variable.description)
+                            .with_validator(|input: &str| {
+                                if input.trim().is_empty() {
+                                    Ok(Validation::Invalid("This field is required".into()))
+                                } else {
+                                    Ok(Validation::Valid)
+                                }
+                            })
+                            .prompt()?;
+                        output.insert(key, value);
+                    } else {
+                        bail!("Failed to init agent variables in non-interactive mode");
+                    }
+                }
+            }
+        }
+        Ok(output)
+    }
+
     pub fn export(&self) -> Result<String> {
         let mut agent = self.clone();
         agent.definition.instructions = self.interpolated_instructions();
         let mut value = serde_json::json!(agent);
+        let variables = self.variables();
+        if !variables.is_empty() {
+            value["variables"] = serde_json::to_value(variables)?;
+        }
         value["functions_dir"] = Config::agent_functions_dir(&self.name)?
             .display()
             .to_string()
@@ -140,7 +193,7 @@ impl Agent {
     }
 
     pub fn interpolated_instructions(&self) -> String {
-        self.definition.interpolated_instructions()
+        self.definition.interpolated_instructions(self.variables())
     }
 
     pub fn agent_prelude(&self) -> Option<&str> {
@@ -151,18 +204,43 @@ impl Agent {
         self.config.agent_prelude = value;
     }
 
-    pub fn variables(&self) -> &[AgentVariable] {
-        &self.definition.variables
+    pub fn variables(&self) -> &IndexMap<String, String> {
+        match &self.session_variables {
+            Some(variables) => variables,
+            None => &self.shared_variables,
+        }
+    }
+
+    pub fn config_variables(&self) -> &IndexMap<String, String> {
+        &self.config.variables
+    }
+
+    pub fn shared_variables(&self) -> &IndexMap<String, String> {
+        &self.shared_variables
+    }
+
+    pub fn set_shared_variables(&mut self, shared_variables: IndexMap<String, String>) {
+        self.shared_variables = shared_variables;
+    }
+
+    pub fn set_session_variables(&mut self, session_variables: Option<IndexMap<String, String>>) {
+        self.session_variables = session_variables;
     }
 
     pub fn set_variable(&mut self, key: &str, value: &str) -> Result<()> {
-        match self.definition.variables.iter_mut().find(|v| v.name == key) {
-            Some(variable) => {
-                variable.value = value.to_string();
-                Ok(())
-            }
-            None => bail!("Unknown variable '{key}'"),
+        let variables = match self.session_variables.as_mut() {
+            Some(v) => v,
+            None => &mut self.shared_variables,
+        };
+        if !variables.contains_key(key) {
+            bail!("Unknown variable: '{key}'")
         }
+        variables.insert(key.to_string(), value.to_string());
+        Ok(())
+    }
+
+    pub fn defined_variables(&self) -> &[AgentVariable] {
+        &self.definition.variables
     }
 }
 
@@ -296,10 +374,10 @@ impl AgentDefinition {
         )
     }
 
-    fn interpolated_instructions(&self) -> String {
+    fn interpolated_instructions(&self, variables: &IndexMap<String, String>) -> String {
         let mut output = self.instructions.clone();
-        for variable in &self.variables {
-            output = output.replace(&format!("{{{{{}}}}}", variable.name), &variable.value)
+        for (k, v) in variables {
+            output = output.replace(&format!("{{{{{k}}}}}"), v)
         }
         interpolate_variables(&mut output);
         output
@@ -355,39 +433,4 @@ fn list_agents_impl() -> Result<Vec<String>> {
         })
         .collect();
     Ok(agents)
-}
-
-fn init_variables(
-    variables: &mut [AgentVariable],
-    config_variable: &IndexMap<String, String>,
-) -> Result<()> {
-    if variables.is_empty() {
-        return Ok(());
-    }
-    for variable in variables.iter_mut() {
-        match config_variable.get(&variable.name) {
-            Some(value) => variable.value = value.to_string(),
-            None => {
-                if let Some(value) = variable.default.clone() {
-                    variable.value = value;
-                    continue;
-                }
-                if *IS_STDOUT_TERMINAL {
-                    let value = Text::new(&variable.description)
-                        .with_validator(|input: &str| {
-                            if input.trim().is_empty() {
-                                Ok(Validation::Invalid("This field is required".into()))
-                            } else {
-                                Ok(Validation::Valid)
-                            }
-                        })
-                        .prompt()?;
-                    variable.value = value;
-                } else {
-                    bail!("Failed to init agent variables in non-interactive mode");
-                }
-            }
-        }
-    }
-    Ok(())
 }

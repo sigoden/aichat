@@ -1039,6 +1039,7 @@ impl Config {
             }
         }
         self.session = session;
+        self.init_agent_session_variables()?;
         Ok(())
     }
 
@@ -1057,6 +1058,9 @@ impl Config {
             let sessions_dir = self.sessions_dir()?;
             session.exit(&sessions_dir, self.working_mode.is_repl())?;
             self.last_message = None;
+        }
+        if let Some(agent) = self.agent.as_mut() {
+            agent.set_session_variables(None);
         }
         Ok(())
     }
@@ -1097,10 +1101,10 @@ impl Config {
 
     pub fn empty_session(&mut self) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
-            session.clear_messages();
             if let Some(agent) = self.agent.as_ref() {
-                session.set_agent(agent);
+                session.sync_agent(agent, false);
             }
+            session.clear_messages();
         } else {
             bail!("No session")
         }
@@ -1380,6 +1384,8 @@ impl Config {
         config.write().agent = Some(agent);
         if let Some(session) = session {
             config.write().use_session(Some(&session))?;
+        } else {
+            config.write().init_agent_shared_variables()?;
         }
         Ok(())
     }
@@ -1408,7 +1414,12 @@ impl Config {
         let key = parts[0];
         let value = parts[1];
         match self.agent.as_mut() {
-            Some(agent) => agent.set_variable(key, value)?,
+            Some(agent) => {
+                agent.set_variable(key, value)?;
+                if let Some(session) = self.session.as_mut() {
+                    session.sync_agent(agent, true);
+                }
+            }
             None => bail!("No agent"),
         };
         Ok(())
@@ -1563,7 +1574,7 @@ impl Config {
                 },
                 ".variable" => match &self.agent {
                     Some(agent) => agent
-                        .variables()
+                        .defined_variables()
                         .iter()
                         .map(|v| (v.name.clone(), Some(v.description.clone())))
                         .collect(),
@@ -1854,6 +1865,39 @@ impl Config {
         );
         file.write_all(output.as_bytes())
             .with_context(|| "Failed to save message")
+    }
+
+    fn init_agent_shared_variables(&mut self) -> Result<()> {
+        let agent = match self.agent.as_mut() {
+            Some(v) => v,
+            None => return Ok(()),
+        };
+        let new_variables =
+            Agent::init_agent_variables(agent.defined_variables(), agent.config_variables())?;
+        agent.set_shared_variables(new_variables);
+        Ok(())
+    }
+
+    fn init_agent_session_variables(&mut self) -> Result<()> {
+        let (agent, session) = match (self.agent.as_mut(), self.session.as_mut()) {
+            (Some(agent), Some(session)) => (agent, session),
+            _ => return Ok(()),
+        };
+        let config_variables = agent.config_variables();
+        let shared_variables = agent.shared_variables();
+        let mut all_variables = if shared_variables.is_empty() {
+            config_variables.clone()
+        } else {
+            shared_variables.clone()
+        };
+        all_variables.extend(session.agent_variables().clone());
+        let new_variables = Agent::init_agent_variables(agent.defined_variables(), &all_variables)?;
+        if shared_variables.is_empty() {
+            agent.set_shared_variables(new_variables.clone());
+        }
+        agent.set_session_variables(Some(new_variables));
+        session.sync_agent(agent, false);
+        Ok(())
     }
 
     fn open_message_file(&self) -> Result<File> {
