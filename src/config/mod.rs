@@ -1111,29 +1111,8 @@ impl Config {
         self.last_message = None;
         Ok(())
     }
-
     pub fn list_sessions(&self) -> Vec<String> {
-        let sessions_dir = match self.sessions_dir() {
-            Ok(dir) => dir,
-            Err(_) => return vec![],
-        };
-        match read_dir(sessions_dir) {
-            Ok(rd) => {
-                let mut names = vec![];
-                for entry in rd.flatten() {
-                    let name = entry.file_name();
-                    if let Some(name) = name.to_string_lossy().strip_suffix(".yaml") {
-                        if name.starts_with(TEMP_SESSION_NAME) {
-                            continue;
-                        }
-                        names.push(name.to_string());
-                    }
-                }
-                names.sort_unstable();
-                names
-            }
-            Err(_) => vec![],
-        }
+        list_file_names(self.sessions_dir().ok(), ".yaml")
     }
 
     pub fn should_compress_session(&mut self) -> bool {
@@ -1366,8 +1345,8 @@ impl Config {
 
     pub async fn use_agent(
         config: &GlobalConfig,
-        name: &str,
-        session: Option<&str>,
+        agent_name: &str,
+        session_name: Option<&str>,
         abort_signal: AbortSignal,
     ) -> Result<()> {
         if !config.read().function_calling {
@@ -1376,8 +1355,8 @@ impl Config {
         if config.read().agent.is_some() {
             bail!("Already in a agent, please run '.exit agent' first to exit the current agent.");
         }
-        let agent = Agent::init(config, name, abort_signal).await?;
-        let session = session
+        let agent = Agent::init(config, agent_name, abort_signal).await?;
+        let session = session_name
             .map(|v| v.to_string())
             .or_else(|| agent.agent_prelude().map(|v| v.to_string()));
         config.write().rag = agent.rag();
@@ -1650,6 +1629,14 @@ impl Config {
             };
             values = candidates.into_iter().map(|v| (v, None)).collect();
             filter = args[1];
+        } else if cmd == ".agent" && args.len() >= 2 {
+            let dir = Self::agent_data_dir(args[0])
+                .ok()
+                .map(|v| v.join(SESSIONS_DIR_NAME));
+            values = list_file_names(dir, ".yaml")
+                .into_iter()
+                .map(|v| (v, None))
+                .collect();
         } else if cmd == ".starter" && args.len() >= 2 {
             if let Some(agent) = &self.agent {
                 values = agent
