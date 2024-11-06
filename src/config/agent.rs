@@ -94,13 +94,11 @@ impl Agent {
             None
         };
 
-        let shared_variables = agent_config.variables.clone();
-
         Ok(Self {
             name: name.to_string(),
             config: agent_config,
             definition,
-            shared_variables,
+            shared_variables: Default::default(),
             session_variables: None,
             functions,
             rag,
@@ -227,6 +225,10 @@ impl Agent {
             Some(variables) => variables,
             None => &self.shared_variables,
         }
+    }
+
+    pub fn config_variables(&self) -> &IndexMap<String, String> {
+        &self.config.variables
     }
 
     pub fn shared_variables(&self) -> &IndexMap<String, String> {
