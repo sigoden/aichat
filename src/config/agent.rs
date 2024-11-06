@@ -92,11 +92,13 @@ impl Agent {
             None
         };
 
+        let shared_variables = agent_config.variables.clone();
+
         Ok(Self {
             name: name.to_string(),
             config: agent_config,
             definition,
-            shared_variables: Default::default(),
+            shared_variables,
             session_variables: None,
             functions,
             rag,
@@ -113,6 +115,7 @@ impl Agent {
             return Ok(output);
         }
         let mut printed = false;
+        let mut unset_variables = vec![];
         for agent_variable in agent_variables {
             let key = agent_variable.name.clone();
             match variables.get(&key) {
@@ -126,24 +129,37 @@ impl Agent {
                     }
                     if *IS_STDOUT_TERMINAL {
                         if !printed {
-                            println!("🚀 Init agent variables...");
+                            println!("⚙ Init agent variables...");
                             printed = true;
                         }
-                        let value = Text::new(&agent_variable.description)
-                            .with_validator(|input: &str| {
-                                if input.trim().is_empty() {
-                                    Ok(Validation::Invalid("This field is required".into()))
-                                } else {
-                                    Ok(Validation::Valid)
-                                }
-                            })
-                            .prompt()?;
+                        let value = Text::new(&format!(
+                            "{} ({}):",
+                            agent_variable.name, agent_variable.description
+                        ))
+                        .with_validator(|input: &str| {
+                            if input.trim().is_empty() {
+                                Ok(Validation::Invalid("This field is required".into()))
+                            } else {
+                                Ok(Validation::Valid)
+                            }
+                        })
+                        .prompt()?;
                         output.insert(key, value);
                     } else {
-                        bail!("Failed to init agent variables in non-interactive mode");
+                        unset_variables.push(agent_variable)
                     }
                 }
             }
+        }
+        if !unset_variables.is_empty() {
+            bail!(
+                "The following agent variables are required:\n{}",
+                unset_variables
+                    .iter()
+                    .map(|v| format!("  - {}: {}", v.name, v.description))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            )
         }
         Ok(output)
     }
@@ -209,10 +225,6 @@ impl Agent {
             Some(variables) => variables,
             None => &self.shared_variables,
         }
-    }
-
-    pub fn config_variables(&self) -> &IndexMap<String, String> {
-        &self.config.variables
     }
 
     pub fn shared_variables(&self) -> &IndexMap<String, String> {

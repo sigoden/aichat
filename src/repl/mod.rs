@@ -366,7 +366,7 @@ impl Repl {
                         let ret = Config::compress_session(&self.config).await;
                         spinner.stop();
                         ret?;
-                        println!("✨ Successfully compressed the session.");
+                        println!("✓ Successfully compressed the session.");
                     }
                     _ => {
                         println!(r#"Usage: .compress session"#)
