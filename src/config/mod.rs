@@ -1062,8 +1062,8 @@ impl Config {
             session.exit(&sessions_dir, self.working_mode.is_repl())?;
             self.last_message = None;
         }
-        if self.agent.is_some() {
-            self.init_agent_shared_variables()?;
+        if let Some(agent) = self.agent.as_mut() {
+            agent.set_session_variables(None);
         }
         Ok(())
     }
@@ -1863,9 +1863,8 @@ impl Config {
             None => return Ok(()),
         };
         let new_variables =
-            Agent::init_agent_variables(agent.defined_variables(), agent.shared_variables())?;
+            Agent::init_agent_variables(agent.defined_variables(), agent.config_variables())?;
         agent.set_shared_variables(new_variables);
-        agent.set_session_variables(None);
         Ok(())
     }
 
@@ -1875,9 +1874,16 @@ impl Config {
             _ => return Ok(()),
         };
         let shared_variables = agent.shared_variables();
-        let mut all_variables = shared_variables.clone();
+        let mut all_variables = if shared_variables.is_empty() {
+            agent.config_variables().clone()
+        } else {
+            shared_variables.clone()
+        };
         all_variables.extend(session.agent_variables().clone());
         let new_variables = Agent::init_agent_variables(agent.defined_variables(), &all_variables)?;
+        if shared_variables.is_empty() {
+            agent.set_shared_variables(new_variables.clone());
+        }
         agent.set_session_variables(Some(new_variables));
         session.sync_agent(agent, false);
         Ok(())
