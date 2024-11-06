@@ -10,7 +10,7 @@ use serde_json::{json, Value};
 use std::{
     collections::{HashMap, HashSet},
     fs,
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 pub type ToolResults = (Vec<ToolResult>, String);
@@ -214,10 +214,7 @@ impl ToolCall {
         cmd_args.push(json_data.to_string());
         let prompt = format!("Call {cmd_name} {}", cmd_args.join(" "));
 
-        let bin_dir = Config::functions_bin_dir()?;
-        if bin_dir.exists() {
-            envs.insert("PATH".into(), prepend_env_path(&bin_dir)?);
-        }
+        envs.insert("PATH".into(), build_path_env(config)?);
         let temp_file = temp_file("-eval-", "");
         envs.insert("LLM_OUTPUT".into(), temp_file.display().to_string());
 
@@ -246,15 +243,23 @@ impl ToolCall {
     }
 }
 
-fn prepend_env_path(bin_dir: &Path) -> Result<String> {
+fn build_path_env(config: &GlobalConfig) -> Result<String> {
+    let sep = if cfg!(windows) { ";" } else { ":" };
+    let mut bin_dirs: Vec<PathBuf> = vec![];
+    if let Some(agent) = config.read().agent.as_ref() {
+        let dir = Config::agent_functions_dir(agent.name())?.join("bin");
+        if dir.exists() {
+            bin_dirs.push(dir);
+        }
+    }
+    bin_dirs.push(Config::functions_bin_dir()?);
     let current_path = std::env::var("PATH").context("No PATH environment variable")?;
-
-    let new_path = if cfg!(target_os = "windows") {
-        format!("{};{}", bin_dir.display(), current_path)
-    } else {
-        format!("{}:{}", bin_dir.display(), current_path)
-    };
-    Ok(new_path)
+    let prepend_path = bin_dirs
+        .into_iter()
+        .map(|v| format!("{}{sep}", v.display()))
+        .collect::<Vec<_>>()
+        .join("");
+    Ok(format!("{prepend_path}{current_path}"))
 }
 
 #[cfg(windows)]
