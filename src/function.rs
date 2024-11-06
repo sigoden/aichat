@@ -10,10 +10,15 @@ use serde_json::{json, Value};
 use std::{
     collections::{HashMap, HashSet},
     fs,
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 pub type ToolResults = (Vec<ToolResult>, String);
+
+#[cfg(windows)]
+const PATH_SEP: &str = ";";
+#[cfg(not(windows))]
+const PATH_SEP: &str = ":";
 
 pub fn eval_tool_calls(config: &GlobalConfig, mut calls: Vec<ToolCall>) -> Result<Vec<ToolResult>> {
     let mut output = vec![];
@@ -214,15 +219,29 @@ impl ToolCall {
         cmd_args.push(json_data.to_string());
         let prompt = format!("Call {cmd_name} {}", cmd_args.join(" "));
 
-        let bin_dir = Config::functions_bin_dir()?;
-        if bin_dir.exists() {
-            envs.insert("PATH".into(), prepend_env_path(&bin_dir)?);
+        let mut bin_dirs: Vec<PathBuf> = vec![];
+        if let Some(agent) = config.read().agent.as_ref() {
+            let dir = Config::agent_functions_dir(agent.name())
+                .context("No agent functions dir")?
+                .join("bin");
+            if dir.exists() {
+                bin_dirs.push(dir);
+            }
         }
+        bin_dirs.push(Config::functions_bin_dir().context("No functions bin dir")?);
+        let current_path = std::env::var("PATH").context("No PATH environment variable")?;
+        let prepend_path = bin_dirs
+            .iter()
+            .map(|v| format!("{}{PATH_SEP}", v.display()))
+            .collect::<Vec<_>>()
+            .join("");
+        envs.insert("PATH".into(), format!("{prepend_path}{current_path}"));
+
         let temp_file = temp_file("-eval-", "");
         envs.insert("LLM_OUTPUT".into(), temp_file.display().to_string());
 
         #[cfg(windows)]
-        let cmd_name = polyfill_cmd_name(&cmd_name, &bin_dir);
+        let cmd_name = polyfill_cmd_name(&cmd_name, &bin_dirs);
         if *IS_STDOUT_TERMINAL {
             println!("{}", dimmed_text(&prompt));
         }
@@ -246,27 +265,17 @@ impl ToolCall {
     }
 }
 
-fn prepend_env_path(bin_dir: &Path) -> Result<String> {
-    let current_path = std::env::var("PATH").context("No PATH environment variable")?;
-
-    let new_path = if cfg!(target_os = "windows") {
-        format!("{};{}", bin_dir.display(), current_path)
-    } else {
-        format!("{}:{}", bin_dir.display(), current_path)
-    };
-    Ok(new_path)
-}
-
 #[cfg(windows)]
-fn polyfill_cmd_name(cmd_name: &str, bin_dir: &std::path::Path) -> String {
-    let mut cmd_name = cmd_name.to_string();
+fn polyfill_cmd_name<T: AsRef<Path>>(cmd_name: &str, bin_dir: &[T]) -> String {
+    let cmd_name = cmd_name.to_string();
     if let Ok(exts) = std::env::var("PATHEXT") {
-        if let Some(cmd_path) = exts
-            .split(';')
-            .map(|ext| bin_dir.join(format!("{}{}", cmd_name, ext)))
-            .find(|path| path.exists())
-        {
-            cmd_name = cmd_path.display().to_string();
+        for name in exts.split(';').map(|ext| format!("{cmd_name}{ext}")) {
+            for dir in bin_dir {
+                let path = dir.as_ref().join(&name);
+                if path.exists() {
+                    return name.to_string();
+                }
+            }
         }
     }
     cmd_name
