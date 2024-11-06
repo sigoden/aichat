@@ -214,18 +214,26 @@ impl Rag {
     }
 
     pub fn set_last_sources(&self, ids: &[DocumentId]) {
-        let sources: IndexSet<_> = ids
-            .iter()
-            .filter_map(|id| {
-                let (file_index, _) = id.split();
-                let file = self.data.files.get(&file_index)?;
-                Some(file.path.clone())
-            })
-            .collect();
+        let mut sources: IndexMap<String, Vec<String>> = IndexMap::new();
+        for id in ids {
+            let (file_index, _) = id.split();
+            if let Some(file) = self.data.files.get(&file_index) {
+                sources
+                    .entry(file.path.clone())
+                    .or_default()
+                    .push(format!("{id:?}"));
+            }
+        }
         let sources = if sources.is_empty() {
             None
         } else {
-            Some(sources.into_iter().collect::<Vec<_>>().join("\n"))
+            Some(
+                sources
+                    .into_iter()
+                    .map(|(path, ids)| format!("{path} ({})", ids.join(",")))
+                    .collect::<Vec<_>>()
+                    .join("\n"),
+            )
         };
         *self.last_sources.write() = sources;
     }
