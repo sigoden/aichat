@@ -41,7 +41,7 @@ impl Agent {
         let functions_file_path = functions_dir.join("functions.json");
         let rag_path = Config::agent_rag_file(name, DEFAULT_AGENT_NAME)?;
         let config_path = Config::agent_config_file(name)?;
-        let agent_config = if config_path.exists() {
+        let mut agent_config = if config_path.exists() {
             AgentConfig::load(&config_path)?
         } else {
             AgentConfig::new(&config.read())
@@ -53,6 +53,8 @@ impl Agent {
             Functions::default()
         };
         definition.replace_tools_placeholder(&functions);
+
+        agent_config.load_envs(&definition.name);
 
         let model = {
             let config = config.read();
@@ -329,6 +331,31 @@ impl AgentConfig {
         let config: Self = serde_yaml::from_str(&contents)
             .with_context(|| format!("Failed to load agent config at '{}'", path.display()))?;
         Ok(config)
+    }
+
+    fn load_envs(&mut self, name: &str) {
+        let with_prefix = |v: &str| normalize_env_name(&format!("{name}_{v}"));
+
+        if let Some(v) = read_env_value::<String>(&with_prefix("model")) {
+            self.model_id = v;
+        }
+        if let Some(v) = read_env_value::<f64>(&with_prefix("temperature")) {
+            self.temperature = v;
+        }
+        if let Some(v) = read_env_value::<f64>(&with_prefix("top_p")) {
+            self.top_p = v;
+        }
+        if let Some(v) = read_env_value::<String>(&with_prefix("use_tools")) {
+            self.use_tools = v;
+        }
+        if let Some(v) = read_env_value::<String>(&with_prefix("agent_prelude")) {
+            self.agent_prelude = v;
+        }
+        if let Ok(v) = env::var(with_prefix("variables")) {
+            if let Ok(v) = serde_json::from_str(&v) {
+                self.variables = v;
+            }
+        }
     }
 }
 
