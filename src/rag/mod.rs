@@ -68,7 +68,7 @@ impl Rag {
         if !*IS_STDOUT_TERMINAL {
             bail!("Failed to init rag in non-interactive mode");
         }
-        println!("🚀 Initializing RAG...");
+        println!("⚙ Initializing RAG...");
         let (embedding_model, chunk_size, chunk_overlap) = Self::create_config(config)?;
         let (reranker_model, top_k) = {
             let config = config.read();
@@ -100,7 +100,7 @@ impl Rag {
             },
         };
         if rag.save()? {
-            println!("✨ Saved RAG to '{}'.", save_path.display());
+            println!("✓ Saved RAG to '{}'.", save_path.display());
         }
         Ok(rag)
     }
@@ -155,7 +155,7 @@ impl Rag {
             },
         };
         if self.save()? {
-            println!("✨ Saved rag to '{}'.", self.path);
+            println!("✓ Saved rag to '{}'.", self.path);
         }
         Ok(())
     }
