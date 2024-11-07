@@ -1900,23 +1900,25 @@ impl Config {
     }
 
     fn load_from_file(config_path: &Path) -> Result<Self> {
-        let content = read_to_string(config_path)
-            .with_context(|| format!("Failed to load config at '{}'", config_path.display()))?;
-        let config: Self = serde_yaml::from_str(&content).map_err(|err| {
-            let err_msg = err.to_string();
-            let err_msg = if err_msg.starts_with(&format!("{}: ", CLIENTS_FIELD)) {
-                // location is incorrect, get rid of it
-                err_msg
-                    .split_once(" at line")
-                    .map(|(v, _)| {
-                        format!("{v} (Sorry for being unable to provide an exact location)")
-                    })
-                    .unwrap_or_else(|| "clients: invalid value".into())
-            } else {
-                err_msg
-            };
-            anyhow!("{err_msg}")
-        })?;
+        let err = || format!("Failed to load config at '{}'", config_path.display());
+        let content = read_to_string(config_path).with_context(err)?;
+        let config: Self = serde_yaml::from_str(&content)
+            .map_err(|err| {
+                let err_msg = err.to_string();
+                let err_msg = if err_msg.starts_with(&format!("{}: ", CLIENTS_FIELD)) {
+                    // location is incorrect, get rid of it
+                    err_msg
+                        .split_once(" at line")
+                        .map(|(v, _)| {
+                            format!("{v} (Sorry for being unable to provide an exact location)")
+                        })
+                        .unwrap_or_else(|| "clients: invalid value".into())
+                } else {
+                    err_msg
+                };
+                anyhow!("{err_msg}")
+            })
+            .with_context(err)?;
 
         Ok(config)
     }
