@@ -112,7 +112,6 @@
     - name: text-embedding-004
       type: embedding
       input_price: 0
-      output_price: 0
       max_tokens_per_chunk: 2048
       default_chunk_size: 1500
       max_batch_size: 100
@@ -810,6 +809,66 @@
       max_tokens_per_chunk: 2048
       default_chunk_size: 2000
       max_batch_size: 25
+
+# links:
+#  - https://cloud.tencent.com/document/product/1729/104753
+#  - https://cloud.tencent.com/document/product/1729/97731
+#  - https://cloud.tencent.com/document/product/1729/111007
+- platform: hunyuan
+  models:
+    - name: hunyuan-turbo-latest
+      max_input_tokens: 28000
+      max_output_tokens: 4096
+      input_price: 2.1
+      output_price: 7.0
+      supports_function_calling: true
+    - name: hunyuan-pro
+      max_input_tokens: 28000
+      max_output_tokens: 4096
+      input_price: 4.2
+      output_price: 14.0
+      supports_function_calling: true
+    - name: hunyuan-large
+      max_input_tokens: 28000
+      max_output_tokens: 4096
+      supports_function_calling: true
+    - name: hunyuan-standard
+      max_input_tokens: 30000
+      max_output_tokens: 2048
+      input_price: 0.112
+      output_price: 0.28
+      supports_function_calling: true
+    - name: hunyuan-standard-256K
+      max_input_tokens: 250000
+      max_output_tokens: 6144
+      input_price: 0.07
+      output_price: 0.28
+      supports_function_calling: true
+    - name: hunyuan-lite
+      max_input_tokens: 250000
+      max_output_tokens: 6144
+      input_price: 0
+      output_price: 0
+      supports_function_calling: true
+    - name: hunyuan-functioncall
+      max_input_tokens: 28000
+      max_output_tokens: 4096
+      input_price: 0.56
+      output_price: 1.12
+      supports_function_calling: true
+    - name: hunyuan-vision
+      max_input_tokens: 6144
+      max_output_tokens: 2048
+      input_price: 2.52
+      output_price: 2.52
+      supports_function_calling: true
+      supports_vision: true
+    - name: hunyuan-embedding
+      type: embedding
+      input_price: 0.01
+      max_tokens_per_chunk: 1024
+      default_chunk_size: 1000
+      max_batch_size: 100
 
 # Links:
 #  - https://platform.moonshot.cn/docs/intro

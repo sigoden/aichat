@@ -255,10 +255,16 @@ clients:
     api_key: xxx
     secret_key: xxx
 
-  # See https://help.aliyun.com/zh/dashscope/
+  # See https://dashscope.aliyun.com/
   - type: openai-compatible
     name: qianwen
     api_base: https://dashscope.aliyuncs.com/compatible-mode/v1
+    api_key: xxx
+
+  # See https://cloud.tencent.com/product/hunyuan
+  - type: openai-compatible
+    name: hunyuan
+    api_base: https://api.hunyuan.cloud.tencent.com/v1
     api_key: xxx
 
   # See https://platform.moonshot.cn/docs/intro
