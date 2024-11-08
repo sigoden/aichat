@@ -33,14 +33,14 @@ impl Agent {
         name: &str,
         abort_signal: AbortSignal,
     ) -> Result<Self> {
-        let functions_dir = Config::agent_functions_dir(name)?;
+        let functions_dir = Config::agent_functions_dir(name);
         let definition_file_path = functions_dir.join("index.yaml");
         if !definition_file_path.exists() {
             bail!("Unknown agent `{name}`");
         }
         let functions_file_path = functions_dir.join("functions.json");
-        let rag_path = Config::agent_rag_file(name, DEFAULT_AGENT_NAME)?;
-        let config_path = Config::agent_config_file(name)?;
+        let rag_path = Config::agent_rag_file(name, DEFAULT_AGENT_NAME);
+        let config_path = Config::agent_config_file(name);
         let mut agent_config = if config_path.exists() {
             AgentConfig::load(&config_path)?
         } else {
@@ -172,15 +172,15 @@ impl Agent {
         if !variables.is_empty() {
             value["variables"] = serde_json::to_value(variables)?;
         }
-        value["functions_dir"] = Config::agent_functions_dir(&self.name)?
+        value["functions_dir"] = Config::agent_functions_dir(&self.name)
             .display()
             .to_string()
             .into();
-        value["data_dir"] = Config::agent_data_dir(&self.name)?
+        value["data_dir"] = Config::agent_data_dir(&self.name)
             .display()
             .to_string()
             .into();
-        value["config_file"] = Config::agent_config_file(&self.name)?
+        value["config_file"] = Config::agent_config_file(&self.name)
             .display()
             .to_string()
             .into();
@@ -456,13 +456,12 @@ pub struct AgentVariable {
 }
 
 pub fn list_agents() -> Vec<String> {
-    list_agents_impl().unwrap_or_default()
-}
-
-fn list_agents_impl() -> Result<Vec<String>> {
-    let base_dir = Config::functions_dir()?;
-    let contents = read_to_string(base_dir.join("agents.txt"))?;
-    let agents = contents
+    let agents_file = Config::functions_dir().join("agents.txt");
+    let contents = match read_to_string(agents_file) {
+        Ok(v) => v,
+        Err(_) => return vec![],
+    };
+    contents
         .split('\n')
         .filter_map(|line| {
             let line = line.trim();
@@ -472,6 +471,5 @@ fn list_agents_impl() -> Result<Vec<String>> {
                 Some(line.to_string())
             }
         })
-        .collect();
-    Ok(agents)
+        .collect()
 }
