@@ -221,14 +221,12 @@ impl ToolCall {
 
         let mut bin_dirs: Vec<PathBuf> = vec![];
         if let Some(agent) = config.read().agent.as_ref() {
-            let dir = Config::agent_functions_dir(agent.name())
-                .context("No agent functions dir")?
-                .join("bin");
+            let dir = Config::agent_functions_dir(agent.name()).join("bin");
             if dir.exists() {
                 bin_dirs.push(dir);
             }
         }
-        bin_dirs.push(Config::functions_bin_dir().context("No functions bin dir")?);
+        bin_dirs.push(Config::functions_bin_dir());
         let current_path = std::env::var("PATH").context("No PATH environment variable")?;
         let prepend_path = bin_dirs
             .iter()
@@ -239,6 +237,11 @@ impl ToolCall {
 
         let temp_file = temp_file("-eval-", "");
         envs.insert("LLM_OUTPUT".into(), temp_file.display().to_string());
+
+        envs.insert(
+            "LLM_FUNCTIONS_ROOT".into(),
+            Config::functions_dir().display().to_string(),
+        );
 
         #[cfg(windows)]
         let cmd_name = polyfill_cmd_name(&cmd_name, &bin_dirs);

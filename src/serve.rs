@@ -246,12 +246,8 @@ impl Server {
 
         let abort_signal = create_abort_signal();
 
-        let rag = config
-            .read()
-            .rag_file(&name)
-            .ok()
-            .and_then(|rag_path| Rag::load(&config, &name, &rag_path).ok())
-            .ok_or_else(|| anyhow!("Invalid rag"))?;
+        let rag_path = config.read().rag_file(&name);
+        let rag = Rag::load(&config, &name, &rag_path)?;
 
         let rag_result = Config::search_rag(&config, &rag, &input, abort_signal).await?;
 
