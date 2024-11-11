@@ -186,7 +186,7 @@ impl Default for Config {
 
             rag_embedding_model: None,
             rag_reranker_model: None,
-            rag_top_k: 4,
+            rag_top_k: 5,
             rag_chunk_size: None,
             rag_chunk_overlap: None,
             rag_min_score_vector_search: 0.0,

@@ -488,7 +488,7 @@ impl Rag {
             None => {
                 let ids = reciprocal_rank_fusion(
                     vec![vector_search_ids, keyword_search_ids],
-                    vec![1.0, 1.0],
+                    vec![1.125, 1.0],
                     top_k,
                 );
                 debug!("rrf_ids: {ids:?}");

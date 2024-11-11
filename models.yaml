@@ -66,13 +66,13 @@
       type: embedding
       input_price: 0.13
       max_tokens_per_chunk: 8191
-      default_chunk_size: 3000
+      default_chunk_size: 2000
       max_batch_size: 100
     - name: text-embedding-3-small
       type: embedding
       input_price: 0.02
       max_tokens_per_chunk: 8191
-      default_chunk_size: 3000
+      default_chunk_size: 2000
       max_batch_size: 100
 
 # Links:
@@ -1004,12 +1004,12 @@
     - name: text-embedding-3-large
       type: embedding
       max_tokens_per_chunk: 8191
-      default_chunk_size: 3000
+      default_chunk_size: 2000
       max_batch_size: 100
     - name: text-embedding-3-small
       type: embedding
       max_tokens_per_chunk: 8191
-      default_chunk_size: 3000
+      default_chunk_size: 2000
       max_batch_size: 100
     - name: meta-llama-3.1-405b-instruct
       max_input_tokens: 128000
@@ -1714,7 +1714,7 @@
       max_input_tokens: 120000
       input_price: 0.12
       max_tokens_per_chunk: 16000
-      default_chunk_size: 3000
+      default_chunk_size: 2000
       max_batch_size: 128
     - name: rerank-2
       type: reranker
