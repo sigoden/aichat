@@ -351,11 +351,12 @@ impl Server {
                     client: &dyn Client,
                     http_client: &reqwest::Client,
                     handler: &mut SseHandler,
-                    data: ChatCompletionsData,
+                    mut data: ChatCompletionsData,
                     tx: &UnboundedSender<ResEvent>,
                     is_first: Arc<AtomicBool>,
                 ) {
                     if client.model().no_stream() {
+                        data.stream = false;
                         let ret = client.chat_completions_inner(http_client, data).await;
                         match ret {
                             Ok(output) => {
