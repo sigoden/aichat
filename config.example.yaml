@@ -37,7 +37,7 @@ summary_prompt: 'This is a summary of the chat history as a recap: '
 # See [RAG-Guide](https://github.com/sigoden/aichat/wiki/RAG-Guide) for more details.
 rag_embedding_model: null                   # Specifies the embedding model to use
 rag_reranker_model: null                    # Specifies the rerank model to use
-rag_top_k: 4                                # Specifies the number of documents to retrieve
+rag_top_k: 5                                # Specifies the number of documents to retrieve
 rag_chunk_size: null                        # Specifies the chunk size
 rag_chunk_overlap: null                     # Specifies the chunk overlap
 rag_min_score_vector_search: 0              # Specifies the minimum relevance score for vector-based searching
