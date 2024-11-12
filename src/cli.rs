@@ -18,7 +18,7 @@ pub struct Cli {
     /// Ensure the session is empty
     #[clap(long)]
     pub empty_session: bool,
-    /// Force the session to be saved
+    /// Ensure the new conversation is saved to the session
     #[clap(long)]
     pub save_session: bool,
     /// Start a agent
