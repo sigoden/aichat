@@ -686,30 +686,6 @@
       max_batch_size: 100
 
 # Links:
-#  - https://huggingface.co/models?other=text-generation-inference
-#  - https://huggingface.co/docs/text-generation-inference/en/reference/api_reference
-- platform: huggingface
-  models:
-    - name: NousResearch/Hermes-3-Llama-3.1-8B
-      max_input_tokens: 8192
-      max_output_tokens: 4096
-      require_max_tokens: true
-      input_price: 0
-      output_price: 0
-    - name: mistralai/Mistral-Small-Instruct-2409
-      max_input_tokens: 128000
-      max_output_tokens: 4096
-      require_max_tokens: true
-      input_price: 0
-      output_price: 0
-    - name: mistralai/Mistral-Nemo-Instruct-2407
-      max_input_tokens: 128000
-      max_output_tokens: 4096
-      require_max_tokens: true
-      input_price: 0
-      output_price: 0
-
-# Links:
 #  - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu
 #  - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7
 - platform: ernie
