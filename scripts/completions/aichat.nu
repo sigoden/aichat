@@ -41,7 +41,7 @@ module completions {
     --role(-r): string@"nu-complete aichat role"        # Select a role
     --session(-s): string@"nu-complete aichat session"  # Start or join a session
     --empty-session                                     # Ensure the session is empty
-    --save-session                                      # Force the session to be saved
+    --save-session                                      # Ensure the new conversation is saved to the session
     --agent(-a): string@"nu-complete aichat agent"      # Start a agent
     --rag(-R): string@"nu-complete aichat rag"          # Start a RAG
     --serve                                             # Serve the LLM API and WebAPP

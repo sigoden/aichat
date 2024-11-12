@@ -28,7 +28,7 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             [CompletionResult]::new('-s', '-s', [CompletionResultType]::ParameterName, 'Start or join a session')
             [CompletionResult]::new('--session', '--session', [CompletionResultType]::ParameterName, 'Start or join a session')
             [CompletionResult]::new('--empty-session', '--empty-session', [CompletionResultType]::ParameterName, 'Ensure the session is empty')
-            [CompletionResult]::new('--save-session', '--save-session', [CompletionResultType]::ParameterName, 'Force the session to be saved')
+            [CompletionResult]::new('--save-session', '--save-session', [CompletionResultType]::ParameterName, 'Ensure the new conversation is saved to the session')
             [CompletionResult]::new('-a', '-a', [CompletionResultType]::ParameterName, 'Start a agent')
             [CompletionResult]::new('--agent', '--agent', [CompletionResultType]::ParameterName, 'Start a agent')
             [CompletionResult]::new('-R', '-R', [CompletionResultType]::ParameterName, 'Start a RAG')

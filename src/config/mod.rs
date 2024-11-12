@@ -1108,6 +1108,16 @@ impl Config {
         self.last_message = None;
         Ok(())
     }
+
+    pub fn set_append_conversation(&mut self) -> Result<()> {
+        if let Some(session) = self.session.as_mut() {
+            session.set_append_conversation();
+        } else {
+            bail!("No session")
+        }
+        Ok(())
+    }
+
     pub fn list_sessions(&self) -> Vec<String> {
         list_file_names(self.sessions_dir(), ".yaml")
     }

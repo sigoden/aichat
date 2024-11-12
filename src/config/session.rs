@@ -50,6 +50,8 @@ pub struct Session {
     #[serde(skip)]
     dirty: bool,
     #[serde(skip)]
+    append_conversation: bool,
+    #[serde(skip)]
     compressing: bool,
 }
 
@@ -276,6 +278,10 @@ impl Session {
         }
     }
 
+    pub fn set_append_conversation(&mut self) {
+        self.append_conversation = true;
+    }
+
     pub fn set_compress_threshold(&mut self, value: Option<usize>) {
         if self.compress_threshold != value {
             self.compress_threshold = value;
@@ -308,7 +314,10 @@ impl Session {
     }
 
     pub fn exit(&mut self, session_dir: &Path, is_repl: bool) -> Result<()> {
-        let save_session = self.save_session();
+        let mut save_session = self.save_session();
+        if self.append_conversation {
+            save_session = Some(true);
+        }
         if self.dirty && save_session != Some(false) {
             let mut session_name = self.name().to_string();
             if save_session.is_none() {
