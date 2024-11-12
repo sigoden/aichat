@@ -87,7 +87,6 @@ OPENAI_COMPATIBLE_PLATFORMS=( \
   fireworks,accounts/fireworks/models/llama-v3p1-8b-instruct,https://api.fireworks.ai/inference/v1 \
   github,gpt-4o-mini,https://models.inference.ai.azure.com \
   groq,llama3-8b-8192,https://api.groq.com/openai/v1 \
-  huggingface,meta-llama/Meta-Llama-3-8B-Instruct,https://api-inference.huggingface.co/v1 \
   hunyuan,hunyuan-large,https://api.hunyuan.cloud.tencent.com/v1 \
   lingyiwanwu,yi-large,https://api.lingyiwanwu.com/v1 \
   mistral,open-mistral-nemo,https://api.mistral.ai/v1 \

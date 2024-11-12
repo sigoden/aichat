@@ -35,7 +35,7 @@ register_client!(
     (ernie, "ernie", ErnieConfig, ErnieClient),
 );
 
-pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 22] = [
+pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 21] = [
     ("ai21", "https://api.ai21.com/studio/v1"),
     ("cloudflare", ""),
     ("deepinfra", "https://api.deepinfra.com/v1/openai"),
@@ -43,7 +43,6 @@ pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 22] = [
     ("fireworks", "https://api.fireworks.ai/inference/v1"),
     ("github", "https://models.inference.ai.azure.com"),
     ("groq", "https://api.groq.com/openai/v1"),
-    ("huggingface", "https://api-inference.huggingface.co/v1"),
     ("hunyuan", "https://api.hunyuan.cloud.tencent.com/v1"),
     ("lingyiwanwu", "https://api.lingyiwanwu.com/v1"),
     ("mistral", "https://api.mistral.ai/v1"),

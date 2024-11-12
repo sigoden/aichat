@@ -244,12 +244,6 @@ clients:
     api_base: https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/ai/v1
     api_key: xxx
 
-  # See https://huggingface.co/inference-api/serverless
-  - type: openai-compatible
-    name: huggingface
-    api_base: https://api-inference.huggingface.co/v1
-    api_key: xxx
-
   # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
   - type: ernie
     api_key: xxx
