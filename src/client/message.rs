@@ -1,6 +1,4 @@
-use super::ToolResults;
-
-use crate::utils::dimmed_text;
+use crate::{function::ToolResult, utils::dimmed_text};
 
 use serde::{Deserialize, Serialize};
 
@@ -75,7 +73,7 @@ pub enum MessageContent {
     Text(String),
     Array(Vec<MessageContentPart>),
     // Note: This type is primarily for convenience and does not exist in OpenAI's API.
-    ToolResults(ToolResults),
+    ToolCalls(MessageContentToolCalls),
 }
 
 impl MessageContent {
@@ -103,10 +101,9 @@ impl MessageContent {
                 }
                 format!(".file {}{}", files.join(" "), concated_text)
             }
-            MessageContent::ToolResults(results) => {
-                let ToolResults {
-                    tool_results, text, ..
-                } = results;
+            MessageContent::ToolCalls(MessageContentToolCalls {
+                tool_results, text, ..
+            }) => {
                 let mut lines = vec![];
                 if !text.is_empty() {
                     lines.push(text.clone())
@@ -139,7 +136,7 @@ impl MessageContent {
                     *text = replace_fn(text)
                 }
             }
-            MessageContent::ToolResults(_) => {}
+            MessageContent::ToolCalls(_) => {}
         }
     }
 
@@ -155,7 +152,7 @@ impl MessageContent {
                 }
                 parts.join("\n\n")
             }
-            MessageContent::ToolResults(_) => String::new(),
+            MessageContent::ToolCalls(_) => String::new(),
         }
     }
 }
@@ -170,6 +167,29 @@ pub enum MessageContentPart {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ImageUrl {
     pub url: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct MessageContentToolCalls {
+    pub tool_results: Vec<ToolResult>,
+    pub text: String,
+    pub sequence: bool,
+}
+
+impl MessageContentToolCalls {
+    pub fn new(tool_results: Vec<ToolResult>, text: String) -> Self {
+        Self {
+            tool_results,
+            text,
+            sequence: false,
+        }
+    }
+
+    pub fn merge(&mut self, tool_results: Vec<ToolResult>, _text: String) {
+        self.tool_results.extend(tool_results);
+        self.text.clear();
+        self.sequence = true;
+    }
 }
 
 pub fn patch_system_message(messages: &mut Vec<Message>) {

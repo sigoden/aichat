@@ -205,12 +205,11 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
         .flat_map(|message| {
             let Message { role, content } = message;
             match content {
-                MessageContent::ToolResults(results) => {
-                    let ToolResults {
+                MessageContent::ToolCalls(MessageContentToolCalls {
                         tool_results,
                         text,
                         sequence,
-                    } = results;
+                    }) => {
                     if !sequence {
                         let tool_calls: Vec<_> = tool_results.iter().map(|tool_result| {
                             json!({

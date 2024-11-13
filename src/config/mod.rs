@@ -10,7 +10,7 @@ use self::session::Session;
 
 use crate::client::{
     create_client_config, list_chat_models, list_client_types, list_reranker_models, ClientConfig,
-    Model, OPENAI_COMPATIBLE_PLATFORMS,
+    MessageContentToolCalls, Model, OPENAI_COMPATIBLE_PLATFORMS,
 };
 use crate::function::{FunctionDeclaration, Functions, ToolResult};
 use crate::rag::Rag;
@@ -1863,8 +1863,22 @@ impl Config {
         } else {
             String::new()
         };
+        let tool_calls = match input.tool_calls() {
+            Some(MessageContentToolCalls {
+                tool_results, text, ..
+            }) => {
+                let mut lines = vec!["<tool_calls>".to_string()];
+                if !text.is_empty() {
+                    lines.push(text.clone());
+                }
+                lines.push(serde_json::to_string(&tool_results).unwrap_or_default());
+                lines.push("</tool_calls>\n".to_string());
+                lines.join("\n")
+            }
+            None => String::new(),
+        };
         let output = format!(
-            "# CHAT: {summary} [{timestamp}]{scope}\n{raw_input}\n--------\n{output}\n--------\n\n",
+            "# CHAT: {summary} [{timestamp}]{scope}\n{raw_input}\n--------\n{tool_calls}{output}\n--------\n\n",
         );
         file.write_all(output.as_bytes())
             .with_context(|| "Failed to save message")

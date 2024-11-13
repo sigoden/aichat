@@ -266,29 +266,6 @@ impl ToolCall {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct ToolResults {
-    pub tool_results: Vec<ToolResult>,
-    pub text: String,
-    pub sequence: bool,
-}
-
-impl ToolResults {
-    pub fn new(tool_results: Vec<ToolResult>, text: String) -> Self {
-        Self {
-            tool_results,
-            text,
-            sequence: false,
-        }
-    }
-
-    pub fn extend(&mut self, tool_results: Vec<ToolResult>, _text: String) {
-        self.tool_results.extend(tool_results);
-        self.text.clear();
-        self.sequence = true;
-    }
-}
-
 #[cfg(windows)]
 fn polyfill_cmd_name<T: AsRef<Path>>(cmd_name: &str, bin_dir: &[T]) -> String {
     let cmd_name = cmd_name.to_string();

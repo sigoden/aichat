@@ -1,7 +1,7 @@
 use super::{
     list_chat_models, list_embedding_models, list_reranker_models,
     message::{Message, MessageContent, MessageContentPart},
-    ToolResults,
+    MessageContentToolCalls,
 };
 
 use crate::config::Config;
@@ -237,10 +237,9 @@ impl Model {
                         MessageContentPart::ImageUrl { .. } => 0,
                     })
                     .sum(),
-                MessageContent::ToolResults(results) => {
-                    let ToolResults {
-                        tool_results, text, ..
-                    } = results;
+                MessageContent::ToolCalls(MessageContentToolCalls {
+                    tool_results, text, ..
+                }) => {
                     estimate_token_length(text)
                         + tool_results
                             .iter()

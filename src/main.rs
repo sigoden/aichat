@@ -188,7 +188,7 @@ async fn start_directive(
     if need_send_tool_results(&tool_results) {
         start_directive(
             config,
-            input.merge_tool_call(output, tool_results),
+            input.merge_tool_results(output, tool_results),
             code_mode,
             abort_signal,
         )

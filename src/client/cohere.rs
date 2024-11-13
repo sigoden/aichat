@@ -213,8 +213,8 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
                         .collect();
                     Some(json!({ "role": role, "message": list.join("\n\n") }))
                 }
-                MessageContent::ToolResults(results) => {
-                    tool_results = Some(results.tool_results);
+                MessageContent::ToolCalls(tool_calls) => {
+                    tool_results = Some(tool_calls.tool_results);
                     None
                 }
             }
