@@ -153,6 +153,8 @@ pub struct Config {
     #[serde(skip)]
     pub working_mode: WorkingMode,
     #[serde(skip)]
+    pub print_info_only: bool,
+    #[serde(skip)]
     pub last_message: Option<(Input, String)>,
 }
 
@@ -212,6 +214,7 @@ impl Default for Config {
             model: Default::default(),
             functions: Default::default(),
             working_mode: WorkingMode::Cmd,
+            print_info_only: false,
             last_message: None,
         }
     }
@@ -1860,8 +1863,11 @@ impl Config {
             Some(v) => v,
             None => return Ok(()),
         };
-        let new_variables =
-            Agent::init_agent_variables(agent.defined_variables(), agent.config_variables())?;
+        let new_variables = Agent::init_agent_variables(
+            agent.defined_variables(),
+            agent.config_variables(),
+            self.print_info_only,
+        )?;
         agent.set_shared_variables(new_variables);
         Ok(())
     }
@@ -1878,7 +1884,11 @@ impl Config {
             shared_variables.clone()
         };
         all_variables.extend(session.agent_variables().clone());
-        let new_variables = Agent::init_agent_variables(agent.defined_variables(), &all_variables)?;
+        let new_variables = Agent::init_agent_variables(
+            agent.defined_variables(),
+            &all_variables,
+            self.print_info_only,
+        )?;
         if shared_variables.is_empty() {
             agent.set_shared_variables(new_variables.clone());
         }
