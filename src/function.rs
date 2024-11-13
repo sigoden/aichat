@@ -13,8 +13,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub type ToolResults = (Vec<ToolResult>, String);
-
 #[cfg(windows)]
 const PATH_SEP: &str = ";";
 #[cfg(not(windows))]
@@ -265,6 +263,29 @@ impl ToolCall {
         };
 
         Ok(output)
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ToolResults {
+    pub tool_results: Vec<ToolResult>,
+    pub text: String,
+    pub sequence: bool,
+}
+
+impl ToolResults {
+    pub fn new(tool_results: Vec<ToolResult>, text: String) -> Self {
+        Self {
+            tool_results,
+            text,
+            sequence: false,
+        }
+    }
+
+    pub fn extend(&mut self, tool_results: Vec<ToolResult>, _text: String) {
+        self.tool_results.extend(tool_results);
+        self.text.clear();
+        self.sequence = true;
     }
 }
 

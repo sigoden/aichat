@@ -186,10 +186,9 @@ impl Input {
     pub fn merge_tool_call(mut self, output: String, tool_results: Vec<ToolResult>) -> Self {
         match self.tool_call.as_mut() {
             Some(exist_tool_results) => {
-                exist_tool_results.0.extend(tool_results);
-                exist_tool_results.1 = output;
+                exist_tool_results.extend(tool_results, output);
             }
-            None => self.tool_call = Some((tool_results, output)),
+            None => self.tool_call = Some(ToolResults::new(tool_results, output)),
         }
         self
     }

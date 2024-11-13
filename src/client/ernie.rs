@@ -231,9 +231,9 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Valu
         .flat_map(|message| {
             let Message { role, content } = message;
             match content {
-                MessageContent::ToolResults((tool_results, _)) => {
+                MessageContent::ToolResults(results) => {
                     let mut list = vec![];
-                    for tool_result in tool_results {
+                    for tool_result in results.tool_results {
                         list.push(json!({
                             "role": "assistant",
                             "content": format!("Action: {}\nAction Input: {}", tool_result.call.name, tool_result.call.arguments)

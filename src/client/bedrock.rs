@@ -363,7 +363,10 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
                         "content": content,
                     })]
                 }
-                MessageContent::ToolResults((tool_results, text)) => {
+                MessageContent::ToolResults(results) => {
+                    let ToolResults {
+                        tool_results, text, ..
+                    } = results;
                     let mut assistant_parts = vec![];
                     let mut user_parts = vec![];
                     if !text.is_empty() {
