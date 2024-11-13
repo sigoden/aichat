@@ -202,7 +202,10 @@ pub fn claude_build_chat_completions_body(
                         "content": content,
                     })]
                 }
-                MessageContent::ToolResults((tool_results, text)) => {
+                MessageContent::ToolResults(results) => {
+                    let ToolResults {
+                        tool_results, text, ..
+                    } = results;
                     let mut assistant_parts = vec![];
                     let mut user_parts = vec![];
                     if !text.is_empty() {

@@ -86,15 +86,15 @@ OPENAI_COMPATIBLE_PLATFORMS=( \
   deepseek,deepseek-chat,https://api.deepseek.com \
   fireworks,accounts/fireworks/models/llama-v3p1-8b-instruct,https://api.fireworks.ai/inference/v1 \
   github,gpt-4o-mini,https://models.inference.ai.azure.com \
-  groq,llama3-8b-8192,https://api.groq.com/openai/v1 \
+  groq,llama-3.1-8b-instant,https://api.groq.com/openai/v1 \
   hunyuan,hunyuan-large,https://api.hunyuan.cloud.tencent.com/v1 \
   lingyiwanwu,yi-large,https://api.lingyiwanwu.com/v1 \
-  mistral,open-mistral-nemo,https://api.mistral.ai/v1 \
+  mistral,mistral-small-latest,https://api.mistral.ai/v1 \
   moonshot,moonshot-v1-8k,https://api.moonshot.cn/v1 \
   openrouter,openai/gpt-4o-mini,https://openrouter.ai/api/v1 \
   ollama,llama3.1:latest,http://localhost:11434/v1 \
   perplexity,llama-3.1-8b-instruct,https://api.perplexity.ai \
-  qianwen,qwen-turbo,https://dashscope.aliyuncs.com/compatible-mode/v1 \
+  qianwen,qwen-turbo-latest,https://dashscope.aliyuncs.com/compatible-mode/v1 \
   siliconflow,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.siliconflow.cn/v1 \
   together,meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo,https://api.together.xyz/v1 \
   xai,grok-beta,https://api.x.ai/v1 \

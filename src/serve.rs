@@ -889,7 +889,7 @@ fn parse_messages(message: Vec<Value>) -> Result<Vec<Message>> {
                         }
                         output.push(Message::new(
                             MessageRole::Assistant,
-                            MessageContent::ToolResults((list, text)),
+                            MessageContent::ToolResults(ToolResults::new(list, text)),
                         ));
                         tool_results = None;
                     } else {
