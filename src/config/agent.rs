@@ -66,7 +66,7 @@ impl Agent {
 
         let rag = if rag_path.exists() {
             Some(Arc::new(Rag::load(config, DEFAULT_AGENT_NAME, &rag_path)?))
-        } else if !definition.documents.is_empty() {
+        } else if !definition.documents.is_empty() && !config.read().print_info_only {
             let mut ans = false;
             if *IS_STDOUT_TERMINAL {
                 ans = Confirm::new("The agent has the documents, init RAG?")
@@ -109,6 +109,7 @@ impl Agent {
     pub fn init_agent_variables(
         agent_variables: &[AgentVariable],
         variables: &IndexMap<String, String>,
+        no_interaction: bool,
     ) -> Result<IndexMap<String, String>> {
         let mut output = IndexMap::new();
         if agent_variables.is_empty() {
@@ -125,6 +126,9 @@ impl Agent {
                 None => {
                     if let Some(value) = agent_variable.default.clone() {
                         output.insert(key, value);
+                        continue;
+                    }
+                    if no_interaction {
                         continue;
                     }
                     if *IS_STDOUT_TERMINAL {

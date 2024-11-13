@@ -65,6 +65,10 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     if let Some(addr) = cli.serve {
         return serve::run(config, addr).await;
     }
+    if cli.info {
+        config.write().print_info_only = true;
+    }
+
     if cli.list_models {
         for model in list_chat_models(&config.read()) {
             println!("{}", model.id());
