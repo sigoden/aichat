@@ -361,7 +361,10 @@ impl Config {
     }
 
     pub fn agent_config_file(name: &str) -> PathBuf {
-        Self::agent_data_dir(name).join(CONFIG_FILE_NAME)
+        match env::var(format!("{}_CONFIG_FILE", normalize_env_name(name))) {
+            Ok(value) => PathBuf::from(value),
+            Err(_) => Self::agent_data_dir(name).join(CONFIG_FILE_NAME),
+        }
     }
 
     pub fn agent_rag_file(agent_name: &str, rag_name: &str) -> PathBuf {
