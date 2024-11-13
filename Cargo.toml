@@ -1,6 +1,6 @@
 [package]
 name = "aichat"
-version = "0.23.0"
+version = "0.24.0"
 edition = "2021"
 authors = ["sigoden <sigoden@gmail.com>"]
 description = "All-in-one LLM CLI Tool"
@@ -18,7 +18,7 @@ dirs = "5.0.0"
 futures-util = "0.3.29"
 inquire = "0.7.0"
 is-terminal = "0.4.9"
-reedline = "0.36.0"
+reedline = "0.37.0"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = { version = "1.0.93", features = ["preserve_order"] }
 serde_yaml = "0.9.17"
@@ -30,7 +30,7 @@ chrono = "0.4.23"
 bincode = "1.3.3"
 parking_lot = "0.12.1"
 lazy_static = "1.4.0"
-fancy-regex = "0.13.0"
+fancy-regex = "0.14.0"
 base64 = "0.22.0"
 nu-ansi-term = "0.50.0"
 async-trait = "0.1.74"
@@ -59,12 +59,12 @@ path-absolutize = "3.1.1"
 hnsw_rs = "0.3.0"
 rayon = "1.10.0"
 uuid = { version = "1.9.1", features = ["v4"] }
-scraper = { version = "0.20.0", default-features = false, features = ["deterministic"] }
+scraper = { version = "0.21.0", default-features = false, features = ["deterministic"] }
 sys-locale = "0.3.1"
 html_to_markdown = "0.1.0"
 rust-embed = "8.5.0"
 os_info = { version = "3.8.2", default-features = false }
-bm25 = { version = "0.3.1", features = ["parallelism"] }
+bm25 = { version = "2.0.1", features = ["parallelism"] }
 
 [dependencies.reqwest]
 version = "0.12.0"

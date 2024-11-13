@@ -4,7 +4,7 @@
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 [![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/mr3ZZUB9hG)
 
-AIChat is an all-in-one LLM CLI tool featuring Shell Assistant, Chat-REPL, RAG, AI Tools & Agents, and More. 
+AIChat is an all-in-one LLM CLI tool featuring Chat-REPL, Shell Assistant, RAG, AI Tools & Agents, and More. 
 
 ## Install
 
@@ -26,6 +26,12 @@ Download pre-built binaries for macOS, Linux, and Windows from [GitHub Releases]
 
 Seamlessly integrate with over 20 leading LLM platforms via a unified interface, including OpenAI, Claude, Gemini (Google AI Studio), Ollama, Groq, Azure-OpenAI, VertexAI, Bedrock, Huggingface, Github Models, Mistral, Deepseek, AI21, XAI Grok, Cohere, Perplexity, Cloudflare, OpenRouter, Ernie, Qianwen, Moonshot,  ZhipuAI, Lingyiwanwu, Deepinfra, Fireworks, Siliconflow, Together, Jina, VoyageAI, and any OpenAI-Compatible platforms.
 
+### Chat-REPL
+
+Bring a powerful Chat-REPL with features such as tab autocompletion, multi-line support, history search, configurable keybindings, and custom REPL prompt.
+
+![aichat-repl](https://github.com/user-attachments/assets/218fab08-cdae-4c3b-bcf8-39b6651f1362)
+
 ### Shell Assistant
 
 Supercharge your command line experience. Simply describe your desired actions in natural language, and let AIChat translate your requests into precise shell commands. 
@@ -33,12 +39,6 @@ Supercharge your command line experience. Simply describe your desired actions i
 ![aichat-execute](https://github.com/user-attachments/assets/0c77e901-0da2-4151-aefc-a2af96bbb004)
 
 **OS-Aware Intelligence:** AIChat tailors commands to your specific operating system and shell environment.
-
-### Chat-REPL
-
-Bring a powerful Chat-REPL with features such as tab autocompletion, multi-line support, history search, configurable keybindings, and custom REPL prompt.
-
-![aichat-repl](https://github.com/user-attachments/assets/218fab08-cdae-4c3b-bcf8-39b6651f1362)
 
 ### Multi-Form Input
 
