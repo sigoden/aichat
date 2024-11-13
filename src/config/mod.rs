@@ -1050,7 +1050,16 @@ impl Config {
         if let Some(session) = &self.session {
             let render_options = self.render_options()?;
             let mut markdown_render = MarkdownRender::init(render_options)?;
-            session.render(&mut markdown_render)
+            let agent_info: Option<(String, Vec<String>)> = self.agent.as_ref().map(|agent| {
+                let functions = agent
+                    .functions()
+                    .declarations()
+                    .iter()
+                    .filter_map(|v| if v.agent { Some(v.name.clone()) } else { None })
+                    .collect();
+                (agent.name().to_string(), functions)
+            });
+            session.render(&mut markdown_render, &agent_info)
         } else {
             bail!("No session")
         }

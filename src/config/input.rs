@@ -29,7 +29,7 @@ pub struct Input {
     regenerate: bool,
     medias: Vec<String>,
     data_urls: HashMap<String, String>,
-    tool_call: Option<ToolResults>,
+    tool_results: Option<ToolResults>,
     rag_name: Option<String>,
     role: Role,
     with_session: bool,
@@ -48,7 +48,7 @@ impl Input {
             regenerate: false,
             medias: Default::default(),
             data_urls: Default::default(),
-            tool_call: None,
+            tool_results: None,
             rag_name: None,
             role,
             with_session,
@@ -104,7 +104,7 @@ impl Input {
             regenerate: false,
             medias,
             data_urls,
-            tool_call: Default::default(),
+            tool_results: Default::default(),
             rag_name: None,
             role,
             with_session,
@@ -118,6 +118,10 @@ impl Input {
 
     pub fn data_urls(&self) -> HashMap<String, String> {
         self.data_urls.clone()
+    }
+
+    pub fn tool_results(&self) -> &Option<ToolResults> {
+        &self.tool_results
     }
 
     pub fn text(&self) -> String {
@@ -184,11 +188,11 @@ impl Input {
     }
 
     pub fn merge_tool_call(mut self, output: String, tool_results: Vec<ToolResult>) -> Self {
-        match self.tool_call.as_mut() {
+        match self.tool_results.as_mut() {
             Some(exist_tool_results) => {
                 exist_tool_results.extend(tool_results, output);
             }
-            None => self.tool_call = Some(ToolResults::new(tool_results, output)),
+            None => self.tool_results = Some(ToolResults::new(tool_results, output)),
         }
         self
     }
@@ -228,7 +232,7 @@ impl Input {
         } else {
             self.role().build_messages(self)
         };
-        if let Some(tool_results) = &self.tool_call {
+        if let Some(tool_results) = &self.tool_results {
             messages.push(Message::new(
                 MessageRole::Assistant,
                 MessageContent::ToolResults(tool_results.clone()),
