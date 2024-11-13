@@ -160,7 +160,11 @@ impl Session {
         Ok(output)
     }
 
-    pub fn render(&self, render: &mut MarkdownRender) -> Result<String> {
+    pub fn render(
+        &self,
+        render: &mut MarkdownRender,
+        agent_info: &Option<(String, Vec<String>)>,
+    ) -> Result<String> {
         let mut items = vec![];
 
         if let Some(path) = &self.path {
@@ -205,7 +209,10 @@ impl Session {
             for message in &self.messages {
                 match message.role {
                     MessageRole::System => {
-                        lines.push(render.render(&message.content.render_input(resolve_url_fn)));
+                        lines.push(
+                            render
+                                .render(&message.content.render_input(resolve_url_fn, agent_info)),
+                        );
                     }
                     MessageRole::Assistant => {
                         if let MessageContent::Text(text) = &message.content {
@@ -217,8 +224,11 @@ impl Session {
                         lines.push(format!(
                             "{}）{}",
                             self.name,
-                            message.content.render_input(resolve_url_fn)
+                            message.content.render_input(resolve_url_fn, agent_info)
                         ));
+                    }
+                    MessageRole::Tool => {
+                        lines.push(message.content.render_input(resolve_url_fn, agent_info));
                     }
                 }
             }
@@ -409,6 +419,12 @@ impl Session {
                     .push(Message::new(MessageRole::User, input.message_content()));
             }
             self.data_urls.extend(input.data_urls());
+            if let Some(tool_results) = input.tool_results() {
+                self.messages.push(Message::new(
+                    MessageRole::Tool,
+                    MessageContent::ToolResults(tool_results.clone()),
+                ))
+            }
             self.messages.push(Message::new(
                 MessageRole::Assistant,
                 MessageContent::Text(output.to_string()),
