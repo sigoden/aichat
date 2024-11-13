@@ -1,6 +1,7 @@
 use super::{
     list_chat_models, list_embedding_models, list_reranker_models,
-    message::{Message, MessageContent},
+    message::{Message, MessageContent, MessageContentPart},
+    ToolResults,
 };
 
 use crate::config::Config;
@@ -229,8 +230,27 @@ impl Model {
             .iter()
             .map(|v| match &v.content {
                 MessageContent::Text(text) => estimate_token_length(text),
-                MessageContent::Array(_) => 0,
-                MessageContent::ToolResults(_) => 0,
+                MessageContent::Array(list) => list
+                    .iter()
+                    .map(|v| match v {
+                        MessageContentPart::Text { text } => estimate_token_length(text),
+                        MessageContentPart::ImageUrl { .. } => 0,
+                    })
+                    .sum(),
+                MessageContent::ToolResults(results) => {
+                    let ToolResults {
+                        tool_results, text, ..
+                    } = results;
+                    estimate_token_length(text)
+                        + tool_results
+                            .iter()
+                            .map(|v| {
+                                serde_json::to_string(v)
+                                    .map(|v| estimate_token_length(&v))
+                                    .unwrap_or_default()
+                            })
+                            .sum::<usize>()
+                }
             })
             .sum()
     }

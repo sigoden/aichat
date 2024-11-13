@@ -1,6 +1,6 @@
 use super::ToolResults;
 
-use crate::utils::*;
+use crate::utils::dimmed_text;
 
 use serde::{Deserialize, Serialize};
 
