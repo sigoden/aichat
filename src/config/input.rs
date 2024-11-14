@@ -2,9 +2,9 @@ use super::*;
 
 use crate::client::{
     init_client, patch_system_message, ChatCompletionsData, Client, ImageUrl, Message,
-    MessageContent, MessageContentPart, MessageRole, Model,
+    MessageContent, MessageContentPart, MessageContentToolCalls, MessageRole, Model,
 };
-use crate::function::{ToolResult, ToolResults};
+use crate::function::ToolResult;
 use crate::utils::{base64_encode, sha256, AbortSignal};
 
 use anyhow::{bail, Context, Result};
@@ -29,7 +29,7 @@ pub struct Input {
     regenerate: bool,
     medias: Vec<String>,
     data_urls: HashMap<String, String>,
-    tool_results: Option<ToolResults>,
+    tool_calls: Option<MessageContentToolCalls>,
     rag_name: Option<String>,
     role: Role,
     with_session: bool,
@@ -48,7 +48,7 @@ impl Input {
             regenerate: false,
             medias: Default::default(),
             data_urls: Default::default(),
-            tool_results: None,
+            tool_calls: None,
             rag_name: None,
             role,
             with_session,
@@ -104,7 +104,7 @@ impl Input {
             regenerate: false,
             medias,
             data_urls,
-            tool_results: Default::default(),
+            tool_calls: Default::default(),
             rag_name: None,
             role,
             with_session,
@@ -120,8 +120,8 @@ impl Input {
         self.data_urls.clone()
     }
 
-    pub fn tool_results(&self) -> &Option<ToolResults> {
-        &self.tool_results
+    pub fn tool_calls(&self) -> &Option<MessageContentToolCalls> {
+        &self.tool_calls
     }
 
     pub fn text(&self) -> String {
@@ -187,12 +187,12 @@ impl Input {
         self.rag_name.as_deref()
     }
 
-    pub fn merge_tool_call(mut self, output: String, tool_results: Vec<ToolResult>) -> Self {
-        match self.tool_results.as_mut() {
+    pub fn merge_tool_results(mut self, output: String, tool_results: Vec<ToolResult>) -> Self {
+        match self.tool_calls.as_mut() {
             Some(exist_tool_results) => {
-                exist_tool_results.extend(tool_results, output);
+                exist_tool_results.merge(tool_results, output);
             }
-            None => self.tool_results = Some(ToolResults::new(tool_results, output)),
+            None => self.tool_calls = Some(MessageContentToolCalls::new(tool_results, output)),
         }
         self
     }
@@ -232,10 +232,10 @@ impl Input {
         } else {
             self.role().build_messages(self)
         };
-        if let Some(tool_results) = &self.tool_results {
+        if let Some(tool_calls) = &self.tool_calls {
             messages.push(Message::new(
                 MessageRole::Assistant,
-                MessageContent::ToolResults(tool_results.clone()),
+                MessageContent::ToolCalls(tool_calls.clone()),
             ))
         }
         Ok(messages)

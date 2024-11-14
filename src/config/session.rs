@@ -419,10 +419,10 @@ impl Session {
                     .push(Message::new(MessageRole::User, input.message_content()));
             }
             self.data_urls.extend(input.data_urls());
-            if let Some(tool_results) = input.tool_results() {
+            if let Some(tool_calls) = input.tool_calls() {
                 self.messages.push(Message::new(
                     MessageRole::Tool,
-                    MessageContent::ToolResults(tool_results.clone()),
+                    MessageContent::ToolCalls(tool_calls.clone()),
                 ))
             }
             self.messages.push(Message::new(

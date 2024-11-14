@@ -649,7 +649,7 @@ async fn ask(
         ask(
             config,
             abort_signal,
-            input.merge_tool_call(output, tool_results),
+            input.merge_tool_results(output, tool_results),
             false,
         )
         .await
