@@ -13,8 +13,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub type ToolResults = (Vec<ToolResult>, String);
-
 #[cfg(windows)]
 const PATH_SEP: &str = ";";
 #[cfg(not(windows))]

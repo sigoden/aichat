@@ -231,7 +231,9 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Valu
         .flat_map(|message| {
             let Message { role, content } = message;
             match content {
-                MessageContent::ToolResults((tool_results, _)) => {
+                MessageContent::ToolCalls(MessageContentToolCalls {
+                    tool_results,  ..
+                }) => {
                     let mut list = vec![];
                     for tool_result in tool_results {
                         list.push(json!({

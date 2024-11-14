@@ -1,4 +1,4 @@
-use super::ToolResults;
+use crate::{function::ToolResult, utils::dimmed_text};
 
 use serde::{Deserialize, Serialize};
 
@@ -53,6 +53,7 @@ pub enum MessageRole {
     System,
     Assistant,
     User,
+    Tool,
 }
 
 #[allow(dead_code)]
@@ -72,11 +73,15 @@ pub enum MessageContent {
     Text(String),
     Array(Vec<MessageContentPart>),
     // Note: This type is primarily for convenience and does not exist in OpenAI's API.
-    ToolResults(ToolResults),
+    ToolCalls(MessageContentToolCalls),
 }
 
 impl MessageContent {
-    pub fn render_input(&self, resolve_url_fn: impl Fn(&str) -> String) -> String {
+    pub fn render_input(
+        &self,
+        resolve_url_fn: impl Fn(&str) -> String,
+        agent_info: &Option<(String, Vec<String>)>,
+    ) -> String {
         match self {
             MessageContent::Text(text) => text.to_string(),
             MessageContent::Array(list) => {
@@ -96,7 +101,26 @@ impl MessageContent {
                 }
                 format!(".file {}{}", files.join(" "), concated_text)
             }
-            MessageContent::ToolResults(_) => String::new(),
+            MessageContent::ToolCalls(MessageContentToolCalls {
+                tool_results, text, ..
+            }) => {
+                let mut lines = vec![];
+                if !text.is_empty() {
+                    lines.push(text.clone())
+                }
+                for tool_result in tool_results {
+                    let mut parts = vec!["Call".to_string()];
+                    if let Some((agent_name, functions)) = agent_info {
+                        if functions.contains(&tool_result.call.name) {
+                            parts.push(agent_name.clone())
+                        }
+                    }
+                    parts.push(tool_result.call.name.clone());
+                    parts.push(tool_result.call.arguments.to_string());
+                    lines.push(dimmed_text(&parts.join(" ")));
+                }
+                lines.join("\n")
+            }
         }
     }
 
@@ -112,7 +136,7 @@ impl MessageContent {
                     *text = replace_fn(text)
                 }
             }
-            MessageContent::ToolResults(_) => {}
+            MessageContent::ToolCalls(_) => {}
         }
     }
 
@@ -128,7 +152,7 @@ impl MessageContent {
                 }
                 parts.join("\n\n")
             }
-            MessageContent::ToolResults(_) => String::new(),
+            MessageContent::ToolCalls(_) => String::new(),
         }
     }
 }
@@ -143,6 +167,29 @@ pub enum MessageContentPart {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ImageUrl {
     pub url: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct MessageContentToolCalls {
+    pub tool_results: Vec<ToolResult>,
+    pub text: String,
+    pub sequence: bool,
+}
+
+impl MessageContentToolCalls {
+    pub fn new(tool_results: Vec<ToolResult>, text: String) -> Self {
+        Self {
+            tool_results,
+            text,
+            sequence: false,
+        }
+    }
+
+    pub fn merge(&mut self, tool_results: Vec<ToolResult>, _text: String) {
+        self.tool_results.extend(tool_results);
+        self.text.clear();
+        self.sequence = true;
+    }
 }
 
 pub fn patch_system_message(messages: &mut Vec<Message>) {

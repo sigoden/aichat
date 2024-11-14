@@ -6,7 +6,7 @@ mod macros;
 mod model;
 mod stream;
 
-pub use crate::function::{ToolCall, ToolResults};
+pub use crate::function::ToolCall;
 pub use crate::utils::PromptKind;
 pub use common::*;
 pub use message::*;

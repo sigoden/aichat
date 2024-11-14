@@ -205,8 +205,12 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
         .flat_map(|message| {
             let Message { role, content } = message;
             match content {
-                MessageContent::ToolResults((tool_results, text)) => {
-                    if let Some(true) = tool_results.first().map(|v| v.call.id.is_some()) {
+                MessageContent::ToolCalls(MessageContentToolCalls {
+                        tool_results,
+                        text,
+                        sequence,
+                    }) => {
+                    if !sequence {
                         let tool_calls: Vec<_> = tool_results.iter().map(|tool_result| {
                             json!({
                                 "id": tool_result.call.id,

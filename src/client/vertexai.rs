@@ -342,7 +342,7 @@ pub fn gemini_build_chat_completions_body(
                             .collect();
                         vec![json!({ "role": role, "parts": parts })]
                     },
-                    MessageContent::ToolResults((tool_results, _)) => {
+                    MessageContent::ToolCalls(MessageContentToolCalls { tool_results, .. }) => {
                         let model_parts: Vec<Value> = tool_results.iter().map(|tool_result| {
                             json!({
                                 "functionCall": {
