@@ -14,7 +14,6 @@ use crate::utils::{create_abort_signal, create_spinner, set_text, temp_file, Abo
 
 use anyhow::{bail, Context, Result};
 use fancy_regex::Regex;
-use nu_ansi_term::Color;
 use reedline::{
     default_emacs_keybindings, default_vi_insert_keybindings, default_vi_normal_keybindings,
     ColumnarMenu, EditCommand, EditMode, Emacs, KeyCode, KeyModifiers, Keybindings, Reedline,
@@ -654,22 +653,8 @@ async fn ask(
         )
         .await
     } else {
-        if config.write().should_compress_session() {
-            let config = config.clone();
-            let color = if config.read().light_theme {
-                Color::LightGray
-            } else {
-                Color::DarkGray
-            };
-            print!(
-                "\n📢 {}\n",
-                color.italic().paint("Compressing the session."),
-            );
-            tokio::spawn(async move {
-                let _ = Config::compress_session(&config).await;
-                config.write().end_compressing_session();
-            });
-        }
+        Config::maybe_autoname_session(config.clone());
+        Config::maybe_compress_session(config.clone());
         Ok(())
     }
 }

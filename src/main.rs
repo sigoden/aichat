@@ -134,7 +134,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         config.write().empty_session()?;
     }
     if cli.save_session {
-        config.write().set_append_conversation()?;
+        config.write().set_save_session_this_time()?;
     }
     if cli.info {
         let info = config.read().info()?;

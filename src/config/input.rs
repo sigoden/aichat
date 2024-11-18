@@ -14,6 +14,7 @@ use std::{collections::HashMap, fs::File, io::Read, path::Path};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 const IMAGE_EXTS: [&str; 5] = ["png", "jpeg", "jpg", "webp", "gif"];
+const SUMMARY_MAX_WIDTH: usize = 80;
 
 lazy_static::lazy_static! {
     static ref URL_RE: Regex = Regex::new(r"^[A-Za-z0-9_-]{2,}:/").unwrap();
@@ -58,12 +59,11 @@ impl Input {
 
     pub async fn from_files(
         config: &GlobalConfig,
-        text: &str,
+        raw_text: &str,
         paths: Vec<String>,
         role: Option<Role>,
     ) -> Result<Self> {
         let spinner = create_spinner("Loading files").await;
-        let raw_text = text.to_string();
         let mut raw_paths = vec![];
         let mut local_paths = vec![];
         let mut remote_urls = vec![];
@@ -85,8 +85,8 @@ impl Input {
         spinner.stop();
         let (files, medias, data_urls) = ret.context("Failed to load files")?;
         let mut texts = vec![];
-        if !text.is_empty() {
-            texts.push(text.to_string());
+        if !raw_text.is_empty() {
+            texts.push(raw_text.to_string());
         };
         if !files.is_empty() {
             texts.push(String::new());
@@ -98,7 +98,7 @@ impl Input {
         Ok(Self {
             config: config.clone(),
             text: texts.join("\n"),
-            raw: (raw_text, raw_paths),
+            raw: (raw_text.to_string(), raw_paths),
             patched_text: None,
             continue_output: None,
             regenerate: false,
@@ -280,12 +280,12 @@ impl Input {
             .chars()
             .map(|c| if c.is_control() { ' ' } else { c })
             .collect();
-        if text.width_cjk() > 70 {
+        if text.width_cjk() > SUMMARY_MAX_WIDTH {
             let mut sum_width = 0;
             let mut chars = vec![];
             for c in text.chars() {
                 sum_width += c.width_cjk().unwrap_or(1);
-                if sum_width > 67 {
+                if sum_width > SUMMARY_MAX_WIDTH - 3 {
                     chars.extend(['.', '.', '.']);
                     break;
                 }
