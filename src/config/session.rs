@@ -355,6 +355,10 @@ impl Session {
         self.autoname.as_ref().and_then(|v| v.chat_history.clone())
     }
 
+    pub fn autoname(&self) -> Option<&str> {
+        self.autoname.as_ref().and_then(|v| v.name.as_deref())
+    }
+
     pub fn set_autoname(&mut self, value: &str) {
         let name = value
             .chars()
@@ -401,7 +405,7 @@ impl Session {
 
                 let now = chrono::Local::now();
                 session_name = now.format("%Y%m%dT%H%M%S").to_string();
-                if let Some(autoname) = self.autoname.as_ref().and_then(|v| v.name.as_ref()) {
+                if let Some(autoname) = self.autoname() {
                     session_name = format!("{session_name}-{autoname}")
                 }
             }

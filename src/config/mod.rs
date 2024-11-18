@@ -1844,6 +1844,9 @@ impl Config {
         }
         if let Some(session) = &self.session {
             output.insert("session", session.name().to_string());
+            if let Some(autoname) = session.autoname() {
+                output.insert("session_autoname", autoname.to_string());
+            }
             output.insert("dirty", session.dirty().to_string());
             let (tokens, percent) = session.tokens_usage();
             output.insert("consume_tokens", tokens.to_string());
