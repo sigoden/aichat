@@ -300,6 +300,7 @@ impl Repl {
                 },
                 ".session" => {
                     self.config.write().use_session(args)?;
+                    Config::maybe_autoname_session(self.config.clone());
                 }
                 ".rag" => {
                     Config::use_rag(&self.config, args, self.abort_signal.clone()).await?;
