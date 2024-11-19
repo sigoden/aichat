@@ -469,9 +469,7 @@ impl Session {
             }
         } else {
             if self.messages.is_empty() {
-                if self.name == TEMP_SESSION_NAME
-                    && (self.save_session_this_time || self.save_session == Some(true))
-                {
+                if self.name == TEMP_SESSION_NAME && self.save_session == Some(true) {
                     let raw_input = input.raw();
                     let chat_history = format!("USER: {raw_input}\nASSISTANT: {output}\n");
                     self.autoname = Some(AutoName::new_from_chat_history(chat_history));
