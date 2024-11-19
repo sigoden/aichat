@@ -5,7 +5,9 @@ mod session;
 
 pub use self::agent::{list_agents, Agent};
 pub use self::input::Input;
-pub use self::role::{Role, RoleLike, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE};
+pub use self::role::{
+    Role, RoleLike, CODE_ROLE, CREATE_TITLE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE,
+};
 use self::session::Session;
 
 use crate::client::{
@@ -37,6 +39,10 @@ use std::{
 };
 use syntect::highlighting::ThemeSet;
 
+pub const TEMP_ROLE_NAME: &str = "%%";
+pub const TEMP_RAG_NAME: &str = "temp";
+pub const TEMP_SESSION_NAME: &str = "temp";
+
 /// Monokai Extended
 const DARK_THEME: &[u8] = include_bytes!("../../assets/monokai-extended.theme.bin");
 const LIGHT_THEME: &[u8] = include_bytes!("../../assets/monokai-extended-light.theme.bin");
@@ -51,10 +57,6 @@ const FUNCTIONS_DIR_NAME: &str = "functions";
 const FUNCTIONS_FILE_NAME: &str = "functions.json";
 const FUNCTIONS_BIN_DIR_NAME: &str = "bin";
 const AGENTS_DIR_NAME: &str = "agents";
-
-pub const TEMP_ROLE_NAME: &str = "%%";
-pub const TEMP_RAG_NAME: &str = "temp";
-pub const TEMP_SESSION_NAME: &str = "temp";
 
 const CLIENTS_FIELD: &str = "clients";
 
@@ -339,7 +341,10 @@ impl Config {
     }
 
     pub fn session_file(&self, name: &str) -> PathBuf {
-        self.sessions_dir().join(format!("{name}.yaml"))
+        match name.split_once("/") {
+            Some((dir, name)) => self.sessions_dir().join(dir).join(format!("{name}.yaml")),
+            None => self.sessions_dir().join(format!("{name}.yaml")),
+        }
     }
 
     pub fn rag_file(&self, name: &str) -> PathBuf {
@@ -1081,7 +1086,10 @@ impl Config {
         let session_name = match &self.session {
             Some(session) => match name {
                 Some(v) => v.to_string(),
-                None => session.name().to_string(),
+                None => session
+                    .autoname()
+                    .unwrap_or_else(|| session.name())
+                    .to_string(),
             },
             None => bail!("No session"),
         };
@@ -1124,9 +1132,9 @@ impl Config {
         Ok(())
     }
 
-    pub fn set_append_conversation(&mut self) -> Result<()> {
+    pub fn set_save_session_this_time(&mut self) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
-            session.set_append_conversation();
+            session.set_save_session_this_time();
         } else {
             bail!("No session")
         }
@@ -1137,14 +1145,42 @@ impl Config {
         list_file_names(self.sessions_dir(), ".yaml")
     }
 
-    pub fn should_compress_session(&mut self) -> bool {
-        if let Some(session) = self.session.as_mut() {
-            if session.need_compress(self.compress_threshold) {
-                session.set_compressing(true);
-                return true;
+    pub fn list_autoname_sessions(&self) -> Vec<String> {
+        list_file_names(self.sessions_dir().join("_"), ".yaml")
+    }
+
+    pub fn maybe_compress_session(config: GlobalConfig) {
+        let mut need_compress = false;
+        {
+            let mut config = config.write();
+            let compress_threshold = config.compress_threshold;
+            if let Some(session) = config.session.as_mut() {
+                if session.need_compress(compress_threshold) {
+                    session.set_compressing(true);
+                    need_compress = true;
+                }
             }
+        };
+        if !need_compress {
+            return;
         }
-        false
+        let color = if config.read().light_theme {
+            nu_ansi_term::Color::LightGray
+        } else {
+            nu_ansi_term::Color::DarkGray
+        };
+        print!(
+            "\n📢 {}\n",
+            color.italic().paint("Compressing the session."),
+        );
+        tokio::spawn(async move {
+            if let Err(err) = Config::compress_session(&config).await {
+                warn!("Failed to compress the session: {err}");
+            }
+            if let Some(session) = config.write().session.as_mut() {
+                session.set_compressing(false);
+            }
+        });
     }
 
     pub async fn compress_session(config: &GlobalConfig) -> Result<()> {
@@ -1156,7 +1192,13 @@ impl Config {
             }
             None => bail!("No session"),
         }
-        let input = Input::from_str(config, config.read().summarize_prompt(), None);
+
+        let prompt = config
+            .read()
+            .summarize_prompt
+            .clone()
+            .unwrap_or_else(|| SUMMARIZE_PROMPT.into());
+        let input = Input::from_str(config, &prompt, None);
         let client = input.create_client()?;
         let summary = client.chat_completions(input).await?.text;
         let summary_prompt = config
@@ -1171,10 +1213,6 @@ impl Config {
         Ok(())
     }
 
-    pub fn summarize_prompt(&self) -> &str {
-        self.summarize_prompt.as_deref().unwrap_or(SUMMARIZE_PROMPT)
-    }
-
     pub fn is_compressing_session(&self) -> bool {
         self.session
             .as_ref()
@@ -1182,10 +1220,51 @@ impl Config {
             .unwrap_or_default()
     }
 
-    pub fn end_compressing_session(&mut self) {
-        if let Some(session) = self.session.as_mut() {
-            session.set_compressing(false);
+    pub fn maybe_autoname_session(config: GlobalConfig) {
+        let mut need_autoname = false;
+        if let Some(session) = config.write().session.as_mut() {
+            if session.need_autoname() {
+                session.set_autonaming(true);
+                need_autoname = true;
+            }
         }
+        if !need_autoname {
+            return;
+        }
+        let color = if config.read().light_theme {
+            nu_ansi_term::Color::LightGray
+        } else {
+            nu_ansi_term::Color::DarkGray
+        };
+        print!("\n📢 {}\n", color.italic().paint("Autonaming the session."),);
+        tokio::spawn(async move {
+            if let Err(err) = Config::autoname_session(&config).await {
+                warn!("Failed to autonaming the session: {err}");
+            }
+            if let Some(session) = config.write().session.as_mut() {
+                session.set_autonaming(false);
+            }
+        });
+    }
+
+    pub async fn autoname_session(config: &GlobalConfig) -> Result<()> {
+        let text = match config
+            .read()
+            .session
+            .as_ref()
+            .and_then(|v| v.chat_history_for_autonaming())
+        {
+            Some(v) => v,
+            None => bail!("No chat history"),
+        };
+        let role = config.read().retrieve_role(CREATE_TITLE_ROLE)?;
+        let input = Input::from_str(config, &text, Some(role));
+        let client = input.create_client()?;
+        let text = client.chat_completions(input).await?.text;
+        if let Some(session) = config.write().session.as_mut() {
+            session.set_autoname(&text);
+        }
+        Ok(())
     }
 
     pub async fn use_rag(
@@ -1562,7 +1641,19 @@ impl Config {
                     .into_iter()
                     .map(|v| (v.id(), Some(v.description())))
                     .collect(),
-                ".session" => map_completion_values(self.list_sessions()),
+                ".session" => {
+                    if args[0].starts_with("_/") {
+                        map_completion_values(
+                            self.list_autoname_sessions()
+                                .iter()
+                                .rev()
+                                .map(|v| format!("_/{}", v))
+                                .collect::<Vec<String>>(),
+                        )
+                    } else {
+                        map_completion_values(self.list_sessions())
+                    }
+                }
                 ".rag" => map_completion_values(Self::list_rags()),
                 ".agent" => map_completion_values(list_agents()),
                 ".starter" => match &self.agent {
@@ -1772,6 +1863,9 @@ impl Config {
         }
         if let Some(session) = &self.session {
             output.insert("session", session.name().to_string());
+            if let Some(autoname) = session.autoname() {
+                output.insert("session_autoname", autoname.to_string());
+            }
             output.insert("dirty", session.dirty().to_string());
             let (tokens, percent) = session.tokens_usage();
             output.insert("consume_tokens", tokens.to_string());
