@@ -1142,6 +1142,10 @@ impl Config {
         list_file_names(self.sessions_dir(), ".yaml")
     }
 
+    pub fn list_autoname_sessions(&self) -> Vec<String> {
+        list_file_names(self.sessions_dir().join("_"), ".yaml")
+    }
+
     pub fn maybe_compress_session(config: GlobalConfig) {
         let mut need_compress = false;
         {
@@ -1634,7 +1638,19 @@ impl Config {
                     .into_iter()
                     .map(|v| (v.id(), Some(v.description())))
                     .collect(),
-                ".session" => map_completion_values(self.list_sessions()),
+                ".session" => {
+                    if args[0].starts_with("_/") {
+                        map_completion_values(
+                            self.list_autoname_sessions()
+                                .iter()
+                                .rev()
+                                .map(|v| format!("_/{}", v))
+                                .collect::<Vec<String>>(),
+                        )
+                    } else {
+                        map_completion_values(self.list_sessions())
+                    }
+                }
                 ".rag" => map_completion_values(Self::list_rags()),
                 ".agent" => map_completion_values(list_agents()),
                 ".starter" => match &self.agent {
