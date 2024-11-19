@@ -177,6 +177,10 @@ impl Session {
             items.push(("path", path.to_string()));
         }
 
+        if let Some(autoname) = self.autoname() {
+            items.push(("autoname", autoname.to_string()));
+        }
+
         items.push(("model", self.model().id()));
 
         if let Some(temperature) = self.temperature() {

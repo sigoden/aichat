@@ -1086,7 +1086,10 @@ impl Config {
         let session_name = match &self.session {
             Some(session) => match name {
                 Some(v) => v.to_string(),
-                None => session.name().to_string(),
+                None => session
+                    .autoname()
+                    .unwrap_or_else(|| session.name())
+                    .to_string(),
             },
             None => bail!("No session"),
         };
