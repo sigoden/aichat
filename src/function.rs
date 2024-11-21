@@ -236,11 +236,6 @@ impl ToolCall {
         let temp_file = temp_file("-eval-", "");
         envs.insert("LLM_OUTPUT".into(), temp_file.display().to_string());
 
-        envs.insert(
-            "LLM_FUNCTIONS_ROOT".into(),
-            Config::functions_dir().display().to_string(),
-        );
-
         #[cfg(windows)]
         let cmd_name = polyfill_cmd_name(&cmd_name, &bin_dirs);
         if *IS_STDOUT_TERMINAL {
