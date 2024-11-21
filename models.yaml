@@ -14,6 +14,20 @@
       output_price: 10
       supports_vision: true
       supports_function_calling: true
+    - name: gpt-4o-2024-11-20
+      max_input_tokens: 128000
+      max_output_tokens: 16384
+      input_price: 2.5
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-4o-2024-08-06
+      max_input_tokens: 128000
+      max_output_tokens: 16384
+      input_price: 2.5
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
     - name: gpt-4o-2024-05-13
       max_input_tokens: 128000
       max_output_tokens: 4096
@@ -201,6 +215,11 @@
       max_input_tokens: 256000
       input_price: 0.25
       output_price: 0.25
+    - name: pixtral-large-latest
+      max_input_tokens: 128000
+      input_price: 2
+      output_price: 6
+      supports_vision: true
     - name: pixtral-12b-2409
       max_input_tokens: 128000
       input_price: 0.15
@@ -288,7 +307,12 @@
     - name: grok-beta
       max_input_tokens: 131072
       input_price: 5
-      output_price: 10
+      output_price: 15
+    - name: grok-vision-beta
+      max_input_tokens: 8192
+      input_price: 5
+      output_price: 15
+      supports_vision: true
 
 # Links:
 #  - https://docs.perplexity.ai/guides/model-cards
@@ -1265,13 +1289,11 @@
       max_input_tokens: 128000
       input_price: 15
       output_price: 60
-      no_stream: true
       no_system_message: true
     - name: openai/o1-mini
       max_input_tokens: 128000
       input_price: 3
       output_price: 12
-      no_stream: true
       no_system_message: true
     - name: openai/gpt-3.5-turbo
       max_input_tokens: 16385
@@ -1422,8 +1444,13 @@
       max_input_tokens: 256000
       input_price: 0.25
       output_price: 0.25
+    - name: mistralai/pixtral-large-2411
+      max_input_tokens: 128000
+      input_price: 2
+      output_price: 6
+      supports_vision: true
     - name: mistralai/pixtral-12b	
-      max_input_tokens: 4096
+      max_input_tokens: 128000
       input_price: 0.1
       output_price: 0.1
       supports_vision: true
@@ -1529,7 +1556,12 @@
     - name: x-ai/grok-beta
       max_input_tokens: 32768
       input_price: 5
-      output_price: 10
+      output_price: 15
+    - name: x-ai/grok-vision-beta
+      max_input_tokens: 8192
+      input_price: 5
+      output_price: 15
+      supports_vision: true
 
 # Links
 #  - https://cloud.siliconflow.cn/models
@@ -1666,6 +1698,10 @@
       max_input_tokens: 32768
       input_price: 0.3
       output_price: 0.3
+    - name: Qwen/Qwen2.5-Coder-32B-Instruct
+      max_input_tokens: 16384
+      input_price: 0.8
+      output_price: 0.8
     - name: WhereIsAI/UAE-Large-V1
       type: embedding
       input_price: 0.016
