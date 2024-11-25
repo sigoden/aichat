@@ -61,14 +61,12 @@
       max_output_tokens: 32768
       input_price: 15
       output_price: 60
-      no_stream: true
       no_system_message: true
     - name: o1-mini
       max_input_tokens: 128000
       max_output_tokens: 65536
       input_price: 3
       output_price: 12
-      no_stream: true
       no_system_message: true
     - name: gpt-3.5-turbo
       max_input_tokens: 16385
@@ -123,6 +121,13 @@
       output_price: 0
       supports_function_calling: true
       no_system_message: true
+    - name: gemini-exp-1121
+      max_input_tokens: 32768
+      max_output_tokens: 8192
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
     - name: text-embedding-004
       type: embedding
       input_price: 0
@@ -532,7 +537,7 @@
   models:
     - name: anthropic.claude-3-5-sonnet-20241022-v2:0
       max_input_tokens: 200000
-      max_output_tokens: 4096
+      max_output_tokens: 8192
       require_max_tokens: true
       input_price: 3
       output_price: 15
@@ -548,7 +553,7 @@
       supports_function_calling: true
     - name: anthropic.claude-3-5-haiku-20241022-v1:0
       max_input_tokens: 200000
-      max_output_tokens: 4096
+      max_output_tokens: 8192
       require_max_tokens: true
       input_price: 1
       output_price: 5
