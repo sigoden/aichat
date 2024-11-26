@@ -1,6 +1,6 @@
 use super::{MarkdownRender, SseEvent};
 
-use crate::utils::{create_spinner, poll_abort_signal, AbortSignal};
+use crate::utils::{poll_abort_signal, spawn_spinner, AbortSignal};
 
 use anyhow::Result;
 use crossterm::{
@@ -66,7 +66,7 @@ async fn markdown_stream_inner(
 
     let columns = terminal::size()?.0;
 
-    let mut spinner = Some(create_spinner("Generating").await);
+    let mut spinner = Some(spawn_spinner("Generating"));
 
     'outer: loop {
         if abort_signal.aborted() {

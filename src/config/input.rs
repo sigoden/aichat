@@ -63,7 +63,6 @@ impl Input {
         paths: Vec<String>,
         role: Option<Role>,
     ) -> Result<Self> {
-        let spinner = create_spinner("Loading files").await;
         let mut raw_paths = vec![];
         let mut local_paths = vec![];
         let mut remote_urls = vec![];
@@ -82,7 +81,6 @@ impl Input {
             }
         }
         let ret = load_documents(config, local_paths, remote_urls).await;
-        spinner.stop();
         let (files, medias, data_urls) = ret.context("Failed to load files")?;
         let mut texts = vec![];
         if !raw_text.is_empty() {
@@ -110,6 +108,21 @@ impl Input {
             with_session,
             with_agent,
         })
+    }
+
+    pub async fn from_files_with_spinner(
+        config: &GlobalConfig,
+        raw_text: &str,
+        paths: Vec<String>,
+        role: Option<Role>,
+        abort_signal: AbortSignal,
+    ) -> Result<Self> {
+        abortable_run_with_spinner(
+            Input::from_files(config, raw_text, paths, role),
+            "Loading files",
+            abort_signal,
+        )
+        .await
     }
 
     pub fn is_empty(&self) -> bool {

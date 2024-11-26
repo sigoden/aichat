@@ -10,7 +10,9 @@ use crate::client::{call_chat_completions, call_chat_completions_streaming};
 use crate::config::{AssertState, Config, GlobalConfig, Input, StateFlags};
 use crate::function::need_send_tool_results;
 use crate::render::render_error;
-use crate::utils::{create_abort_signal, create_spinner, set_text, temp_file, AbortSignal};
+use crate::utils::{
+    abortable_run_with_spinner, create_abort_signal, set_text, temp_file, AbortSignal,
+};
 
 use anyhow::{bail, Context, Result};
 use fancy_regex::Regex;
@@ -362,10 +364,12 @@ impl Repl {
                 },
                 ".compress" => match args {
                     Some("session") => {
-                        let spinner = create_spinner("Compressing").await;
-                        let ret = Config::compress_session(&self.config).await;
-                        spinner.stop();
-                        ret?;
+                        abortable_run_with_spinner(
+                            Config::compress_session(&self.config),
+                            "Compressing",
+                            self.abort_signal.clone(),
+                        )
+                        .await?;
                         println!("✓ Successfully compressed the session.");
                     }
                     _ => {
@@ -401,7 +405,14 @@ impl Repl {
                     Some(args) => {
                         let (files, text) = split_files_text(args);
                         let files = shell_words::split(files).with_context(|| "Invalid args")?;
-                        let input = Input::from_files(&self.config, text, files, None).await?;
+                        let input = Input::from_files_with_spinner(
+                            &self.config,
+                            text,
+                            files,
+                            None,
+                            self.abort_signal.clone(),
+                        )
+                        .await?;
                         ask(&self.config, self.abort_signal.clone(), input, true).await?;
                     }
                     None => println!("Usage: .file <files>... [-- <text>...]"),

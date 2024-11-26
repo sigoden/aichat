@@ -146,14 +146,14 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         if cfg!(target_os = "macos") && !stdin().is_terminal() {
             bail!("Unable to read the pipe for shell execution on MacOS")
         }
-        let input = create_input(&config, text, &cli.file).await?;
+        let input = create_input(&config, text, &cli.file, abort_signal.clone()).await?;
         shell_execute(&config, &SHELL, input, abort_signal.clone()).await?;
         return Ok(());
     }
     config.write().apply_prelude()?;
     match is_repl {
         false => {
-            let mut input = create_input(&config, text, &cli.file).await?;
+            let mut input = create_input(&config, text, &cli.file, abort_signal.clone()).await?;
             input.use_embeddings(abort_signal.clone()).await?;
             start_directive(&config, input, cli.code, abort_signal).await
         }
@@ -320,11 +320,19 @@ async fn create_input(
     config: &GlobalConfig,
     text: Option<String>,
     file: &[String],
+    abort_signal: AbortSignal,
 ) -> Result<Input> {
     let input = if file.is_empty() {
         Input::from_str(config, &text.unwrap_or_default(), None)
     } else {
-        Input::from_files(config, &text.unwrap_or_default(), file.to_vec(), None).await?
+        Input::from_files_with_spinner(
+            config,
+            &text.unwrap_or_default(),
+            file.to_vec(),
+            None,
+            abort_signal,
+        )
+        .await?
     };
     if input.is_empty() {
         bail!("No input");
