@@ -1,20 +1,21 @@
 use super::{poll_abort_signal, wait_abort_signal, AbortSignal, IS_STDOUT_TERMINAL};
 
 use anyhow::{bail, Result};
-use crossterm::{
-    cursor, queue, style,
-    terminal::{self, disable_raw_mode, enable_raw_mode},
-};
+use crossterm::{cursor, queue, style, terminal};
 use std::{
     future::Future,
     io::{stdout, Write},
     time::Duration,
 };
 use tokio::{
-    sync::{mpsc, oneshot},
+    sync::{
+        mpsc::{self, UnboundedReceiver},
+        oneshot,
+    },
     time::interval,
 };
 
+#[derive(Debug, Default)]
 pub struct SpinnerInner {
     index: usize,
     message: String,
@@ -22,13 +23,6 @@ pub struct SpinnerInner {
 
 impl SpinnerInner {
     const DATA: [&'static str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-
-    fn new(message: &str) -> Self {
-        SpinnerInner {
-            index: 0,
-            message: message.to_string(),
-        }
-    }
 
     fn step(&mut self) -> Result<()> {
         if !*IS_STDOUT_TERMINAL || self.message.is_empty() {
@@ -75,13 +69,14 @@ impl SpinnerInner {
 #[derive(Clone)]
 pub struct Spinner(mpsc::UnboundedSender<SpinnerEvent>);
 
-impl Drop for Spinner {
-    fn drop(&mut self) {
-        self.stop();
-    }
-}
-
 impl Spinner {
+    pub fn create(message: &str) -> (Self, UnboundedReceiver<SpinnerEvent>) {
+        let (tx, spinner_rx) = mpsc::unbounded_channel();
+        let spinner = Spinner(tx);
+        let _ = spinner.set_message(message.to_string());
+        (spinner, spinner_rx)
+    }
+
     pub fn set_message(&self, message: String) -> Result<()> {
         self.0.send(SpinnerEvent::SetMessage(message))?;
         std::thread::sleep(Duration::from_millis(10));
@@ -94,48 +89,57 @@ impl Spinner {
     }
 }
 
-enum SpinnerEvent {
+pub enum SpinnerEvent {
     SetMessage(String),
     Stop,
 }
 
-pub async fn create_spinner(message: &str) -> Spinner {
-    let message = format!(" {message}");
-    let (tx, rx) = mpsc::unbounded_channel();
-    tokio::spawn(run_spinner(message, rx));
-    Spinner(tx)
-}
+pub fn spawn_spinner(message: &str) -> Spinner {
+    let (spinner, mut spinner_rx) = Spinner::create(message);
+    tokio::spawn(async move {
+        let mut spinner = SpinnerInner::default();
+        let mut interval = interval(Duration::from_millis(50));
+        loop {
+            tokio::select! {
+                evt = spinner_rx.recv() => {
+                    if let Some(evt) = evt {
+                        match evt {
+                            SpinnerEvent::SetMessage(message) => {
+                                spinner.set_message(message)?;
+                            }
+                            SpinnerEvent::Stop => {
+                                spinner.clear_message()?;
+                                break;
+                            }
+                        }
 
-async fn run_spinner(message: String, mut rx: mpsc::UnboundedReceiver<SpinnerEvent>) -> Result<()> {
-    let mut spinner = SpinnerInner::new(&message);
-    let mut interval = interval(Duration::from_millis(50));
-    loop {
-        tokio::select! {
-            _ = interval.tick() => {
-                let _ = spinner.step();
-            }
-            evt = rx.recv() => {
-                if let Some(evt) = evt {
-                    match evt {
-                        SpinnerEvent::SetMessage(message) => {
-                            spinner.set_message(message)?;
-                        }
-                        SpinnerEvent::Stop => {
-                            spinner.clear_message()?;
-                            break;
-                        }
                     }
-
+                }
+                _ = interval.tick() => {
+                    let _ = spinner.step();
                 }
             }
         }
-    }
-    Ok(())
+        Ok::<(), anyhow::Error>(())
+    });
+    spinner
 }
 
 pub async fn abortable_run_with_spinner<F, T>(
     task: F,
     message: &str,
+    abort_signal: AbortSignal,
+) -> Result<T>
+where
+    F: Future<Output = Result<T>>,
+{
+    let (_, spinner_rx) = Spinner::create(message);
+    abortable_run_with_spinner_rx(task, spinner_rx, abort_signal).await
+}
+
+pub async fn abortable_run_with_spinner_rx<F, T>(
+    task: F,
+    spinner_rx: UnboundedReceiver<SpinnerEvent>,
     abort_signal: AbortSignal,
 ) -> Result<T>
 where
@@ -149,6 +153,11 @@ where
                     let _ = done_tx.send(());
                     ret
                 }
+                _ = tokio::signal::ctrl_c() => {
+                    abort_signal.set_ctrlc();
+                    let _ = done_tx.send(());
+                    bail!("Aborted!")
+                },
                 _ = wait_abort_signal(&abort_signal) => {
                     let _ = done_tx.send(());
                     bail!("Aborted.");
@@ -157,7 +166,7 @@ where
         };
         let (task_ret, spinner_ret) = tokio::join!(
             run_task,
-            run_abortable_spinner(message, abort_signal.clone(), done_rx)
+            run_abortable_spinner(spinner_rx, done_rx, abort_signal.clone())
         );
         spinner_ret?;
         task_ret
@@ -167,25 +176,11 @@ where
 }
 
 async fn run_abortable_spinner(
-    message: &str,
-    abort_signal: AbortSignal,
-    done_rx: oneshot::Receiver<()>,
-) -> Result<()> {
-    enable_raw_mode()?;
-
-    let ret = run_abortable_spinner_inner(message, abort_signal, done_rx).await;
-
-    disable_raw_mode()?;
-    ret
-}
-
-async fn run_abortable_spinner_inner(
-    message: &str,
-    abort_signal: AbortSignal,
+    mut spinner_rx: UnboundedReceiver<SpinnerEvent>,
     mut done_rx: oneshot::Receiver<()>,
+    abort_signal: AbortSignal,
 ) -> Result<()> {
-    let message = format!(" {message}");
-    let mut spinner = SpinnerInner::new(&message);
+    let mut spinner = SpinnerInner::default();
     loop {
         if abort_signal.aborted() {
             break;
@@ -198,6 +193,16 @@ async fn run_abortable_spinner_inner(
                 break;
             }
             _ => {}
+        }
+
+        match spinner_rx.try_recv() {
+            Ok(SpinnerEvent::SetMessage(message)) => {
+                spinner.set_message(message)?;
+            }
+            Ok(SpinnerEvent::Stop) => {
+                spinner.clear_message()?;
+            }
+            Err(_) => {}
         }
 
         if poll_abort_signal(&abort_signal)? {

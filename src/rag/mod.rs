@@ -88,17 +88,13 @@ impl Rag {
             paths = add_documents()?;
         };
         let loaders = config.read().document_loaders.clone();
-        let spinner = create_spinner("Starting").await;
-        tokio::select! {
-            ret = rag.sync_documents(loaders, &paths, Some(spinner.clone())) => {
-                spinner.stop();
-                ret?;
-            }
-            _ = wait_abort_signal(&abort_signal) => {
-                spinner.stop();
-                bail!("Aborted!")
-            },
-        };
+        let (spinner, spinner_rx) = Spinner::create("");
+        abortable_run_with_spinner_rx(
+            rag.sync_documents(loaders, &paths, Some(spinner)),
+            spinner_rx,
+            abort_signal,
+        )
+        .await?;
         if rag.save()? {
             println!("✓ Saved RAG to '{}'.", save_path.display());
         }
@@ -143,17 +139,13 @@ impl Rag {
         T: AsRef<str>,
     {
         let loaders = config.read().document_loaders.clone();
-        let spinner = create_spinner("Starting").await;
-        tokio::select! {
-            ret = self.sync_documents(loaders, document_paths, Some(spinner.clone())) => {
-                spinner.stop();
-                ret?;
-            }
-            _ = wait_abort_signal(&abort_signal) => {
-                spinner.stop();
-                bail!("Aborted!")
-            },
-        };
+        let (spinner, spinner_rx) = Spinner::create("");
+        abortable_run_with_spinner_rx(
+            self.sync_documents(loaders, document_paths, Some(spinner)),
+            spinner_rx,
+            abort_signal,
+        )
+        .await?;
         if self.save()? {
             println!("✓ Saved rag to '{}'.", self.path);
         }
@@ -311,16 +303,18 @@ impl Rag {
         rerank_model: Option<&str>,
         abort_signal: AbortSignal,
     ) -> Result<(String, Vec<DocumentId>)> {
-        let spinner = create_spinner("Searching").await;
-        let ret = tokio::select! {
-            ret = self.hybird_search(text, top_k, min_score_vector_search, min_score_keyword_search, rerank_model) => {
-                ret
-            }
-            _ = wait_abort_signal(&abort_signal) => {
-                bail!("Aborted!")
-            },
-        };
-        spinner.stop();
+        let ret = abortable_run_with_spinner(
+            self.hybird_search(
+                text,
+                top_k,
+                min_score_vector_search,
+                min_score_keyword_search,
+                rerank_model,
+            ),
+            "Searching",
+            abort_signal,
+        )
+        .await;
         let (ids, documents): (Vec<_>, Vec<_>) = ret?.into_iter().unzip();
         let embeddings = documents.join("\n\n");
         Ok((embeddings, ids))
