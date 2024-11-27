@@ -208,24 +208,17 @@ pub fn is_url(path: &str) -> bool {
 }
 
 pub fn set_proxy(
-    builder: reqwest::ClientBuilder,
+    mut builder: reqwest::ClientBuilder,
     proxy: Option<&String>,
 ) -> Result<reqwest::ClientBuilder> {
-    let proxy = if let Some(proxy) = proxy {
-        if proxy.is_empty() || proxy == "-" {
-            return Ok(builder);
+    if let Some(proxy) = proxy {
+        builder = builder.no_proxy();
+        if !proxy.is_empty() && proxy != "-" {
+            builder = builder.proxy(
+                reqwest::Proxy::all(proxy).with_context(|| format!("Invalid proxy `{proxy}`"))?,
+            );
         }
-        proxy.clone()
-    } else if let Some(proxy) = ["HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"]
-        .into_iter()
-        .find_map(|v| env::var(v).ok())
-    {
-        proxy
-    } else {
-        return Ok(builder);
     };
-    let builder = builder
-        .proxy(reqwest::Proxy::all(&proxy).with_context(|| format!("Invalid proxy `{proxy}`"))?);
     Ok(builder)
 }
 
