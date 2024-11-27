@@ -88,7 +88,7 @@ impl Rag {
             paths = add_documents()?;
         };
         let loaders = config.read().document_loaders.clone();
-        let (spinner, spinner_rx) = Spinner::create("Starting");
+        let (spinner, spinner_rx) = Spinner::create("");
         abortable_run_with_spinner_rx(
             rag.sync_documents(loaders, &paths, Some(spinner)),
             spinner_rx,
@@ -139,7 +139,7 @@ impl Rag {
         T: AsRef<str>,
     {
         let loaders = config.read().document_loaders.clone();
-        let (spinner, spinner_rx) = Spinner::create("Starting");
+        let (spinner, spinner_rx) = Spinner::create("");
         abortable_run_with_spinner_rx(
             self.sync_documents(loaders, document_paths, Some(spinner)),
             spinner_rx,

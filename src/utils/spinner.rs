@@ -1,10 +1,7 @@
 use super::{poll_abort_signal, wait_abort_signal, AbortSignal, IS_STDOUT_TERMINAL};
 
 use anyhow::{bail, Result};
-use crossterm::{
-    cursor, queue, style,
-    terminal::{self, disable_raw_mode, enable_raw_mode},
-};
+use crossterm::{cursor, queue, style, terminal};
 use std::{
     future::Future,
     io::{stdout, Write},
@@ -156,6 +153,11 @@ where
                     let _ = done_tx.send(());
                     ret
                 }
+                _ = tokio::signal::ctrl_c() => {
+                    abort_signal.set_ctrlc();
+                    let _ = done_tx.send(());
+                    bail!("Aborted!")
+                },
                 _ = wait_abort_signal(&abort_signal) => {
                     let _ = done_tx.send(());
                     bail!("Aborted.");
@@ -174,19 +176,6 @@ where
 }
 
 async fn run_abortable_spinner(
-    spinner_rx: UnboundedReceiver<SpinnerEvent>,
-    done_rx: oneshot::Receiver<()>,
-    abort_signal: AbortSignal,
-) -> Result<()> {
-    enable_raw_mode()?;
-
-    let ret = run_abortable_spinner_inner(spinner_rx, done_rx, abort_signal).await;
-
-    disable_raw_mode()?;
-    ret
-}
-
-async fn run_abortable_spinner_inner(
     mut spinner_rx: UnboundedReceiver<SpinnerEvent>,
     mut done_rx: oneshot::Receiver<()>,
     abort_signal: AbortSignal,
