@@ -78,29 +78,6 @@ test-server() {
     "$@"
 }
 
-OPENAI_COMPATIBLE_PLATFORMS=( \
-  openai,gpt-4o-mini,https://api.openai.com/v1 \
-  ai21,jamba-1.5-mini,https://api.ai21.com/studio/v1 \
-  cloudflare,@cf/meta/llama-3.1-8b-instruct, \
-  deepinfra,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.deepinfra.com/v1/openai \
-  deepseek,deepseek-chat,https://api.deepseek.com \
-  fireworks,accounts/fireworks/models/llama-v3p1-8b-instruct,https://api.fireworks.ai/inference/v1 \
-  github,gpt-4o-mini,https://models.inference.ai.azure.com \
-  groq,llama-3.1-8b-instant,https://api.groq.com/openai/v1 \
-  hunyuan,hunyuan-large,https://api.hunyuan.cloud.tencent.com/v1 \
-  lingyiwanwu,yi-large,https://api.lingyiwanwu.com/v1 \
-  mistral,mistral-small-latest,https://api.mistral.ai/v1 \
-  moonshot,moonshot-v1-8k,https://api.moonshot.cn/v1 \
-  openrouter,openai/gpt-4o-mini,https://openrouter.ai/api/v1 \
-  ollama,llama3.1:latest,http://localhost:11434/v1 \
-  perplexity,llama-3.1-8b-instruct,https://api.perplexity.ai \
-  qianwen,qwen-turbo-latest,https://dashscope.aliyuncs.com/compatible-mode/v1 \
-  siliconflow,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.siliconflow.cn/v1 \
-  together,meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo,https://api.together.xyz/v1 \
-  xai,grok-beta,https://api.x.ai/v1 \
-  zhipuai,glm-4-0520,https://open.bigmodel.cn/api/paas/v4 \
-)
-
 # @cmd Chat with any LLM api 
 # @flag -S --no-stream
 # @arg platform_model![?`_choice_platform_model`]
@@ -140,6 +117,7 @@ chat() {
 }
 
 # @cmd List models by openai-compatible api
+# @flag --name-only Print model name only
 # @arg platform![`_choice_platform`]
 models() {
     for platform_config in "${OPENAI_COMPATIBLE_PLATFORMS[@]}"; do
@@ -152,9 +130,33 @@ models() {
         env_prefix="$(echo "$argc_platform" | tr '[:lower:]' '[:upper:]')"
         api_key_env="${env_prefix}_API_KEY"
         api_key="${!api_key_env}" 
-        _retrieve_models
+        jq_args=()
+        if [[ -n "$argc_name_only" ]]; then
+            case "$argc_platform" in
+                cloudflare)
+                    jq_args+=(-r '.result[].name')
+                    ;;
+                github)
+                    jq_args+=(-r '.[].name')
+                    ;;
+                together)
+                    jq_args+=(-r '.[].id')
+                    ;;
+                *)
+                    jq_args+=(-r '.data[].id')
+                    ;;
+            esac
+        fi
+        _openai_compatible_models | jq "${jq_args[@]}"
     else
-        argc models-$argc_platform
+        if ! cat "$0" | grep -q "^models-$argc_platform"; then
+            _die "error: platform '$argc_platform' does not have a models api"
+        fi
+        cli_args=()
+        if [[ -n "$argc_name_only" ]]; then
+            cli_args+=(--name-only)
+        fi
+        argc models-$argc_platform "${cli_args[@]}"
     fi
 }
 
@@ -175,8 +177,13 @@ chat-openai-compatible() {
 # @cmd List models by openai-compatible api
 # @option --api-base! $$
 # @option --api-key! $$
+# @flag --name-only Print model name only
 models-openai-compatible() {
-    _retrieve_models
+    jq_args=()
+    if [[ -n "$argc_name_only" ]]; then
+        jq_args+=(-r '.data[].id')
+    fi
+    _openai_compatible_models | jq "${jq_args[@]}"
 }
 
 # @cmd Chat with azure-openai api
@@ -211,10 +218,15 @@ chat-gemini() {
 
 # @cmd List gemini models
 # @env GEMINI_API_KEY!
+# @flag --name-only Print model name only
 models-gemini() {
-    _wrapper curl "https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}" \
+    jq_args=()
+    if [[ -n "$argc_name_only" ]]; then
+        jq_args+=(-r '.models[].name')
+    fi
+    _wrapper curl -fsSL "https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}" \
 -H 'Content-Type: application/json' \
-
+    | jq "${jq_args[@]}"
 }
 
 # @cmd Chat with claude api
@@ -247,10 +259,15 @@ chat-cohere() {
 
 # @cmd List cohere models
 # @env COHERE_API_KEY!
+# @flag --name-only Print model name only
 models-cohere() {
-    _wrapper curl https://api.cohere.ai/v1/models \
+    jq_args=()
+    if [[ -n "$argc_name_only" ]]; then
+        jq_args+=(-r '.models[].name')
+    fi
+    _wrapper curl -fsSL https://api.cohere.ai/v1/models \
 -H "Authorization: Bearer $COHERE_API_KEY" \
-
+    | jq "${jq_args[@]}"
 }
 
 # @cmd Chat with vertexai api
@@ -290,16 +307,44 @@ chat-ernie() {
 }
 
 _argc_before() {
+    OPENAI_COMPATIBLE_PLATFORMS=( \
+        openai,gpt-4o-mini,https://api.openai.com/v1 \
+        ai21,jamba-1.5-mini,https://api.ai21.com/studio/v1 \
+        cloudflare,@cf/meta/llama-3.1-8b-instruct,https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/v1 \
+        deepinfra,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.deepinfra.com/v1/openai \
+        deepseek,deepseek-chat,https://api.deepseek.com \
+        fireworks,accounts/fireworks/models/llama-v3p1-8b-instruct,https://api.fireworks.ai/inference/v1 \
+        github,gpt-4o-mini,https://models.inference.ai.azure.com \
+        groq,llama-3.1-8b-instant,https://api.groq.com/openai/v1 \
+        hunyuan,hunyuan-large,https://api.hunyuan.cloud.tencent.com/v1 \
+        lingyiwanwu,yi-large,https://api.lingyiwanwu.com/v1 \
+        mistral,mistral-small-latest,https://api.mistral.ai/v1 \
+        moonshot,moonshot-v1-8k,https://api.moonshot.cn/v1 \
+        openrouter,openai/gpt-4o-mini,https://openrouter.ai/api/v1 \
+        ollama,llama3.1:latest,${OLLAMA_HOST:-"http://127.0.0.1:11434"}/v1 \
+        perplexity,llama-3.1-8b-instruct,https://api.perplexity.ai \
+        qianwen,qwen-turbo-latest,https://dashscope.aliyuncs.com/compatible-mode/v1 \
+        siliconflow,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.siliconflow.cn/v1 \
+        together,meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo,https://api.together.xyz/v1 \
+        xai,grok-beta,https://api.x.ai/v1 \
+        zhipuai,glm-4-0520,https://open.bigmodel.cn/api/paas/v4 \
+    )
+
     stream="true"
     if [[ -n "$argc_no_stream" ]]; then
         stream="false"
     fi
 }
 
-_retrieve_models() {
+_openai_compatible_models() {
     api_base="${api_base:-"$argc_api_base"}"
     api_key="${api_key:-"$argc_api_key"}"
-    _wrapper curl "$api_base/models" \
+    url="${api_base}/models"
+    if [[ "$argc_platform" == "cloudflare" ]]; then
+        url="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/models/search"
+    fi
+
+    _wrapper curl -fsSL "$url" \
 -H "Authorization: Bearer $api_key" \
 
 }
@@ -310,7 +355,7 @@ _retrieve_api_base() {
         key="$(echo $argc_platform |  tr '[:lower:]' '[:upper:]')_API_BASE"
         api_base="${!key}"
         if [[ -z "$api_base" ]]; then
-            _die "Miss api_base for $argc_platform; please set $key"
+            _die "error: miss api_base for $argc_platform; please set $key"
         fi
     fi
 }
@@ -330,7 +375,7 @@ _choice_platform() {
 }
 
 _choice_client() {
-    printf "%s\n" openai gemini claude cohere ollama azure-openai vertexai bedrock cloudflare ernie qianwen moonshot
+    printf "%s\n" gemini claude cohere azure-openai vertexai bedrock ernie
 }
 
 _choice_openai_compatible_platform() {
@@ -411,7 +456,7 @@ _build_body() {
 }'
             ;;
         *)
-            _die "Unsupported build body for $kind"
+            _die "error: unsupported build body for $kind"
             ;;
         esac
 
