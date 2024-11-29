@@ -13,12 +13,12 @@ pub fn set_text(text: &str) -> anyhow::Result<()> {
             #[cfg(target_os = "linux")]
             std::thread::sleep(std::time::Duration::from_millis(50));
         }
-        None => anyhow::bail!("Failed to copy the text; no available clipboard"),
+        None => return Err(anyhow::anyhow!("No clipboard available").context("Failed to copy")),
     }
     Ok(())
 }
 
 #[cfg(any(target_os = "android", target_os = "emscripten"))]
 pub fn set_text(_text: &str) -> anyhow::Result<()> {
-    anyhow::bail!("Failed to copy the text; no available clipboard")
+    Err(anyhow::anyhow!("No clipboard available").context("Failed to copy"))
 }

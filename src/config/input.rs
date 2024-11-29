@@ -90,7 +90,7 @@ impl Input {
             texts.push(String::new());
         }
         for (path, contents) in files {
-            texts.push(format!("`{path}`:\n\n{contents}\n"));
+            texts.push(format!("====== PATH: {path} ======\n{contents}\n"));
         }
         let (role, with_session, with_agent) = resolve_role(&config.read(), role);
         Ok(Self {
