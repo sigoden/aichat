@@ -175,7 +175,7 @@ async fn chat_completions_streaming(
                 function.get("arguments").and_then(|v| v.as_str()),
             ) {
                 let arguments: Value = arguments.parse().with_context(|| {
-                    format!("Tool call '{name}' is invalid: arguments must be in valid JSON format")
+                    format!("Tool call '{name}' have non-JSON arguments '{arguments}'")
                 })?;
                 handler.tool_call(ToolCall::new(name.to_string(), arguments, None))?;
             }
@@ -292,7 +292,7 @@ fn extract_chat_completions_text(data: &Value) -> Result<ChatCompletionsOutput> 
             call.get("arguments").and_then(|v| v.as_str()),
         ) {
             let arguments: Value = arguments.parse().with_context(|| {
-                format!("Tool call '{name}' is invalid: arguments must be in valid JSON format")
+                format!("Tool call '{name}' have non-JSON arguments '{arguments}'")
             })?;
             tool_calls.push(ToolCall::new(name.to_string(), arguments, None));
         }
