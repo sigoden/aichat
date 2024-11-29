@@ -98,21 +98,20 @@ macro_rules! register_client {
             anyhow::bail!("Unknown client '{}'", client)
         }
 
-        static mut ALL_CLIENT_MODELS: Option<Vec<$crate::client::Model>> = None;
+        static ALL_CLIENT_MODELS: std::sync::OnceLock<Vec<$crate::client::Model>> = std::sync::OnceLock::new();
 
         pub fn list_models(config: &$crate::config::Config) -> Vec<&'static $crate::client::Model> {
-            if unsafe { ALL_CLIENT_MODELS.is_none() } {
-                let models: Vec<_> = config
+            let models = ALL_CLIENT_MODELS.get_or_init(|| {
+                config
                     .clients
                     .iter()
                     .flat_map(|v| match v {
                         $(ClientConfig::$config(c) => $client::list_models(c),)+
                         ClientConfig::Unknown => vec![],
                     })
-                    .collect();
-                unsafe { ALL_CLIENT_MODELS = Some(models) };
-            }
-            unsafe { ALL_CLIENT_MODELS.as_ref().unwrap().iter().collect() }
+                    .collect()
+            });
+            models.iter().collect()
         }
 
         pub fn list_chat_models(config: &$crate::config::Config) -> Vec<&'static $crate::client::Model> {
