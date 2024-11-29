@@ -114,13 +114,6 @@
       output_price: 0
       supports_vision: true
       supports_function_calling: true
-    - name: gemini-1.0-pro-latest
-      max_input_tokens: 30720
-      max_output_tokens: 2048
-      input_price: 0
-      output_price: 0
-      supports_function_calling: true
-      no_system_message: true
     - name: gemini-exp-1121
       max_input_tokens: 32768
       max_output_tokens: 8192
@@ -225,7 +218,7 @@
       input_price: 2
       output_price: 6
       supports_vision: true
-    - name: pixtral-12b-2409
+    - name: pixtral-12b-latest
       max_input_tokens: 128000
       input_price: 0.15
       output_price: 0.15
@@ -333,24 +326,8 @@
       max_input_tokens: 127072
       input_price: 1
       output_price: 1
-    - name: llama-3.1-sonar-large-128k-chat
-      max_input_tokens: 131072
-      input_price: 1
-      output_price: 1
     - name: llama-3.1-sonar-small-128k-online
       max_input_tokens: 127072
-      input_price: 0.2
-      output_price: 0.2
-    - name: llama-3.1-sonar-small-128k-chat
-      max_input_tokens: 131072
-      input_price: 0.2
-      output_price: 0.2
-    - name: llama-3.1-70b-instruct
-      max_input_tokens: 131072
-      input_price: 1
-      output_price: 1
-    - name: llama-3.1-8b-instruct
-      max_input_tokens: 131072
       input_price: 0.2
       output_price: 0.2
 
@@ -1139,6 +1116,10 @@
       max_input_tokens: 32768
       input_price: 0.18
       output_price: 0.18
+    - name: Qwen/QwQ-32B-Preview
+      max_input_tokens: 32768
+      input_price: 0.15
+      output_price: 0.60
     - name: nvidia/Llama-3.1-Nemotron-70B-Instruct
       max_input_tokens: 128000
       input_price: 0.35
@@ -1184,10 +1165,12 @@
       max_input_tokens: 131072
       input_price: 3
       output_price: 3
+      supports_function_calling: true
     - name: accounts/fireworks/models/llama-v3p1-70b-instruct
       max_input_tokens: 131072
       input_price: 0.9
       output_price: 0.9
+      supports_function_calling: true
     - name: accounts/fireworks/models/llama-v3p1-8b-instruct
       max_input_tokens: 131072
       input_price: 0.2
@@ -1219,6 +1202,10 @@
       input_price: 0.9
       output_price: 0.9
     - name: accounts/fireworks/models/qwen2p5-coder-32b-instruct
+      max_input_tokens: 32768
+      input_price: 0.9
+      output_price: 0.9
+    - name: accounts/fireworks/models/qwen-qwq-32b-preview
       max_input_tokens: 32768
       input_price: 0.9
       output_price: 0.9
@@ -1266,6 +1253,18 @@
       output_price: 10
       supports_vision: true
       supports_function_calling: true
+    - name: openai/gpt-4o-2024-11-20
+      max_input_tokens: 128000
+      input_price: 2.5
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-4o-2024-08-06
+      max_input_tokens: 128000
+      input_price: 2.5
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
     - name: openai/gpt-4o-2024-05-13
       max_input_tokens: 128000
       input_price: 5
@@ -1306,46 +1305,29 @@
       output_price: 1.5
       supports_function_calling: true
     - name: google/gemini-pro-1.5
-      max_input_tokens: 4000000
-      input_price: 2.5
-      output_price: 7.5
-      supports_vision: true
-      supports_function_calling: true
-    - name: google/gemini-pro-1.5-exp
-      max_input_tokens: 4000000
-      input_price: 0
-      output_price: 0
+      max_input_tokens: 2000000
+      input_price: 1.25
+      output_price: 5
       supports_vision: true
       supports_function_calling: true
     - name: google/gemini-flash-1.5
-      max_input_tokens: 4000000
+      max_input_tokens: 1000000
+      input_price: 0.075
+      output_price: 0.3
+      supports_vision: true
+      supports_function_calling: true
+    - name: google/gemini-flash-1.5-8b
+      max_input_tokens: 1000000
       input_price: 0.0375
       output_price: 0.15
       supports_vision: true
       supports_function_calling: true
-    - name: google/gemini-flash-1.5-exp
-      max_input_tokens: 4000000
-      input_price: 0
-      output_price: 0
-      supports_vision: true
-      supports_function_calling: true
-    - name: google/gemini-flash-8b-1.5-exp
-      max_input_tokens: 4000000
-      input_price: 0
-      output_price: 0
-      supports_vision: true
-      supports_function_calling: true
-    - name: google/gemini-pro
-      max_input_tokens: 131040
-      input_price: 0.125
-      output_price: 0.375
-      supports_function_calling: true
     - name: google/gemma-2-27b-it
-      max_input_tokens: 2800000
+      max_input_tokens: 8192
       input_price: 0.27
       output_price: 0.27
     - name: google/gemma-2-9b-it
-      max_input_tokens: 8192
+      max_input_tokens: 4096
       input_price: 0.06
       output_price: 0.06
     - name: anthropic/claude-3.5-sonnet
@@ -1390,22 +1372,22 @@
       supports_function_calling: true
     - name: meta-llama/llama-3.1-405b-instruct
       max_input_tokens: 131072
-      input_price: 3
-      output_price: 3
+      input_price: 2.8
+      output_price: 2.8
       supports_function_calling: true
     - name: meta-llama/llama-3.1-70b-instruct
       max_input_tokens: 131072
-      input_price: 0.75
-      output_price: 0.75
+      input_price: 0.34
+      output_price: 0.39
       supports_function_calling: true
     - name: meta-llama/llama-3.1-8b-instruct
       max_input_tokens: 131072
-      input_price: 0.09
-      output_price: 0.09
+      input_price: 0.05
+      output_price: 0.05
     - name: meta-llama/llama-3.2-90b-vision-instruct
       max_input_tokens: 131072
-      input_price: 0.35
-      output_price: 0.4
+      input_price: 0.9
+      output_price: 0.9
       supports_vision: true
     - name: meta-llama/llama-3.2-11b-vision-instruct
       max_input_tokens: 131072
@@ -1502,32 +1484,14 @@
       max_input_tokens: 127072
       input_price: 1
       output_price: 1
-    - name: perplexity/llama-3.1-sonar-large-128k-chat
-      max_input_tokens: 131072
-      input_price: 1
-      output_price: 1
     - name: perplexity/llama-3.1-sonar-small-128k-online
       max_input_tokens: 127072
-      input_price: 0.2
-      output_price: 0.2
-    - name: perplexity/llama-3.1-sonar-small-128k-chat
-      max_input_tokens: 131072
       input_price: 0.2
       output_price: 0.2
     - name: 01-ai/yi-large
       max_input_tokens: 32768
       input_price: 3
       output_price: 3
-    - name: 01-ai/yi-large-fc
-      max_input_tokens: 16384
-      input_price: 3
-      output_price: 3
-      supports_function_calling: true
-    - name: 01-ai/yi-vision
-      max_input_tokens: 4096
-      input_price: 0.84
-      output_price: 0.84
-      supports_vision: true
     - name: microsoft/phi-3.5-mini-128k-instruct
       max_input_tokens: 128000
       input_price: 0.1
@@ -1553,6 +1517,10 @@
       max_input_tokens: 32768
       input_price: 0.4
       output_price: 0.4
+    - name: qwen/qwq-32b-preview
+      max_input_tokens: 32768
+      input_price: 0.15
+      output_price: 0.6
     - name: nvidia/llama-3.1-nemotron-70b-instruct
       max_input_tokens: 131072
       input_price: 0.35
@@ -1608,6 +1576,15 @@
       max_input_tokens: 32768
       input_price: 0
       output_price: 0
+    - name: Qwen/Qwen2-VL-72B-Instruct
+      max_input_tokens: 32768
+      input_price: 0.5782
+      output_price: 0.5782
+      supports_vision: true
+    - name: Qwen/QwQ-32B-Preview
+      max_input_tokens: 32768
+      input_price: 0.176
+      output_price: 0.176
     - name: google/gemma-2-27b-it
       max_input_tokens: 8192
       input_price: 0.176
@@ -1707,6 +1684,10 @@
       max_input_tokens: 16384
       input_price: 0.8
       output_price: 0.8
+    - name: Qwen/QwQ-32B-Preview
+      max_input_tokens: 32768
+      input_price: 1.2
+      output_price: 1.2
     - name: WhereIsAI/UAE-Large-V1
       type: embedding
       input_price: 0.016
