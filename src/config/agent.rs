@@ -1,6 +1,9 @@
 use super::*;
 
-use crate::{client::Model, function::Functions};
+use crate::{
+    client::Model,
+    function::{run_llm_function, Functions},
+};
 
 use anyhow::{Context, Result};
 use inquire::{validator::Validation, Text};
@@ -21,6 +24,10 @@ pub struct Agent {
     shared_variables: AgentVariables,
     #[serde(skip)]
     session_variables: Option<AgentVariables>,
+    #[serde(skip)]
+    shared_dynamic_instructions: Option<String>,
+    #[serde(skip)]
+    session_dynamic_instructions: Option<String>,
     #[serde(skip)]
     functions: Functions,
     #[serde(skip)]
@@ -102,6 +109,8 @@ impl Agent {
             definition,
             shared_variables: Default::default(),
             session_variables: None,
+            shared_dynamic_instructions: None,
+            session_dynamic_instructions: None,
             functions,
             rag,
             model,
@@ -215,7 +224,16 @@ impl Agent {
     }
 
     pub fn interpolated_instructions(&self) -> String {
-        self.definition.interpolated_instructions(self.variables())
+        let mut output = self
+            .session_dynamic_instructions
+            .clone()
+            .or_else(|| self.shared_dynamic_instructions.clone())
+            .unwrap_or_else(|| self.definition.instructions.clone());
+        for (k, v) in self.variables() {
+            output = output.replace(&format!("{{{{{k}}}}}"), v)
+        }
+        interpolate_variables(&mut output);
+        output
     }
 
     pub fn agent_prelude(&self) -> Option<&str> {
@@ -257,11 +275,8 @@ impl Agent {
         self.shared_variables = shared_variables;
     }
 
-    pub fn set_session_variables(&mut self, session_variables: Option<AgentVariables>) {
-        if self.shared_variables.is_empty() {
-            self.shared_variables = session_variables.clone().unwrap_or_default();
-        }
-        self.session_variables = session_variables;
+    pub fn set_session_variables(&mut self, session_variables: AgentVariables) {
+        self.session_variables = Some(session_variables);
     }
 
     pub fn set_variable(&mut self, key: &str, value: &str) -> Result<()> {
@@ -269,15 +284,66 @@ impl Agent {
             Some(v) => v,
             None => &mut self.shared_variables,
         };
-        if !variables.contains_key(key) {
+        let Some(old_value) = variables.get(key) else {
             bail!("Unknown variable: '{key}'")
+        };
+        if old_value == value {
+            return Ok(());
         }
         variables.insert(key.to_string(), value.to_string());
+        if self.session_variables.is_some() {
+            self.update_session_dynamic_instructions(None)?;
+        } else {
+            self.update_shared_dynamic_instructions(true)?;
+        }
+
         Ok(())
     }
 
     pub fn defined_variables(&self) -> &[AgentVariable] {
         &self.definition.variables
+    }
+
+    pub fn exit_session(&mut self) {
+        self.session_variables = None;
+        self.session_dynamic_instructions = None;
+    }
+
+    pub fn is_dynamic_instructions(&self) -> bool {
+        self.definition.dynamic_instructions
+    }
+
+    pub fn update_shared_dynamic_instructions(&mut self, force: bool) -> Result<()> {
+        if self.is_dynamic_instructions() && (force || self.shared_dynamic_instructions.is_none()) {
+            self.shared_dynamic_instructions = Some(self.run_instructions_fn()?);
+        }
+        Ok(())
+    }
+
+    pub fn update_session_dynamic_instructions(&mut self, value: Option<String>) -> Result<()> {
+        if self.is_dynamic_instructions() {
+            let value = match value {
+                Some(v) => v,
+                None => self.run_instructions_fn()?,
+            };
+            self.session_dynamic_instructions = Some(value);
+        }
+        Ok(())
+    }
+
+    fn run_instructions_fn(&self) -> Result<String> {
+        let value = run_llm_function(
+            self.name().to_string(),
+            vec!["_instructions".into(), "{}".into()],
+            self.variable_envs(),
+        )?;
+        match value {
+            Some(v) => {
+                println!();
+                Ok(v)
+            }
+            _ => bail!("No return value from '_instructions' function"),
+        }
     }
 }
 
@@ -331,11 +397,15 @@ impl RoleLike for Agent {
 pub struct AgentConfig {
     #[serde(rename(serialize = "model", deserialize = "model"))]
     pub model_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub use_tools: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub agent_prelude: Option<String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
     pub variables: AgentVariables,
 }
 
@@ -389,7 +459,10 @@ pub struct AgentDefinition {
     pub description: String,
     #[serde(default)]
     pub version: String,
+    #[serde(default)]
     pub instructions: String,
+    #[serde(default)]
+    pub dynamic_instructions: bool,
     #[serde(default)]
     pub variables: Vec<AgentVariable>,
     #[serde(default)]
@@ -434,15 +507,6 @@ impl AgentDefinition {
             r#"# {name} {version}
 {description}{starters}"#
         )
-    }
-
-    fn interpolated_instructions(&self, variables: &AgentVariables) -> String {
-        let mut output = self.instructions.clone();
-        for (k, v) in variables {
-            output = output.replace(&format!("{{{{{k}}}}}"), v)
-        }
-        interpolate_variables(&mut output);
-        output
     }
 
     fn replace_tools_placeholder(&mut self, functions: &Functions) {

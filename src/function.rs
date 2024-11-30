@@ -27,15 +27,20 @@ pub fn eval_tool_calls(config: &GlobalConfig, mut calls: Vec<ToolCall>) -> Resul
     if calls.is_empty() {
         bail!("The request was aborted because an infinite loop of function calls was detected.")
     }
+    let mut is_all_null = true;
     for call in calls {
-        let result = call.eval(config)?;
+        let mut result = call.eval(config)?;
+        if result.is_null() {
+            result = json!("DONE");
+        } else {
+            is_all_null = false;
+        }
         output.push(ToolResult::new(call, result));
     }
+    if is_all_null {
+        output = vec![];
+    }
     Ok(output)
-}
-
-pub fn need_send_tool_results(arr: &[ToolResult]) -> bool {
-    arr.iter().any(|v| !v.output.is_null())
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -159,17 +164,16 @@ impl ToolCall {
 
     pub fn eval(&self, config: &GlobalConfig) -> Result<Value> {
         let function_name = self.name.clone();
-        let (call_name, cmd_name, mut cmd_args, envs, agent_name) = match &config.read().agent {
+        let (call_name, cmd_name, mut cmd_args, envs) = match &config.read().agent {
             Some(agent) => match agent.functions().find(&function_name) {
                 Some(function) => {
                     let agent_name = agent.name().to_string();
                     if function.agent {
                         (
                             format!("{agent_name}-{function_name}"),
-                            agent_name.clone(),
+                            agent_name,
                             vec![function_name],
                             agent.variable_envs(),
-                            Some(agent_name),
                         )
                     } else {
                         (
@@ -177,7 +181,6 @@ impl ToolCall {
                             function_name,
                             vec![],
                             Default::default(),
-                            Some(agent_name),
                         )
                     }
                 }
@@ -189,7 +192,6 @@ impl ToolCall {
                     function_name,
                     vec![],
                     Default::default(),
-                    None,
                 ),
                 false => bail!("Unexpected call: {function_name} {}", self.arguments),
             },
@@ -210,10 +212,10 @@ impl ToolCall {
 
         cmd_args.push(json_data.to_string());
 
-        let output = match run_llm_function(cmd_name, cmd_args, envs, agent_name)? {
+        let output = match run_llm_function(cmd_name, cmd_args, envs)? {
             Some(contents) => serde_json::from_str(&contents)
                 .ok()
-                .unwrap_or_else(|| json!({"result": contents})),
+                .unwrap_or_else(|| json!({"output": contents})),
             None => Value::Null,
         };
 
@@ -221,17 +223,16 @@ impl ToolCall {
     }
 }
 
-fn run_llm_function(
+pub fn run_llm_function(
     cmd_name: String,
     cmd_args: Vec<String>,
     mut envs: HashMap<String, String>,
-    agent_name: Option<String>,
 ) -> Result<Option<String>> {
     let prompt = format!("Call {cmd_name} {}", cmd_args.join(" "));
 
     let mut bin_dirs: Vec<PathBuf> = vec![];
-    if let Some(agent_name) = agent_name {
-        let dir = Config::agent_functions_dir(&agent_name).join("bin");
+    if cmd_args.len() > 1 {
+        let dir = Config::agent_functions_dir(&cmd_name).join("bin");
         if dir.exists() {
             bin_dirs.push(dir);
         }

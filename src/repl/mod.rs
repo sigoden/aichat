@@ -8,7 +8,6 @@ use self::prompt::ReplPrompt;
 
 use crate::client::{call_chat_completions, call_chat_completions_streaming};
 use crate::config::{AssertState, Config, GlobalConfig, Input, StateFlags};
-use crate::function::need_send_tool_results;
 use crate::render::render_error;
 use crate::utils::{
     abortable_run_with_spinner, create_abort_signal, set_text, temp_file, AbortSignal,
@@ -195,7 +194,11 @@ impl Repl {
     }
 
     pub async fn run(&mut self) -> Result<()> {
-        self.banner();
+        if AssertState::False(StateFlags::AGENT | StateFlags::RAG)
+            .assert(self.config.read().state())
+        {
+            self.banner();
+        }
 
         loop {
             if self.abort_signal.aborted_ctrld() {
@@ -228,7 +231,7 @@ impl Repl {
                 _ => {}
             }
         }
-        self.handle(".exit session").await?;
+        self.config.write().exit_session()?;
         Ok(())
     }
 
@@ -459,7 +462,11 @@ impl Repl {
                         self.config.write().exit_role()?;
                     }
                     Some("session") => {
-                        self.config.write().exit_session()?;
+                        if self.config.read().agent.is_some() {
+                            self.config.write().exit_agent_session()?;
+                        } else {
+                            self.config.write().exit_session()?;
+                        }
                     }
                     Some("rag") => {
                         self.config.write().exit_rag()?;
@@ -603,15 +610,7 @@ impl ReplCommand {
     }
 
     fn is_valid(&self, flags: StateFlags) -> bool {
-        match self.state {
-            AssertState::True(true_flags) => true_flags & flags != StateFlags::empty(),
-            AssertState::False(false_flags) => false_flags & flags == StateFlags::empty(),
-            AssertState::TrueFalse(true_flags, false_flags) => {
-                (true_flags & flags != StateFlags::empty())
-                    && (false_flags & flags == StateFlags::empty())
-            }
-            AssertState::Equal(check_flags) => check_flags == flags,
-        }
+        self.state.assert(flags)
     }
 }
 
@@ -656,7 +655,7 @@ async fn ask(
     config
         .write()
         .after_chat_completion(&input, &output, &tool_results)?;
-    if need_send_tool_results(&tool_results) {
+    if !tool_results.is_empty() {
         ask(
             config,
             abort_signal,

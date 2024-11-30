@@ -1076,9 +1076,6 @@ impl Config {
             session.exit(&sessions_dir, self.working_mode.is_repl())?;
             self.last_message = None;
         }
-        if let Some(agent) = self.agent.as_mut() {
-            agent.set_session_variables(None);
-        }
         Ok(())
     }
 
@@ -1122,7 +1119,7 @@ impl Config {
     pub fn empty_session(&mut self) -> Result<()> {
         if let Some(session) = self.session.as_mut() {
             if let Some(agent) = self.agent.as_ref() {
-                session.sync_agent(agent, false);
+                session.sync_agent(agent);
             }
             session.clear_messages();
         } else {
@@ -1496,7 +1493,7 @@ impl Config {
                 let value = parts[1];
                 agent.set_variable(key, value)?;
                 if let Some(session) = self.session.as_mut() {
-                    session.sync_agent(agent, true);
+                    session.sync_agent(agent);
                 }
             }
             None => bail!("No agent"),
@@ -1509,6 +1506,17 @@ impl Config {
         if self.agent.take().is_some() {
             self.rag.take();
             self.last_message = None;
+        }
+        Ok(())
+    }
+
+    pub fn exit_agent_session(&mut self) -> Result<()> {
+        self.exit_session()?;
+        if let Some(agent) = self.agent.as_mut() {
+            agent.exit_session();
+            if self.working_mode.is_repl() {
+                self.init_agent_shared_variables()?;
+            }
         }
         Ok(())
     }
@@ -1986,12 +1994,15 @@ impl Config {
             Some(v) => v,
             None => return Ok(()),
         };
-        let new_variables = Agent::init_agent_variables(
-            agent.defined_variables(),
-            agent.config_variables(),
-            self.print_info_only,
-        )?;
-        agent.set_shared_variables(new_variables);
+        if !agent.defined_variables().is_empty() && agent.shared_variables().is_empty() {
+            let new_variables = Agent::init_agent_variables(
+                agent.defined_variables(),
+                agent.config_variables(),
+                self.print_info_only,
+            )?;
+            agent.set_shared_variables(new_variables);
+        }
+        agent.update_shared_dynamic_instructions(false)?;
         Ok(())
     }
 
@@ -2000,20 +2011,30 @@ impl Config {
             (Some(agent), Some(session)) => (agent, session),
             _ => return Ok(()),
         };
-        let shared_variables = agent.shared_variables();
-        let mut all_variables = if shared_variables.is_empty() {
-            agent.config_variables().clone()
+        if session.is_empty() {
+            let shared_variables = agent.shared_variables().clone();
+            let session_variables =
+                if !agent.defined_variables().is_empty() && shared_variables.is_empty() {
+                    let new_variables = Agent::init_agent_variables(
+                        agent.defined_variables(),
+                        agent.config_variables(),
+                        self.print_info_only,
+                    )?;
+                    agent.set_shared_variables(new_variables.clone());
+                    new_variables
+                } else {
+                    shared_variables
+                };
+            agent.set_session_variables(session_variables);
+            agent.update_session_dynamic_instructions(None)?;
+            session.sync_agent(agent);
         } else {
-            shared_variables.clone()
-        };
-        all_variables.extend(session.agent_variables().clone());
-        let new_variables = Agent::init_agent_variables(
-            agent.defined_variables(),
-            &all_variables,
-            self.print_info_only,
-        )?;
-        agent.set_session_variables(Some(new_variables));
-        session.sync_agent(agent, false);
+            let variables = session.agent_variables();
+            agent.set_session_variables(variables.clone());
+            agent.update_session_dynamic_instructions(Some(
+                session.agent_instructions().to_string(),
+            ))?;
+        }
         Ok(())
     }
 
@@ -2306,8 +2327,21 @@ impl AssertState {
     pub fn pass() -> Self {
         AssertState::False(StateFlags::empty())
     }
+
     pub fn bare() -> Self {
         AssertState::Equal(StateFlags::empty())
+    }
+
+    pub fn assert(self, flags: StateFlags) -> bool {
+        match self {
+            AssertState::True(true_flags) => true_flags & flags != StateFlags::empty(),
+            AssertState::False(false_flags) => false_flags & flags == StateFlags::empty(),
+            AssertState::TrueFalse(true_flags, false_flags) => {
+                (true_flags & flags != StateFlags::empty())
+                    && (false_flags & flags == StateFlags::empty())
+            }
+            AssertState::Equal(check_flags) => check_flags == flags,
+        }
     }
 }
 
