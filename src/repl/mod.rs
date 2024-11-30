@@ -100,6 +100,27 @@ lazy_static::lazy_static! {
             "End the session",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
+        ReplCommand::new(".agent", "Use a agent", AssertState::bare()),
+        ReplCommand::new(
+            ".starter",
+            "Use the conversation starter",
+            AssertState::True(StateFlags::AGENT)
+        ),
+        ReplCommand::new(
+            ".variable",
+            "Set agent variable",
+            AssertState::TrueFalse(StateFlags::AGENT, StateFlags::SESSION)
+        ),
+        ReplCommand::new(
+            ".info agent",
+            "View agent info",
+            AssertState::True(StateFlags::AGENT),
+        ),
+        ReplCommand::new(
+            ".exit agent",
+            "Leave the agent",
+            AssertState::True(StateFlags::AGENT)
+        ),
         ReplCommand::new(
             ".rag",
             "Init or use the RAG",
@@ -129,27 +150,6 @@ lazy_static::lazy_static! {
             ".exit rag",
             "Leave the RAG",
             AssertState::TrueFalse(StateFlags::RAG, StateFlags::AGENT),
-        ),
-        ReplCommand::new(".agent", "Use a agent", AssertState::bare()),
-        ReplCommand::new(
-            ".starter",
-            "Use the conversation starter",
-            AssertState::True(StateFlags::AGENT)
-        ),
-        ReplCommand::new(
-            ".variable",
-            "Set agent variable",
-            AssertState::TrueFalse(StateFlags::AGENT, StateFlags::SESSION)
-        ),
-        ReplCommand::new(
-            ".info agent",
-            "View agent info",
-            AssertState::True(StateFlags::AGENT),
-        ),
-        ReplCommand::new(
-            ".exit agent",
-            "Leave the agent",
-            AssertState::True(StateFlags::AGENT)
         ),
         ReplCommand::new(
             ".file",
