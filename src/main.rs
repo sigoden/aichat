@@ -18,7 +18,6 @@ use crate::config::{
     ensure_parent_exists, list_agents, load_env_file, Config, GlobalConfig, Input, WorkingMode,
     CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE, TEMP_SESSION_NAME,
 };
-use crate::function::need_send_tool_results;
 use crate::render::render_error;
 use crate::repl::Repl;
 use crate::utils::*;
@@ -185,7 +184,7 @@ async fn start_directive(
         .write()
         .after_chat_completion(&input, &output, &tool_results)?;
 
-    if need_send_tool_results(&tool_results) {
+    if !tool_results.is_empty() {
         start_directive(
             config,
             input.merge_tool_results(output, tool_results),

@@ -8,7 +8,6 @@ use self::prompt::ReplPrompt;
 
 use crate::client::{call_chat_completions, call_chat_completions_streaming};
 use crate::config::{AssertState, Config, GlobalConfig, Input, StateFlags};
-use crate::function::need_send_tool_results;
 use crate::render::render_error;
 use crate::utils::{
     abortable_run_with_spinner, create_abort_signal, set_text, temp_file, AbortSignal,
@@ -660,7 +659,7 @@ async fn ask(
     config
         .write()
         .after_chat_completion(&input, &output, &tool_results)?;
-    if need_send_tool_results(&tool_results) {
+    if !tool_results.is_empty() {
         ask(
             config,
             abort_signal,

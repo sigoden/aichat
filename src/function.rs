@@ -27,15 +27,20 @@ pub fn eval_tool_calls(config: &GlobalConfig, mut calls: Vec<ToolCall>) -> Resul
     if calls.is_empty() {
         bail!("The request was aborted because an infinite loop of function calls was detected.")
     }
+    let mut is_all_null = true;
     for call in calls {
-        let result = call.eval(config)?;
+        let mut result = call.eval(config)?;
+        if result.is_null() {
+            result = json!("DONE");
+        } else {
+            is_all_null = false;
+        }
         output.push(ToolResult::new(call, result));
     }
+    if is_all_null {
+        output = vec![];
+    } 
     Ok(output)
-}
-
-pub fn need_send_tool_results(arr: &[ToolResult]) -> bool {
-    arr.iter().any(|v| !v.output.is_null())
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -210,7 +215,7 @@ impl ToolCall {
         let output = match run_llm_function(cmd_name, cmd_args, envs)? {
             Some(contents) => serde_json::from_str(&contents)
                 .ok()
-                .unwrap_or_else(|| json!({"result": contents})),
+                .unwrap_or_else(|| json!({"output": contents})),
             None => Value::Null,
         };
 
