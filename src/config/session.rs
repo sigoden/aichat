@@ -35,7 +35,7 @@ pub struct Session {
     #[serde(skip_serializing_if = "Option::is_none")]
     role_name: Option<String>,
     #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
-    agent_variables: IndexMap<String, String>,
+    agent_variables: AgentVariables,
 
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     compressed_messages: Vec<Message>,
@@ -284,7 +284,7 @@ impl Session {
         }
     }
 
-    pub fn agent_variables(&self) -> &IndexMap<String, String> {
+    pub fn agent_variables(&self) -> &AgentVariables {
         &self.agent_variables
     }
 

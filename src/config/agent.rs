@@ -10,15 +10,17 @@ use serde::{Deserialize, Serialize};
 
 const DEFAULT_AGENT_NAME: &str = "rag";
 
+pub type AgentVariables = IndexMap<String, String>;
+
 #[derive(Debug, Clone, Serialize)]
 pub struct Agent {
     name: String,
     config: AgentConfig,
     definition: AgentDefinition,
     #[serde(skip)]
-    shared_variables: IndexMap<String, String>,
+    shared_variables: AgentVariables,
     #[serde(skip)]
-    session_variables: Option<IndexMap<String, String>>,
+    session_variables: Option<AgentVariables>,
     #[serde(skip)]
     functions: Functions,
     #[serde(skip)]
@@ -108,9 +110,9 @@ impl Agent {
 
     pub fn init_agent_variables(
         agent_variables: &[AgentVariable],
-        variables: &IndexMap<String, String>,
+        variables: &AgentVariables,
         no_interaction: bool,
-    ) -> Result<IndexMap<String, String>> {
+    ) -> Result<AgentVariables> {
         let mut output = IndexMap::new();
         if agent_variables.is_empty() {
             return Ok(output);
@@ -224,26 +226,41 @@ impl Agent {
         self.config.agent_prelude = value;
     }
 
-    pub fn variables(&self) -> &IndexMap<String, String> {
+    pub fn variables(&self) -> &AgentVariables {
         match &self.session_variables {
             Some(variables) => variables,
             None => &self.shared_variables,
         }
     }
 
-    pub fn config_variables(&self) -> &IndexMap<String, String> {
+    pub fn variable_envs(&self) -> HashMap<String, String> {
+        self.variables()
+            .iter()
+            .map(|(k, v)| {
+                (
+                    format!("LLM_AGENT_VAR_{}", normalize_env_name(k)),
+                    v.clone(),
+                )
+            })
+            .collect()
+    }
+
+    pub fn config_variables(&self) -> &AgentVariables {
         &self.config.variables
     }
 
-    pub fn shared_variables(&self) -> &IndexMap<String, String> {
+    pub fn shared_variables(&self) -> &AgentVariables {
         &self.shared_variables
     }
 
-    pub fn set_shared_variables(&mut self, shared_variables: IndexMap<String, String>) {
+    pub fn set_shared_variables(&mut self, shared_variables: AgentVariables) {
         self.shared_variables = shared_variables;
     }
 
-    pub fn set_session_variables(&mut self, session_variables: Option<IndexMap<String, String>>) {
+    pub fn set_session_variables(&mut self, session_variables: Option<AgentVariables>) {
+        if self.shared_variables.is_empty() {
+            self.shared_variables = session_variables.clone().unwrap_or_default();
+        }
         self.session_variables = session_variables;
     }
 
@@ -319,7 +336,7 @@ pub struct AgentConfig {
     pub use_tools: Option<String>,
     pub agent_prelude: Option<String>,
     #[serde(default)]
-    pub variables: IndexMap<String, String>,
+    pub variables: AgentVariables,
 }
 
 impl AgentConfig {
@@ -419,7 +436,7 @@ impl AgentDefinition {
         )
     }
 
-    fn interpolated_instructions(&self, variables: &IndexMap<String, String>) -> String {
+    fn interpolated_instructions(&self, variables: &AgentVariables) -> String {
         let mut output = self.instructions.clone();
         for (k, v) in variables {
             output = output.replace(&format!("{{{{{k}}}}}"), v)
