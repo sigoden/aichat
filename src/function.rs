@@ -159,17 +159,16 @@ impl ToolCall {
 
     pub fn eval(&self, config: &GlobalConfig) -> Result<Value> {
         let function_name = self.name.clone();
-        let (call_name, cmd_name, mut cmd_args, envs, agent_name) = match &config.read().agent {
+        let (call_name, cmd_name, mut cmd_args, envs) = match &config.read().agent {
             Some(agent) => match agent.functions().find(&function_name) {
                 Some(function) => {
                     let agent_name = agent.name().to_string();
                     if function.agent {
                         (
                             format!("{agent_name}-{function_name}"),
-                            agent_name.clone(),
+                            agent_name,
                             vec![function_name],
                             agent.variable_envs(),
-                            Some(agent_name),
                         )
                     } else {
                         (
@@ -177,7 +176,6 @@ impl ToolCall {
                             function_name,
                             vec![],
                             Default::default(),
-                            Some(agent_name),
                         )
                     }
                 }
@@ -189,7 +187,6 @@ impl ToolCall {
                     function_name,
                     vec![],
                     Default::default(),
-                    None,
                 ),
                 false => bail!("Unexpected call: {function_name} {}", self.arguments),
             },
@@ -210,7 +207,7 @@ impl ToolCall {
 
         cmd_args.push(json_data.to_string());
 
-        let output = match run_llm_function(cmd_name, cmd_args, envs, agent_name)? {
+        let output = match run_llm_function(cmd_name, cmd_args, envs)? {
             Some(contents) => serde_json::from_str(&contents)
                 .ok()
                 .unwrap_or_else(|| json!({"result": contents})),
@@ -221,17 +218,16 @@ impl ToolCall {
     }
 }
 
-fn run_llm_function(
+pub fn run_llm_function(
     cmd_name: String,
     cmd_args: Vec<String>,
     mut envs: HashMap<String, String>,
-    agent_name: Option<String>,
 ) -> Result<Option<String>> {
     let prompt = format!("Call {cmd_name} {}", cmd_args.join(" "));
 
     let mut bin_dirs: Vec<PathBuf> = vec![];
-    if let Some(agent_name) = agent_name {
-        let dir = Config::agent_functions_dir(&agent_name).join("bin");
+    if cmd_args.len() > 1 {
+        let dir = Config::agent_functions_dir(&cmd_name).join("bin");
         if dir.exists() {
             bin_dirs.push(dir);
         }

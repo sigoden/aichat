@@ -228,7 +228,7 @@ impl Repl {
                 _ => {}
             }
         }
-        self.handle(".exit session").await?;
+        self.config.write().exit_session()?;
         Ok(())
     }
 
@@ -459,7 +459,11 @@ impl Repl {
                         self.config.write().exit_role()?;
                     }
                     Some("session") => {
-                        self.config.write().exit_session()?;
+                        if self.config.read().agent.is_some() {
+                            self.config.write().exit_agent_session()?;
+                        } else {
+                            self.config.write().exit_session()?;
+                        }
                     }
                     Some("rag") => {
                         self.config.write().exit_rag()?;
