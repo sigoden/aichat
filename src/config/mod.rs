@@ -2327,8 +2327,21 @@ impl AssertState {
     pub fn pass() -> Self {
         AssertState::False(StateFlags::empty())
     }
+
     pub fn bare() -> Self {
         AssertState::Equal(StateFlags::empty())
+    }
+
+    pub fn assert(self, flags: StateFlags) -> bool {
+        match self {
+            AssertState::True(true_flags) => true_flags & flags != StateFlags::empty(),
+            AssertState::False(false_flags) => false_flags & flags == StateFlags::empty(),
+            AssertState::TrueFalse(true_flags, false_flags) => {
+                (true_flags & flags != StateFlags::empty())
+                    && (false_flags & flags == StateFlags::empty())
+            }
+            AssertState::Equal(check_flags) => check_flags == flags,
+        }
     }
 }
 

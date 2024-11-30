@@ -39,7 +39,7 @@ pub fn eval_tool_calls(config: &GlobalConfig, mut calls: Vec<ToolCall>) -> Resul
     }
     if is_all_null {
         output = vec![];
-    } 
+    }
     Ok(output)
 }
 

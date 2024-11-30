@@ -194,7 +194,11 @@ impl Repl {
     }
 
     pub async fn run(&mut self) -> Result<()> {
-        self.banner();
+        if AssertState::False(StateFlags::AGENT | StateFlags::RAG)
+            .assert(self.config.read().state())
+        {
+            self.banner();
+        }
 
         loop {
             if self.abort_signal.aborted_ctrld() {
@@ -606,15 +610,7 @@ impl ReplCommand {
     }
 
     fn is_valid(&self, flags: StateFlags) -> bool {
-        match self.state {
-            AssertState::True(true_flags) => true_flags & flags != StateFlags::empty(),
-            AssertState::False(false_flags) => false_flags & flags == StateFlags::empty(),
-            AssertState::TrueFalse(true_flags, false_flags) => {
-                (true_flags & flags != StateFlags::empty())
-                    && (false_flags & flags == StateFlags::empty())
-            }
-            AssertState::Equal(check_flags) => check_flags == flags,
-        }
+        self.state.assert(flags)
     }
 }
 
