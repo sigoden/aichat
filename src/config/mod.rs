@@ -3,7 +3,7 @@ mod input;
 mod role;
 mod session;
 
-pub use self::agent::{list_agents, Agent};
+pub use self::agent::{list_agents, Agent, AgentVariables};
 pub use self::input::Input;
 pub use self::role::{
     Role, RoleLike, CODE_ROLE, CREATE_TITLE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE,
@@ -1487,10 +1487,13 @@ impl Config {
         if parts.len() != 2 {
             bail!("Usage: .variable <key> <value>");
         }
-        let key = parts[0];
-        let value = parts[1];
         match self.agent.as_mut() {
             Some(agent) => {
+                if let Some(session) = self.session.as_ref() {
+                    session.guard_empty()?;
+                }
+                let key = parts[0];
+                let value = parts[1];
                 agent.set_variable(key, value)?;
                 if let Some(session) = self.session.as_mut() {
                     session.sync_agent(agent, true);
@@ -2009,9 +2012,6 @@ impl Config {
             &all_variables,
             self.print_info_only,
         )?;
-        if shared_variables.is_empty() {
-            agent.set_shared_variables(new_variables.clone());
-        }
         agent.set_session_variables(Some(new_variables));
         session.sync_agent(agent, false);
         Ok(())
