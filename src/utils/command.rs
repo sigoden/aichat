@@ -11,7 +11,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, Context, Result};
-use dirs::{config_dir, home_dir};
+use dirs::home_dir;
 
 lazy_static::lazy_static! {
     pub static ref SHELL: Shell = detect_shell();
@@ -186,7 +186,7 @@ fn get_history_file(shell: &str) -> Option<PathBuf> {
     match shell {
         "bash" | "sh" => Some(home_dir()?.join(".bash_history")),
         "zsh" => Some(home_dir()?.join(".zsh_history")),
-        "nushell" => Some(config_dir()?.join("nushell").join("history.txt")),
+        "nushell" => Some(dirs::config_dir()?.join("nushell").join("history.txt")),
         "fish" => Some(
             home_dir()?
                 .join(".local")
@@ -209,7 +209,7 @@ fn get_history_file(shell: &str) -> Option<PathBuf> {
             #[cfg(windows)]
             {
                 Some(
-                    data_dir()?
+                    dirs::data_dir()?
                         .join("Microsoft")
                         .join("Windows")
                         .join("PowerShell")
