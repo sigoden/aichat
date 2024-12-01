@@ -83,6 +83,7 @@ right_prompt:
 # ---- misc ----
 serve_addr: 127.0.0.1:8000                  # Default serve listening address 
 user_agent: null                            # Set User-Agent HTTP header, use `auto` for aichat/<current-version>
+append_command_to_history_file: true        # Weather to append shell execute command to the history file
 
 # ---- clients ----
 clients:

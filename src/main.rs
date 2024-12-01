@@ -259,9 +259,10 @@ async fn shell_execute(
                 "e" => {
                     debug!("{} {:?}", shell.cmd, &[&shell.arg, &eval_str]);
                     let code = run_command(&shell.cmd, &[&shell.arg, &eval_str], None)?;
-                    if code != 0 {
-                        process::exit(code);
+                    if code == 0 && config.read().append_command_to_history_file {
+                        let _ = append_to_shell_history(&shell.name, &eval_str, code);
                     }
+                    process::exit(code);
                 }
                 "r" => {
                     let revision = Text::new("Enter your revision:").prompt()?;

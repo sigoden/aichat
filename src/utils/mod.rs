@@ -35,8 +35,11 @@ lazy_static::lazy_static! {
 }
 
 pub fn now() -> String {
-    let now = chrono::Local::now();
-    now.to_rfc3339_opts(chrono::SecondsFormat::Secs, false)
+    chrono::Local::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, false)
+}
+
+pub fn now_timestamp() -> i64 {
+    chrono::Local::now().timestamp()
 }
 
 pub fn get_env_name(key: &str) -> String {
