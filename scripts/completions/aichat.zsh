@@ -26,7 +26,7 @@ _aichat() {
 '--save-session[Ensure the new conversation is saved to the session]' \
 '-a[Start a agent]:AGENT:->agents' \
 '--agent[Start a agent]:AGENT:->agents' \
-'-R[Start a RAG]:RAG:->rags' \
+'--agent-variable[Set agent variables]' \
 '--rag[Start a RAG]:RAG:->rags' \
 '--serve[Serve the LLM API and WebAPP]' \
 '-e[Execute commands in natural language]' \

@@ -156,9 +156,12 @@ pub struct Config {
     #[serde(skip)]
     pub working_mode: WorkingMode,
     #[serde(skip)]
-    pub print_info_only: bool,
-    #[serde(skip)]
     pub last_message: Option<(Input, String)>,
+
+    #[serde(skip)]
+    pub cli_info_flag: bool,
+    #[serde(skip)]
+    pub cli_agent_variables: Option<AgentVariables>,
 }
 
 impl Default for Config {
@@ -218,8 +221,10 @@ impl Default for Config {
             model: Default::default(),
             functions: Default::default(),
             working_mode: WorkingMode::Cmd,
-            print_info_only: false,
             last_message: None,
+
+            cli_info_flag: false,
+            cli_agent_variables: None,
         }
     }
 }
@@ -1508,6 +1513,7 @@ impl Config {
         if self.agent.take().is_some() {
             self.rag.take();
             self.last_message = None;
+            self.cli_agent_variables = None;
         }
         Ok(())
     }
@@ -1997,14 +2003,20 @@ impl Config {
             None => return Ok(()),
         };
         if !agent.defined_variables().is_empty() && agent.shared_variables().is_empty() {
+            let mut config_variables = agent.config_variables().clone();
+            if let Some(v) = &self.cli_agent_variables {
+                config_variables.extend(v.clone());
+            }
             let new_variables = Agent::init_agent_variables(
                 agent.defined_variables(),
-                agent.config_variables(),
-                self.print_info_only,
+                &config_variables,
+                self.cli_info_flag,
             )?;
             agent.set_shared_variables(new_variables);
         }
-        agent.update_shared_dynamic_instructions(false)?;
+        if !self.cli_info_flag {
+            agent.update_shared_dynamic_instructions(false)?;
+        }
         Ok(())
     }
 
@@ -2017,10 +2029,14 @@ impl Config {
             let shared_variables = agent.shared_variables().clone();
             let session_variables =
                 if !agent.defined_variables().is_empty() && shared_variables.is_empty() {
+                    let mut config_variables = agent.config_variables().clone();
+                    if let Some(v) = &self.cli_agent_variables {
+                        config_variables.extend(v.clone());
+                    }
                     let new_variables = Agent::init_agent_variables(
                         agent.defined_variables(),
-                        agent.config_variables(),
-                        self.print_info_only,
+                        &config_variables,
+                        self.cli_info_flag,
                     )?;
                     agent.set_shared_variables(new_variables.clone());
                     new_variables
@@ -2028,7 +2044,9 @@ impl Config {
                     shared_variables
                 };
             agent.set_session_variables(session_variables);
-            agent.update_session_dynamic_instructions(None)?;
+            if !self.cli_info_flag {
+                agent.update_session_dynamic_instructions(None)?;
+            }
             session.sync_agent(agent);
         } else {
             let variables = session.agent_variables();
