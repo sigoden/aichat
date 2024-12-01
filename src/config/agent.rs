@@ -15,24 +15,17 @@ const DEFAULT_AGENT_NAME: &str = "rag";
 
 pub type AgentVariables = IndexMap<String, String>;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct Agent {
     name: String,
     config: AgentConfig,
     definition: AgentDefinition,
-    #[serde(skip)]
     shared_variables: AgentVariables,
-    #[serde(skip)]
     session_variables: Option<AgentVariables>,
-    #[serde(skip)]
     shared_dynamic_instructions: Option<String>,
-    #[serde(skip)]
     session_dynamic_instructions: Option<String>,
-    #[serde(skip)]
     functions: Functions,
-    #[serde(skip)]
     rag: Option<Arc<Rag>>,
-    #[serde(skip)]
     model: Model,
 }
 
@@ -75,7 +68,7 @@ impl Agent {
 
         let rag = if rag_path.exists() {
             Some(Arc::new(Rag::load(config, DEFAULT_AGENT_NAME, &rag_path)?))
-        } else if !definition.documents.is_empty() && !config.read().print_info_only {
+        } else if !definition.documents.is_empty() && !config.read().cli_info_flag {
             let mut ans = false;
             if *IS_STDOUT_TERMINAL {
                 ans = Confirm::new("The agent has the documents, init RAG?")
@@ -182,11 +175,14 @@ impl Agent {
     pub fn export(&self) -> Result<String> {
         let mut agent = self.clone();
         agent.definition.instructions = self.interpolated_instructions();
-        let mut value = serde_json::json!(agent);
+        let mut value = json!({});
+        value["name"] = json!(self.name());
         let variables = self.variables();
         if !variables.is_empty() {
             value["variables"] = serde_json::to_value(variables)?;
         }
+        value["config"] = json!(self.config);
+        value["definition"] = json!(self.definition);
         value["functions_dir"] = Config::agent_functions_dir(&self.name)
             .display()
             .to_string()

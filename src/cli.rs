@@ -24,8 +24,11 @@ pub struct Cli {
     /// Start a agent
     #[clap(short = 'a', long)]
     pub agent: Option<String>,
+    /// Set agent variables
+    #[clap(long, value_names = ["NAME", "VALUE"], num_args = 2)]
+    pub agent_variable: Vec<String>,
     /// Start a RAG
-    #[clap(short = 'R', long)]
+    #[clap(long)]
     pub rag: Option<String>,
     /// Serve the LLM API and WebAPP
     #[clap(long, value_name = "ADDRESS")]

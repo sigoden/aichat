@@ -65,7 +65,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         return serve::run(config, addr).await;
     }
     if cli.info {
-        config.write().print_info_only = true;
+        config.write().cli_info_flag = true;
     }
 
     if cli.list_models {
@@ -98,6 +98,15 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
             Some(v) => v.as_str(),
             None => TEMP_SESSION_NAME,
         });
+        if !cli.agent_variable.is_empty() {
+            config.write().cli_agent_variables = Some(
+                cli.agent_variable
+                    .chunks(2)
+                    .map(|v| (v[0].to_string(), v[1].to_string()))
+                    .collect(),
+            );
+        }
+
         Config::use_agent(&config, agent, session, abort_signal.clone()).await?
     } else {
         if let Some(prompt) = &cli.prompt {
