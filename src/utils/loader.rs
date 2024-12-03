@@ -1,15 +1,34 @@
 use super::*;
 
 use anyhow::{Context, Result};
+use indexmap::IndexMap;
 use std::collections::HashMap;
 
 pub const EXTENSION_METADATA: &str = "__extension__";
-pub const PATH_METADATA: &str = "__path__";
+
+pub type DocumentMetadata = IndexMap<String, String>;
+
+#[derive(Debug, Clone)]
+pub struct LoadedDocument {
+    pub path: String,
+    pub contents: String,
+    pub metadata: DocumentMetadata,
+}
+
+impl LoadedDocument {
+    pub fn new(path: String, contents: String, metadata: DocumentMetadata) -> Self {
+        Self {
+            path,
+            contents,
+            metadata,
+        }
+    }
+}
 
 pub async fn load_recursive_url(
     loaders: &HashMap<String, String>,
     path: &str,
-) -> Result<Vec<(String, RagMetadata)>> {
+) -> Result<Vec<LoadedDocument>> {
     let extension = RECURSIVE_URL_LOADER;
     let pages: Vec<Page> = match loaders.get(extension) {
         Some(loader_command) => {
@@ -25,19 +44,15 @@ pub async fn load_recursive_url(
         .into_iter()
         .map(|v| {
             let Page { path, text } = v;
-            let mut metadata: RagMetadata = Default::default();
-            metadata.insert(PATH_METADATA.into(), path);
+            let mut metadata: DocumentMetadata = Default::default();
             metadata.insert(EXTENSION_METADATA.into(), "md".into());
-            (text, metadata)
+            LoadedDocument::new(path, text, metadata)
         })
         .collect();
     Ok(output)
 }
 
-pub async fn load_file(
-    loaders: &HashMap<String, String>,
-    path: &str,
-) -> Result<(String, RagMetadata)> {
+pub async fn load_file(loaders: &HashMap<String, String>, path: &str) -> Result<LoadedDocument> {
     let extension = get_patch_extension(path).unwrap_or_else(|| DEFAULT_EXTENSION.into());
     match loaders.get(&extension) {
         Some(loader_command) => load_with_command(path, &extension, loader_command),
@@ -45,33 +60,23 @@ pub async fn load_file(
     }
 }
 
-pub async fn load_url(
-    loaders: &HashMap<String, String>,
-    path: &str,
-) -> Result<(String, RagMetadata)> {
+pub async fn load_url(loaders: &HashMap<String, String>, path: &str) -> Result<LoadedDocument> {
     let (contents, extension) = fetch(loaders, path, false).await?;
-    let mut metadata: RagMetadata = Default::default();
-    metadata.insert(PATH_METADATA.into(), path.into());
+    let mut metadata: DocumentMetadata = Default::default();
     metadata.insert(EXTENSION_METADATA.into(), extension);
-    Ok((contents, metadata))
+    Ok(LoadedDocument::new(path.into(), contents, metadata))
 }
 
-async fn load_plain(path: &str, extension: &str) -> Result<(String, RagMetadata)> {
+async fn load_plain(path: &str, extension: &str) -> Result<LoadedDocument> {
     let contents = tokio::fs::read_to_string(path).await?;
-    let mut metadata: RagMetadata = Default::default();
-    metadata.insert(PATH_METADATA.into(), path.to_string());
+    let mut metadata: DocumentMetadata = Default::default();
     metadata.insert(EXTENSION_METADATA.into(), extension.to_string());
-    Ok((contents, metadata))
+    Ok(LoadedDocument::new(path.into(), contents, metadata))
 }
 
-fn load_with_command(
-    path: &str,
-    extension: &str,
-    loader_command: &str,
-) -> Result<(String, RagMetadata)> {
+fn load_with_command(path: &str, extension: &str, loader_command: &str) -> Result<LoadedDocument> {
     let contents = run_loader_command(path, extension, loader_command)?;
-    let mut metadata: RagMetadata = Default::default();
-    metadata.insert(PATH_METADATA.into(), path.to_string());
+    let mut metadata: DocumentMetadata = Default::default();
     metadata.insert(EXTENSION_METADATA.into(), DEFAULT_EXTENSION.to_string());
-    Ok((contents, metadata))
+    Ok(LoadedDocument::new(path.into(), contents, metadata))
 }

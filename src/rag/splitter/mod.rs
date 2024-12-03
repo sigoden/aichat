@@ -2,7 +2,7 @@ mod language;
 
 pub use self::language::*;
 
-use super::{RagDocument, RagMetadata};
+use super::{DocumentMetadata, RagDocument};
 
 pub const DEFAULT_SEPARATES: [&str; 4] = ["\n\n", "\n", " ", ""];
 
@@ -75,7 +75,7 @@ impl RecursiveCharacterTextSplitter {
         chunk_header_options: &SplitterChunkHeaderOptions,
     ) -> Vec<RagDocument> {
         let mut texts: Vec<String> = Vec::new();
-        let mut metadatas: Vec<RagMetadata> = Vec::new();
+        let mut metadatas: Vec<DocumentMetadata> = Vec::new();
         documents.iter().for_each(|d| {
             if !d.page_content.is_empty() {
                 texts.push(d.page_content.clone());
@@ -89,7 +89,7 @@ impl RecursiveCharacterTextSplitter {
     pub fn create_documents(
         &self,
         texts: &[String],
-        metadatas: &[RagMetadata],
+        metadatas: &[DocumentMetadata],
         chunk_header_options: &SplitterChunkHeaderOptions,
     ) -> Vec<RagDocument> {
         let SplitterChunkHeaderOptions {

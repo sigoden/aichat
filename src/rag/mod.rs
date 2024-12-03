@@ -1,11 +1,9 @@
-use self::loader::*;
 use self::splitter::*;
 
 use crate::client::*;
 use crate::config::*;
 use crate::utils::*;
 
-mod loader;
 mod serde_vectors;
 mod splitter;
 
@@ -367,7 +365,7 @@ impl Rag {
             }
         }
 
-        let mut files = vec![];
+        let mut loaded_documents = vec![];
         let mut has_error = false;
         let mut index = 0;
         let total = recursive_urls.len() + urls.len() + local_paths.len();
@@ -379,7 +377,7 @@ impl Rag {
             index += 1;
             println!("Load {start_url}** [{index}/{total}]");
             match load_recursive_url(&loaders, &start_url).await {
-                Ok(v) => files.extend(v),
+                Ok(v) => loaded_documents.extend(v),
                 Err(err) => handle_error(err, &mut has_error),
             }
         }
@@ -387,7 +385,7 @@ impl Rag {
             index += 1;
             println!("Load {url} [{index}/{total}]");
             match load_url(&loaders, &url).await {
-                Ok(v) => files.push(v),
+                Ok(v) => loaded_documents.push(v),
                 Err(err) => handle_error(err, &mut has_error),
             }
         }
@@ -395,7 +393,7 @@ impl Rag {
             index += 1;
             println!("Load {local_path} [{index}/{total}]");
             match load_file(&loaders, &local_path).await {
-                Ok(v) => files.push(v),
+                Ok(v) => loaded_documents.push(v),
                 Err(err) => handle_error(err, &mut has_error),
             }
         }
@@ -414,11 +412,12 @@ impl Rag {
         }
 
         let mut rag_files = vec![];
-        for (contents, mut metadata) in files {
-            let path = match metadata.swap_remove(PATH_METADATA) {
-                Some(v) => v,
-                None => continue,
-            };
+        for LoadedDocument {
+            path,
+            contents,
+            mut metadata,
+        } in loaded_documents
+        {
             let hash = sha256(&contents);
             if let Some(file_ids) = to_deleted.get_mut(&hash) {
                 if let Some((i, _)) = file_ids
@@ -793,7 +792,7 @@ pub struct RagFile {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RagDocument {
     pub page_content: String,
-    pub metadata: RagMetadata,
+    pub metadata: DocumentMetadata,
 }
 
 impl RagDocument {
@@ -813,8 +812,6 @@ impl Default for RagDocument {
         }
     }
 }
-
-pub type RagMetadata = IndexMap<String, String>;
 
 pub type FileId = usize;
 

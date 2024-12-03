@@ -90,7 +90,9 @@ impl Input {
             texts.push(String::new());
         }
         for (path, contents) in files {
-            texts.push(format!("====== PATH: {path} ======\n{contents}\n"));
+            texts.push(format!(
+                "============ PATH: {path} ============\n\n{contents}\n"
+            ));
         }
         let (role, with_session, with_agent) = resolve_role(&config.read(), role);
         Ok(Self {
@@ -392,9 +394,10 @@ async fn load_documents(
             data_urls.insert(sha256(&data_url), file_path);
             medias.push(data_url)
         } else {
-            let text = read_file(&file_path)
+            let document = load_file(&loaders, &file_path)
+                .await
                 .with_context(|| format!("Unable to read file '{file_path}'"))?;
-            files.push((file_path, text));
+            files.push((file_path, document.contents));
         }
     }
     for file_url in remote_urls {
@@ -458,13 +461,4 @@ fn read_media_to_data_url(image_path: &str) -> Result<String> {
     let data_url = format!("data:{};base64,{}", mime_type, encoded_image);
 
     Ok(data_url)
-}
-
-fn read_file<P: AsRef<Path>>(file_path: P) -> Result<String> {
-    let file_path = file_path.as_ref();
-
-    let mut text = String::new();
-    let mut file = File::open(file_path)?;
-    file.read_to_string(&mut text)?;
-    Ok(text)
 }
