@@ -384,7 +384,7 @@ async fn load_documents(
     let mut medias = vec![];
     let mut data_urls = HashMap::new();
     let loaders = config.read().document_loaders.clone();
-    let local_files = expand_glob_paths(&local_paths).await?;
+    let local_files = expand_glob_paths(&local_paths, true).await?;
     for file_path in local_files {
         if is_image(&file_path) {
             let data_url = read_media_to_data_url(&file_path)
