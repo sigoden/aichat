@@ -53,7 +53,7 @@ lazy_static::lazy_static! {
         ReplCommand::new(
             ".edit role",
             "Edit the current role",
-            AssertState::TrueFalse(StateFlags::ROLE, StateFlags::SESSION_EMPTY | StateFlags::SESSION),
+            AssertState::TrueFalse(StateFlags::ROLE, StateFlags::SESSION),
         ),
         ReplCommand::new(
             ".save role",
