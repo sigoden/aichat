@@ -915,7 +915,17 @@ impl Config {
     }
 
     pub fn edit_role(&mut self) -> Result<()> {
-        if let Some(name) = self.role.as_ref().map(|v| v.name().to_string()) {
+        if let Some(session) = self.session.as_ref() {
+            if let Some(name) = session.role_name().map(|v| v.to_string()) {
+                if session.is_empty() {
+                    self.upsert_role(&name)
+                } else {
+                    bail!("Cannot perform this operation because you are in a non-empty session")
+                }
+            } else {
+                bail!("No role")
+            }
+        } else if let Some(name) = self.role.as_ref().map(|v| v.name().to_string()) {
             self.upsert_role(&name)
         } else {
             bail!("No role")
