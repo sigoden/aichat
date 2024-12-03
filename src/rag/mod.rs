@@ -15,6 +15,7 @@ use hnsw_rs::prelude::*;
 use indexmap::{IndexMap, IndexSet};
 use inquire::{required, validator::Validation, Confirm, Select, Text};
 use parking_lot::RwLock;
+use path_absolutize::Absolutize;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{collections::HashMap, env, fmt::Debug, fs, hash::Hash, path::Path, time::Duration};
@@ -90,7 +91,7 @@ impl Rag {
         let loaders = config.read().document_loaders.clone();
         let (spinner, spinner_rx) = Spinner::create("");
         abortable_run_with_spinner_rx(
-            rag.sync_documents(loaders, &paths, Some(spinner)),
+            rag.sync_documents(&paths, true, loaders, Some(spinner)),
             spinner_rx,
             abort_signal,
         )
@@ -129,19 +130,17 @@ impl Rag {
         &self.data.document_paths
     }
 
-    pub async fn refresh_document_paths<T>(
+    pub async fn refresh_document_paths(
         &mut self,
-        document_paths: &[T],
+        document_paths: &[String],
+        refresh: bool,
         config: &GlobalConfig,
         abort_signal: AbortSignal,
-    ) -> Result<()>
-    where
-        T: AsRef<str>,
-    {
+    ) -> Result<()> {
         let loaders = config.read().document_loaders.clone();
         let (spinner, spinner_rx) = Spinner::create("");
         abortable_run_with_spinner_rx(
-            self.sync_documents(loaders, document_paths, Some(spinner)),
+            self.sync_documents(document_paths, refresh, loaders, Some(spinner)),
             spinner_rx,
             abort_signal,
         )
@@ -320,31 +319,90 @@ impl Rag {
         Ok((embeddings, ids))
     }
 
-    pub async fn sync_documents<T: AsRef<str>>(
+    pub async fn sync_documents(
         &mut self,
+        paths: &[String],
+        refresh: bool,
         loaders: HashMap<String, String>,
-        paths: &[T],
         spinner: Option<Spinner>,
     ) -> Result<()> {
         if let Some(spinner) = &spinner {
             let _ = spinner.set_message(String::new());
         }
+        let (document_paths, mut recursive_urls, mut urls, mut local_paths) =
+            resolve_paths(paths).await?;
+        let mut to_deleted: IndexMap<String, Vec<FileId>> = Default::default();
+        if refresh {
+            for (file_id, file) in &self.data.files {
+                to_deleted
+                    .entry(file.hash.clone())
+                    .or_default()
+                    .push(*file_id);
+            }
+        } else {
+            let recursive_urls_cloned = recursive_urls.clone();
+            let match_recursive_url = |v: &str| {
+                recursive_urls_cloned
+                    .iter()
+                    .any(|start_url| v.starts_with(start_url))
+            };
+            recursive_urls = recursive_urls
+                .into_iter()
+                .filter(|v| !self.data.document_paths.contains(&format!("{v}**")))
+                .collect();
+            for (file_id, file) in &self.data.files {
+                if is_url(&file.path) {
+                    if !urls.swap_remove(&file.path) && !match_recursive_url(&file.path) {
+                        to_deleted
+                            .entry(file.hash.clone())
+                            .or_default()
+                            .push(*file_id);
+                    }
+                } else if !local_paths.swap_remove(&file.path) {
+                    to_deleted
+                        .entry(file.hash.clone())
+                        .or_default()
+                        .push(*file_id);
+                }
+            }
+        }
 
-        let mut document_paths = vec![];
         let mut files = vec![];
-        let paths_len = paths.len();
         let mut has_error = false;
-        for (index, path) in paths.iter().enumerate() {
-            let path = path.as_ref();
-            println!("Load {path} [{}/{paths_len}]", index + 1);
-            let (path, document_files) = load_document(&loaders, path, &mut has_error).await;
-            files.extend(document_files);
-            document_paths.push(path);
+        let mut index = 0;
+        let total = recursive_urls.len() + urls.len() + local_paths.len();
+        let handle_error = |error: anyhow::Error, has_error: &mut bool| {
+            println!("{}", warning_text(&format!("⚠️ {error}")));
+            *has_error = true;
+        };
+        for start_url in recursive_urls {
+            index += 1;
+            println!("Load {start_url}** [{index}/{total}]");
+            match load_recursive_url(&loaders, &start_url).await {
+                Ok(v) => files.extend(v),
+                Err(err) => handle_error(err, &mut has_error),
+            }
+        }
+        for url in urls {
+            index += 1;
+            println!("Load {url} [{index}/{total}]");
+            match load_url(&loaders, &url).await {
+                Ok(v) => files.push(v),
+                Err(err) => handle_error(err, &mut has_error),
+            }
+        }
+        for local_path in local_paths {
+            index += 1;
+            println!("Load {local_path} [{index}/{total}]");
+            match load_file(&loaders, &local_path).await {
+                Ok(v) => files.push(v),
+                Err(err) => handle_error(err, &mut has_error),
+            }
         }
 
         if has_error {
             let mut aborted = true;
-            if *IS_STDOUT_TERMINAL && !document_paths.is_empty() {
+            if *IS_STDOUT_TERMINAL && total > 0 {
                 let ans = Confirm::new("Some documents failed to load. Continue?")
                     .with_default(false)
                     .prompt()?;
@@ -355,11 +413,6 @@ impl Rag {
             }
         }
 
-        let mut to_deleted: IndexMap<String, FileId> = Default::default();
-        for (file_id, file) in &self.data.files {
-            to_deleted.insert(file.hash.clone(), *file_id);
-        }
-
         let mut rag_files = vec![];
         for (contents, mut metadata) in files {
             let path = match metadata.swap_remove(PATH_METADATA) {
@@ -367,9 +420,17 @@ impl Rag {
                 None => continue,
             };
             let hash = sha256(&contents);
-            if let Some(file_id) = to_deleted.get(&hash) {
-                if self.data.files[file_id].path == path {
-                    to_deleted.swap_remove(&hash);
+            if let Some(file_ids) = to_deleted.get_mut(&hash) {
+                if let Some((i, _)) = file_ids
+                    .iter()
+                    .enumerate()
+                    .find(|(_, v)| self.data.files[*v].path == path)
+                {
+                    if file_ids.len() == 1 {
+                        to_deleted.swap_remove(&hash);
+                    } else {
+                        file_ids.remove(i);
+                    }
                     continue;
                 }
             }
@@ -415,9 +476,10 @@ impl Rag {
                 .await?;
         }
 
-        self.data.del(to_deleted.values().cloned().collect());
+        let to_delete_file_ids: Vec<_> = to_deleted.values().flatten().copied().collect();
+        self.data.del(to_delete_file_ids);
         self.data.add(next_file_id, files, document_ids, embeddings);
-        self.data.document_paths = document_paths;
+        self.data.document_paths = document_paths.into_iter().collect();
 
         if self.data.files.is_empty() {
             bail!("No RAG files");
@@ -843,6 +905,41 @@ fn add_documents() -> Result<Vec<String>> {
         })
         .collect();
     Ok(paths)
+}
+
+async fn resolve_paths<T: AsRef<str>>(
+    paths: &[T],
+) -> Result<(
+    IndexSet<String>,
+    IndexSet<String>,
+    IndexSet<String>,
+    IndexSet<String>,
+)> {
+    let mut document_paths = IndexSet::new();
+    let mut recursive_urls = IndexSet::new();
+    let mut urls = IndexSet::new();
+    let mut absolute_paths = vec![];
+    for path in paths {
+        let path = path.as_ref().trim();
+        if is_url(path) {
+            if let Some(start_url) = path.strip_suffix("**") {
+                recursive_urls.insert(start_url.to_string());
+            } else {
+                urls.insert(path.to_string());
+            }
+            document_paths.insert(path.to_string());
+        } else {
+            let absolute_path = Path::new(path)
+                .absolutize()
+                .with_context(|| format!("Invalid path '{path}'"))?
+                .display()
+                .to_string();
+            absolute_paths.push(absolute_path.clone());
+            document_paths.insert(absolute_path);
+        }
+    }
+    let local_paths = expand_glob_paths(&absolute_paths, false).await?;
+    Ok((document_paths, recursive_urls, urls, local_paths))
 }
 
 fn progress(spinner: &Option<Spinner>, message: String) {

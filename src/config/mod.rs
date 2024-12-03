@@ -1356,7 +1356,7 @@ impl Config {
         if new_document_paths.is_empty() || new_document_paths == document_paths {
             bail!("No changes")
         }
-        rag.refresh_document_paths(&new_document_paths, config, abort_signal)
+        rag.refresh_document_paths(&new_document_paths, false, config, abort_signal)
             .await?;
         config.write().rag = Some(Arc::new(rag));
         Ok(())
@@ -1368,7 +1368,7 @@ impl Config {
             None => bail!("No RAG"),
         };
         let document_paths = rag.document_paths().to_vec();
-        rag.refresh_document_paths(&document_paths, config, abort_signal)
+        rag.refresh_document_paths(&document_paths, true, config, abort_signal)
             .await?;
         config.write().rag = Some(Arc::new(rag));
         Ok(())
