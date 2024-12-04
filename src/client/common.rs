@@ -150,16 +150,17 @@ pub trait Client: Sync + Send {
     }
 
     fn patch_request_data(&self, request_data: &mut RequestData) {
+        let model_type = self.model().model_type();
         let map = std::env::var(get_env_name(&format!(
             "patch_{}_{}",
             self.model().client_name(),
-            self.model().model_type().api_name(),
+            model_type.api_name(),
         )))
         .ok()
         .and_then(|v| serde_json::from_str(&v).ok())
         .or_else(|| {
             self.patch_config()
-                .and_then(|v| self.model().model_type().extract_patch(v))
+                .and_then(|v| model_type.extract_patch(v))
                 .cloned()
         });
         let map = match map {

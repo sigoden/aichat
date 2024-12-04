@@ -104,10 +104,12 @@ impl Model {
     }
 
     pub fn model_type(&self) -> ModelType {
-        match self.data.model_type.as_str() {
-            "embed" | "embedding" => ModelType::Embedding,
-            "rerank" | "reranker" => ModelType::Reranker,
-            _ => ModelType::Chat,
+        if self.data.model_type.starts_with("embed") {
+            ModelType::Embedding
+        } else if self.data.model_type.starts_with("rerank") {
+            ModelType::Reranker
+        } else {
+            ModelType::Chat
         }
     }
 
