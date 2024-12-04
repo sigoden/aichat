@@ -61,7 +61,7 @@ impl Agent {
         let model = {
             let config = config.read();
             match agent_config.model_id.as_ref() {
-                Some(model_id) => Model::retrieve_chat(&config, model_id)?,
+                Some(model_id) => Model::retrieve_model(&config, model_id, ModelType::Chat)?,
                 None => config.current_model().clone(),
             }
         };
