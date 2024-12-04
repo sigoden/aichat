@@ -1,4 +1,5 @@
 # Agent-specific configuration
+# Location `<aichat-config-dir>/agents/<agent-name>/config.yaml`
 
 model: openai:gpt-4o             # Specify the LLM to use
 temperature: null                # Set default temperature parameter
