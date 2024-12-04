@@ -19,7 +19,7 @@ use tokio::sync::mpsc::unbounded_channel;
 const MODELS_YAML: &str = include_str!("../../models.yaml");
 
 lazy_static::lazy_static! {
-    pub static ref ALL_MODELS: Vec<BuiltinModels> = serde_yaml::from_str(MODELS_YAML).unwrap();
+    pub static ref ALL_PREDEFINED_MODELS: Vec<PredefinedModels> = serde_yaml::from_str(MODELS_YAML).unwrap();
     static ref ESCAPE_SLASH_RE: Regex = Regex::new(r"(?<!\\)/").unwrap();
 }
 
@@ -383,7 +383,7 @@ pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(St
                 config["api_base"] = api_base.into();
             }
             prompts.push(("api_key", "API Key:", false, PromptKind::String));
-            if !ALL_MODELS.iter().any(|v| v.platform == name) {
+            if !ALL_PREDEFINED_MODELS.iter().any(|v| v.platform == name) {
                 prompts.extend([
                     ("models[].name", "Model Name:", true, PromptKind::String),
                     (

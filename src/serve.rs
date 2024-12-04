@@ -75,7 +75,7 @@ impl Server {
     fn new(config: &GlobalConfig) -> Self {
         let mut config = config.read().clone();
         config.functions = Functions::default();
-        let mut models = list_models(&config);
+        let mut models = list_all_models(&config);
         let mut default_model = config.model.clone();
         default_model.data_mut().name = DEFAULT_MODEL_NAME.into();
         models.insert(0, &default_model);
@@ -483,7 +483,8 @@ impl Server {
 
         let config = Arc::new(RwLock::new(self.config.clone()));
 
-        let embedding_model = Model::retrieve_embedding(&config.read(), &embedding_model_id)?;
+        let embedding_model =
+            Model::retrieve_model(&config.read(), &embedding_model_id, ModelType::Embedding)?;
 
         let texts = match input {
             EmbeddingsReqBodyInput::Single(v) => vec![v],
@@ -542,7 +543,8 @@ impl Server {
 
         let config = Arc::new(RwLock::new(self.config.clone()));
 
-        let reranker_model = Model::retrieve_embedding(&config.read(), &reranker_model_id)?;
+        let reranker_model =
+            Model::retrieve_model(&config.read(), &reranker_model_id, ModelType::Reranker)?;
 
         let client = init_client(&config, Some(reranker_model))?;
         let data = client

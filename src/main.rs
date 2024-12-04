@@ -13,7 +13,9 @@ mod utils;
 extern crate log;
 
 use crate::cli::Cli;
-use crate::client::{call_chat_completions, call_chat_completions_streaming, list_chat_models};
+use crate::client::{
+    call_chat_completions, call_chat_completions_streaming, list_models, ModelType,
+};
 use crate::config::{
     ensure_parent_exists, list_agents, load_env_file, Config, GlobalConfig, Input, WorkingMode,
     CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE, TEMP_SESSION_NAME,
@@ -69,7 +71,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     }
 
     if cli.list_models {
-        for model in list_chat_models(&config.read()) {
+        for model in list_models(&config.read(), ModelType::Chat) {
             println!("{}", model.id());
         }
         return Ok(());

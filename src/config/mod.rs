@@ -11,8 +11,8 @@ pub use self::role::{
 use self::session::Session;
 
 use crate::client::{
-    create_client_config, list_chat_models, list_client_types, list_reranker_models, ClientConfig,
-    MessageContentToolCalls, Model, OPENAI_COMPATIBLE_PLATFORMS,
+    create_client_config, list_client_types, list_models, ClientConfig, MessageContentToolCalls,
+    Model, ModelType, OPENAI_COMPATIBLE_PLATFORMS,
 };
 use crate::function::{FunctionDeclaration, Functions, ToolResult};
 use crate::rag::Rag;
@@ -775,7 +775,7 @@ impl Config {
 
     pub fn set_rag_reranker_model(config: &GlobalConfig, value: Option<String>) -> Result<()> {
         if let Some(id) = &value {
-            Model::retrieve_reranker(&config.read(), id)?;
+            Model::retrieve_model(&config.read(), id, ModelType::Reranker)?;
         }
         let has_rag = config.read().rag.is_some();
         match has_rag {
@@ -822,7 +822,7 @@ impl Config {
     }
 
     pub fn set_model(&mut self, model_id: &str) -> Result<()> {
-        let model = Model::retrieve_chat(self, model_id)?;
+        let model = Model::retrieve_model(self, model_id, ModelType::Chat)?;
         match self.role_like_mut() {
             Some(role_like) => role_like.set_model(&model),
             None => {
@@ -893,7 +893,7 @@ impl Config {
         match role.model_id() {
             Some(model_id) => {
                 if self.model.id() != model_id {
-                    let model = Model::retrieve_chat(self, model_id)?;
+                    let model = Model::retrieve_model(self, model_id, ModelType::Chat)?;
                     role.set_model(&model);
                 } else {
                     role.set_model(&self.model);
@@ -1666,7 +1666,7 @@ impl Config {
         if args.len() == 1 {
             values = match cmd {
                 ".role" => map_completion_values(Self::list_roles(true)),
-                ".model" => list_chat_models(self)
+                ".model" => list_models(self, ModelType::Chat)
                     .into_iter()
                     .map(|v| (v.id(), Some(v.description())))
                     .collect(),
@@ -1761,7 +1761,10 @@ impl Config {
                     };
                     complete_option_bool(save_session)
                 }
-                "rag_reranker_model" => list_reranker_models(self).iter().map(|v| v.id()).collect(),
+                "rag_reranker_model" => list_models(self, ModelType::Reranker)
+                    .iter()
+                    .map(|v| v.id())
+                    .collect(),
                 "highlight" => complete_bool(self.highlight),
                 _ => vec![],
             };
@@ -2268,7 +2271,7 @@ impl Config {
     fn setup_model(&mut self) -> Result<()> {
         let mut model_id = self.model_id.clone();
         if model_id.is_empty() {
-            let models = list_chat_models(self);
+            let models = list_models(self, ModelType::Chat);
             if models.is_empty() {
                 bail!("No available model");
             }

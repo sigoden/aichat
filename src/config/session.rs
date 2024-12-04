@@ -82,7 +82,7 @@ impl Session {
         let mut session: Self =
             serde_yaml::from_str(&content).with_context(|| format!("Invalid session {}", name))?;
 
-        session.model = Model::retrieve_chat(config, &session.model_id)?;
+        session.model = Model::retrieve_model(config, &session.model_id, ModelType::Chat)?;
 
         if let Some(autoname) = name.strip_prefix("_/") {
             session.name = TEMP_SESSION_NAME.to_string();

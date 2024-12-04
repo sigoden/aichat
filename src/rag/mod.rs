@@ -110,7 +110,8 @@ impl Rag {
     pub fn create(config: &GlobalConfig, name: &str, path: &Path, data: RagData) -> Result<Self> {
         let hnsw = data.build_hnsw();
         let bm25 = data.build_bm25();
-        let embedding_model = Model::retrieve_embedding(&config.read(), &data.embedding_model)?;
+        let embedding_model =
+            Model::retrieve_model(&config.read(), &data.embedding_model, ModelType::Embedding)?;
         let rag = Rag {
             config: config.clone(),
             name: name.to_string(),
@@ -164,14 +165,15 @@ impl Rag {
                 value
             }
             None => {
-                let models = list_embedding_models(&config.read());
+                let models = list_models(&config.read(), ModelType::Embedding);
                 if models.is_empty() {
                     bail!("No available embedding model");
                 }
                 select_embedding_model(&models)?
             }
         };
-        let embedding_model = Model::retrieve_embedding(&config.read(), &embedding_model_id)?;
+        let embedding_model =
+            Model::retrieve_model(&config.read(), &embedding_model_id, ModelType::Embedding)?;
 
         let chunk_size = match chunk_size {
             Some(value) => {
@@ -516,7 +518,8 @@ impl Rag {
 
         let ids = match rerank_model {
             Some(model_id) => {
-                let model = Model::retrieve_reranker(&self.config.read(), model_id)?;
+                let model =
+                    Model::retrieve_model(&self.config.read(), model_id, ModelType::Reranker)?;
                 let client = init_client(&self.config, Some(model))?;
                 let ids: IndexSet<DocumentId> = [vector_search_ids, keyword_search_ids]
                     .concat()
