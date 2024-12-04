@@ -41,7 +41,7 @@ impl Client for ErnieClient {
     ) -> Result<ChatCompletionsOutput> {
         prepare_access_token(self, client).await?;
         let request_data = prepare_chat_completions(self, data)?;
-        let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
+        let builder = self.request_builder(client, request_data);
         chat_completions(builder, &self.model).await
     }
 
@@ -53,7 +53,7 @@ impl Client for ErnieClient {
     ) -> Result<()> {
         prepare_access_token(self, client).await?;
         let request_data = prepare_chat_completions(self, data)?;
-        let builder = self.request_builder(client, request_data, ApiType::ChatCompletions);
+        let builder = self.request_builder(client, request_data);
         chat_completions_streaming(builder, handler, &self.model).await
     }
 
@@ -64,7 +64,7 @@ impl Client for ErnieClient {
     ) -> Result<EmbeddingsOutput> {
         prepare_access_token(self, client).await?;
         let request_data = prepare_embeddings(self, data)?;
-        let builder = self.request_builder(client, request_data, ApiType::Embeddings);
+        let builder = self.request_builder(client, request_data);
         embeddings(builder, &self.model).await
     }
 
@@ -75,7 +75,7 @@ impl Client for ErnieClient {
     ) -> Result<RerankOutput> {
         prepare_access_token(self, client).await?;
         let request_data = prepare_rerank(self, data)?;
-        let builder = self.request_builder(client, request_data, ApiType::Rerank);
+        let builder = self.request_builder(client, request_data);
         rerank(builder, &self.model).await
     }
 }

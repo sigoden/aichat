@@ -1,11 +1,11 @@
 use super::{
-    list_client_names, list_all_models,
+    list_all_models, list_client_names,
     message::{Message, MessageContent, MessageContentPart},
-    MessageContentToolCalls,
+    ApiPatch, MessageContentToolCalls, RequestPatch,
 };
 
-use crate::utils::{estimate_token_length, format_option_value};
 use crate::config::Config;
+use crate::utils::{estimate_token_length, format_option_value};
 
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
@@ -345,6 +345,22 @@ impl ModelType {
             ModelType::Chat => true,
             ModelType::Embedding => false,
             ModelType::Reranker => true,
+        }
+    }
+
+    pub fn api_name(self) -> &'static str {
+        match self {
+            ModelType::Chat => "chat_completions",
+            ModelType::Embedding => "embeddings",
+            ModelType::Reranker => "rerank",
+        }
+    }
+
+    pub fn extract_patch(self, patch: &RequestPatch) -> Option<&ApiPatch> {
+        match self {
+            ModelType::Chat => patch.chat_completions.as_ref(),
+            ModelType::Embedding => patch.embeddings.as_ref(),
+            ModelType::Reranker => patch.rerank.as_ref(),
         }
     }
 }
