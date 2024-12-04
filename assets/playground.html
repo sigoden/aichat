@@ -806,8 +806,8 @@
         </div>
       </div>
     </div>
-    <div class="modal" x-cloak x-show="showModal === 'list-sessions'"
-      @click="if ($event.target === $el) { showModal = ''}">
+    <div class="modal" x-cloak x-show="showModal == 'list-sessions'"
+      @click="if ($event.target == $el) { showModal = ''}">
       <div class="modal-content">
         <div class="modal-header">
           <div class="title">Sessions</div>
@@ -1236,9 +1236,9 @@
         buildBody() {
           let messages = [];
           for ([userMessage, assistantMessage] of chunkArray(this.messages, 2)) {
-            if (assistantMessage.state == "failed") {
+            if (assistantMessage.state === "failed") {
               continue;
-            } else if (assistantMessage.state == "loading") {
+            } else if (assistantMessage.state === "loading") {
               messages.push({
                 role: userMessage.role,
                 content: userMessage.content,
@@ -1350,7 +1350,7 @@
             const parsed = JSON.parse(message);
             yield parsed;
           } catch {
-            if (i == lines.length - 1) {
+            if (i === lines.length - 1) {
               reamingChunkValue += line;
               break;
             }
