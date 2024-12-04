@@ -1083,15 +1083,18 @@
         },
 
         handleKeyDown(event) {
-          const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+          const isMac = navigator.platform.toUpperCase().indexOf('MAC') > -1;
           const controlKey = isMac ? event.metaKey : event.ctrlKey;
-          if (controlKey && event.shiftKey && event.key === 'O') {
+          if (controlKey && event.shiftKey && event.key.toLowerCase() === 'o') {
             event.preventDefault();
             this.handleNewChat();
-          } else if (controlKey && event.shiftKey && event.key === 'L') {
+          } else if (controlKey && event.shiftKey && event.key.toLowerCase() === 'l') {
             event.preventDefault();
             this.showModal = 'list-sessions'
-          } else if (this.showModal && (event.key === 'Escape' || event.key === 'Esc')) {
+          } else if (event.shiftKey && event.key === "Escape") {
+            event.preventDefault();
+            this.$refs?.input?.focus();
+          } else if (this.showModal && event.key === "Escape") {
             event.preventDefault();
             this.showModal = "";
           }
