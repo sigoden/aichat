@@ -6,13 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <title>AIChat LLM Arena</title>
+  <link rel="stylesheet" href="//unpkg.com/katex@0.16.11/dist/katex.min.css">
   <link rel="stylesheet" href="//unpkg.com/github-markdown-css@5.8.1/github-markdown.css">
   <link rel="stylesheet" href="//unpkg.com/@highlightjs/cdn-assets@11.10.0/styles/github-dark.min.css"
     media="screen and (prefers-color-scheme: dark)">
   <link rel="stylesheet" href="//unpkg.com/@highlightjs/cdn-assets@11.10.0/styles/github.min.css"
     media="screen and (prefers-color-scheme: light)">
-  <script src="//unpkg.com/@highlightjs/cdn-assets@11.10.0/highlight.min.js"></script>
-  <script src="//unpkg.com/marked@12.0.2/lib/marked.umd.js" defer></script>
+  <script src="//unpkg.com/@highlightjs/cdn-assets@11.10.0/highlight.min.js" defer></script>
+  <script src="//unpkg.com/marked@15.0.3/lib/marked.umd.js" defer></script>
+  <script src="//unpkg.com/katex@0.16.11/dist/katex.min.js" defer></script>
+  <script src="//unpkg.com/@sigodenjs/marked-katex-extension@1.0.0/lib/index.umd.js" defer></script>
   <script src="//unpkg.com/alpinejs@3.14.6/dist/cdn.min.js" defer></script>
   <style>
     :root {
@@ -989,24 +992,25 @@
     }
 
     function setupMarked() {
-      const renderer = new marked.Renderer();
-      renderer.code = (code, language) => {
-        const validLang = !!(language && hljs.getLanguage(language));
+      const renderer = {
+        code({ text, lang }) {
+          const validLang = !!(lang && hljs.getLanguage(lang));
+          const highlighted = validLang
+            ? hljs.highlight(text, { language: lang }).value
+            : escapeForHTML(text);
 
-        const highlighted = validLang
-          ? hljs.highlight(code, { language }).value
-          : escapeForHTML(code);
-
-        return `<div class="code-block">
-        <pre><code class="hljs ${language}">${highlighted}</code></pre>
+          return `<div class="code-block">
+        <pre><code class="hljs ${lang}">${highlighted}</code></pre>
   <div class="copy-code-btn" @click="handleCopyCode" title="Copy code">
     <svg fill="currentColor" viewBox="0 0 16 16">
       <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
     </svg>
   </div>
 </div>`;
+        }
       };
-      marked.setOptions({ renderer });
+      marked.use({ renderer });
+      marked.use(markedKatex({ throwOnError: false, inlineTolerantNoSpace: true  }));
     }
 
     function escapeForHTML(input) {
