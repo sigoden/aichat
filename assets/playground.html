@@ -1093,7 +1093,7 @@
             this.showModal = 'list-sessions'
           } else if (event.shiftKey && event.key === "Escape") {
             event.preventDefault();
-            this.$refs?.input?.focus();
+            this.focusInput();
           } else if (this.showModal && event.key === "Escape") {
             event.preventDefault();
             this.showModal = "";
@@ -1122,7 +1122,8 @@
               Object.assign(session, sessionData);
             } else {
               this.sessions.unshift({
-                id: this.sessions.length,
+                id: randomUUID(),
+                createdAt: Date.now(),
                 ...sessionData,
               });
             }
@@ -1137,12 +1138,15 @@
           this.sessionMode = false;
           this.sessionTitle = "";
           this.selectSessionId = null;
+
+          this.focusInput();
         },
 
         handleSelectSession(id) {
           const session = this.sessions.find(v => v.id === id);
           if (!session || id === this.selectSessionId) {
             this.showModal = "";
+            this.focusInput();
             return;
           }
           this.handleNewChat();
@@ -1178,6 +1182,10 @@
         autosizeInput($input) {
           $input.style.height = 'auto';
           $input.style.height = $input.scrollHeight + 'px';
+        },
+
+        focusInput() {
+          this.$refs?.input?.focus();
         },
 
         async ask() {
@@ -1505,6 +1513,14 @@
         chunks.push(array.slice(i, i + chunkSize));
       }
       return chunks;
+    }
+
+    function randomUUID() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
     }
 
     function renderMarkdown(text, error = '') {
