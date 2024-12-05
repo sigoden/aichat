@@ -6,21 +6,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <title>AIChat LLM Arena</title>
-  <link rel="stylesheet" href="//unpkg.com/github-markdown-css@5.5.1/github-markdown.css">
-  <link rel="stylesheet" href="//unpkg.com/highlight.js@11.9.0/styles/github-dark.min.css"
+  <link rel="stylesheet" href="//unpkg.com/github-markdown-css@5.8.1/github-markdown.css">
+  <link rel="stylesheet" href="//unpkg.com/@highlightjs/cdn-assets@11.10.0/styles/github-dark.min.css"
     media="screen and (prefers-color-scheme: dark)">
-  <link rel="stylesheet" href="//unpkg.com/highlight.js@11.9.0/styles/github.min.css"
+  <link rel="stylesheet" href="//unpkg.com/@highlightjs/cdn-assets@11.10.0/styles/github.min.css"
     media="screen and (prefers-color-scheme: light)">
-  <script src="//unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
+  <script src="//unpkg.com/@highlightjs/cdn-assets@11.10.0/highlight.min.js"></script>
   <script src="//unpkg.com/marked@12.0.2/lib/marked.umd.js" defer></script>
-  <script src="//unpkg.com/alpinejs@3.13.10/dist/cdn.min.js" defer></script>
+  <script src="//unpkg.com/alpinejs@3.14.6/dist/cdn.min.js" defer></script>
   <style>
     :root {
       --fg-primary: #1652f1;
       --fg-default: black;
       --bg-primary: white;
       --bg-default: #f9f9f9;
-      --border-primary: #c3c3c3;
+      --bg-toast: rgba(0, 0, 0, 0.7);
+      --border-color: #c3c3c3;
     }
 
     [x-cloak] {
@@ -79,7 +80,7 @@
       display: flex;
       padding: 0.5rem;
       flex-direction: row;
-      border-bottom: 1px solid var(--border-primary);
+      border-bottom: 1px solid var(--border-color);
     }
 
     .chat-header select {
@@ -223,13 +224,13 @@
 
     .input-panel {
       position: relative;
-      border-top: 1px solid var(--border-primary);
+      border-top: 1px solid var(--border-color);
     }
 
     .input-panel-inner {
       margin: 1rem;
       padding: 0.5rem;
-      border: 1px solid var(--border-primary);
+      border: 1px solid var(--border-color);
       border-radius: 1rem;
     }
 
@@ -316,7 +317,7 @@
       width: 1.1rem;
       height: 1.1rem;
       margin-top: 3px;
-      border: 2px solid #000;
+      border: 2px solid var(--fg-default);
       border-bottom-color: transparent;
       border-radius: 50%;
       display: inline-block;
@@ -330,7 +331,7 @@
       left: 50%;
       text-align: center;
       transform: translate(-50%, 0);
-      background-color: rgba(0, 0, 0, 0.7);
+      background-color: var(--bg-toast);
       color: var(--bg-primary);
       padding: 0.5rem;
       border-radius: 0.3rem;
@@ -353,7 +354,8 @@
         --fg-default: white;
         --bg-primary: black;
         --bg-default: #121212;
-        --border-primary: #3c3c3c;
+        --bg-toast: rgba(255, 255, 255, 0.7);
+        --border-color: #3c3c3c;
       }
     }
 
@@ -601,7 +603,7 @@
             this.chats[i].model = models[i] || "default";
             $chatPanels[i].style.width = (100 / NUM) + '%';
             if (i > 0) {
-              $chatPanels[i].style.borderLeft = '1px solid var(--border-primary)';
+              $chatPanels[i].style.borderLeft = '1px solid var(--border-color)';
             }
             $scrollToBottomBtns[i].style.left = offsets[i];
           }

@@ -6,21 +6,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <title>AIChat LLM Playground</title>
-  <link rel="stylesheet" href="//unpkg.com/github-markdown-css@5.5.1/github-markdown.css">
-  <link rel="stylesheet" href="//unpkg.com/highlight.js@11.9.0/styles/github-dark.min.css"
+  <link rel="stylesheet" href="//unpkg.com/github-markdown-css@5.8.1/github-markdown.css">
+  <link rel="stylesheet" href="//unpkg.com/@highlightjs/cdn-assets@11.10.0/styles/github-dark.min.css"
     media="screen and (prefers-color-scheme: dark)">
-  <link rel="stylesheet" href="//unpkg.com/highlight.js@11.9.0/styles/github.min.css"
+  <link rel="stylesheet" href="//unpkg.com/@highlightjs/cdn-assets@11.10.0/styles/github.min.css"
     media="screen and (prefers-color-scheme: light)">
-  <script src="//unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
+  <script src="//unpkg.com/@highlightjs/cdn-assets@11.10.0/highlight.min.js"></script>
   <script src="//unpkg.com/marked@12.0.2/lib/marked.umd.js" defer></script>
-  <script src="//unpkg.com/alpinejs@3.13.10/dist/cdn.min.js" defer></script>
+  <script src="//unpkg.com/alpinejs@3.14.6/dist/cdn.min.js" defer></script>
   <style>
     :root {
       --fg-primary: #1652f1;
       --fg-default: black;
       --bg-primary: white;
       --bg-default: #f9f9f9;
-      --border-primary: #c3c3c3;
+      --bg-toast: rgba(0, 0, 0, 0.7);
+      --bg-cover: rgba(0, 0, 0, 0.5);
+      --bg-hover: #f0f0f0;
+      --border-color: #c3c3c3;
+      --shadow-color: rgba(0, 0, 0, 0.1);
     }
 
     [x-cloak] {
@@ -67,7 +71,7 @@
       flex-shrink: 0;
       margin-right: 1.25rem;
       background-color: var(--bg-primary);
-      box-shadow: 0 0 0.3rem rgba(0, 0, 0, 0.1);
+      box-shadow: 0 0 0.3rem var(--shadow-color);
       border-radius: 0.3rem;
     }
 
@@ -118,7 +122,7 @@
       width: 100%;
       padding: 0.5rem;
       margin-bottom: 0.625rem;
-      border: 1px solid var(--border-primary);
+      border: 1px solid var(--border-color);
       border-radius: 0.25rem;
       box-sizing: border-box;
     }
@@ -127,7 +131,7 @@
       width: 100%;
       height: 150px;
       padding: 0.5rem;
-      border: 1px solid var(--border-primary);
+      border: 1px solid var(--border-color);
       border-radius: 0.25rem;
       box-sizing: border-box;
       margin-bottom: 0.625rem;
@@ -147,7 +151,7 @@
       flex-direction: column;
       width: calc(100vw - 360px - 2.5rem);
       background-color: var(--bg-primary);
-      box-shadow: 0 0 0.3rem rgba(0, 0, 0, 0.1);
+      box-shadow: 0 0 0.3rem var(--shadow-color);
       border-radius: 0.3rem;
     }
 
@@ -155,7 +159,7 @@
       display: flex;
       flex-direction: row;
       padding: 1.25rem;
-      border-bottom: 1px solid var(--border-primary);
+      border-bottom: 1px solid var(--border-color);
     }
 
     .chat-header select {
@@ -312,13 +316,13 @@
 
     .input-panel {
       position: relative;
-      border-top: 1px solid var(--border-primary);
+      border-top: 1px solid var(--border-color);
     }
 
     .input-panel-inner {
       margin: 1rem;
       padding: 0.5rem;
-      border: 1px solid var(--border-primary);
+      border: 1px solid var(--border-color);
       border-radius: 1rem;
     }
 
@@ -411,12 +415,12 @@
 
     .session-item {
       padding: 5px;
-      border-bottom: 1px solid #e0e0e0;
+      border-bottom: 1px solid var(--border-color);
       cursor: pointer;
     }
 
     .session-item:hover {
-      background-color: #f0f0f0;
+      background-color: var(--bg-hover);
     }
 
     .session-title {
@@ -431,7 +435,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
+      background-color: var(--bg-cover);
       z-index: 1000;
       display: flex;
       align-items: flex-start;
@@ -445,7 +449,7 @@
       border-radius: 8px;
       max-width: 1000px;
       width: calc(100% - 100px);
-      background-color: white;
+      background-color: var(--bg-primary);
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
 
@@ -462,22 +466,18 @@
 
     .modal-header .close-btn {
       margin-left: auto;
+      color: var(--fg-default);
       background: none;
       border: none;
       font-size: 24px;
       cursor: pointer;
-      color: #999;
-    }
-
-    .modal-close-btn:hover {
-      color: #333;
     }
 
     .spinner {
       width: 1.1rem;
       height: 1.1rem;
       margin-top: 3px;
-      border: 2px solid #000;
+      border: 2px solid var(--fg-default);
       border-bottom-color: transparent;
       border-radius: 50%;
       display: inline-block;
@@ -490,7 +490,7 @@
       bottom: 1rem;
       left: 1rem;
       text-align: center;
-      background-color: rgba(0, 0, 0, 0.7);
+      background-color: var(--bg-toast);
       color: var(--bg-primary);
       padding: 0.5rem;
       border-radius: 0.3rem;
@@ -513,7 +513,11 @@
         --fg-default: white;
         --bg-primary: black;
         --bg-default: #121212;
-        --border-primary: #3c3c3c;
+        --bg-toast: rgba(255, 255, 255, 0.7);
+        --bg-cover: rgba(255, 255, 255, 0.5);
+        --bg-hover: #1f1f1f;
+        --border-color: #3c3c3c;
+        --shadow-color: rgba(255, 255, 255, 0.1);
       }
     }
 
