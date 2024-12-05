@@ -72,6 +72,8 @@
     }
 
     .sidebar-header {
+      display: flex;
+      align-items: center;
       padding: 1.25rem;
     }
 
@@ -85,13 +87,21 @@
       padding-top: 0.3rem;
     }
 
+    .sidebar-right {
+      display: flex;
+      flex-direction: row;
+      margin-left: auto;
+      gap: 6px;
+    }
+
+    .sidebar-btn {
+      cursor: pointer;
+      width: 1.2rem;
+      height: 1.2rem;
+    }
+
     .hide-sidebar-btn {
       display: none;
-      width: 1.5rem;
-      height: 1.5rem;
-      position: absolute;
-      right: 1.5rem;
-      top: 1.5rem;
     }
 
     .settings {
@@ -391,6 +401,78 @@
       opacity: 0.3;
     }
 
+    .session-list {
+      padding-top: 0.4rem;
+      max-height: 80vh;
+      font-size: 0.8rem;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .session-item {
+      padding: 5px;
+      border-bottom: 1px solid #e0e0e0;
+      cursor: pointer;
+    }
+
+    .session-item:hover {
+      background-color: #f0f0f0;
+    }
+
+    .session-title {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 50px;
+    }
+
+    .modal-content {
+      position: relative;
+      padding: 0.8rem;
+      border-radius: 8px;
+      max-width: 1000px;
+      width: calc(100% - 100px);
+      background-color: white;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .modal-header .title {
+      font-weight: 500;
+      font-size: 1.5rem;
+    }
+
+    .modal-header .close-btn {
+      margin-left: auto;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+
+    .modal-close-btn:hover {
+      color: #333;
+    }
+
     .spinner {
       width: 1.1rem;
       height: 1.1rem;
@@ -491,13 +573,35 @@
   <div class="container" x-data="app">
     <div class="sidebar" x-ref="sidebar">
       <div class="sidebar-header">
-        <div class="title">AIChat</div>
-        <div class="subtitle">All-in-one AI-Powered Chat & Copilot</div>
-        <div class="hide-sidebar-btn" @click="handleHideSidebarBtnClick">
-          <svg fill="currentColor" viewBox="0 0 16 16">
-            <path
-              d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
-          </svg>
+        <div class="sidebar-left">
+          <div class="title">AIChat</div>
+          <div class="subtitle">All-in-one AI-Powered Chat</div>
+        </div>
+        <div class="sidebar-right">
+          <div class="sidebar-btn new-chat-btn" title="New Chat (Ctrl/Cmd+Shift+O)" @click="handleNewChat">
+            <svg fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+              <path
+                d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4" />
+            </svg>
+          </div>
+          <div class="sidebar-btn list-sessions-btn" title="List Sessions (Ctrl/Cmd+Shift+L)"
+            @click="showModal = 'list-sessions'">
+            <svg fill="currentColor" viewBox="0 0 16 16">
+              <path fill-rule="evenodd"
+                d="M2 2.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5V3a.5.5 0 0 0-.5-.5zM3 3H2v1h1z" />
+              <path
+                d="M5 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M5.5 7a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1zm0 4a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1z" />
+              <path fill-rule="evenodd"
+                d="M1.5 7a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5zM2 7h1v1H2zm0 3.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm1 .5H2v1h1z" />
+            </svg>
+          </div>
+          <div class="sidebar-btn hide-sidebar-btn" @click="handleHideSidebarBtnClick">
+            <svg fill="currentColor" viewBox="0 0 16 16">
+              <path
+                d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
+            </svg>
+          </div>
         </div>
       </div>
       <div class="settings">
@@ -652,7 +756,7 @@
       </div>
       <div class="input-panel">
         <div class="input-panel-inner">
-          <textarea id="chat-input" x-model="input" x-ref="input" @keydown.enter="handleEnterKeydown"
+          <textarea id="chat-input" x-model="input" x-ref="input" @keydown.enter="handleEnterKeyDown"
             placeholder="Ask Anything" autofocus></textarea>
           <div class="input-image-bar" x-show="images.length > 0">
             <template x-for="(image, index) in images">
@@ -702,6 +806,22 @@
         </div>
       </div>
     </div>
+    <div class="modal" x-cloak x-show="showModal == 'list-sessions'"
+      @click="if ($event.target == $el) { showModal = ''}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="title">Sessions</div>
+          <button class="close-btn" @click="showModal = ''">&times;</button>
+        </div>
+        <div class="session-list">
+          <template x-for="session in sessions" :key="session.id">
+            <div class="session-item" @click="handleSelectSession(session.id)">
+              <div class="session-title" x-text="session.sessionTitle"></div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
     <div id="toast" class="toast"></div>
   </div>
   <script>
@@ -735,18 +855,21 @@
         models: [],
         rags: [""],
         roles: [{ name: "", prompt: "" }],
+        settings: defaultSettings,
         modelData: {},
         messages: [],
-        hoveredMessageIndex: null,
         input: "",
         images: [],
         asking: false,
-        sessionMode: false,
         askAbortController: null,
+        hoveredMessageIndex: null,
         shouldScrollChatBodyToBottom: true,
         isShowScrollToBottomBtn: false,
-        summary: "",
-        settings: defaultSettings,
+        showModal: "",
+        sessionMode: false,
+        sessionTitle: "",
+        selectSessionId: null,
+        sessions: [],
 
         async init() {
           await Promise.all([
@@ -781,6 +904,7 @@
           } else {
             this.settings.role = "";
           }
+          document.addEventListener("keydown", (event) => this.handleKeyDown(event))
         },
 
         handleAsk() {
@@ -788,6 +912,16 @@
           const isEmptyImage = this.images.length === 0;
           if (this.asking || (isEmptyImage && isEmptyInput)) {
             return;
+          }
+          if (this.messages.length === 0) {
+            let sessionTitle = ""
+            if (this.images.length > 0) {
+              sessionTitle = `🖼️x${this.images.length} `
+            }
+            if (this.input) {
+              sessionTitle += this.input.trim().replace(/\n/g, "↵").slice(0, 200);
+            }
+            this.sessionTitle = sessionTitle;
           }
           if (isEmptyImage) {
             this.messages.push({
@@ -895,7 +1029,7 @@
           this.$refs["main-panel"].style.display = this.$refs["main-panel"]._display;
         },
 
-        handleEnterKeydown(event) {
+        handleEnterKeyDown(event) {
           if (event.shiftKey) {
             return;
           }
@@ -948,6 +1082,81 @@
           this.images.push(...urls);
         },
 
+        handleKeyDown(event) {
+          const isMac = navigator.platform.toUpperCase().indexOf('MAC') > -1;
+          const controlKey = isMac ? event.metaKey : event.ctrlKey;
+          if (controlKey && event.shiftKey && event.key.toLowerCase() === 'o') {
+            event.preventDefault();
+            this.handleNewChat();
+          } else if (controlKey && event.shiftKey && event.key.toLowerCase() === 'l') {
+            event.preventDefault();
+            this.showModal = 'list-sessions'
+          } else if (event.shiftKey && event.key === "Escape") {
+            event.preventDefault();
+            this.focusInput();
+          } else if (this.showModal && event.key === "Escape") {
+            event.preventDefault();
+            this.showModal = "";
+          }
+        },
+
+        handleNewChat() {
+          if (this.asking) {
+            this.askAbortController?.abort();
+          }
+          if (this.sessionTitle) {
+            const lastMessage = this.messages[this.messages.length - 1];
+            if (lastMessage.state === "loading") {
+              lastMessage.state = "failed";
+              lastMessage.error = "Error: Aborted";
+              lastMessage.html = renderMarkdown(lastMessage.content, lastMessage.error);
+            }
+            const sessionData = JSON.parse(JSON.stringify({
+              settings: this.settings,
+              messages: this.messages,
+              sessionMode: this.sessionMode,
+              sessionTitle: this.sessionTitle,
+            }));
+            let session = this.sessions.find(v => v.id === this.selectSessionId);
+            if (session) {
+              Object.assign(session, sessionData);
+            } else {
+              this.sessions.unshift({
+                id: randomUUID(),
+                createdAt: Date.now(),
+                ...sessionData,
+              });
+            }
+          }
+          this.messages = [];
+          this.asking = false;
+          this.askAbortController = null;
+          this.hoveredMessageIndex = null;
+          this.shouldScrollChatBodyToBottom = true;
+          this.isShowScrollToBottomBtn = false;
+          this.showModal = "";
+          this.sessionMode = false;
+          this.sessionTitle = "";
+          this.selectSessionId = null;
+
+          this.focusInput();
+        },
+
+        handleSelectSession(id) {
+          const session = this.sessions.find(v => v.id === id);
+          if (!session || id === this.selectSessionId) {
+            this.showModal = "";
+            this.focusInput();
+            return;
+          }
+          this.handleNewChat();
+          this.settings = session.settings;
+          this.messages = session.messages;
+          this.sessionMode = session.sessionMode;
+          this.sessionTitle = session.sessionTitle;
+          this.selectSessionId = session.id;
+        },
+
         updateUrl() {
           const newUrl = new URL(location.href);
           ["model", "rag", "role", "max_output_tokens", "temperature", "top_p"].forEach(key => {
@@ -973,6 +1182,10 @@
         autosizeInput($input) {
           $input.style.height = 'auto';
           $input.style.height = $input.scrollHeight + 'px';
+        },
+
+        focusInput() {
+          this.$refs?.input?.focus();
         },
 
         async ask() {
@@ -1005,7 +1218,7 @@
           } catch (err) {
             lastMessage.state = "failed";
             if (this.askAbortController?.signal?.aborted) {
-              lastMessage.error = "";
+              lastMessage.error = "Error: Aborted";
             } else {
               lastMessage.error = err?.message || err;
             }
@@ -1034,9 +1247,9 @@
         buildBody() {
           let messages = [];
           for ([userMessage, assistantMessage] of chunkArray(this.messages, 2)) {
-            if (assistantMessage.state == "failed") {
+            if (assistantMessage.state === "failed") {
               continue;
-            } else if (assistantMessage.state == "loading") {
+            } else if (assistantMessage.state === "loading") {
               messages.push({
                 role: userMessage.role,
                 content: userMessage.content,
@@ -1052,7 +1265,7 @@
               });
             }
           }
-          const systemPrompt = (this.summary || this.settings.prompt).trim();
+          const systemPrompt = this.settings.prompt.trim();
           if (systemPrompt) {
             if (messages[0]?.content?.indexOf("__INPUT__") > -1) {
               messages[0].content = systemPrompt.replace("__INPUT__", messages[0].content);
@@ -1148,7 +1361,7 @@
             const parsed = JSON.parse(message);
             yield parsed;
           } catch {
-            if (i == lines.length - 1) {
+            if (i === lines.length - 1) {
               reamingChunkValue += line;
               break;
             }
@@ -1300,6 +1513,14 @@
         chunks.push(array.slice(i, i + chunkSize));
       }
       return chunks;
+    }
+
+    function randomUUID() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
     }
 
     function renderMarkdown(text, error = '') {

@@ -847,9 +847,9 @@
           const chat = this.chats[index];
           const messages = [];
           for ([userMessage, assistantMessage] of chunkArray(chat.messages, 2)) {
-            if (assistantMessage.state == "failed") {
+            if (assistantMessage.state === "failed") {
               continue;
-            } else if (assistantMessage.state == "loading") {
+            } else if (assistantMessage.state === "loading") {
               messages.push({
                 role: userMessage.role,
                 content: userMessage.content,
@@ -929,7 +929,7 @@
             const parsed = JSON.parse(message);
             yield parsed;
           } catch {
-            if (i == lines.length - 1) {
+            if (i === lines.length - 1) {
               reamingChunkValue += line;
               break;
             }
