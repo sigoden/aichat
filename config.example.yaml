@@ -181,7 +181,7 @@ clients:
 
   # See https://docs.cohere.com/docs/the-cohere-platform
   - type: cohere
-    api_base: https://api.cohere.ai/v1                # Optional
+    api_base: https://api.cohere.ai/v2                # Optional
     api_key: xxx
 
   # See https://docs.perplexity.ai/docs/getting-started
