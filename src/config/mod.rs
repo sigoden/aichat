@@ -137,7 +137,7 @@ pub struct Config {
 
     pub serve_addr: Option<String>,
     pub user_agent: Option<String>,
-    pub append_command_to_history_file: bool,
+    pub save_shell_history: bool,
 
     pub clients: Vec<ClientConfig>,
 
@@ -210,7 +210,7 @@ impl Default for Config {
 
             serve_addr: None,
             user_agent: None,
-            append_command_to_history_file: true,
+            save_shell_history: true,
 
             clients: vec![],
 
@@ -2258,8 +2258,8 @@ impl Config {
         if let Some(v) = read_env_value::<String>(&get_env_name("user_agent")) {
             self.user_agent = v;
         }
-        if let Some(Some(v)) = read_env_bool(&get_env_name("append_command_to_history_file")) {
-            self.append_command_to_history_file = v;
+        if let Some(Some(v)) = read_env_bool(&get_env_name("save_shell_history")) {
+            self.save_shell_history = v;
         }
     }
 

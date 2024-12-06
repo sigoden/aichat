@@ -270,7 +270,7 @@ async fn shell_execute(
                 "e" => {
                     debug!("{} {:?}", shell.cmd, &[&shell.arg, &eval_str]);
                     let code = run_command(&shell.cmd, &[&shell.arg, &eval_str], None)?;
-                    if code == 0 && config.read().append_command_to_history_file {
+                    if code == 0 && config.read().save_shell_history {
                         let _ = append_to_shell_history(&shell.name, &eval_str, code);
                     }
                     process::exit(code);
