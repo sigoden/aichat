@@ -250,7 +250,7 @@ chat-claude() {
 # @flag -S --no-stream
 # @arg text~
 chat-cohere() {
-    _wrapper curl -i https://api.cohere.ai/v1/chat \
+    _wrapper curl -i https://api.cohere.ai/v2/chat \
 -X POST \
 -H 'Content-Type: application/json' \
 -H "Authorization: Bearer $COHERE_API_KEY" \
@@ -398,7 +398,7 @@ _build_body() {
     else
         shift
         case "$kind" in
-        openai)
+        openai|cohere)
             echo '{
     "model": "'$argc_model'",
     "messages": [
@@ -408,13 +408,6 @@ _build_body() {
         }
     ],
     "stream": '$stream'
-}'
-            ;;
-        cohere)
-            echo '{
-  "model": "'$argc_model'",
-  "message": "'"$*"'",
-  "stream": '$stream'
 }'
             ;;
         claude)

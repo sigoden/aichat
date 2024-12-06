@@ -283,12 +283,27 @@
       max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 96
+    - name: embed-english-light-v3.0
+      type: embedding
+      input_price: 0.1
+      max_tokens_per_chunk: 512
+      default_chunk_size: 700
+      max_batch_size: 96
     - name: embed-multilingual-v3.0
       type: embedding
       input_price: 0.1
       max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 96
+    - name: embed-multilingual-light-v3.0
+      type: embedding
+      input_price: 0.1
+      max_tokens_per_chunk: 512
+      default_chunk_size: 700
+      max_batch_size: 96
+    - name: rerank-v3.5
+      type: reranker
+      max_input_tokens: 4096
     - name: rerank-english-v3.0
       type: reranker
       max_input_tokens: 4096
