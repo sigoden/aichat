@@ -4,7 +4,7 @@
 [![Crates](https://img.shields.io/crates/v/aichat.svg)](https://crates.io/crates/aichat)
 [![Discord](https://img.shields.io/discord/1226737085453701222?label=Discord)](https://discord.gg/mr3ZZUB9hG)
 
-AIChat is an all-in-one LLM CLI tool featuring Chat-REPL, Shell Assistant, RAG, AI Tools & Agents, and More. 
+AIChat is an all-in-one LLM CLI tool featuring Shell Assistant, CMD & REPL Mode, RAG, AI Tools & Agents, and More. 
 
 ## Install
 
@@ -22,47 +22,50 @@ Download pre-built binaries for macOS, Linux, and Windows from [GitHub Releases]
 
 ## Features
 
-### Multi-Platform Support
+### Multi-Platform Compatibility
 
-Seamlessly integrate with over 20 leading LLM platforms via a unified interface, including OpenAI, Claude, Gemini (Google AI Studio), Ollama, Groq, Azure-OpenAI, VertexAI, Bedrock, Huggingface, Github Models, Mistral, Deepseek, AI21, XAI Grok, Cohere, Perplexity, Cloudflare, OpenRouter, Ernie, Qianwen, Moonshot,  ZhipuAI, Lingyiwanwu, Deepinfra, Fireworks, Siliconflow, Together, Jina, VoyageAI, and any OpenAI-Compatible platforms.
+Integrate seamlessly with over 20 leading LLM platforms through a unified interface. Supported platforms include OpenAI, Claude, Gemini (Google AI Studio), Ollama, Groq, Azure-OpenAI, VertexAI, Bedrock, Huggingface, Github Models, Mistral, Deepseek, AI21, XAI Grok, Cohere, Perplexity, Cloudflare, OpenRouter, Ernie, Qianwen, Moonshot,  ZhipuAI, Lingyiwanwu, Deepinfra, Fireworks, Siliconflow, Together, Jina, VoyageAI, any OpenAI-Compatible platforms.
 
-### Chat-REPL
+### CMD Mode
 
-Bring a powerful Chat-REPL with features such as tab autocompletion, multi-line support, history search, configurable keybindings, and custom REPL prompt.
+Explore powerful command-line functionalities with AIChat's CMD mode.
+
+![aichat-cmd](https://github.com/user-attachments/assets/6c58c549-1564-43cf-b772-e1c9fe91d19c)
+
+### REPL Mode
+
+Experience an interactive Chat-REPL with features like tab autocompletion, multi-line input support, history search, configurable keybindings, and custom REPL prompts.
 
 ![aichat-repl](https://github.com/user-attachments/assets/218fab08-cdae-4c3b-bcf8-39b6651f1362)
 
 ### Shell Assistant
 
-Supercharge your command line experience. Simply describe your desired actions in natural language, and let AIChat translate your requests into precise shell commands. 
+Elevate your command-line efficiency. Describe your tasks in natural language, and let AIChat transform them into precise shell commands. AIChat intelligently adjusts to your OS and shell environment.
 
 ![aichat-execute](https://github.com/user-attachments/assets/0c77e901-0da2-4151-aefc-a2af96bbb004)
 
-**OS-Aware Intelligence:** AIChat tailors commands to your specific operating system and shell environment.
-
 ### Multi-Form Input
 
-Accept various forms of input, such as stdin, local files & dirs, and remote URLs.
+Accept diverse input forms such as stdin, local files and directories, and remote URLs, allowing flexibility in data handling.
 
-| Input             | Example                              |
-| ----------------- | ------------------------------------ |
-| CMD input         | `aichat hello`                       |
-| Stdin pipe        | `cat data.txt \| aichat`             |
-| Local files       | `aichat -f data.txt`                 |
-| Local images      | `aichat -f image.png`                |
-| Local directories | `aichat -f dir/`                     |
-| Remote URLs       | `aichat -f https://example.com`      |
-| Combine Inputs    | `aichat -f dir/ -f data.txt explain` |
+| Input             | CMD                                  | REPL                             |
+| ----------------- | ------------------------------------ | -------------------------------- |
+| CMD               | `aichat hello`                       |                                  |
+| STDIN             | `cat data.txt \| aichat`             |                                  |
+| Local files       | `aichat -f image.png -f data.txt`    | `.file image.png data.txt`       |
+| Local directories | `aichat -f dir/`                     | `.file dir/`                     |
+| Remote URLs       | `aichat -f https://example.com`      | `.file https://example.com`      |
+| Combine Inputs    | `aichat -f dir/ -f data.txt explain` | `.file dir/ data.txt -- explain` |
 
-### Role
+### Role Management
 
-Define custom roles to tailor LLM behaviors, enhancing interactions and boosting productivity.
+Customize roles to tailor LLM behavior, enhancing interaction efficiency and boosting productivity.
 
 ![aichat-role](https://github.com/user-attachments/assets/023df6d2-409c-40bd-ac93-4174fd72f030)
 
 > The role consists of a prompt and model configuration.
 
-### Session
+### Session Management
 
 Maintain context-aware conversations through sessions, ensuring continuity in interactions.
 
@@ -95,9 +98,9 @@ AI Agent = Instructions (Prompt) + Tools (Function Callings) + Documents (RAG).
 
 ![aichat-agent](https://github.com/user-attachments/assets/0b7e687d-e642-4e8a-b1c1-d2d9b2da2b6b)
 
-### Local Server
+### Local Server Capabilities
 
-AIChat comes with a built-in lightweight http server.
+AIChat includes a lightweight built-in HTTP server for easy deployment.
 
 ```
 $ aichat --serve
@@ -110,7 +113,7 @@ LLM Arena:            http://127.0.0.1:8000/arena?num=2
 
 #### Proxy LLM APIs
 
-AIChat offers the ability to function as a proxy server for all LLMs. This allows you to interact with different LLMs using the familiar OpenAI API format, simplifying the process of accessing and utilizing these LLMs.
+The LLM Arena is a web-based platform where you can compare different LLMs side-by-side. 
 
 Test with curl:
 
@@ -124,13 +127,13 @@ curl -X POST -H "Content-Type: application/json" -d '{
 
 #### LLM Playground
 
-The LLM Playground is a webapp that allows you to interact with any LLM supported by AIChat directly in your browser.
+A web application to interact with supported LLMs directly from your browser.
 
-![aichat-llm-playground](https://github.com/user-attachments/assets/7f39fb78-a4ca-4007-a685-3a2b7d01dfdd)
+![aichat-llm-playground](https://github.com/user-attachments/assets/aab1e124-1274-4452-b703-ef15cda55439)
 
 #### LLM Arena
 
-The LLM Arena is a web-based platform where you can compare different LLMs side-by-side. 
+A web platform to compare different LLMs side-by-side.
 
 ![aichat-llm-arena](https://github.com/user-attachments/assets/edabba53-a1ef-4817-9153-38542ffbfec6)
 
