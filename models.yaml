@@ -114,7 +114,7 @@
       output_price: 0
       supports_vision: true
       supports_function_calling: true
-    - name: gemini-exp-1121
+    - name: gemini-exp-1206
       max_input_tokens: 32768
       max_output_tokens: 8192
       input_price: 0
@@ -351,6 +351,11 @@
 #  - https://console.groq.com/docs/api-reference#chat
 - platform: groq
   models:
+    - name: llama-3.3-70b-versatile
+      max_input_tokens: 128000
+      input_price: 0
+      output_price: 0
+      supports_function_calling: true
     - name: llama-3.1-70b-versatile
       max_input_tokens: 128000
       input_price: 0
@@ -399,8 +404,12 @@
     - name: llama3.2-vision
       max_input_tokens: 128000
       supports_vision: true
-    - name: gemma2
-      max_input_tokens: 8192
+    - name: llama3.3
+      max_input_tokens: 128000
+      supports_function_calling: true
+    - name: qwq
+      max_input_tokens: 32768
+      supports_function_calling: true
     - name: qwen2.5
       max_input_tokens: 128000
       supports_function_calling: true
@@ -409,6 +418,8 @@
       supports_function_calling: true
     - name: deepseek-coder-v2
       max_input_tokens: 32768
+    - name: gemma2
+      max_input_tokens: 8192
     - name: nomic-embed-text
       type: embedding
       max_tokens_per_chunk: 8192
@@ -523,7 +534,6 @@
 # Links:
 #  - https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html#model-ids-arns
 #  - https://aws.amazon.com/bedrock/pricing/
-#  - https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html
 #  - https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference-support.html
 - platform: bedrock
   models:
@@ -624,6 +634,23 @@
       require_max_tokens: true
       input_price: 0.1
       output_price: 0.1
+    - name: us.amazon.nova-pro-v1:0
+      max_input_tokens: 300000
+      max_output_tokens: 5120
+      input_price: 0.8
+      output_price: 3.2
+      supports_vision: true
+    - name: us.amazon.nova-lite-v1:0
+      max_input_tokens: 300000
+      max_output_tokens: 5120
+      input_price: 0.06
+      output_price: 0.24
+      supports_vision: true
+    - name: us.amazon.nova-micro-v1:0
+      max_input_tokens: 128000
+      max_output_tokens: 5120
+      input_price: 0.035
+      output_price: 0.14
     - name: mistral.mistral-large-2407-v1:0
       max_input_tokens: 128000
       input_price: 2
@@ -667,6 +694,12 @@
 #  - https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/
 - platform: cloudflare
   models:
+    - name: '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
+      max_input_tokens: 6144
+      max_output_tokens: 2048
+      require_max_tokens: true
+      input_price: 0
+      output_price: 0
     - name: '@cf/meta/llama-3.1-70b-instruct'
       max_input_tokens: 6144
       max_output_tokens: 2048
@@ -1044,7 +1077,13 @@
     - name: ministral-3b
       max_input_tokens: 128000
       supports_function_calling: true
+    - name: cohere-command-r-plus-08-2024
+      max_input_tokens: 128000
+      supports_function_calling: true
     - name: cohere-command-r-plus
+      max_input_tokens: 128000
+      supports_function_calling: true
+    - name: cohere-command-r-08-2024
       max_input_tokens: 128000
       supports_function_calling: true
     - name: cohere-command-r
@@ -1079,6 +1118,10 @@
 #  - https://deepinfra.com/pricing
 - platform: deepinfra
   models:
+    - name: meta-llama/Llama-3.3-70B-Instruct
+      max_input_tokens: 128000
+      input_price: 0.23
+      output_price: 0.40
     - name: meta-llama/Meta-Llama-3.1-405B-Instruct
       max_input_tokens: 32000
       input_price: 1.79
@@ -1176,6 +1219,10 @@
 #  - https://fireworks.ai/pricing
 - platform: fireworks
   models:
+    - name: accounts/fireworks/models/llama-v3p3-70b-instruct
+      max_input_tokens: 131072
+      input_price: 0.9
+      output_price: 0.9
     - name: accounts/fireworks/models/llama-v3p1-405b-instruct
       max_input_tokens: 131072
       input_price: 3
@@ -1224,6 +1271,11 @@
       max_input_tokens: 32768
       input_price: 0.9
       output_price: 0.9
+    - name: accounts/fireworks/models/qwen2-vl-72b-instruct
+      max_input_tokens: 32768
+      input_price: 0.9
+      output_price: 0.9
+      supports_vision: true
     - name: accounts/fireworks/models/phi-3-vision-128k-instruct
       max_input_tokens: 131072
       input_price: 0.2
@@ -1385,6 +1437,10 @@
       output_price: 1.25
       supports_vision: true
       supports_function_calling: true
+    - name: meta-llama/llama-3.3-70b-instruct
+      max_input_tokens: 131072
+      input_price: 0.88
+      output_price: 0.88
     - name: meta-llama/llama-3.1-405b-instruct
       max_input_tokens: 131072
       input_price: 2.8
@@ -1550,6 +1606,23 @@
       input_price: 5
       output_price: 15
       supports_vision: true
+    - name: amazon/nova-pro-v1 
+      max_input_tokens: 300000
+      max_output_tokens: 5120
+      input_price: 0.8
+      output_price: 3.2
+      supports_vision: true
+    - name: amazon/nova-lite-v1
+      max_input_tokens: 300000
+      max_output_tokens: 5120
+      input_price: 0.06
+      output_price: 0.24
+      supports_vision: true
+    - name: amazon/nova-micro-v1
+      max_input_tokens: 128000
+      max_output_tokens: 5120
+      input_price: 0.035
+      output_price: 0.14
 
 # Links
 #  - https://cloud.siliconflow.cn/models
@@ -1613,10 +1686,6 @@
       input_price: 0.186
       output_price: 0.186
       supports_function_calling: true
-    - name: nvidia/Llama-3.1-Nemotron-70B-Instruct
-      max_input_tokens: 32768
-      input_price: 0.578
-      output_price: 0.578
     - name: Tencent/Hunyuan-A52B-Instruct
       max_input_tokens: 32768
       input_price: 2.94
@@ -1650,6 +1719,11 @@
 #  - https://www.together.ai/pricing
 - platform: together
   models:
+    - name: meta-llama/Llama-3.3-70B-Instruct-Turbo
+      max_input_tokens: 32768
+      input_price: 0.88
+      output_price: 0.88
+      supports_function_calling: true
     - name: meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo
       max_input_tokens: 32768
       input_price: 3.5
