@@ -51,7 +51,7 @@ fn prepare_chat_completions(
     let api_key = self_.get_api_key()?;
 
     let url = format!(
-        "{}/openai/deployments/{}/chat/completions?api-version=2024-02-01",
+        "{}/openai/deployments/{}/chat/completions?api-version=2024-10-21",
         &api_base,
         self_.model.name()
     );
@@ -70,7 +70,7 @@ fn prepare_embeddings(self_: &AzureOpenAIClient, data: &EmbeddingsData) -> Resul
     let api_key = self_.get_api_key()?;
 
     let url = format!(
-        "{}/openai/deployments/{}/embeddings?api-version=2024-02-01",
+        "{}/openai/deployments/{}/embeddings?api-version=2024-10-21",
         &api_base,
         self_.model.name()
     );

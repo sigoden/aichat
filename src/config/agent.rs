@@ -334,10 +334,7 @@ impl Agent {
             self.variable_envs(),
         )?;
         match value {
-            Some(v) => {
-                println!();
-                Ok(v)
-            }
+            Some(v) => Ok(v),
             _ => bail!("No return value from '_instructions' function"),
         }
     }
