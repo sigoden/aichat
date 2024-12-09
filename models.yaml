@@ -141,7 +141,23 @@
       output_price: 15
       supports_vision: true
       supports_function_calling: true
+    - name: claude-3-5-sonnet-20241022
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
     - name: claude-3-5-haiku-latest
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-3-5-haiku-20241022
       max_input_tokens: 200000
       max_output_tokens: 8192
       require_max_tokens: true
@@ -1629,6 +1645,10 @@
 #  - https://docs.siliconflow.cn/api-reference/chat-completions/chat-completions
 - platform: siliconflow
   models:
+    - name: meta-llama/Llama-3.3-70B-Instruct
+      max_input_tokens: 32768
+      input_price: 0.578
+      output_price: 0.578
     - name: meta-llama/Meta-Llama-3.1-405B-Instruct
       max_input_tokens: 32768
       input_price: 2.94
