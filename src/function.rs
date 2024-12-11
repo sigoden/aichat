@@ -112,6 +112,8 @@ pub struct JsonSchema {
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub properties: Option<IndexMap<String, JsonSchema>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub items: Option<Box<JsonSchema>>,
     #[serde(rename = "enum", skip_serializing_if = "Option::is_none")]
     pub enum_value: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
