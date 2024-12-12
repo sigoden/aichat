@@ -106,16 +106,20 @@ pub struct FunctionDeclaration {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JsonSchema {
-    #[serde(rename = "type")]
-    pub type_value: String,
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub type_value: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub properties: Option<IndexMap<String, JsonSchema>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub items: Option<Box<JsonSchema>>,
+    #[serde(rename = "anyOf", skip_serializing_if = "Option::is_none")]
+    pub any_of: Option<Vec<JsonSchema>>,
     #[serde(rename = "enum", skip_serializing_if = "Option::is_none")]
     pub enum_value: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default: Option<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub required: Option<Vec<String>>,
 }
