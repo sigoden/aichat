@@ -281,7 +281,7 @@ impl Agent {
             None => &mut self.shared_variables,
         };
         let Some(old_value) = variables.get(key) else {
-            bail!("Unknown variable: '{key}'")
+            bail!("Unknown variable '{key}'")
         };
         if old_value == value {
             return Ok(());

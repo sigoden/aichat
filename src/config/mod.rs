@@ -1047,8 +1047,10 @@ impl Config {
                 }
             }
         }
+        let mut new_session = false;
         if let Some(session) = session.as_mut() {
             if session.is_empty() {
+                new_session = true;
                 if let Some((input, output)) = &self.last_message {
                     if self.agent.is_some() == input.with_agent() {
                         let ans = Confirm::new(
@@ -1064,7 +1066,7 @@ impl Config {
             }
         }
         self.session = session;
-        self.init_agent_session_variables()?;
+        self.init_agent_session_variables(new_session)?;
         Ok(())
     }
 
@@ -2033,12 +2035,12 @@ impl Config {
         Ok(())
     }
 
-    fn init_agent_session_variables(&mut self) -> Result<()> {
+    fn init_agent_session_variables(&mut self, new_session: bool) -> Result<()> {
         let (agent, session) = match (self.agent.as_mut(), self.session.as_mut()) {
             (Some(agent), Some(session)) => (agent, session),
             _ => return Ok(()),
         };
-        if session.is_empty() {
+        if new_session {
             let shared_variables = agent.shared_variables().clone();
             let session_variables =
                 if !agent.defined_variables().is_empty() && shared_variables.is_empty() {
