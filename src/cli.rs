@@ -73,12 +73,7 @@ pub struct Cli {
 
 impl Cli {
     pub fn text(&self) -> Option<String> {
-        let text = self
-            .text
-            .iter()
-            .map(|x| x.trim().to_string())
-            .collect::<Vec<String>>()
-            .join(" ");
+        let text = self.text.to_vec().join(" ");
         if text.is_empty() {
             return None;
         }

@@ -91,7 +91,7 @@ impl Input {
         }
         for (path, contents) in files {
             texts.push(format!(
-                "============ PATH: {path} ============\n\n{contents}\n"
+                "============ PATH: {path} ============\n{contents}\n"
             ));
         }
         let (role, with_session, with_agent) = resolve_role(&config.read(), role);

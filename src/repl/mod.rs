@@ -280,7 +280,7 @@ impl Repl {
                     Some(args) => match args.split_once(['\n', ' ']) {
                         Some((name, text)) => {
                             let role = self.config.read().retrieve_role(name.trim())?;
-                            let input = Input::from_str(&self.config, text.trim(), Some(role));
+                            let input = Input::from_str(&self.config, text, Some(role));
                             ask(&self.config, self.abort_signal.clone(), input, false).await?;
                         }
                         None => {
@@ -718,8 +718,9 @@ fn split_files_text(line: &str, is_win: bool) -> (Vec<String>, &str) {
             word.to_string()
         }
     };
+    let chars: Vec<char> = line.chars().collect();
 
-    for (i, char) in line.chars().enumerate() {
+    for (i, char) in chars.iter().cloned().enumerate() {
         match unbalance {
             Some(ub_char) if ub_char == char => {
                 word.push(char);
@@ -730,12 +731,15 @@ fn split_files_text(line: &str, is_win: bool) -> (Vec<String>, &str) {
             }
             None => match char {
                 ' ' | '\t' | '\r' | '\n' => {
+                    if char == '\r' && chars.get(i + 1) == Some(&'\n') {
+                        continue;
+                    }
                     if let Some('\\') = prev_char.filter(|_| !is_win) {
                         word.push(char);
                     } else if !word.is_empty() {
                         if word == "--" {
                             word.clear();
-                            text_starts_at = Some(i);
+                            text_starts_at = Some(i + 1);
                             break;
                         }
                         words.push(unquote_word(&word));
@@ -763,7 +767,7 @@ fn split_files_text(line: &str, is_win: bool) -> (Vec<String>, &str) {
         words.push(unquote_word(&word));
     }
     let text = match text_starts_at {
-        Some(start) => line[start..].trim(),
+        Some(start) => &line[start..],
         None => "",
     };
 
@@ -806,6 +810,10 @@ mod tests {
         assert_eq!(
             split_files_text("file.txt -- hello", false),
             (vec!["file.txt".into()], "hello")
+        );
+        assert_eq!(
+            split_files_text("file.txt -- \thello", false),
+            (vec!["file.txt".into()], "\thello")
         );
         assert_eq!(
             split_files_text("file.txt --\nhello", false),
