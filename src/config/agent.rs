@@ -173,8 +173,6 @@ impl Agent {
     }
 
     pub fn export(&self) -> Result<String> {
-        let mut agent = self.clone();
-        agent.definition.instructions = self.interpolated_instructions();
         let mut value = json!({});
         value["name"] = json!(self.name());
         let variables = self.variables();
@@ -182,7 +180,9 @@ impl Agent {
             value["variables"] = serde_json::to_value(variables)?;
         }
         value["config"] = json!(self.config);
-        value["definition"] = json!(self.definition);
+        let mut definition = self.definition.clone();
+        definition.instructions = self.interpolated_instructions();
+        value["definition"] = json!(definition);
         value["functions_dir"] = Config::agent_functions_dir(&self.name)
             .display()
             .to_string()
@@ -224,6 +224,7 @@ impl Agent {
             .session_dynamic_instructions
             .clone()
             .or_else(|| self.shared_dynamic_instructions.clone())
+            .or_else(|| self.config.instructions.clone())
             .unwrap_or_else(|| self.definition.instructions.clone());
         for (k, v) in self.variables() {
             output = output.replace(&format!("{{{{{k}}}}}"), v)
@@ -398,6 +399,8 @@ pub struct AgentConfig {
     pub use_tools: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub agent_prelude: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instructions: Option<String>,
     #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
     pub variables: AgentVariables,
 }
@@ -436,6 +439,9 @@ impl AgentConfig {
         }
         if let Some(v) = read_env_value::<String>(&with_prefix("agent_prelude")) {
             self.agent_prelude = v;
+        }
+        if let Some(v) = read_env_value::<String>(&with_prefix("instructions")) {
+            self.instructions = v;
         }
         if let Ok(v) = env::var(with_prefix("variables")) {
             if let Ok(v) = serde_json::from_str(&v) {

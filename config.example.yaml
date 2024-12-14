@@ -1,7 +1,7 @@
 # ---- llm ----
 model: openai:gpt-4o             # Specify the LLM to use
-temperature: null                # Set default temperature parameter
-top_p: null                      # Set default top-p parameter, range (0, 1)
+temperature: null                # Set default temperature parameter (0, 1)
+top_p: null                      # Set default top-p parameter, with a range of (0, 1) or (0, 2) depending on the model
 
 # ---- behavior ----
 stream: true                     # Controls whether to use the stream-style API.
