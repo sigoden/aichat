@@ -114,6 +114,12 @@
       output_price: 0
       supports_vision: true
       supports_function_calling: true
+    - name: gemini-2.0-flash-thinking-exp
+      max_input_tokens: 32768
+      max_output_tokens: 8192
+      input_price: 0
+      output_price: 0
+      supports_vision: true
     - name: gemini-exp-1206
       max_input_tokens: 32768
       max_output_tokens: 8192
@@ -452,6 +458,15 @@
       output_price: 0.075
       supports_vision: true
       supports_function_calling: true
+    - name: gemini-2.0-flash-exp
+      max_input_tokens: 1048576
+      max_output_tokens: 8192
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-2.0-flash-thinking-exp-1219
+      max_input_tokens: 32768
+      max_output_tokens: 8192
+      supports_vision: true
     - name: claude-3-5-sonnet-v2@20241022
       max_input_tokens: 200000
       max_output_tokens: 8192
