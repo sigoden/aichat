@@ -18,7 +18,7 @@ dirs = "5.0.0"
 futures-util = "0.3.29"
 inquire = "0.7.0"
 is-terminal = "0.4.9"
-reedline = "0.37.0"
+reedline = "0.38.0"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = { version = "1.0.93", features = ["preserve_order"] }
 serde_yaml = "0.9.17"
@@ -59,7 +59,7 @@ path-absolutize = "3.1.1"
 hnsw_rs = "0.3.0"
 rayon = "1.10.0"
 uuid = { version = "1.9.1", features = ["v4"] }
-scraper = { version = "0.21.0", default-features = false, features = ["deterministic"] }
+scraper = { version = "0.22.0", default-features = false, features = ["deterministic"] }
 sys-locale = "0.3.1"
 html_to_markdown = "0.1.0"
 rust-embed = "8.5.0"
