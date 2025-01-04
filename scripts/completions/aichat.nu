@@ -45,6 +45,7 @@ module completions {
     --agent(-a): string@"nu-complete aichat agent"      # Start a agent
     --agent-variable                                    # Set agent variables
     --rag: string@"nu-complete aichat rag"              # Start a RAG
+    --rebuild-rag                                       # Rebuild the RAG to sync document changes
     --serve                                             # Serve the LLM API and WebAPP
     --execute(-e)                                       # Execute commands in natural language
     --code(-c)                                          # Output code only

@@ -28,6 +28,7 @@ _aichat() {
 '--agent[Start a agent]:AGENT:->agents' \
 '--agent-variable[Set agent variables]' \
 '--rag[Start a RAG]:RAG:->rags' \
+'--rebuild-rag[Rebuild the RAG to sync document changes]' \
 '--serve[Serve the LLM API and WebAPP]' \
 '-e[Execute commands in natural language]' \
 '--execute[Execute commands in natural language]' \
