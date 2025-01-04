@@ -7,6 +7,7 @@ complete -c aichat -l save-session -d 'Ensure the new conversation is saved to t
 complete -c aichat -s a -l agent -x  -a "(aichat --list-agents)" -d 'Start a agent' -r
 complete -c aichat -l agent-variable -d 'Set agent variables'
 complete -c aichat -l rag -x  -a"(aichat --list-rags)" -d 'Start a RAG' -r
+complete -c aichat -l rebuild-rag -d 'Rebuild the RAG to sync document changes'
 complete -c aichat -l serve -d 'Serve the LLM API and WebAPP'
 complete -c aichat -s e -l execute -d 'Execute commands in natural language'
 complete -c aichat -s c -l code -d 'Output code only'

@@ -30,6 +30,9 @@ pub struct Cli {
     /// Start a RAG
     #[clap(long)]
     pub rag: Option<String>,
+    /// Rebuild the RAG to sync document changes
+    #[clap(long)]
+    pub rebuild_rag: bool,
     /// Serve the LLM API and WebAPP
     #[clap(long, value_name = "ADDRESS")]
     pub serve: Option<Option<String>>,
