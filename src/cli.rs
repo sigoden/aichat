@@ -42,7 +42,7 @@ pub struct Cli {
     /// Output code only
     #[clap(short = 'c', long)]
     pub code: bool,
-    /// Include files with the message
+    /// Include files, directories, or URLs
     #[clap(short = 'f', long, value_name = "FILE")]
     pub file: Vec<String>,
     /// Turn off stream mode

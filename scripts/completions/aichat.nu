@@ -49,7 +49,7 @@ module completions {
     --serve                                             # Serve the LLM API and WebAPP
     --execute(-e)                                       # Execute commands in natural language
     --code(-c)                                          # Output code only
-    --file(-f): string                                  # Include files with the message
+    --file(-f): string                                  # Include files, directories, or URLs
     --no-stream(-S)                                     # Turn off stream mode
     --dry-run                                           # Display the message without sending it
     --info                                              # Display information
