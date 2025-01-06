@@ -148,7 +148,7 @@ lazy_static::lazy_static! {
         ),
         ReplCommand::new(
             ".file",
-            "Include files with the message",
+            "Include files, directories, URLs or commands",
             AssertState::pass()
         ),
         ReplCommand::new(".continue", "Continue the response", AssertState::pass()),
@@ -412,7 +412,15 @@ impl Repl {
                         .await?;
                         ask(&self.config, self.abort_signal.clone(), input, true).await?;
                     }
-                    None => println!("Usage: .file <files>... [-- <text>...]"),
+                    None => println!(
+                        r#"Usage: .file <file|dir|url|cmd>... [-- <text>...]
+
+.file /tmp/file.txt
+.file src/ Cargo.toml -- analyze
+.file https://example.com/file.txt -- summarize
+.file https://example.com/image.png -- recongize text
+.file `git diff` -- Generate git commit message"#
+                    ),
                 },
                 ".continue" => {
                     let (mut input, output) = match self.config.read().last_message.clone() {
@@ -736,7 +744,7 @@ fn split_files_text(line: &str, is_win: bool) -> (Vec<String>, &str) {
                         word.clear();
                     }
                 }
-                '\'' | '"' => {
+                '\'' | '"' | '`' => {
                     word.push(char);
                     unbalance = Some(char);
                 }

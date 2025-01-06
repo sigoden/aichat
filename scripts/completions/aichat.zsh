@@ -34,8 +34,8 @@ _aichat() {
 '--execute[Execute commands in natural language]' \
 '-c[Output code only]' \
 '--code[Output code only]' \
-'*-f[Include files with the message]:FILE:_files' \
-'*--file[Include files with the message]:FILE:_files' \
+'*-f[Include files, directories, or URLs]:FILE:_files' \
+'*--file[Include files, directories, or URLs]:FILE:_files' \
 '-S[Turn off stream mode]' \
 '--no-stream[Turn off stream mode]' \
 '--dry-run[Display the message without sending it]' \

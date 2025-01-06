@@ -8,17 +8,12 @@ use crate::function::ToolResult;
 use crate::utils::{base64_encode, sha256, AbortSignal};
 
 use anyhow::{bail, Context, Result};
-use fancy_regex::Regex;
 use path_absolutize::Absolutize;
 use std::{collections::HashMap, fs::File, io::Read, path::Path};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 const IMAGE_EXTS: [&str; 5] = ["png", "jpeg", "jpg", "webp", "gif"];
 const SUMMARY_MAX_WIDTH: usize = 80;
-
-lazy_static::lazy_static! {
-    static ref URL_RE: Regex = Regex::new(r"^[A-Za-z0-9_-]{2,}:/").unwrap();
-}
 
 #[derive(Debug, Clone)]
 pub struct Input {
@@ -64,15 +59,21 @@ impl Input {
         role: Option<Role>,
     ) -> Result<Self> {
         let mut raw_paths = vec![];
+        let mut external_cmds = vec![];
         let mut local_paths = vec![];
         let mut remote_urls = vec![];
         for path in paths {
             match resolve_local_path(&path) {
                 Some(v) => {
-                    if let Ok(path) = Path::new(&v).absolutize() {
-                        raw_paths.push(path.display().to_string());
+                    if v.len() > 2 && v.starts_with('`') && v.ends_with('`') {
+                        external_cmds.push(v[1..v.len() - 1].to_string());
+                        raw_paths.push(v);
+                    } else {
+                        if let Ok(path) = Path::new(&v).absolutize() {
+                            raw_paths.push(path.display().to_string());
+                        }
+                        local_paths.push(v);
                     }
-                    local_paths.push(v);
                 }
                 None => {
                     raw_paths.push(path.clone());
@@ -80,8 +81,10 @@ impl Input {
                 }
             }
         }
-        let ret = load_documents(config, local_paths, remote_urls).await;
-        let (files, medias, data_urls) = ret.context("Failed to load files")?;
+        let (files, medias, data_urls) =
+            load_documents(config, external_cmds, local_paths, remote_urls)
+                .await
+                .context("Failed to load files")?;
         let mut texts = vec![];
         if !raw_text.is_empty() {
             texts.push(raw_text.to_string());
@@ -89,9 +92,9 @@ impl Input {
         if !files.is_empty() {
             texts.push(String::new());
         }
-        for (path, contents) in files {
+        for (kind, path, contents) in files {
             texts.push(format!(
-                "============ PATH: {path} ============\n{contents}\n"
+                "============ {kind}: {path} ============\n{contents}\n"
             ));
         }
         let (role, with_session, with_agent) = resolve_role(&config.read(), role);
@@ -379,14 +382,29 @@ fn resolve_role(config: &Config, role: Option<Role>) -> (Role, bool, bool) {
 
 async fn load_documents(
     config: &GlobalConfig,
+    external_cmds: Vec<String>,
     local_paths: Vec<String>,
     remote_urls: Vec<String>,
-) -> Result<(Vec<(String, String)>, Vec<String>, HashMap<String, String>)> {
+) -> Result<(
+    Vec<(&'static str, String, String)>,
+    Vec<String>,
+    HashMap<String, String>,
+)> {
     let mut files = vec![];
     let mut medias = vec![];
     let mut data_urls = HashMap::new();
-    let loaders = config.read().document_loaders.clone();
+    for cmd in external_cmds {
+        let (success, stdout, stderr) =
+            run_command_with_output(&SHELL.cmd, &[&SHELL.arg, &cmd], None)?;
+        if !success {
+            let err = if !stderr.is_empty() { stderr } else { stdout };
+            bail!("Failed to run `{cmd}`\n{err}");
+        }
+        files.push(("CMD", cmd, stdout));
+    }
+
     let local_files = expand_glob_paths(&local_paths, true).await?;
+    let loaders = config.read().document_loaders.clone();
     for file_path in local_files {
         if is_image(&file_path) {
             let data_url = read_media_to_data_url(&file_path)
@@ -397,9 +415,10 @@ async fn load_documents(
             let document = load_file(&loaders, &file_path)
                 .await
                 .with_context(|| format!("Unable to read file '{file_path}'"))?;
-            files.push((file_path, document.contents));
+            files.push(("FILE", file_path, document.contents));
         }
     }
+
     for file_url in remote_urls {
         let (contents, extension) = fetch(&loaders, &file_url, true)
             .await
@@ -408,7 +427,7 @@ async fn load_documents(
             data_urls.insert(sha256(&contents), file_url);
             medias.push(contents)
         } else {
-            files.push((file_url, contents));
+            files.push(("URL", file_url, contents));
         }
     }
     Ok((files, medias, data_urls))
@@ -427,7 +446,7 @@ pub fn resolve_data_url(data_urls: &HashMap<String, String>, data_url: String) -
 }
 
 fn resolve_local_path(path: &str) -> Option<String> {
-    if let Ok(true) = URL_RE.is_match(path) {
+    if is_url(path) {
         return None;
     }
     let new_path = if let (Some(file), Some(home)) = (path.strip_prefix("~/"), dirs::home_dir()) {
