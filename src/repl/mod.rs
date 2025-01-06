@@ -418,7 +418,7 @@ impl Repl {
 .file /tmp/file.txt
 .file src/ Cargo.toml -- analyze
 .file https://example.com/file.txt -- summarize
-.file https://example.com/image.png -- recongize text
+.file https://example.com/image.png -- recognize text
 .file `git diff` -- Generate git commit message"#
                     ),
                 },
