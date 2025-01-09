@@ -21,6 +21,7 @@ pub struct Input {
     text: String,
     raw: (String, Vec<String>),
     patched_text: Option<String>,
+    last_reply: Option<String>,
     continue_output: Option<String>,
     regenerate: bool,
     medias: Vec<String>,
@@ -40,6 +41,7 @@ impl Input {
             text: text.to_string(),
             raw: (text.to_string(), vec![]),
             patched_text: None,
+            last_reply: None,
             continue_output: None,
             regenerate: false,
             medias: Default::default(),
@@ -62,10 +64,15 @@ impl Input {
         let mut external_cmds = vec![];
         let mut local_paths = vec![];
         let mut remote_urls = vec![];
+        let mut last_reply = None;
+        let mut with_last_reply = false;
         for path in paths {
             match resolve_local_path(&path) {
                 Some(v) => {
-                    if v.len() > 2 && v.starts_with('`') && v.ends_with('`') {
+                    if v == "%%" {
+                        with_last_reply = true;
+                        raw_paths.push(v);
+                    } else if v.len() > 2 && v.starts_with('`') && v.ends_with('`') {
                         external_cmds.push(v[1..v.len() - 1].to_string());
                         raw_paths.push(v);
                     } else {
@@ -89,12 +96,24 @@ impl Input {
         if !raw_text.is_empty() {
             texts.push(raw_text.to_string());
         };
-        if !files.is_empty() {
-            texts.push(String::new());
+        if with_last_reply {
+            if let Some(LastMessage { input, output, .. }) = config.read().last_message.as_ref() {
+                if !output.is_empty() {
+                    last_reply = Some(output.clone())
+                } else if let Some(v) = input.last_reply.as_ref() {
+                    last_reply = Some(v.clone());
+                }
+                if let Some(v) = last_reply.clone() {
+                    texts.push(format!("\n{v}\n"));
+                }
+            }
+            if last_reply.is_none() && files.is_empty() && medias.is_empty() {
+                bail!("No last reply found");
+            }
         }
         for (kind, path, contents) in files {
             texts.push(format!(
-                "============ {kind}: {path} ============\n{contents}\n"
+                "\n============ {kind}: {path} ============\n{contents}"
             ));
         }
         let (role, with_session, with_agent) = resolve_role(&config.read(), role);
@@ -103,6 +122,7 @@ impl Input {
             text: texts.join("\n"),
             raw: (raw_text.to_string(), raw_paths),
             patched_text: None,
+            last_reply,
             continue_output: None,
             regenerate: false,
             medias,
@@ -407,10 +427,10 @@ async fn load_documents(
     let loaders = config.read().document_loaders.clone();
     for file_path in local_files {
         if is_image(&file_path) {
-            let data_url = read_media_to_data_url(&file_path)
+            let contents = read_media_to_data_url(&file_path)
                 .with_context(|| format!("Unable to read media file '{file_path}'"))?;
-            data_urls.insert(sha256(&data_url), file_path);
-            medias.push(data_url)
+            data_urls.insert(sha256(&contents), file_path);
+            medias.push(contents)
         } else {
             let document = load_file(&loaders, &file_path)
                 .await

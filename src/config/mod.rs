@@ -156,7 +156,7 @@ pub struct Config {
     #[serde(skip)]
     pub working_mode: WorkingMode,
     #[serde(skip)]
-    pub last_message: Option<(Input, String)>,
+    pub last_message: Option<LastMessage>,
 
     #[serde(skip)]
     pub cli_info_flag: bool,
@@ -1051,8 +1051,15 @@ impl Config {
         if let Some(session) = session.as_mut() {
             if session.is_empty() {
                 new_session = true;
-                if let Some((input, output)) = &self.last_message {
-                    if self.agent.is_some() == input.with_agent() {
+                if let Some(LastMessage {
+                    input,
+                    output,
+                    continuous,
+                }) = &self.last_message
+                {
+                    if (*continuous && !output.is_empty())
+                        && self.agent.is_some() == input.with_agent()
+                    {
                         let ans = Confirm::new(
                             "Start a session that incorporates the last question and answer?",
                         )
@@ -1093,7 +1100,7 @@ impl Config {
         if let Some(mut session) = self.session.take() {
             let sessions_dir = self.sessions_dir();
             session.exit(&sessions_dir, self.working_mode.is_repl())?;
-            self.last_message = None;
+            self.discontinuous_last_message();
         }
         Ok(())
     }
@@ -1131,7 +1138,7 @@ impl Config {
             )
         })?;
         self.session = Some(Session::load(self, &name, &session_path)?);
-        self.last_message = None;
+        self.discontinuous_last_message();
         Ok(())
     }
 
@@ -1144,7 +1151,7 @@ impl Config {
         } else {
             bail!("No session")
         }
-        self.last_message = None;
+        self.discontinuous_last_message();
         Ok(())
     }
 
@@ -1225,7 +1232,7 @@ impl Config {
         if let Some(session) = config.write().session.as_mut() {
             session.compress(format!("{}{}", summary_prompt, summary));
         }
-        config.write().last_message = None;
+        config.write().discontinuous_last_message();
         Ok(())
     }
 
@@ -1524,7 +1531,7 @@ impl Config {
         self.exit_session()?;
         if self.agent.take().is_some() {
             self.rag.take();
-            self.last_message = None;
+            self.discontinuous_last_message();
             self.cli_agent_variables = None;
         }
         Ok(())
@@ -1793,13 +1800,6 @@ impl Config {
             .collect()
     }
 
-    pub fn last_reply(&self) -> &str {
-        self.last_message
-            .as_ref()
-            .map(|(_, reply)| reply.as_str())
-            .unwrap_or_default()
-    }
-
     pub fn render_options(&self) -> Result<RenderOptions> {
         let theme = if self.highlight {
             let theme_mode = if self.light_theme { "light" } else { "dark" };
@@ -1939,7 +1939,7 @@ impl Config {
     }
 
     pub fn before_chat_completion(&mut self, input: &Input) -> Result<()> {
-        self.last_message = Some((input.clone(), String::new()));
+        self.last_message = Some(LastMessage::new(input.clone(), String::new()));
         Ok(())
     }
 
@@ -1949,13 +1949,20 @@ impl Config {
         output: &str,
         tool_results: &[ToolResult],
     ) -> Result<()> {
-        if self.dry_run || output.is_empty() || !tool_results.is_empty() {
-            self.last_message = None;
+        if output.is_empty() || !tool_results.is_empty() {
             return Ok(());
         }
-        self.last_message = Some((input.clone(), output.to_string()));
-        self.save_message(input, output)?;
+        self.last_message = Some(LastMessage::new(input.clone(), output.to_string()));
+        if !self.dry_run {
+            self.save_message(input, output)?;
+        }
         Ok(())
+    }
+
+    fn discontinuous_last_message(&mut self) {
+        if let Some(last_message) = self.last_message.as_mut() {
+            last_message.continuous = false;
+        }
     }
 
     fn save_message(&mut self, input: &Input, output: &str) -> Result<()> {
@@ -2339,6 +2346,23 @@ impl WorkingMode {
     }
     pub fn is_serve(&self) -> bool {
         *self == WorkingMode::Serve
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct LastMessage {
+    pub input: Input,
+    pub output: String,
+    pub continuous: bool,
+}
+
+impl LastMessage {
+    pub fn new(input: Input, output: String) -> Self {
+        Self {
+            input,
+            output,
+            continuous: true,
+        }
     }
 }
 

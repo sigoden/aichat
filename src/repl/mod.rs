@@ -7,7 +7,7 @@ use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
 use crate::client::{call_chat_completions, call_chat_completions_streaming};
-use crate::config::{AssertState, Config, GlobalConfig, Input, StateFlags};
+use crate::config::{AssertState, Config, GlobalConfig, Input, LastMessage, StateFlags};
 use crate::render::render_error;
 use crate::utils::{
     abortable_run_with_spinner, create_abort_signal, set_text, temp_file, AbortSignal,
@@ -154,10 +154,10 @@ lazy_static::lazy_static! {
         ReplCommand::new(".continue", "Continue the response", AssertState::pass()),
         ReplCommand::new(
             ".regenerate",
-            "Regenerate the last response",
+            "Regenerate the response",
             AssertState::pass()
         ),
-        ReplCommand::new(".copy", "Copy the last response", AssertState::pass()),
+        ReplCommand::new(".copy", "Copy the last chat response", AssertState::pass()),
         ReplCommand::new(".set", "Adjust runtime configuration", AssertState::pass()),
         ReplCommand::new(".delete", "Delete roles/sessions/RAGs/agents", AssertState::pass()),
         ReplCommand::new(".exit", "Exit the REPL", AssertState::pass()),
@@ -413,27 +413,44 @@ impl Repl {
                         ask(&self.config, self.abort_signal.clone(), input, true).await?;
                     }
                     None => println!(
-                        r#"Usage: .file <file|dir|url|cmd>... [-- <text>...]
+                        r#"Usage: .file <file|dir|url|%%|cmd>... [-- <text>...]
 
 .file /tmp/file.txt
 .file src/ Cargo.toml -- analyze
 .file https://example.com/file.txt -- summarize
 .file https://example.com/image.png -- recognize text
+.file %% -- translate last reply to english
 .file `git diff` -- Generate git commit message"#
                     ),
                 },
                 ".continue" => {
-                    let (mut input, output) = match self.config.read().last_message.clone() {
+                    let LastMessage {
+                        mut input, output, ..
+                    } = match self
+                        .config
+                        .read()
+                        .last_message
+                        .as_ref()
+                        .filter(|v| v.continuous && !v.output.is_empty())
+                        .cloned()
+                    {
                         Some(v) => v,
-                        None => bail!("Unable to continue response"),
+                        None => bail!("Unable to continue the response"),
                     };
                     input.set_continue_output(&output);
                     ask(&self.config, self.abort_signal.clone(), input, true).await?;
                 }
                 ".regenerate" => {
-                    let (mut input, _) = match self.config.read().last_message.clone() {
+                    let LastMessage { mut input, .. } = match self
+                        .config
+                        .read()
+                        .last_message
+                        .as_ref()
+                        .filter(|v| v.continuous)
+                        .cloned()
+                    {
                         Some(v) => v,
-                        None => bail!("Unable to regenerate the last response"),
+                        None => bail!("Unable to regenerate the response"),
                     };
                     input.set_regenerate();
                     ask(&self.config, self.abort_signal.clone(), input, true).await?;
@@ -455,9 +472,19 @@ impl Repl {
                     }
                 },
                 ".copy" => {
-                    let config = self.config.read();
-                    self.copy(config.last_reply())
-                        .with_context(|| "Failed to copy the last response")?;
+                    let output = match self
+                        .config
+                        .read()
+                        .last_message
+                        .as_ref()
+                        .filter(|v| v.continuous && !v.output.is_empty())
+                        .map(|v| v.output.clone())
+                    {
+                        Some(v) => v,
+                        None => bail!("No chat response to copy"),
+                    };
+                    self.copy(&output)
+                        .with_context(|| "Failed to copy the last chat response")?;
                 }
                 ".exit" => match args {
                     Some("role") => {
