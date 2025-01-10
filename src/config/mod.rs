@@ -35,7 +35,7 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
     process,
-    sync::Arc,
+    sync::{Arc, OnceLock},
 };
 use syntect::highlighting::ThemeSet;
 
@@ -87,6 +87,8 @@ __INPUT__
 
 const LEFT_PROMPT: &str = "{color.green}{?session {?agent {agent}>}{session}{?role /}}{!session {?agent {agent}>}}{role}{?rag @{rag}}{color.cyan}{?session )}{!session >}{color.reset} ";
 const RIGHT_PROMPT: &str = "{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}";
+
+static EDITOR: OnceLock<Option<String>> = OnceLock::new();
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
@@ -1640,10 +1642,20 @@ impl Config {
     }
 
     pub fn editor(&self) -> Result<String> {
-        self.editor
-            .clone()
-            .or_else(|| env::var("VISUAL").ok().or_else(|| env::var("EDITOR").ok()))
-            .ok_or_else(|| anyhow!("No editor, please configure `editor` or set $EDITOR/$VISUAL environment variable."))
+        EDITOR.get_or_init(move || {
+            let editor = self.editor.clone()
+                .or_else(|| env::var("VISUAL").ok().or_else(|| env::var("EDITOR").ok()))
+                .unwrap_or_else(|| {
+                    if cfg!(windows) {
+                        "notepad".to_string()
+                    } else {
+                        "nano".to_string()
+                    }
+                });
+            which::which(&editor).ok().map(|_| editor)
+        })
+        .clone()
+        .ok_or_else(|| anyhow!("Editor not found. Please add the `editor` configuration or set the $EDITOR or $VISUAL environment variable."))
     }
 
     pub fn repl_complete(
