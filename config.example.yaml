@@ -35,13 +35,11 @@ summary_prompt: 'This is a summary of the chat history as a recap: '
 
 # ---- RAG ----
 # See [RAG-Guide](https://github.com/sigoden/aichat/wiki/RAG-Guide) for more details.
-rag_embedding_model: null                   # Specifies the embedding model to use
-rag_reranker_model: null                    # Specifies the rerank model to use
-rag_top_k: 5                                # Specifies the number of documents to retrieve
-rag_chunk_size: null                        # Specifies the chunk size
-rag_chunk_overlap: null                     # Specifies the chunk overlap
-rag_min_score_vector_search: 0              # Specifies the minimum relevance score for vector-based searching
-rag_min_score_keyword_search: 0             # Specifies the minimum relevance score for keyword-based searching
+rag_embedding_model: null        # Specifies the embedding model used for context retrieval
+rag_reranker_model: null         # Specifies the reranker model used for sorting retrieved documents
+rag_top_k: 5                     # Specifies the number of documents to retrieve for answering queries
+rag_chunk_size: null             # Defines the size of chunks for document processing in characters
+rag_chunk_overlap: null          # Defines the overlap between chunks
 # Defines the query structure using variables like __CONTEXT__ and __INPUT__ to tailor searches to specific needs
 rag_template: |
   Answer the query based on the context while respecting the rules. (user query, some textual context and rules, all inside xml tags)

@@ -123,8 +123,6 @@ pub struct Config {
     pub rag_top_k: usize,
     pub rag_chunk_size: Option<usize>,
     pub rag_chunk_overlap: Option<usize>,
-    pub rag_min_score_vector_search: f32,
-    pub rag_min_score_keyword_search: f32,
     pub rag_template: Option<String>,
 
     #[serde(default)]
@@ -197,8 +195,6 @@ impl Default for Config {
             rag_top_k: 5,
             rag_chunk_size: None,
             rag_chunk_overlap: None,
-            rag_min_score_vector_search: 0.0,
-            rag_min_score_keyword_search: 0.0,
             rag_template: None,
 
             document_loaders: Default::default(),
@@ -1413,22 +1409,8 @@ impl Config {
         abort_signal: AbortSignal,
     ) -> Result<String> {
         let (reranker_model, top_k) = rag.get_config();
-        let (min_score_vector_search, min_score_keyword_search) = {
-            let config = config.read();
-            (
-                config.rag_min_score_vector_search,
-                config.rag_min_score_keyword_search,
-            )
-        };
         let (embeddings, ids) = rag
-            .search(
-                text,
-                top_k,
-                min_score_vector_search,
-                min_score_keyword_search,
-                reranker_model.as_deref(),
-                abort_signal,
-            )
+            .search(text, top_k, reranker_model.as_deref(), abort_signal)
             .await?;
         let text = config.read().rag_template(&embeddings, text);
         rag.set_last_sources(&ids);
@@ -2221,13 +2203,6 @@ impl Config {
         }
         if let Some(v) = read_env_value::<usize>(&get_env_name("rag_chunk_overlap")) {
             self.rag_chunk_overlap = v;
-        }
-        if let Some(Some(v)) = read_env_value::<f32>(&get_env_name("rag_min_score_vector_search")) {
-            self.rag_min_score_vector_search = v;
-        }
-        if let Some(Some(v)) = read_env_value::<f32>(&get_env_name("rag_min_score_keyword_search"))
-        {
-            self.rag_min_score_keyword_search = v;
         }
         if let Some(v) = read_env_value::<String>(&get_env_name("rag_template")) {
             self.rag_template = v;
