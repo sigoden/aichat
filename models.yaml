@@ -49,6 +49,13 @@
       output_price: 30
       supports_vision: true
       supports_function_calling: true
+    - name: o1
+      max_input_tokens: 128000
+      input_price: 15
+      output_price: 60
+      supports_vision: true
+      supports_function_calling: true
+      no_system_message: true
     - name: o1-preview
       max_input_tokens: 128000
       max_output_tokens: 32768
@@ -60,13 +67,6 @@
       max_output_tokens: 65536
       input_price: 3
       output_price: 12
-      no_system_message: true
-    - name: o1
-      max_input_tokens: 128000
-      input_price: 15
-      output_price: 60
-      supports_vision: true
-      supports_function_calling: true
       no_system_message: true
     - name: gpt-3.5-turbo
       max_input_tokens: 16385
@@ -220,23 +220,15 @@
       output_price: 0.6
       supports_function_calling: true
     - name: codestral-latest
-      max_input_tokens: 32000
-      input_price: 0.2
-      output_price: 0.6
+      max_input_tokens: 256000
+      input_price: 0.3
+      output_price: 0.9
+      supports_function_calling: true
     - name: ministral-8b-latest
       max_input_tokens: 128000
       input_price: 0.1
       output_price: 0.1
       supports_function_calling: true
-    - name: open-mistral-nemo
-      max_input_tokens: 128000
-      input_price: 0.15
-      output_price: 0.15
-      supports_function_calling: true
-    - name: open-codestral-mamba
-      max_input_tokens: 256000
-      input_price: 0.25
-      output_price: 0.25
     - name: pixtral-large-latest
       max_input_tokens: 128000
       input_price: 2
@@ -384,11 +376,6 @@
       input_price: 0
       output_price: 0
       supports_function_calling: true
-    - name: llama-3.1-70b-versatile
-      max_input_tokens: 128000
-      input_price: 0
-      output_price: 0
-      supports_function_calling: true
     - name: llama-3.1-8b-instant
       max_input_tokens: 128000
       input_price: 0
@@ -436,6 +423,8 @@
     - name: qwen2.5-coder
       max_input_tokens: 32768
       supports_function_calling: true
+    - name: phi4
+      max_input_tokens: 16384
     - name: gemma2
       max_input_tokens: 8192
     - name: nomic-embed-text
@@ -527,15 +516,11 @@
       input_price: 2
       output_price: 6
       supports_function_calling: true
-    - name: mistral-nemo@2407
-      max_input_tokens: 128000
-      input_price: 0.15
-      output_price: 0.15
+    - name: codestral-2501
+      max_input_tokens: 256000
+      input_price: 0.3
+      output_price: 0.9
       supports_function_calling: true
-    - name: codestral@2405
-      max_input_tokens: 32000
-      input_price: 0.2
-      output_price: 0.6
     - name: text-embedding-004
       type: embedding
       max_input_tokens: 20000
@@ -952,6 +937,21 @@
       input_price: 8.4
       output_price: 8.4
       supports_function_calling: true
+    - name: moonshot-v1-8k-vision-preview
+      max_input_tokens: 8000
+      input_price: 1.68
+      output_price: 1.68
+      supports_vision: true
+    - name: moonshot-v1-32k-vision-preview
+      max_input_tokens: 32000
+      input_price: 3.36
+      output_price: 3.36
+      supports_vision: true
+    - name: moonshot-v1-128k-vision-preview
+      max_input_tokens: 128000
+      input_price: 8.4
+      output_price: 8.4
+      supports_vision: true
 
 # Links:
 #  - https://api-docs.deepseek.com/quick_start/pricing
@@ -981,25 +981,20 @@
       input_price: 14
       output_price: 14
       supports_function_calling: true
-    - name: glm-4-0520
-      max_input_tokens: 128000
-      input_price: 14
-      output_price: 14
-      supports_function_calling: true
     - name: glm-4-long
       max_input_tokens: 1000000
       input_price: 0.14
       output_price: 0.14
       supports_function_calling: true
-    - name: glm-4-flashx
+    - name: glm-4-flash
       max_input_tokens: 128000
-      input_price: 0.014
-      output_price: 0.014
+      input_price: 0
+      output_price: 0
       supports_function_calling: true
     - name: glm-4v-plus
       max_input_tokens: 8192
-      input_price: 1.4
-      output_price: 1.4
+      input_price: 0.56
+      output_price: 0.56
       supports_vision: true
     - name: glm-4v-flash
       max_input_tokens: 8192
@@ -1022,23 +1017,6 @@
       max_input_tokens: 16384
       input_price: 0.14
       output_price: 0.14
-    - name: yi-large
-      max_input_tokens: 32768
-      input_price: 2.8
-      output_price: 2.8
-    - name: yi-large-fc
-      max_input_tokens: 32768
-      input_price: 2.8
-      output_price: 2.8
-      supports_function_calling: true
-    - name: yi-large-rag
-      max_input_tokens: 16384
-      input_price: 3.5
-      output_price: 3.5
-    - name: yi-medium-200k
-      max_input_tokens: 200000
-      input_price: 1.68
-      output_price: 1.68
     - name: yi-vision-v2
       max_input_tokens: 16384
       input_price: 0.84
@@ -1055,6 +1033,12 @@
     - name: gpt-4o-mini
       max_input_tokens: 128000
       supports_function_calling: true
+    - name: o1
+      max_input_tokens: 128000
+      supports_function_calling: true
+      supports_vision: true
+      no_stream: true
+      no_system_message: true
     - name: o1-preview
       max_input_tokens: 128000
       no_stream: true
@@ -1090,8 +1074,8 @@
     - name: mistral-large-2411
       max_input_tokens: 128000
       supports_function_calling: true
-    - name: mistral-nemo
-      max_input_tokens: 128000
+    - name: codestral-2501
+      max_input_tokens: 256000
       supports_function_calling: true
     - name: cohere-command-r-plus-08-2024
       max_input_tokens: 128000
@@ -1184,6 +1168,14 @@
       max_input_tokens: 32768
       input_price: 0.12
       output_price: 0.18
+    - name: deepseek-ai/DeepSeek-V3
+      max_input_tokens: 32768
+      input_price: 0.85
+      output_price: 0.9
+    - name: microsoft/phi-4
+      max_input_tokens: 16384
+      input_price: 0.07
+      output_price: 0.14
     - name: nvidia/Llama-3.1-Nemotron-70B-Instruct
       max_input_tokens: 128000
       input_price: 0.12
@@ -1253,14 +1245,11 @@
       input_price: 0.2
       output_price: 0.2
       supports_vision: true
-    - name: accounts/fireworks/models/gemma2-9b-it
-      max_input_tokens: 8192
-      input_price: 0.2
-      output_price: 0.2
     - name: accounts/fireworks/models/qwen2p5-72b-instruct
       max_input_tokens: 32768
       input_price: 0.9
       output_price: 0.9
+      supports_function_calling: true
     - name: accounts/fireworks/models/qwen2p5-coder-32b-instruct
       max_input_tokens: 32768
       input_price: 0.9
@@ -1274,21 +1263,10 @@
       input_price: 0.9
       output_price: 0.9
       supports_vision: true
-    - name: accounts/fireworks/models/phi-3-vision-128k-instruct
+    - name: accounts/fireworks/models/deepseek-v3
       max_input_tokens: 131072
-      input_price: 0.2
-      output_price: 0.2
-      supports_vision: true
-    - name: accounts/fireworks/models/firellava-13b
-      max_input_tokens: 4096
-      input_price: 0.2
-      output_price: 0.2
-      supports_vision: true
-    - name: accounts/fireworks/models/firefunction-v2
-      max_input_tokens: 32768
-      input_price: 0.2
-      output_price: 0.2
-      supports_function_calling: true
+      input_price: 0.9
+      output_price: 0.9
     - name: nomic-ai/nomic-embed-text-v1.5
       type: embedding
       input_price: 0.008
@@ -1348,6 +1326,13 @@
       output_price: 30
       supports_vision: true
       supports_function_calling: true
+    - name: openai/o1
+      max_input_tokens: 128000
+      input_price: 15
+      output_price: 60
+      supports_vision: true
+      supports_function_calling: true
+      no_system_message: true
     - name: openai/o1-preview
       max_input_tokens: 128000
       input_price: 15
@@ -1357,13 +1342,6 @@
       max_input_tokens: 128000
       input_price: 3
       output_price: 12
-      no_system_message: true
-    - name: openai/o1
-      max_input_tokens: 128000
-      input_price: 15
-      output_price: 60
-      supports_vision: true
-      supports_function_calling: true
       no_system_message: true
     - name: openai/gpt-3.5-turbo
       max_input_tokens: 16385
@@ -1479,15 +1457,6 @@
       input_price: 0.1
       output_price: 0.1
       supports_function_calling: true
-    - name: mistralai/mistral-nemo
-      max_input_tokens: 128000
-      input_price: 0.13
-      output_price: 0.13
-      supports_function_calling: true
-    - name: mistralai/codestral-mamba
-      max_input_tokens: 256000
-      input_price: 0.25
-      output_price: 0.25
     - name: mistralai/pixtral-large-2411
       max_input_tokens: 128000
       input_price: 2
@@ -1544,15 +1513,11 @@
       max_input_tokens: 32768
       input_price: 3
       output_price: 3
+    - name: microsoft/phi-4
+      max_input_tokens: 16000
+      input_price: 0.07
+      output_price: 0.14
     - name: microsoft/phi-3.5-mini-128k-instruct
-      max_input_tokens: 128000
-      input_price: 0.1
-      output_price: 0.1
-    - name: microsoft/phi-3-medium-128k-instruct
-      max_input_tokens: 128000
-      input_price: 1
-      output_price: 1
-    - name: microsoft/phi-3-mini-128k-instruct
       max_input_tokens: 128000
       input_price: 0.1
       output_price: 0.1
@@ -1573,6 +1538,11 @@
       max_input_tokens: 32768
       input_price: 0.15
       output_price: 0.6
+    - name: qwen/qvq-72b-preview
+      max_input_tokens: 128000
+      input_price: 0.25
+      output_price: 0.5
+      supports_vision: true
     - name: nvidia/llama-3.1-nemotron-70b-instruct
       max_input_tokens: 131072
       input_price: 0.35
@@ -1775,6 +1745,15 @@
       max_input_tokens: 32768
       input_price: 1.2
       output_price: 1.2
+    - name: Qwen/Qwen2-VL-72B-Instruct
+      max_input_tokens: 32768
+      input_price: 1.2
+      output_price: 1.2
+      supports_vision: true
+    - name: deepseek-ai/DeepSeek-V3
+      max_input_tokens: 131072
+      input_price: 1.25
+      output_price: 1.25
     - name: WhereIsAI/UAE-Large-V1
       type: embedding
       input_price: 0.016
