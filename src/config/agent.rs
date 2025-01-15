@@ -237,10 +237,6 @@ impl Agent {
         self.config.agent_prelude.as_deref()
     }
 
-    pub fn set_agent_prelude(&mut self, value: Option<String>) {
-        self.config.agent_prelude = value;
-    }
-
     pub fn variables(&self) -> &AgentVariables {
         match &self.session_variables {
             Some(variables) => variables,
