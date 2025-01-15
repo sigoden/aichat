@@ -534,10 +534,6 @@ impl Config {
             Some(rag) => rag.get_config(),
             None => (self.rag_reranker_model.clone(), self.rag_top_k),
         };
-        let agent_prelude = match &self.agent {
-            Some(agent) => agent.agent_prelude(),
-            None => self.agent_prelude.as_deref(),
-        };
         let role = self.extract_role();
         let mut items = vec![
             ("model", role.model().id()),
@@ -558,7 +554,6 @@ impl Config {
             ("wrap_code", self.wrap_code.to_string()),
             ("function_calling", self.function_calling.to_string()),
             ("use_tools", format_option_value(&role.use_tools())),
-            ("agent_prelude", format_option_value(&agent_prelude)),
             ("save_session", format_option_value(&self.save_session)),
             ("compress_threshold", self.compress_threshold.to_string()),
             (
@@ -629,10 +624,6 @@ impl Config {
             "use_tools" => {
                 let value = parse_value(value)?;
                 config.write().set_use_tools(value);
-            }
-            "agent_prelude" => {
-                let value = parse_value(value)?;
-                config.write().set_agent_prelude(value);
             }
             "save_session" => {
                 let value = parse_value(value)?;
@@ -745,13 +736,6 @@ impl Config {
         match self.role_like_mut() {
             Some(role_like) => role_like.set_use_tools(value),
             None => self.use_tools = value,
-        }
-    }
-
-    pub fn set_agent_prelude(&mut self, value: Option<String>) {
-        match self.agent.as_mut() {
-            Some(agent) => agent.set_agent_prelude(value),
-            None => self.agent_prelude = value,
         }
     }
 
@@ -1710,7 +1694,6 @@ impl Config {
                         "save",
                         "function_calling",
                         "use_tools",
-                        "agent_prelude",
                         "save_session",
                         "compress_threshold",
                         "rag_reranker_model",
