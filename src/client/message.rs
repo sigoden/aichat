@@ -1,4 +1,4 @@
-use crate::{function::ToolResult, utils::dimmed_text};
+use crate::{function::ToolResult, multiline_text, utils::dimmed_text};
 
 use serde::{Deserialize, Serialize};
 
@@ -83,7 +83,7 @@ impl MessageContent {
         agent_info: &Option<(String, Vec<String>)>,
     ) -> String {
         match self {
-            MessageContent::Text(text) => text.to_string(),
+            MessageContent::Text(text) => multiline_text(text),
             MessageContent::Array(list) => {
                 let (mut concated_text, mut files) = (String::new(), vec![]);
                 for item in list {
@@ -97,7 +97,7 @@ impl MessageContent {
                     }
                 }
                 if !concated_text.is_empty() {
-                    concated_text = format!(" -- {concated_text}")
+                    concated_text = format!(" -- {}", multiline_text(&concated_text))
                 }
                 format!(".file {}{}", files.join(" "), concated_text)
             }

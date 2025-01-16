@@ -17,6 +17,7 @@ use crate::client::{
 use crate::function::{FunctionDeclaration, Functions, ToolResult};
 use crate::rag::Rag;
 use crate::render::{MarkdownRender, RenderOptions};
+use crate::repl::run_repl_command;
 use crate::utils::*;
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -49,6 +50,7 @@ const LIGHT_THEME: &[u8] = include_bytes!("../../assets/monokai-extended-light.t
 
 const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_DIR_NAME: &str = "roles";
+const MACROS_DIR_NAME: &str = "macros";
 const ENV_FILE_NAME: &str = ".env";
 const MESSAGES_FILE_NAME: &str = "messages.md";
 const SESSIONS_DIR_NAME: &str = "sessions";
@@ -142,6 +144,20 @@ pub struct Config {
     pub clients: Vec<ClientConfig>,
 
     #[serde(skip)]
+    pub macro_flag: bool,
+    #[serde(skip)]
+    pub info_flag: bool,
+    #[serde(skip)]
+    pub cli_agent_variables: Option<AgentVariables>,
+
+    #[serde(skip)]
+    pub model: Model,
+    #[serde(skip)]
+    pub functions: Functions,
+    #[serde(skip)]
+    pub working_mode: WorkingMode,
+
+    #[serde(skip)]
     pub role: Option<Role>,
     #[serde(skip)]
     pub session: Option<Session>,
@@ -150,18 +166,7 @@ pub struct Config {
     #[serde(skip)]
     pub agent: Option<Agent>,
     #[serde(skip)]
-    pub model: Model,
-    #[serde(skip)]
-    pub functions: Functions,
-    #[serde(skip)]
-    pub working_mode: WorkingMode,
-    #[serde(skip)]
     pub last_message: Option<LastMessage>,
-
-    #[serde(skip)]
-    pub cli_info_flag: bool,
-    #[serde(skip)]
-    pub cli_agent_variables: Option<AgentVariables>,
 }
 
 impl Default for Config {
@@ -212,17 +217,19 @@ impl Default for Config {
 
             clients: vec![],
 
+            macro_flag: false,
+            info_flag: false,
+            cli_agent_variables: None,
+
+            model: Default::default(),
+            functions: Default::default(),
+            working_mode: WorkingMode::Cmd,
+
             role: None,
             session: None,
             rag: None,
             agent: None,
-            model: Default::default(),
-            functions: Default::default(),
-            working_mode: WorkingMode::Cmd,
             last_message: None,
-
-            cli_info_flag: false,
-            cli_agent_variables: None,
         }
     }
 }
@@ -294,6 +301,17 @@ impl Config {
 
     pub fn role_file(name: &str) -> PathBuf {
         Self::roles_dir().join(format!("{name}.md"))
+    }
+
+    pub fn macros_dir() -> PathBuf {
+        match env::var(get_env_name("macros_dir")) {
+            Ok(value) => PathBuf::from(value),
+            Err(_) => Self::local_path(MACROS_DIR_NAME),
+        }
+    }
+
+    pub fn macro_file(name: &str) -> PathBuf {
+        Self::macros_dir().join(format!("{name}.yaml"))
     }
 
     pub fn env_file() -> PathBuf {
@@ -537,23 +555,16 @@ impl Config {
         let role = self.extract_role();
         let mut items = vec![
             ("model", role.model().id()),
+            ("temperature", format_option_value(&role.temperature())),
+            ("top_p", format_option_value(&role.top_p())),
+            ("use_tools", format_option_value(&role.use_tools())),
             (
                 "max_output_tokens",
                 self.model
                     .max_tokens_param()
                     .map(|v| format!("{v} (current model)"))
-                    .unwrap_or_else(|| "-".into()),
+                    .unwrap_or_else(|| "null".into()),
             ),
-            ("temperature", format_option_value(&role.temperature())),
-            ("top_p", format_option_value(&role.top_p())),
-            ("dry_run", self.dry_run.to_string()),
-            ("stream", self.stream.to_string()),
-            ("save", self.save.to_string()),
-            ("keybindings", self.keybindings.clone()),
-            ("wrap", wrap),
-            ("wrap_code", self.wrap_code.to_string()),
-            ("function_calling", self.function_calling.to_string()),
-            ("use_tools", format_option_value(&role.use_tools())),
             ("save_session", format_option_value(&self.save_session)),
             ("compress_threshold", self.compress_threshold.to_string()),
             (
@@ -561,6 +572,13 @@ impl Config {
                 format_option_value(&rag_reranker_model),
             ),
             ("rag_top_k", rag_top_k.to_string()),
+            ("dry_run", self.dry_run.to_string()),
+            ("function_calling", self.function_calling.to_string()),
+            ("stream", self.stream.to_string()),
+            ("save", self.save.to_string()),
+            ("keybindings", self.keybindings.clone()),
+            ("wrap", wrap),
+            ("wrap_code", self.wrap_code.to_string()),
             ("highlight", self.highlight.to_string()),
             ("light_theme", self.light_theme.to_string()),
             ("config_file", display_path(&Self::config_file())),
@@ -568,6 +586,7 @@ impl Config {
             ("roles_dir", display_path(&Self::roles_dir())),
             ("sessions_dir", display_path(&self.sessions_dir())),
             ("rags_dir", display_path(&Self::rags_dir())),
+            ("macros_dir", display_path(&Self::macros_dir())),
             ("functions_dir", display_path(&Self::functions_dir())),
             ("messages_file", display_path(&self.messages_file())),
         ];
@@ -590,10 +609,6 @@ impl Config {
         let key = parts[0];
         let value = parts[1];
         match key {
-            "max_output_tokens" => {
-                let value = parse_value(value)?;
-                config.write().set_max_output_tokens(value);
-            }
             "temperature" => {
                 let value = parse_value(value)?;
                 config.write().set_temperature(value);
@@ -602,28 +617,13 @@ impl Config {
                 let value = parse_value(value)?;
                 config.write().set_top_p(value);
             }
-            "dry_run" => {
-                let value = value.parse().with_context(|| "Invalid value")?;
-                config.write().dry_run = value;
-            }
-            "stream" => {
-                let value = value.parse().with_context(|| "Invalid value")?;
-                config.write().stream = value;
-            }
-            "save" => {
-                let value = value.parse().with_context(|| "Invalid value")?;
-                config.write().save = value;
-            }
-            "function_calling" => {
-                let value = value.parse().with_context(|| "Invalid value")?;
-                if value && config.write().functions.is_empty() {
-                    bail!("Function calling cannot be enabled because no functions are installed.")
-                }
-                config.write().function_calling = value;
-            }
             "use_tools" => {
                 let value = parse_value(value)?;
                 config.write().set_use_tools(value);
+            }
+            "max_output_tokens" => {
+                let value = parse_value(value)?;
+                config.write().set_max_output_tokens(value);
             }
             "save_session" => {
                 let value = parse_value(value)?;
@@ -641,6 +641,25 @@ impl Config {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 Self::set_rag_top_k(config, value)?;
             }
+            "dry_run" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                config.write().dry_run = value;
+            }
+            "function_calling" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                if value && config.write().functions.is_empty() {
+                    bail!("Function calling cannot be enabled because no functions are installed.")
+                }
+                config.write().function_calling = value;
+            }
+            "stream" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                config.write().stream = value;
+            }
+            "save" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                config.write().save = value;
+            }
             "highlight" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 config.write().highlight = value;
@@ -655,6 +674,7 @@ impl Config {
             "role" => (Self::roles_dir(), Some(".md")),
             "session" => (config.read().sessions_dir(), Some(".yaml")),
             "rag" => (Self::rags_dir(), Some(".yaml")),
+            "macro" => (Self::macros_dir(), Some(".yaml")),
             "agent-data" => (Self::agents_data_dir(), None),
             _ => bail!("Unknown kind '{kind}'"),
         };
@@ -887,31 +907,38 @@ impl Config {
     }
 
     pub fn new_role(&mut self, name: &str) -> Result<()> {
+        if self.macro_flag {
+            bail!("No role");
+        }
         let ans = Confirm::new("Create a new role?")
             .with_default(true)
             .prompt()?;
         if ans {
             self.upsert_role(name)?;
+        } else {
+            bail!("No role");
         }
         Ok(())
     }
 
     pub fn edit_role(&mut self) -> Result<()> {
+        let role_name;
         if let Some(session) = self.session.as_ref() {
             if let Some(name) = session.role_name().map(|v| v.to_string()) {
                 if session.is_empty() {
-                    self.upsert_role(&name)
+                    role_name = Some(name);
                 } else {
                     bail!("Cannot perform this operation because you are in a non-empty session")
                 }
             } else {
                 bail!("No role")
             }
-        } else if let Some(name) = self.role.as_ref().map(|v| v.name().to_string()) {
-            self.upsert_role(&name)
         } else {
-            bail!("No role")
+            role_name = self.role.as_ref().map(|v| v.name().to_string());
         }
+        let name = role_name.ok_or_else(|| anyhow!("No role"))?;
+        self.upsert_role(&name)?;
+        self.use_role(&name)
     }
 
     pub fn upsert_role(&mut self, name: &str) -> Result<()> {
@@ -921,7 +948,6 @@ impl Config {
         ensure_parent_exists(&role_path)?;
         let editor = self.editor()?;
         edit_file(&editor, &role_path)?;
-        self.use_role(name)?;
         Ok(())
     }
 
@@ -1444,9 +1470,13 @@ impl Config {
             bail!("Already in a agent, please run '.exit agent' first to exit the current agent.");
         }
         let agent = Agent::init(config, agent_name, abort_signal).await?;
-        let session = session_name
-            .map(|v| v.to_string())
-            .or_else(|| agent.agent_prelude().map(|v| v.to_string()));
+        let session = session_name.map(|v| v.to_string()).or_else(|| {
+            if config.read().macro_flag {
+                None
+            } else {
+                agent.agent_prelude().map(|v| v.to_string())
+            }
+        });
         config.write().rag = agent.rag();
         config.write().agent = Some(agent);
         if let Some(session) = session {
@@ -1516,8 +1546,43 @@ impl Config {
         Ok(())
     }
 
+    pub fn list_macros() -> Vec<String> {
+        list_file_names(Self::macros_dir(), ".yaml")
+    }
+
+    pub fn load_macro(name: &str) -> Result<Macro> {
+        let path = Self::macro_file(name);
+        let err = || format!("Faied to load macro '{name}' at '{}'", path.display());
+        let content = read_to_string(&path).with_context(err)?;
+        let value: Macro = serde_yaml::from_str(&content).with_context(err)?;
+        Ok(value)
+    }
+
+    pub fn has_macro(name: &str) -> bool {
+        let names = Self::list_macros();
+        names.contains(&name.to_string())
+    }
+
+    pub fn new_macro(&mut self, name: &str) -> Result<()> {
+        if self.macro_flag {
+            bail!("No macro");
+        }
+        let ans = Confirm::new("Create a new macro?")
+            .with_default(true)
+            .prompt()?;
+        if ans {
+            let macro_path = Self::macro_file(name);
+            ensure_parent_exists(&macro_path)?;
+            let editor = self.editor()?;
+            edit_file(&editor, &macro_path)?;
+        } else {
+            bail!("No macro");
+        }
+        Ok(())
+    }
+
     pub fn apply_prelude(&mut self) -> Result<()> {
-        if !self.state().is_empty() {
+        if self.macro_flag || !self.state().is_empty() {
             return Ok(());
         }
         let prelude = match self.working_mode {
@@ -1672,6 +1737,7 @@ impl Config {
                 }
                 ".rag" => map_completion_values(Self::list_rags()),
                 ".agent" => map_completion_values(list_agents()),
+                ".macro" => map_completion_values(Self::list_macros()),
                 ".starter" => match &self.agent {
                     Some(agent) => map_completion_values(agent.conversation_staters().to_vec()),
                     None => vec![],
@@ -1686,18 +1752,18 @@ impl Config {
                 },
                 ".set" => {
                     let mut values = vec![
-                        "max_output_tokens",
                         "temperature",
                         "top_p",
-                        "dry_run",
-                        "stream",
-                        "save",
-                        "function_calling",
                         "use_tools",
                         "save_session",
                         "compress_threshold",
                         "rag_reranker_model",
                         "rag_top_k",
+                        "max_output_tokens",
+                        "dry_run",
+                        "function_calling",
+                        "stream",
+                        "save",
                         "highlight",
                     ];
                     values.sort_unstable();
@@ -1706,7 +1772,9 @@ impl Config {
                         .map(|v| (format!("{v} "), None))
                         .collect()
                 }
-                ".delete" => map_completion_values(vec!["role", "session", "rag", "agent-data"]),
+                ".delete" => {
+                    map_completion_values(vec!["role", "session", "rag", "macro", "agent-data"])
+                }
                 _ => vec![],
             };
             filter = args[0]
@@ -2009,11 +2077,11 @@ impl Config {
             let new_variables = Agent::init_agent_variables(
                 agent.defined_variables(),
                 &config_variables,
-                self.cli_info_flag,
+                self.info_flag,
             )?;
             agent.set_shared_variables(new_variables);
         }
-        if !self.cli_info_flag {
+        if !self.info_flag {
             agent.update_shared_dynamic_instructions(false)?;
         }
         Ok(())
@@ -2035,7 +2103,7 @@ impl Config {
                     let new_variables = Agent::init_agent_variables(
                         agent.defined_variables(),
                         &config_variables,
-                        self.cli_info_flag,
+                        self.info_flag,
                     )?;
                     agent.set_shared_variables(new_variables.clone());
                     new_variables
@@ -2043,7 +2111,7 @@ impl Config {
                     shared_variables
                 };
             agent.set_session_variables(session_variables);
-            if !self.cli_info_flag {
+            if !self.info_flag {
                 agent.update_session_dynamic_instructions(None)?;
             }
             session.sync_agent(agent);
@@ -2319,6 +2387,104 @@ impl WorkingMode {
     }
 }
 
+#[async_recursion::async_recursion]
+pub async fn macro_execute(
+    config: &GlobalConfig,
+    name: &str,
+    args: Option<&str>,
+    abort_signal: AbortSignal,
+) -> Result<()> {
+    let macro_value = Config::load_macro(name)?;
+
+    let variables = macro_value
+        .resolve_variables(args)
+        .map_err(|err| anyhow!("{err}. Usage: {}", macro_value.usage(name)))?;
+    let role = config.read().extract_role();
+    let mut config = config.read().clone();
+    config.temperature = role.temperature();
+    config.top_p = role.top_p();
+    config.use_tools = role.use_tools().clone();
+    config.macro_flag = true;
+    config.model = role.model().clone();
+    config.role = None;
+    config.session = None;
+    config.rag = None;
+    config.agent = None;
+    config.last_message = None;
+    let config = Arc::new(RwLock::new(config));
+    config.write().macro_flag = true;
+    for step in &macro_value.steps {
+        let command = Macro::interpolate_command(step, &variables);
+        println!(">>> {}", multiline_text(&command));
+        run_repl_command(&config, abort_signal.clone(), &command).await?;
+    }
+    Ok(())
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Macro {
+    #[serde(default)]
+    pub variables: Vec<MacroVariable>,
+    pub steps: Vec<String>,
+}
+
+impl Macro {
+    pub fn resolve_variables(&self, args: Option<&str>) -> Result<IndexMap<String, String>> {
+        let args: Vec<&str> = args.unwrap_or_default().split_whitespace().collect();
+        let mut output = IndexMap::new();
+        for (i, variable) in self.variables.iter().enumerate() {
+            let value = if variable.rest && i == self.variables.len() - 1 {
+                if args.len() > i {
+                    Some(args[i..].join(" "))
+                } else {
+                    variable.default.clone()
+                }
+            } else {
+                args.get(i)
+                    .map(|v| v.to_string())
+                    .or_else(|| variable.default.clone())
+            };
+            let value =
+                value.ok_or_else(|| anyhow!("Missing value for variable '{}'", variable.name))?;
+            output.insert(variable.name.clone(), value);
+        }
+        Ok(output)
+    }
+
+    pub fn usage(&self, name: &str) -> String {
+        let mut parts = vec![name.to_string()];
+        for (i, variable) in self.variables.iter().enumerate() {
+            let part = match (
+                variable.rest && i == self.variables.len() - 1,
+                variable.default.is_some(),
+            ) {
+                (true, true) => format!("[{}]...", variable.name),
+                (true, false) => format!("<{}>...", variable.name),
+                (false, true) => format!("[{}]", variable.name),
+                (false, false) => format!("<{}>", variable.name),
+            };
+            parts.push(part);
+        }
+        parts.join(" ")
+    }
+
+    pub fn interpolate_command(command: &str, variables: &IndexMap<String, String>) -> String {
+        let mut output = command.to_string();
+        for (key, value) in variables {
+            output = output.replace(&format!("{{{{{key}}}}}"), value);
+        }
+        output
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct MacroVariable {
+    pub name: String,
+    #[serde(default)]
+    pub rest: bool,
+    pub default: Option<String>,
+}
+
 #[derive(Debug, Clone)]
 pub struct LastMessage {
     pub input: Input,
@@ -2486,4 +2652,14 @@ where
     f(&mut rag)?;
     config.write().rag = Some(Arc::new(rag));
     Ok(())
+}
+
+fn format_option_value<T>(value: &Option<T>) -> String
+where
+    T: std::fmt::Display,
+{
+    match value {
+        Some(value) => value.to_string(),
+        None => "null".to_string(),
+    }
 }

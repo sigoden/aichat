@@ -68,7 +68,7 @@ impl Agent {
 
         let rag = if rag_path.exists() {
             Some(Arc::new(Rag::load(config, DEFAULT_AGENT_NAME, &rag_path)?))
-        } else if !definition.documents.is_empty() && !config.read().cli_info_flag {
+        } else if !definition.documents.is_empty() && !config.read().info_flag {
             let mut ans = false;
             if *IS_STDOUT_TERMINAL {
                 ans = Confirm::new("The agent has the documents, init RAG?")

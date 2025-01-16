@@ -33,6 +33,9 @@ pub struct Cli {
     /// Rebuild the RAG to sync document changes
     #[clap(long)]
     pub rebuild_rag: bool,
+    /// Execute a macro
+    #[clap(long = "macro", value_name = "MACRO")]
+    pub macro_name: Option<String>,
     /// Serve the LLM API and WebAPP
     #[clap(long, value_name = "ADDRESS")]
     pub serve: Option<Option<String>>,
@@ -69,6 +72,9 @@ pub struct Cli {
     /// List all RAGs
     #[clap(long)]
     pub list_rags: bool,
+    /// List all macros
+    #[clap(long)]
+    pub list_macros: bool,
     /// Input text
     #[clap(trailing_var_arg = true)]
     text: Vec<String>,
@@ -76,10 +82,9 @@ pub struct Cli {
 
 impl Cli {
     pub fn text(&self) -> Option<String> {
-        let text = self.text.to_vec().join(" ");
-        if text.is_empty() {
-            return None;
+        match self.text.is_empty() {
+            true => None,
+            false => Some(self.text.join(" ")),
         }
-        Some(text)
     }
 }

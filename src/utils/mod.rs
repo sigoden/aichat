@@ -112,16 +112,6 @@ pub fn extract_block(input: &str) -> String {
     }
 }
 
-pub fn format_option_value<T>(value: &Option<T>) -> String
-where
-    T: std::fmt::Display,
-{
-    match value {
-        Some(value) => value.to_string(),
-        None => "-".to_string(),
-    }
-}
-
 pub fn convert_option_string(value: &str) -> Option<String> {
     if value.is_empty() {
         None
@@ -197,6 +187,21 @@ pub fn dimmed_text(input: &str) -> String {
         return input.to_string();
     }
     nu_ansi_term::Style::new().dimmed().paint(input).to_string()
+}
+
+pub fn multiline_text(input: &str) -> String {
+    input
+        .split('\n')
+        .enumerate()
+        .map(|(i, v)| {
+            if i == 0 {
+                v.to_string()
+            } else {
+                format!("... {v}")
+            }
+        })
+        .collect::<Vec<String>>()
+        .join("\n")
 }
 
 pub fn temp_file(prefix: &str, suffix: &str) -> PathBuf {

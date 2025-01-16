@@ -17,8 +17,8 @@ use crate::client::{
     call_chat_completions, call_chat_completions_streaming, list_models, ModelType,
 };
 use crate::config::{
-    ensure_parent_exists, list_agents, load_env_file, Config, GlobalConfig, Input, WorkingMode,
-    CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE, TEMP_SESSION_NAME,
+    ensure_parent_exists, list_agents, load_env_file, macro_execute, Config, GlobalConfig, Input,
+    WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE, TEMP_SESSION_NAME,
 };
 use crate::render::render_error;
 use crate::repl::Repl;
@@ -67,7 +67,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         return serve::run(config, addr).await;
     }
     if cli.info {
-        config.write().cli_info_flag = true;
+        config.write().info_flag = true;
     }
 
     if cli.list_models {
@@ -91,6 +91,12 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         println!("{rags}");
         return Ok(());
     }
+    if cli.list_macros {
+        let macros = Config::list_macros().join("\n");
+        println!("{macros}");
+        return Ok(());
+    }
+
     if cli.dry_run {
         config.write().dry_run = true;
     }
@@ -157,6 +163,10 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         if is_repl {
             return Ok(());
         }
+    }
+    if let Some(name) = &cli.macro_name {
+        macro_execute(&config, name, text.as_deref(), abort_signal.clone()).await?;
+        return Ok(());
     }
     if cli.execute && !is_repl {
         if cfg!(target_os = "macos") && !stdin().is_terminal() {
