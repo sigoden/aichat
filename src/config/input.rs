@@ -27,8 +27,8 @@ pub struct Input {
     medias: Vec<String>,
     data_urls: HashMap<String, String>,
     tool_calls: Option<MessageContentToolCalls>,
-    rag_name: Option<String>,
     role: Role,
+    rag_name: Option<String>,
     with_session: bool,
     with_agent: bool,
 }
@@ -47,8 +47,8 @@ impl Input {
             medias: Default::default(),
             data_urls: Default::default(),
             tool_calls: None,
-            rag_name: None,
             role,
+            rag_name: None,
             with_session,
             with_agent,
         }
@@ -128,8 +128,8 @@ impl Input {
             medias,
             data_urls,
             tool_calls: Default::default(),
-            rag_name: None,
             role,
+            rag_name: None,
             with_session,
             with_agent,
         })

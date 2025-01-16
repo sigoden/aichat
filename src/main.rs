@@ -17,8 +17,8 @@ use crate::client::{
     call_chat_completions, call_chat_completions_streaming, list_models, ModelType,
 };
 use crate::config::{
-    ensure_parent_exists, list_agents, load_env_file, Config, GlobalConfig, Input, WorkingMode,
-    CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE, TEMP_SESSION_NAME,
+    ensure_parent_exists, list_agents, load_env_file, macro_execute, Config, GlobalConfig, Input,
+    WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE, TEMP_SESSION_NAME,
 };
 use crate::render::render_error;
 use crate::repl::Repl;
@@ -31,19 +31,13 @@ use inquire::Text;
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use simplelog::{format_description, ConfigBuilder, LevelFilter, SimpleLogger, WriteLogger};
-use std::{
-    env,
-    io::{stdin, Read},
-    process,
-    sync::Arc,
-};
+use std::{env, io::stdin, process, sync::Arc};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     load_env_file()?;
     let cli = Cli::parse();
-    let text = cli.text();
-    let text = aggregate_text(text)?;
+    let text = cli.text()?;
     let working_mode = if cli.serve.is_some() {
         WorkingMode::Serve
     } else if text.is_none() && cli.file.is_empty() {
@@ -67,7 +61,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         return serve::run(config, addr).await;
     }
     if cli.info {
-        config.write().cli_info_flag = true;
+        config.write().info_flag = true;
     }
 
     if cli.list_models {
@@ -91,6 +85,12 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         println!("{rags}");
         return Ok(());
     }
+    if cli.list_macros {
+        let macros = Config::list_macros().join("\n");
+        println!("{macros}");
+        return Ok(());
+    }
+
     if cli.dry_run {
         config.write().dry_run = true;
     }
@@ -157,6 +157,10 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         if is_repl {
             return Ok(());
         }
+    }
+    if let Some(name) = &cli.macro_name {
+        macro_execute(&config, name, text.as_deref(), abort_signal.clone()).await?;
+        return Ok(());
     }
     if cli.execute && !is_repl {
         if cfg!(target_os = "macos") && !stdin().is_terminal() {
@@ -316,21 +320,6 @@ async fn shell_execute(
         println!("{}", eval_str);
     }
     Ok(())
-}
-
-fn aggregate_text(text: Option<String>) -> Result<Option<String>> {
-    let text = if stdin().is_terminal() {
-        text
-    } else {
-        let mut stdin_text = String::new();
-        stdin().read_to_string(&mut stdin_text)?;
-        if let Some(text) = text {
-            Some(format!("{text}\n{stdin_text}"))
-        } else {
-            Some(stdin_text)
-        }
-    };
-    Ok(text)
 }
 
 async fn create_input(

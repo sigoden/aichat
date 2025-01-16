@@ -1,4 +1,7 @@
+use anyhow::{Context, Result};
 use clap::Parser;
+use is_terminal::IsTerminal;
+use std::io::{stdin, Read};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -33,6 +36,9 @@ pub struct Cli {
     /// Rebuild the RAG to sync document changes
     #[clap(long)]
     pub rebuild_rag: bool,
+    /// Execute a macro
+    #[clap(long = "macro", value_name = "MACRO")]
+    pub macro_name: Option<String>,
     /// Serve the LLM API and WebAPP
     #[clap(long, value_name = "ADDRESS")]
     pub serve: Option<Option<String>>,
@@ -69,17 +75,52 @@ pub struct Cli {
     /// List all RAGs
     #[clap(long)]
     pub list_rags: bool,
+    /// List all macros
+    #[clap(long)]
+    pub list_macros: bool,
     /// Input text
     #[clap(trailing_var_arg = true)]
     text: Vec<String>,
 }
 
 impl Cli {
-    pub fn text(&self) -> Option<String> {
-        let text = self.text.to_vec().join(" ");
-        if text.is_empty() {
-            return None;
+    pub fn text(&self) -> Result<Option<String>> {
+        let mut stdin_text = String::new();
+        if !stdin().is_terminal() {
+            let _ = stdin()
+                .read_to_string(&mut stdin_text)
+                .context("Invalid stdin pipe")?;
+        };
+        match self.text.is_empty() {
+            true => {
+                if stdin_text.is_empty() {
+                    Ok(None)
+                } else {
+                    Ok(Some(stdin_text))
+                }
+            }
+            false => {
+                if self.macro_name.is_some() {
+                    let text = self
+                        .text
+                        .iter()
+                        .map(|v| shell_words::quote(v))
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    if stdin_text.is_empty() {
+                        Ok(Some(text))
+                    } else {
+                        Ok(Some(format!("{} -- {}", text, stdin_text)))
+                    }
+                } else {
+                    let text = self.text.join(" ");
+                    if stdin_text.is_empty() {
+                        Ok(Some(text))
+                    } else {
+                        Ok(Some(format!("{}\n{}", text, stdin_text)))
+                    }
+                }
+            }
         }
-        Some(text)
     }
 }

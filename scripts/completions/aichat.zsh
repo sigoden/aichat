@@ -29,6 +29,7 @@ _aichat() {
 '--agent-variable[Set agent variables]' \
 '--rag[Start a RAG]:RAG:->rags' \
 '--rebuild-rag[Rebuild the RAG to sync document changes]' \
+'--macro[Execute a macro]:MACRO:->macros' \
 '--serve[Serve the LLM API and WebAPP]' \
 '-e[Execute commands in natural language]' \
 '--execute[Execute commands in natural language]' \
@@ -45,6 +46,7 @@ _aichat() {
 '--list-sessions[List all sessions]' \
 '--list-agents[List all agents]' \
 '--list-rags[List all RAGs]' \
+'--list-macros[List all macros]' \
 '-h[Print help]' \
 '--help[Print help]' \
 '-V[Print version]' \
@@ -56,7 +58,7 @@ _aichat() {
     _arguments "${_arguments_options[@]}" $common \
         && ret=0 
     case $state in
-        models|roles|sessions|agents|rags)
+        models|roles|sessions|agents|rags|macros)
             local -a values expl
             values=( ${(f)"$(_call_program values aichat --list-$state)"} )
             _wanted values expl $state compadd -a values && ret=0
