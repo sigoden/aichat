@@ -272,27 +272,6 @@ impl Agent {
         self.session_variables = Some(session_variables);
     }
 
-    pub fn set_variable(&mut self, key: &str, value: &str) -> Result<()> {
-        let variables = match self.session_variables.as_mut() {
-            Some(v) => v,
-            None => &mut self.shared_variables,
-        };
-        let Some(old_value) = variables.get(key) else {
-            bail!("Unknown variable '{key}'")
-        };
-        if old_value == value {
-            return Ok(());
-        }
-        variables.insert(key.to_string(), value.to_string());
-        if self.session_variables.is_some() {
-            self.update_session_dynamic_instructions(None)?;
-        } else {
-            self.update_shared_dynamic_instructions(true)?;
-        }
-
-        Ok(())
-    }
-
     pub fn defined_variables(&self) -> &[AgentVariable] {
         &self.definition.variables
     }

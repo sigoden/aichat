@@ -29,7 +29,7 @@ use std::{env, process};
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static::lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 35] = [
+    static ref REPL_COMMANDS: [ReplCommand; 34] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
@@ -103,11 +103,6 @@ lazy_static::lazy_static! {
             ".starter",
             "Use the conversation starter",
             AssertState::True(StateFlags::AGENT)
-        ),
-        ReplCommand::new(
-            ".variable",
-            "Set agent variable",
-            AssertState::TrueFalse(StateFlags::AGENT, StateFlags::SESSION)
         ),
         ReplCommand::new(
             ".info agent",
@@ -462,14 +457,6 @@ pub async fn run_repl_command(
                 None => {
                     let banner = config.read().agent_banner()?;
                     config.read().print_markdown(&banner)?;
-                }
-            },
-            ".variable" => match args {
-                Some(args) => {
-                    config.write().set_agent_variable(args)?;
-                }
-                _ => {
-                    println!("Usage: .variable <key> <value>")
                 }
             },
             ".save" => match split_first_arg(args) {

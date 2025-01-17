@@ -1503,28 +1503,6 @@ impl Config {
         }
     }
 
-    pub fn set_agent_variable(&mut self, data: &str) -> Result<()> {
-        let parts: Vec<&str> = data.split_whitespace().collect();
-        if parts.len() != 2 {
-            bail!("Usage: .variable <key> <value>");
-        }
-        match self.agent.as_mut() {
-            Some(agent) => {
-                if let Some(session) = self.session.as_ref() {
-                    session.guard_empty()?;
-                }
-                let key = parts[0];
-                let value = parts[1];
-                agent.set_variable(key, value)?;
-                if let Some(session) = self.session.as_mut() {
-                    session.sync_agent(agent);
-                }
-            }
-            None => bail!("No agent"),
-        };
-        Ok(())
-    }
-
     pub fn exit_agent(&mut self) -> Result<()> {
         self.exit_session()?;
         if self.agent.take().is_some() {
@@ -1739,14 +1717,6 @@ impl Config {
                 ".macro" => map_completion_values(Self::list_macros()),
                 ".starter" => match &self.agent {
                     Some(agent) => map_completion_values(agent.conversation_staters().to_vec()),
-                    None => vec![],
-                },
-                ".variable" => match &self.agent {
-                    Some(agent) => agent
-                        .defined_variables()
-                        .iter()
-                        .map(|v| (v.name.clone(), Some(v.description.clone())))
-                        .collect(),
                     None => vec![],
                 },
                 ".set" => {
