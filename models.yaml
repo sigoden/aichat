@@ -321,10 +321,14 @@
       max_input_tokens: 4096
 
 # Links:
-#  - https://docs.x.ai/docs#models
-#  - https://docs.x.ai/api/endpoints#chat-completions
+#  - https://docs.x.ai/docs/models
 - platform: xai
   models:
+    - name: grok-2-latest
+      max_input_tokens: 131072
+      input_price: 2
+      output_price: 10
+      supports_function_calling: true
     - name: grok-2-1212
       max_input_tokens: 131072
       input_price: 2
@@ -335,7 +339,13 @@
       input_price: 5
       output_price: 15
       supports_function_calling: true
-    - name: grok-2-vision-1212    
+    - name: grok-2-vision-latest
+      max_input_tokens: 32768
+      input_price: 2
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
+    - name: grok-2-vision-1212
       max_input_tokens: 32768
       input_price: 2
       output_price: 10
@@ -712,7 +722,7 @@
       require_max_tokens: true
       input_price: 0
       output_price: 0
-    - name: '@cf/meta/llama-3.2-11b-vision-instruct' 
+    - name: '@cf/meta/llama-3.2-11b-vision-instruct'
       max_input_tokens: 6144
       max_output_tokens: 2048
       require_max_tokens: true
@@ -1024,6 +1034,24 @@
       supports_vision: true
 
 # Links:
+# - https://platform.minimaxi.com/document/Price
+# - https://platform.minimaxi.com/document/ChatCompletion%20v2
+- platform: minimax
+  models:
+    - name: minimax-text-01
+      max_input_tokens: 1000192
+      input_price: 0.14
+      output_price: 1.12
+      supports_vision: true
+      # supports_function_calling: true
+    - name: abab6.5s-chat
+      max_input_tokens: 245760
+      input_price: 0.14
+      output_price: 0.14
+      supports_vision: true
+      # supports_function_calling: true
+
+# Links:
 #  - https://github.com/marketplace/models
 - platform: github
   models:
@@ -1099,6 +1127,8 @@
     - name: ai21-jamba-1.5-mini
       max_input_tokens: 256000
       supports_function_calling: true
+    - name: phi-4
+      max_input_tokens: 16384
     - name: phi-3.5-moe-instruct
       max_input_tokens: 128000
     - name: phi-3.5-mini-instruct
@@ -1452,6 +1482,11 @@
       input_price: 0.2
       output_price: 0.6
       supports_function_calling: true
+    - name: mistralai/codestral-2501
+      max_input_tokens: 256000
+      input_price: 0.3
+      output_price: 0.9
+      supports_function_calling: true
     - name: mistralai/ministral-8b
       max_input_tokens: 128000
       input_price: 0.1
@@ -1558,7 +1593,7 @@
       input_price: 5
       output_price: 15
       supports_function_calling: true
-    - name: x-ai/grok-2-vision-1212    
+    - name: x-ai/grok-2-vision-1212
       max_input_tokens: 32768
       input_price: 2
       output_price: 10
@@ -1569,7 +1604,7 @@
       input_price: 5
       output_price: 15
       supports_vision: true
-    - name: amazon/nova-pro-v1 
+    - name: amazon/nova-pro-v1
       max_input_tokens: 300000
       max_output_tokens: 5120
       input_price: 0.8
@@ -1586,6 +1621,10 @@
       max_output_tokens: 5120
       input_price: 0.035
       output_price: 0.14
+    - name: minimax/minimax-01
+      max_input_tokens: 1000192
+      input_price: 0.2
+      output_price: 1.1
 
 # Links
 #  - https://cloud.siliconflow.cn/models

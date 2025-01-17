@@ -318,6 +318,7 @@ _argc_before() {
         groq,llama-3.1-8b-instant,https://api.groq.com/openai/v1 \
         hunyuan,hunyuan-large,https://api.hunyuan.cloud.tencent.com/v1 \
         lingyiwanwu,yi-large,https://api.lingyiwanwu.com/v1 \
+        minimax,MiniMax-Text-01,https://api.minimax.chat/v1 \
         mistral,mistral-small-latest,https://api.mistral.ai/v1 \
         moonshot,moonshot-v1-8k,https://api.moonshot.cn/v1 \
         openrouter,openai/gpt-4o-mini,https://openrouter.ai/api/v1 \
