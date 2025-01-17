@@ -8,7 +8,8 @@ use self::prompt::ReplPrompt;
 
 use crate::client::{call_chat_completions, call_chat_completions_streaming};
 use crate::config::{
-    macro_execute, AssertState, Config, GlobalConfig, Input, LastMessage, StateFlags,
+    macro_execute, AgentVariables, AssertState, Config, GlobalConfig, Input, LastMessage,
+    StateFlags,
 };
 use crate::render::render_error;
 use crate::utils::{
@@ -424,11 +425,34 @@ pub async fn run_repl_command(
                 Config::use_rag(config, args, abort_signal.clone()).await?;
             }
             ".agent" => match split_first_arg(args) {
-                Some((agent_name, session_name)) => {
-                    Config::use_agent(config, agent_name, session_name, abort_signal.clone())
-                        .await?;
+                Some((agent_name, args)) => {
+                    let (new_args, _) = split_args_text(args.unwrap_or_default(), cfg!(windows));
+                    let mut session_name = None;
+                    if let Some((name, variable_pairs)) = new_args.split_first() {
+                        if name != "null" && name != "none" {
+                            session_name = Some(name.as_str());
+                        }
+                        let variables: AgentVariables = variable_pairs
+                            .iter()
+                            .filter_map(|v| v.split_once('='))
+                            .map(|(key, value)| (key.to_string(), value.to_string()))
+                            .collect();
+                        if variables.len() != variable_pairs.len() {
+                            bail!("Some variable key-value pairs are invalid");
+                        }
+                        if !variables.is_empty() {
+                            config.write().agent_variables = Some(variables);
+                        }
+                    }
+                    let ret =
+                        Config::use_agent(config, agent_name, session_name, abort_signal.clone())
+                            .await;
+                    config.write().agent_variables = None;
+                    ret?;
                 }
-                None => println!(r#"Usage: .agent <agent-name> [session-name]"#),
+                None => {
+                    println!(r#"Usage: .agent <agent-name> [session-name|null] [key=value]..."#)
+                }
             },
             ".starter" => match args {
                 Some(value) => {
@@ -529,7 +553,7 @@ pub async fn run_repl_command(
             },
             ".file" => match args {
                 Some(args) => {
-                    let (files, text) = split_params_text(args, cfg!(windows));
+                    let (files, text) = split_args_text(args, cfg!(windows));
                     let input = Input::from_files_with_spinner(
                         config,
                         text,
@@ -733,7 +757,7 @@ fn split_first_arg(args: Option<&str>) -> Option<(&str, Option<&str>)> {
     })
 }
 
-pub fn split_params_text(line: &str, is_win: bool) -> (Vec<String>, &str) {
+pub fn split_args_text(line: &str, is_win: bool) -> (Vec<String>, &str) {
     let mut words = Vec::new();
     let mut word = String::new();
     let mut unbalance: Option<char> = None;
@@ -829,45 +853,45 @@ mod tests {
     }
 
     #[test]
-    fn test_split_params_text() {
-        assert_eq!(split_params_text("", false), (vec![], ""));
+    fn test_split_args_text() {
+        assert_eq!(split_args_text("", false), (vec![], ""));
         assert_eq!(
-            split_params_text("file.txt", false),
+            split_args_text("file.txt", false),
             (vec!["file.txt".into()], "")
         );
         assert_eq!(
-            split_params_text("file.txt --", false),
+            split_args_text("file.txt --", false),
             (vec!["file.txt".into()], "")
         );
         assert_eq!(
-            split_params_text("file.txt -- hello", false),
+            split_args_text("file.txt -- hello", false),
             (vec!["file.txt".into()], "hello")
         );
         assert_eq!(
-            split_params_text("file.txt -- \thello", false),
+            split_args_text("file.txt -- \thello", false),
             (vec!["file.txt".into()], "\thello")
         );
         assert_eq!(
-            split_params_text("file.txt --\nhello", false),
+            split_args_text("file.txt --\nhello", false),
             (vec!["file.txt".into()], "hello")
         );
         assert_eq!(
-            split_params_text("file.txt --\r\nhello", false),
+            split_args_text("file.txt --\r\nhello", false),
             (vec!["file.txt".into()], "hello")
         );
         assert_eq!(
-            split_params_text("file.txt --\rhello", false),
+            split_args_text("file.txt --\rhello", false),
             (vec!["file.txt".into()], "hello")
         );
         assert_eq!(
-            split_params_text(r#"file1.txt 'file2.txt' "file3.txt""#, false),
+            split_args_text(r#"file1.txt 'file2.txt' "file3.txt""#, false),
             (
                 vec!["file1.txt".into(), "file2.txt".into(), "file3.txt".into()],
                 ""
             )
         );
         assert_eq!(
-            split_params_text(r#"./file1.txt 'file1 - Copy.txt' file\ 2.txt"#, false),
+            split_args_text(r#"./file1.txt 'file1 - Copy.txt' file\ 2.txt"#, false),
             (
                 vec![
                     "./file1.txt".into(),
@@ -878,7 +902,7 @@ mod tests {
             )
         );
         assert_eq!(
-            split_params_text(r#".\file.txt C:\dir\file.txt"#, true),
+            split_args_text(r#".\file.txt C:\dir\file.txt"#, true),
             (vec![".\\file.txt".into(), "C:\\dir\\file.txt".into()], "")
         );
     }

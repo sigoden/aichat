@@ -101,7 +101,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
             None => TEMP_SESSION_NAME,
         });
         if !cli.agent_variable.is_empty() {
-            config.write().cli_agent_variables = Some(
+            config.write().agent_variables = Some(
                 cli.agent_variable
                     .chunks(2)
                     .map(|v| (v[0].to_string(), v[1].to_string()))
@@ -109,7 +109,9 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
             );
         }
 
-        Config::use_agent(&config, agent, session, abort_signal.clone()).await?
+        let ret = Config::use_agent(&config, agent, session, abort_signal.clone()).await;
+        config.write().agent_variables = None;
+        ret?;
     } else {
         if let Some(prompt) = &cli.prompt {
             config.write().use_prompt(prompt)?;
