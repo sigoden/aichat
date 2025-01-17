@@ -76,11 +76,7 @@ pub trait Client: Sync + Send {
             ret = async {
                 if self.global_config().read().dry_run {
                     let content = input.echo_messages();
-                    let tokens = split_content(&content);
-                    for token in tokens {
-                        tokio::time::sleep(Duration::from_millis(10)).await;
-                        handler.text(token)?;
-                    }
+                    handler.text(&content)?;
                     return Ok(());
                 }
                 let client = self.build_client()?;
@@ -610,14 +606,5 @@ fn prompt_value_to_json(kind: &PromptKind, value: &str) -> Value {
             Ok(value) => value.into(),
             Err(_) => value.into(),
         },
-    }
-}
-
-fn split_content(text: &str) -> Vec<&str> {
-    if text.is_ascii() {
-        text.split_inclusive(|c: char| c.is_ascii_whitespace())
-            .collect()
-    } else {
-        unicode_segmentation::UnicodeSegmentation::graphemes(text, true).collect()
     }
 }
