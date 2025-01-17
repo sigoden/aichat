@@ -17,7 +17,7 @@ use crate::client::{
 use crate::function::{FunctionDeclaration, Functions, ToolResult};
 use crate::rag::Rag;
 use crate::render::{MarkdownRender, RenderOptions};
-use crate::repl::{run_repl_command, split_params_text};
+use crate::repl::{run_repl_command, split_args_text};
 use crate::utils::*;
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -148,7 +148,7 @@ pub struct Config {
     #[serde(skip)]
     pub info_flag: bool,
     #[serde(skip)]
-    pub cli_agent_variables: Option<AgentVariables>,
+    pub agent_variables: Option<AgentVariables>,
 
     #[serde(skip)]
     pub model: Model,
@@ -219,7 +219,7 @@ impl Default for Config {
 
             macro_flag: false,
             info_flag: false,
-            cli_agent_variables: None,
+            agent_variables: None,
 
             model: Default::default(),
             functions: Default::default(),
@@ -1530,7 +1530,6 @@ impl Config {
         if self.agent.take().is_some() {
             self.rag.take();
             self.discontinuous_last_message();
-            self.cli_agent_variables = None;
         }
         Ok(())
     }
@@ -2071,7 +2070,7 @@ impl Config {
         };
         if !agent.defined_variables().is_empty() && agent.shared_variables().is_empty() {
             let mut config_variables = agent.config_variables().clone();
-            if let Some(v) = &self.cli_agent_variables {
+            if let Some(v) = &self.agent_variables {
                 config_variables.extend(v.clone());
             }
             let new_variables = Agent::init_agent_variables(
@@ -2097,7 +2096,7 @@ impl Config {
             let session_variables =
                 if !agent.defined_variables().is_empty() && shared_variables.is_empty() {
                     let mut config_variables = agent.config_variables().clone();
-                    if let Some(v) = &self.cli_agent_variables {
+                    if let Some(v) = &self.agent_variables {
                         config_variables.extend(v.clone());
                     }
                     let new_variables = Agent::init_agent_variables(
@@ -2395,7 +2394,7 @@ pub async fn macro_execute(
     abort_signal: AbortSignal,
 ) -> Result<()> {
     let macro_value = Config::load_macro(name)?;
-    let (mut new_args, text) = split_params_text(args.unwrap_or_default(), cfg!(windows));
+    let (mut new_args, text) = split_args_text(args.unwrap_or_default(), cfg!(windows));
     if !text.is_empty() {
         new_args.push(text.to_string());
     }
