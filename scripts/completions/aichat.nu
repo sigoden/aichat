@@ -34,6 +34,12 @@ module completions {
     | parse "{value}" 
   }
 
+  def "nu-complete aichat macro" [] {
+    ^aichat --list-macros |
+    | lines 
+    | parse "{value}" 
+  }
+
   # All-in-one chat and copilot CLI that integrates 10+ AI platforms
   export extern aichat [
     --model(-m): string@"nu-complete aichat model"      # Select a LLM model
@@ -46,6 +52,7 @@ module completions {
     --agent-variable                                    # Set agent variables
     --rag: string@"nu-complete aichat rag"              # Start a RAG
     --rebuild-rag                                       # Rebuild the RAG to sync document changes
+    --macro: string@"nu-complete aichat macro"          # Execute a macro
     --serve                                             # Serve the LLM API and WebAPP
     --execute(-e)                                       # Execute commands in natural language
     --code(-c)                                          # Output code only
@@ -58,6 +65,7 @@ module completions {
     --list-sessions                                     # List all sessions
     --list-agents                                       # List all agents
     --list-rags                                         # List all RAGs
+    --list-macros                                       # List all macros
     ...text: string                                     # Input text
     --help(-h)                                          # Print help
     --version(-V)                                       # Print version

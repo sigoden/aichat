@@ -8,6 +8,7 @@ complete -c aichat -s a -l agent -x  -a "(aichat --list-agents)" -d 'Start a age
 complete -c aichat -l agent-variable -d 'Set agent variables'
 complete -c aichat -l rag -x  -a"(aichat --list-rags)" -d 'Start a RAG' -r
 complete -c aichat -l rebuild-rag -d 'Rebuild the RAG to sync document changes'
+complete -c aichat -l macro -x  -a"(aichat --list-macros)" -d 'Execute a macro' -r
 complete -c aichat -l serve -d 'Serve the LLM API and WebAPP'
 complete -c aichat -s e -l execute -d 'Execute commands in natural language'
 complete -c aichat -s c -l code -d 'Output code only'
@@ -20,5 +21,6 @@ complete -c aichat -l list-roles -d 'List all roles'
 complete -c aichat -l list-sessions -d 'List all sessions'
 complete -c aichat -l list-agents -d 'List all agents'
 complete -c aichat -l list-rags -d 'List all RAGs'
+complete -c aichat -l list-macros -d 'List all macros'
 complete -c aichat -s h -l help -d 'Print help'
 complete -c aichat -s V -l version -d 'Print version'

@@ -34,6 +34,7 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             [CompletionResult]::new('--agent-variable', '--agent-variable', [CompletionResultType]::ParameterName, 'Set agent variables')
             [CompletionResult]::new('--rag', '--rag', [CompletionResultType]::ParameterName, 'Start a RAG')
             [CompletionResult]::new('--rebuild-rag', '--rebuild-rag', [CompletionResultType]::ParameterName, 'Rebuild the RAG to sync document changes')
+            [CompletionResult]::new('--macro', '--macro', [CompletionResultType]::ParameterName, 'Execute a macro')
             [CompletionResult]::new('--serve', '--serve', [CompletionResultType]::ParameterName, 'Serve the LLM API and WebAPP')
             [CompletionResult]::new('-e', '-e', [CompletionResultType]::ParameterName, 'Execute commands in natural language')
             [CompletionResult]::new('--execute', '--execute', [CompletionResultType]::ParameterName, 'Execute commands in natural language')
@@ -50,6 +51,7 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             [CompletionResult]::new('--list-sessions', '--list-sessions', [CompletionResultType]::ParameterName, 'List all sessions')
             [CompletionResult]::new('--list-agents', '--list-agents', [CompletionResultType]::ParameterName, 'List all agents')
             [CompletionResult]::new('--list-rags', '--list-rags', [CompletionResultType]::ParameterName, 'List all RAGs')
+            [CompletionResult]::new('--list-macros', '--list-macros', [CompletionResultType]::ParameterName, 'List all macros')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('-V', '-V', [CompletionResultType]::ParameterName, 'Print version')
@@ -77,8 +79,10 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             $completions = Get-AichatValues "--list-sessions"
         } elseif ($flag -ceq "-a" -or $flag -eq "--agent") {
             $completions = Get-AichatValues "--list-agents"
-        } elseif ($flag -ceq "-R" -or $flag -eq "--rag") {
+        } elseif ($flag -eq "--rag") {
             $completions = Get-AichatValues "--list-rags"
+        } elseif ($flag -eq "--macro") {
+            $completions = Get-AichatValues "--list-macros"
         } elseif ($flag -ceq "-f" -or $flag -eq "--file") {
             $completions = @()
         }

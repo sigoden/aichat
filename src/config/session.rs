@@ -234,8 +234,7 @@ impl Session {
                     }
                     MessageRole::User => {
                         lines.push(format!(
-                            "{}）{}",
-                            self.name,
+                            ">> {}",
                             message.content.render_input(resolve_url_fn, agent_info)
                         ));
                     }
