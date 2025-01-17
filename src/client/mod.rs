@@ -35,7 +35,7 @@ register_client!(
     (ernie, "ernie", ErnieConfig, ErnieClient),
 );
 
-pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 21] = [
+pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 22] = [
     ("ai21", "https://api.ai21.com/studio/v1"),
     ("cloudflare", ""),
     ("deepinfra", "https://api.deepinfra.com/v1/openai"),
@@ -45,6 +45,7 @@ pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 21] = [
     ("groq", "https://api.groq.com/openai/v1"),
     ("hunyuan", "https://api.hunyuan.cloud.tencent.com/v1"),
     ("lingyiwanwu", "https://api.lingyiwanwu.com/v1"),
+    ("minimax", "https://api.minimax.chat/v1"),
     ("mistral", "https://api.mistral.ai/v1"),
     ("moonshot", "https://api.moonshot.cn/v1"),
     ("openrouter", "https://openrouter.ai/api/v1"),
