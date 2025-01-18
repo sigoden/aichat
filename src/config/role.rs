@@ -67,7 +67,7 @@ impl Role {
                 prompt = prompt_value.as_str().trim();
             }
         }
-        let mut prompt = complete_prompt_args(prompt, name);
+        let mut prompt = prompt.to_string();
         interpolate_variables(&mut prompt);
         let mut role = Self {
             name: name.to_string(),
@@ -109,23 +109,6 @@ impl Role {
         RolesAsset::iter()
             .filter_map(|v| Role::builtin(&v).ok())
             .collect()
-    }
-
-    pub fn match_name(names: &[String], name: &str) -> Option<String> {
-        if names.contains(&name.to_string()) {
-            Some(name.to_string())
-        } else {
-            let parts: Vec<&str> = name.split('#').collect();
-            let parts_len = parts.len();
-            if parts_len < 2 {
-                return None;
-            }
-            let prefix = format!("{}#", parts[0]);
-            names
-                .iter()
-                .find(|v| v.starts_with(&prefix) && v.split('#').count() == parts_len)
-                .cloned()
-        }
     }
 
     pub fn has_args(&self) -> bool {
@@ -322,14 +305,6 @@ impl RoleLike for Role {
     }
 }
 
-fn complete_prompt_args(prompt: &str, name: &str) -> String {
-    let mut prompt = prompt.to_string();
-    for (i, arg) in name.split('#').skip(1).enumerate() {
-        prompt = prompt.replace(&format!("__ARG{}__", i + 1), arg);
-    }
-    prompt
-}
-
 fn parse_structure_prompt(prompt: &str) -> (&str, Vec<(&str, &str)>) {
     let mut text = prompt;
     let mut search_input = true;
@@ -381,48 +356,6 @@ fn parse_structure_prompt(prompt: &str) -> (&str, Vec<(&str, &str)>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_merge_prompt_name() {
-        assert_eq!(
-            complete_prompt_args("convert __ARG1__", "convert#foo"),
-            "convert foo"
-        );
-        assert_eq!(
-            complete_prompt_args("convert __ARG1__ to __ARG2__", "convert#foo#bar"),
-            "convert foo to bar"
-        );
-    }
-
-    #[test]
-    fn test_match_name() {
-        let names = vec![
-            "convert#yaml#json".into(),
-            "convert#yaml".into(),
-            "convert".into(),
-        ];
-        assert_eq!(
-            Role::match_name(&names, "convert"),
-            Some("convert".to_string())
-        );
-        assert_eq!(
-            Role::match_name(&names, "convert#yaml"),
-            Some("convert#yaml".to_string())
-        );
-        assert_eq!(
-            Role::match_name(&names, "convert#json"),
-            Some("convert#yaml".to_string())
-        );
-        assert_eq!(
-            Role::match_name(&names, "convert#yaml#json"),
-            Some("convert#yaml#json".to_string())
-        );
-        assert_eq!(
-            Role::match_name(&names, "convert#json#yaml"),
-            Some("convert#yaml#json".to_string())
-        );
-        assert_eq!(Role::match_name(&names, "convert#yaml#json#simple"), None,);
-    }
 
     #[test]
     fn test_parse_structure_prompt1() {
