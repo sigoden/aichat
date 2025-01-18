@@ -1688,7 +1688,7 @@ impl Config {
         &self,
         cmd: &str,
         args: &[&str],
-        line: &str,
+        _line: &str,
     ) -> Vec<(String, Option<String>)> {
         let mut values: Vec<(String, Option<String>)> = vec![];
         let mut filter = "";
@@ -1716,7 +1716,12 @@ impl Config {
                 ".agent" => map_completion_values(list_agents()),
                 ".macro" => map_completion_values(Self::list_macros()),
                 ".starter" => match &self.agent {
-                    Some(agent) => map_completion_values(agent.conversation_staters().to_vec()),
+                    Some(agent) => agent
+                        .conversation_staters()
+                        .iter()
+                        .enumerate()
+                        .map(|(i, v)| ((i + 1).to_string(), Some(v.to_string())))
+                        .collect(),
                     None => vec![],
                 },
                 ".set" => {
@@ -1793,20 +1798,12 @@ impl Config {
             };
             values = candidates.into_iter().map(|v| (v, None)).collect();
             filter = args[1];
-        } else if cmd == ".agent" && args.len() >= 2 {
+        } else if cmd == ".agent" && args.len() == 2 {
             let dir = Self::agent_data_dir(args[0]).join(SESSIONS_DIR_NAME);
             values = list_file_names(dir, ".yaml")
                 .into_iter()
                 .map(|v| (v, None))
                 .collect();
-        } else if cmd == ".starter" && args.len() >= 2 {
-            if let Some(agent) = &self.agent {
-                values = agent
-                    .conversation_staters()
-                    .iter()
-                    .filter_map(|v| v.strip_prefix(line).map(|x| (x.to_string(), None)))
-                    .collect()
-            }
         };
         values
             .into_iter()
