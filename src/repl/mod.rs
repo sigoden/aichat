@@ -422,22 +422,21 @@ pub async fn run_repl_command(
             ".agent" => match split_first_arg(args) {
                 Some((agent_name, args)) => {
                     let (new_args, _) = split_args_text(args.unwrap_or_default(), cfg!(windows));
-                    let mut session_name = None;
-                    if let Some((name, variable_pairs)) = new_args.split_first() {
-                        if name != "null" && name != "none" {
-                            session_name = Some(name.as_str());
-                        }
-                        let variables: AgentVariables = variable_pairs
-                            .iter()
-                            .filter_map(|v| v.split_once('='))
-                            .map(|(key, value)| (key.to_string(), value.to_string()))
-                            .collect();
-                        if variables.len() != variable_pairs.len() {
-                            bail!("Some variable key-value pairs are invalid");
-                        }
-                        if !variables.is_empty() {
-                            config.write().agent_variables = Some(variables);
-                        }
+                    let (session_name, variable_pairs) = match new_args.first() {
+                        Some(name) if name.contains('=') => (None, new_args.as_slice()),
+                        Some(name) => (Some(name.as_str()), &new_args[1..]),
+                        None => (None, &[] as &[String]),
+                    };
+                    let variables: AgentVariables = variable_pairs
+                        .iter()
+                        .filter_map(|v| v.split_once('='))
+                        .map(|(key, value)| (key.to_string(), value.to_string()))
+                        .collect();
+                    if variables.len() != variable_pairs.len() {
+                        bail!("Some variable values are not key=value pairs");
+                    }
+                    if !variables.is_empty() {
+                        config.write().agent_variables = Some(variables);
                     }
                     let ret =
                         Config::use_agent(config, agent_name, session_name, abort_signal.clone())
@@ -446,7 +445,7 @@ pub async fn run_repl_command(
                     ret?;
                 }
                 None => {
-                    println!(r#"Usage: .agent <agent-name> [session-name|null] [key=value]..."#)
+                    println!(r#"Usage: .agent <agent-name> [session-name] [key=value]..."#)
                 }
             },
             ".starter" => match args {

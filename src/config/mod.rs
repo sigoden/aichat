@@ -3,7 +3,7 @@ mod input;
 mod role;
 mod session;
 
-pub use self::agent::{list_agents, Agent, AgentVariables};
+pub use self::agent::{list_agents, Agent, AgentDefinition, AgentVariables};
 pub use self::input::Input;
 pub use self::role::{
     Role, RoleLike, CODE_ROLE, CREATE_TITLE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE,
@@ -1798,12 +1798,25 @@ impl Config {
             };
             values = candidates.into_iter().map(|v| (v, None)).collect();
             filter = args[1];
-        } else if cmd == ".agent" && args.len() == 2 {
-            let dir = Self::agent_data_dir(args[0]).join(SESSIONS_DIR_NAME);
-            values = list_file_names(dir, ".yaml")
-                .into_iter()
-                .map(|v| (v, None))
-                .collect();
+        } else if cmd == ".agent" {
+            if args.len() == 2 {
+                let dir = Self::agent_data_dir(args[0]).join(SESSIONS_DIR_NAME);
+                values = list_file_names(dir, ".yaml")
+                    .into_iter()
+                    .map(|v| (v, None))
+                    .collect();
+            }
+            let definition_file_path = Self::agent_functions_dir(args[0]).join("index.yaml");
+            if definition_file_path.exists() {
+                if let Ok(definition) = AgentDefinition::load(&definition_file_path) {
+                    values.extend(
+                        definition
+                            .variables
+                            .iter()
+                            .map(|v| (format!("{}=", v.name), Some(v.description.clone()))),
+                    );
+                }
+            }
         };
         values
             .into_iter()
