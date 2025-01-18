@@ -13,7 +13,7 @@ use crate::config::{
 };
 use crate::render::render_error;
 use crate::utils::{
-    abortable_run_with_spinner, create_abort_signal, set_text, temp_file, AbortSignal,
+    abortable_run_with_spinner, create_abort_signal, dimmed_text, set_text, temp_file, AbortSignal,
 };
 
 use anyhow::{bail, Context, Result};
@@ -450,9 +450,25 @@ pub async fn run_repl_command(
                 }
             },
             ".starter" => match args {
-                Some(value) => {
-                    let input = Input::from_str(config, value, None);
-                    ask(config, abort_signal.clone(), input, true).await?;
+                Some(id) => {
+                    let mut text = None;
+                    if let Some(agent) = config.read().agent.as_ref() {
+                        for (i, value) in agent.conversation_staters().iter().enumerate() {
+                            if (i + 1).to_string() == id {
+                                text = Some(value.clone());
+                            }
+                        }
+                    }
+                    match text {
+                        Some(text) => {
+                            println!("{}", dimmed_text(&format!(">> {}", text)));
+                            let input = Input::from_str(config, &text, None);
+                            ask(config, abort_signal.clone(), input, true).await?;
+                        }
+                        None => {
+                            bail!("Invalid starter value");
+                        }
+                    }
                 }
                 None => {
                     let banner = config.read().agent_banner()?;
