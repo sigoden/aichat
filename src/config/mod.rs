@@ -237,7 +237,7 @@ impl Default for Config {
 pub type GlobalConfig = Arc<RwLock<Config>>;
 
 impl Config {
-    pub fn init(working_mode: WorkingMode) -> Result<Self> {
+    pub fn init(working_mode: WorkingMode, info_flag: bool) -> Result<Self> {
         let config_path = Self::config_file();
         let mut config = if !config_path.exists() {
             match env::var(get_env_name("platform")) {
@@ -254,19 +254,26 @@ impl Config {
         };
 
         config.working_mode = working_mode;
+        config.info_flag = info_flag;
 
-        config.load_envs();
+        let setup = |config: &mut Self| -> Result<()> {
+            config.load_envs();
 
-        if let Some(wrap) = config.wrap.clone() {
-            config.set_wrap(&wrap)?;
+            if let Some(wrap) = config.wrap.clone() {
+                config.set_wrap(&wrap)?;
+            }
+
+            config.load_functions()?;
+
+            config.setup_model()?;
+            config.setup_document_loaders();
+            config.setup_user_agent();
+            Ok(())
+        };
+        let ret = setup(&mut config);
+        if !info_flag {
+            ret?;
         }
-
-        config.load_functions()?;
-
-        config.setup_model()?;
-        config.setup_document_loaders();
-        config.setup_user_agent();
-
         Ok(config)
     }
 
