@@ -322,7 +322,7 @@ _argc_before() {
         mistral,mistral-small-latest,https://api.mistral.ai/v1 \
         moonshot,moonshot-v1-8k,https://api.moonshot.cn/v1 \
         openrouter,openai/gpt-4o-mini,https://openrouter.ai/api/v1 \
-        ollama,llama3.1:latest,${OLLAMA_HOST:-"http://127.0.0.1:11434"}/v1 \
+        ollama,llama3.1:latest,http://${OLLAMA_HOST:-"127.0.0.1:11434"}/v1 \
         perplexity,llama-3.1-8b-instruct,https://api.perplexity.ai \
         qianwen,qwen-turbo-latest,https://dashscope.aliyuncs.com/compatible-mode/v1 \
         siliconflow,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.siliconflow.cn/v1 \
