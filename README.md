@@ -59,7 +59,7 @@ Accept diverse input forms such as stdin, local files and directories, and remot
 | External commands | ```aichat -f '`git diff`'```         | ```.file `git diff` ```          |
 | Combine Inputs    | `aichat -f dir/ -f data.txt explain` | `.file dir/ data.txt -- explain` |
 
-### Role (Prompt library)
+### Role
 
 Customize roles to tailor LLM behavior, enhancing interaction efficiency and boosting productivity.
 
@@ -67,7 +67,7 @@ Customize roles to tailor LLM behavior, enhancing interaction efficiency and boo
 
 > The role consists of a prompt and model configuration.
 
-### Session (Context-aware conversation)
+### Session
 
 Maintain context-aware conversations through sessions, ensuring continuity in interactions.
 
@@ -75,13 +75,13 @@ Maintain context-aware conversations through sessions, ensuring continuity in in
 
 > The left side uses a session, while the right side does not use a session.
 
-### Macro (Custom commands)
+### Macro
 
-Macros are predefined sequences of REPL commands that automate repetitive tasks or workflows.
+Streamline repetitive tasks by combining a series of REPL commands into a custom macro.
 
 ![aichat-macro](https://github.com/user-attachments/assets/23c2a08f-5bd7-4bf3-817c-c484aa74a651)
 
-### RAG (Chat with your documents)
+### RAG
 
 Integrate external documents into your LLM conversations for more accurate and contextually relevant responses.
 
