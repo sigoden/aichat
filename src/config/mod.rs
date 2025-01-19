@@ -3,7 +3,7 @@ mod input;
 mod role;
 mod session;
 
-pub use self::agent::{list_agents, Agent, AgentDefinition, AgentVariables};
+pub use self::agent::{complete_agent_variables, list_agents, Agent, AgentVariables};
 pub use self::input::Input;
 pub use self::role::{
     Role, RoleLike, CODE_ROLE, CREATE_TITLE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE,
@@ -1739,7 +1739,7 @@ impl Config {
         _line: &str,
     ) -> Vec<(String, Option<String>)> {
         let mut values: Vec<(String, Option<String>)> = vec![];
-        let mut filter = "";
+        let filter = args.last().unwrap_or(&"");
         if args.len() == 1 {
             values = match cmd {
                 ".role" => map_completion_values(Self::list_roles(true)),
@@ -1799,7 +1799,6 @@ impl Config {
                 }
                 _ => vec![],
             };
-            filter = args[0]
         } else if cmd == ".set" && args.len() == 2 {
             let candidates = match args[0] {
                 "max_output_tokens" => match self.model.max_output_tokens() {
@@ -1845,7 +1844,6 @@ impl Config {
                 _ => vec![],
             };
             values = candidates.into_iter().map(|v| (v, None)).collect();
-            filter = args[1];
         } else if cmd == ".agent" {
             if args.len() == 2 {
                 let dir = Self::agent_data_dir(args[0]).join(SESSIONS_DIR_NAME);
@@ -1854,17 +1852,7 @@ impl Config {
                     .map(|v| (v, None))
                     .collect();
             }
-            let definition_file_path = Self::agent_functions_dir(args[0]).join("index.yaml");
-            if definition_file_path.exists() {
-                if let Ok(definition) = AgentDefinition::load(&definition_file_path) {
-                    values.extend(
-                        definition
-                            .variables
-                            .iter()
-                            .map(|v| (format!("{}=", v.name), Some(v.description.clone()))),
-                    );
-                }
-            }
+            values.extend(complete_agent_variables(args[0]));
         };
         values
             .into_iter()

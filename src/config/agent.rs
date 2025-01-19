@@ -532,3 +532,24 @@ pub fn list_agents() -> Vec<String> {
         })
         .collect()
 }
+
+pub fn complete_agent_variables(agent_name: &str) -> Vec<(String, Option<String>)> {
+    let index_path = Config::agent_functions_dir(agent_name).join("index.yaml");
+    if !index_path.exists() {
+        return vec![];
+    }
+    let Ok(definition) = AgentDefinition::load(&index_path) else {
+        return vec![];
+    };
+    definition
+        .variables
+        .iter()
+        .map(|v| {
+            let description = match &v.default {
+                Some(default) => format!("{} [default: {default}]", v.description),
+                None => v.description.clone(),
+            };
+            (format!("{}=", v.name), Some(description))
+        })
+        .collect()
+}
