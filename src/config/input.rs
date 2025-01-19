@@ -88,7 +88,7 @@ impl Input {
                 }
             }
         }
-        let (files, medias, data_urls) =
+        let (documents, medias, data_urls) =
             load_documents(config, external_cmds, local_paths, remote_urls)
                 .await
                 .context("Failed to load files")?;
@@ -104,17 +104,22 @@ impl Input {
                     last_reply = Some(v.clone());
                 }
                 if let Some(v) = last_reply.clone() {
-                    texts.push(format!("\n{v}\n"));
+                    texts.push(format!("\n{v}"));
                 }
             }
-            if last_reply.is_none() && files.is_empty() && medias.is_empty() {
+            if last_reply.is_none() && documents.is_empty() && medias.is_empty() {
                 bail!("No last reply found");
             }
         }
-        for (kind, path, contents) in files {
-            texts.push(format!(
-                "\n============ {kind}: {path} ============\n{contents}"
-            ));
+        let documents_len = documents.len();
+        for (kind, path, contents) in documents {
+            if documents_len == 1 {
+                texts.push(format!("\n{contents}"));
+            } else {
+                texts.push(format!(
+                    "\n============ {kind}: {path} ============\n{contents}"
+                ));
+            }
         }
         let (role, with_session, with_agent) = resolve_role(&config.read(), role);
         Ok(Self {

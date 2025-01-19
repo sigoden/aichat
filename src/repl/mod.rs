@@ -30,18 +30,18 @@ const MENU_NAME: &str = "completion_menu";
 
 lazy_static::lazy_static! {
     static ref REPL_COMMANDS: [ReplCommand; 36] = [
-        ReplCommand::new(".help", "Show this help message", AssertState::pass()),
+        ReplCommand::new(".help", "Show this help guide", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
-        ReplCommand::new(".edit config", "Edit the configuration file", AssertState::False(StateFlags::AGENT)),
-        ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
+        ReplCommand::new(".edit config", "Edit configuration file", AssertState::False(StateFlags::AGENT)),
+        ReplCommand::new(".model", "Switch LLM model", AssertState::pass()),
         ReplCommand::new(
             ".prompt",
-            "Create a temporary role using a prompt",
+            "Set a temporary role using a prompt",
             AssertState::False(StateFlags::SESSION | StateFlags::AGENT)
         ),
         ReplCommand::new(
             ".role",
-            "Create or switch to a specific role",
+            "Create or switch to a role",
             AssertState::False(StateFlags::SESSION | StateFlags::AGENT)
         ),
         ReplCommand::new(
@@ -51,32 +51,32 @@ lazy_static::lazy_static! {
         ),
         ReplCommand::new(
             ".edit role",
-            "Edit the current role",
+            "Edit current role",
             AssertState::TrueFalse(StateFlags::ROLE, StateFlags::SESSION),
         ),
         ReplCommand::new(
             ".save role",
-            "Save the current role to file",
+            "Save current role to file",
             AssertState::TrueFalse(StateFlags::ROLE, StateFlags::SESSION_EMPTY | StateFlags::SESSION),
         ),
         ReplCommand::new(
             ".exit role",
-            "Leave the role",
+            "Exit active role",
             AssertState::TrueFalse(StateFlags::ROLE, StateFlags::SESSION),
         ),
         ReplCommand::new(
             ".session",
-            "Begin a session",
+            "Start or switch to a session",
             AssertState::False(StateFlags::SESSION_EMPTY | StateFlags::SESSION),
         ),
         ReplCommand::new(
             ".empty session",
-            "Erase messages in the current session",
+            "Clear session messages",
             AssertState::True(StateFlags::SESSION)
         ),
         ReplCommand::new(
             ".compress session",
-            "Compress messages in the current session",
+            "Compress session messages",
             AssertState::True(StateFlags::SESSION)
         ),
         ReplCommand::new(
@@ -86,28 +86,28 @@ lazy_static::lazy_static! {
         ),
         ReplCommand::new(
             ".edit session",
-            "Edit the current session",
+            "Edit current session",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
         ReplCommand::new(
             ".save session",
-            "Save the current session to file",
+            "Save current session to file",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
         ReplCommand::new(
             ".exit session",
-            "End the session",
+            "Exit active session",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
-        ReplCommand::new(".agent", "Use a agent", AssertState::bare()),
+        ReplCommand::new(".agent", "Use an agent", AssertState::bare()),
         ReplCommand::new(
             ".starter",
-            "Use the conversation starter",
+            "Use a conversation starter",
             AssertState::True(StateFlags::AGENT)
         ),
         ReplCommand::new(
             ".edit agent-config",
-            "Edit the agent-specific config file",
+            "Edit agent configuration file",
             AssertState::True(StateFlags::AGENT),
         ),
         ReplCommand::new(
@@ -117,27 +117,27 @@ lazy_static::lazy_static! {
         ),
         ReplCommand::new(
             ".exit agent",
-            "Leave the agent",
+            "Leave agent",
             AssertState::True(StateFlags::AGENT)
         ),
         ReplCommand::new(
             ".rag",
-            "Init or use the RAG",
+            "Initialize or access RAG",
             AssertState::False(StateFlags::AGENT)
         ),
         ReplCommand::new(
             ".edit rag-docs",
-            "Edit the RAG documents",
+            "Manage RAG documents",
             AssertState::TrueFalse(StateFlags::RAG, StateFlags::AGENT),
         ),
         ReplCommand::new(
             ".rebuild rag",
-            "Rebuild the RAG to sync document changes",
+            "Rebuild RAG for document changes",
             AssertState::True(StateFlags::RAG),
         ),
         ReplCommand::new(
             ".sources rag",
-            "View the RAG sources in the last query",
+            "View RAG sources for last query",
             AssertState::True(StateFlags::RAG),
         ),
         ReplCommand::new(
@@ -147,7 +147,7 @@ lazy_static::lazy_static! {
         ),
         ReplCommand::new(
             ".exit rag",
-            "Leave the RAG",
+            "Leave RAG",
             AssertState::TrueFalse(StateFlags::RAG, StateFlags::AGENT),
         ),
         ReplCommand::new(
@@ -160,16 +160,16 @@ lazy_static::lazy_static! {
             "Include files, directories, URLs or commands",
             AssertState::pass()
         ),
-        ReplCommand::new(".continue", "Continue the response", AssertState::pass()),
+        ReplCommand::new(".continue", "Continue previous response", AssertState::pass()),
         ReplCommand::new(
             ".regenerate",
-            "Regenerate the response",
+            "Regenerate last response",
             AssertState::pass()
         ),
-        ReplCommand::new(".copy", "Copy the last chat response", AssertState::pass()),
-        ReplCommand::new(".set", "Adjust runtime configuration", AssertState::pass()),
-        ReplCommand::new(".delete", "Delete roles/sessions/RAGs/agents", AssertState::pass()),
-        ReplCommand::new(".exit", "Exit the REPL", AssertState::pass()),
+        ReplCommand::new(".copy", "Copy last response", AssertState::pass()),
+        ReplCommand::new(".set", "Modify runtime settings", AssertState::pass()),
+        ReplCommand::new(".delete", "Delete roles, sessions, RAGs, or agents", AssertState::pass()),
+        ReplCommand::new(".exit", "Exit REPL", AssertState::pass()),
     ];
     static ref COMMAND_RE: Regex = Regex::new(r"^\s*(\.\S*)\s*").unwrap();
     static ref MULTILINE_RE: Regex = Regex::new(r"(?s)^\s*:::\s*(.*)\s*:::\s*$").unwrap();
