@@ -29,9 +29,10 @@ use std::{env, process};
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static::lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 34] = [
+    static ref REPL_COMMANDS: [ReplCommand; 36] = [
         ReplCommand::new(".help", "Show this help message", AssertState::pass()),
         ReplCommand::new(".info", "View system info", AssertState::pass()),
+        ReplCommand::new(".edit config", "Edit the configuration file", AssertState::False(StateFlags::AGENT)),
         ReplCommand::new(".model", "Change the current LLM", AssertState::pass()),
         ReplCommand::new(
             ".prompt",
@@ -103,6 +104,11 @@ lazy_static::lazy_static! {
             ".starter",
             "Use the conversation starter",
             AssertState::True(StateFlags::AGENT)
+        ),
+        ReplCommand::new(
+            ".edit agent-config",
+            "Edit the agent-specific config file",
+            AssertState::True(StateFlags::AGENT),
         ),
         ReplCommand::new(
             ".info agent",
@@ -490,6 +496,9 @@ pub async fn run_repl_command(
                     bail!("Cannot perform this operation because you are in a macro")
                 }
                 match args {
+                    Some("config") => {
+                        config.read().edit_config()?;
+                    }
                     Some("role") => {
                         config.write().edit_role()?;
                     }
@@ -499,8 +508,11 @@ pub async fn run_repl_command(
                     Some("rag-docs") => {
                         Config::edit_rag_docs(config, abort_signal.clone()).await?;
                     }
+                    Some("agent-config") => {
+                        config.write().edit_agent_config()?;
+                    }
                     _ => {
-                        println!(r#"Usage: .edit <role|session|rag-docs>"#)
+                        println!(r#"Usage: .edit <config|role|session|rag-docs|agent-config>"#)
                     }
                 }
             }

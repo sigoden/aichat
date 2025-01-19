@@ -474,6 +474,18 @@ impl Config {
         Ok((log_level, log_path))
     }
 
+    pub fn edit_config(&self) -> Result<()> {
+        let config_path = Self::config_file();
+        let editor = self.editor()?;
+        edit_file(&editor, &config_path)?;
+        println!(
+            "NOTE: Remember to restart {} if there are changes made to '{}",
+            env!("CARGO_CRATE_NAME"),
+            config_path.display(),
+        );
+        Ok(())
+    }
+
     pub fn current_model(&self) -> &Model {
         if let Some(session) = self.session.as_ref() {
             session.model()
@@ -953,6 +965,9 @@ impl Config {
         ensure_parent_exists(&role_path)?;
         let editor = self.editor()?;
         edit_file(&editor, &role_path)?;
+        if self.working_mode.is_repl() {
+            println!("✓ Saved the role to '{}'.", role_path.display());
+        }
         Ok(())
     }
 
@@ -1506,6 +1521,34 @@ impl Config {
         } else {
             bail!("No agent")
         }
+    }
+
+    pub fn edit_agent_config(&self) -> Result<()> {
+        let agent_name = match &self.agent {
+            Some(agent) => agent.name(),
+            None => bail!("No agent"),
+        };
+        let agent_config_path = Config::agent_config_file(agent_name);
+        ensure_parent_exists(&agent_config_path)?;
+        if !agent_config_path.exists() {
+            std::fs::write(
+                &agent_config_path,
+                "# see https://github.com/sigoden/aichat/blob/main/config.agent.example.yaml\n",
+            )
+            .with_context(|| {
+                format!(
+                    "Failed to write to agent config file at '{}'",
+                    agent_config_path.display()
+                )
+            })?;
+        }
+        let editor = self.editor()?;
+        edit_file(&editor, &agent_config_path)?;
+        println!(
+            "NOTE: Remember to reload the agent if there are changes made to '{}'",
+            agent_config_path.display()
+        );
+        Ok(())
     }
 
     pub fn exit_agent(&mut self) -> Result<()> {
@@ -2550,7 +2593,12 @@ fn create_config_file(config_path: &Path) -> Result<()> {
     );
 
     ensure_parent_exists(config_path)?;
-    std::fs::write(config_path, config_data).with_context(|| "Failed to write to config file")?;
+    std::fs::write(config_path, config_data).with_context(|| {
+        format!(
+            "Failed to write to config file at '{}'",
+            config_path.display()
+        )
+    })?;
     #[cfg(unix)]
     {
         use std::os::unix::prelude::PermissionsExt;
@@ -2558,7 +2606,7 @@ fn create_config_file(config_path: &Path) -> Result<()> {
         std::fs::set_permissions(config_path, perms)?;
     }
 
-    println!("✓ Saved config file to '{}'.\n", config_path.display());
+    println!("✓ Saved the config file to '{}'.\n", config_path.display());
 
     Ok(())
 }
