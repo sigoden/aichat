@@ -45,8 +45,15 @@ async fn main() -> Result<()> {
     } else {
         WorkingMode::Cmd
     };
+    let info_flag = cli.info
+        || cli.list_models
+        || cli.list_roles
+        || cli.list_agents
+        || cli.list_rags
+        || cli.list_macros
+        || cli.list_sessions;
     setup_logger(working_mode.is_serve())?;
-    let config = Arc::new(RwLock::new(Config::init(working_mode)?));
+    let config = Arc::new(RwLock::new(Config::init(working_mode, info_flag)?));
     if let Err(err) = run(config, cli, text).await {
         render_error(err);
         std::process::exit(1);
@@ -56,13 +63,6 @@ async fn main() -> Result<()> {
 
 async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()> {
     let abort_signal = create_abort_signal();
-
-    if let Some(addr) = cli.serve {
-        return serve::run(config, addr).await;
-    }
-    if cli.info {
-        config.write().info_flag = true;
-    }
 
     if cli.list_models {
         for model in list_models(&config.read(), ModelType::Chat) {
@@ -152,6 +152,9 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         let info = config.read().info()?;
         println!("{}", info);
         return Ok(());
+    }
+    if let Some(addr) = cli.serve {
+        return serve::run(config, addr).await;
     }
     let is_repl = config.read().working_mode.is_repl();
     if cli.rebuild_rag {
