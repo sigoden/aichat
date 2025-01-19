@@ -49,7 +49,7 @@ pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 22] = [
     ("mistral", "https://api.mistral.ai/v1"),
     ("moonshot", "https://api.moonshot.cn/v1"),
     ("openrouter", "https://openrouter.ai/api/v1"),
-    ("ollama", ""),
+    ("ollama", "http://127.0.0.1:11434/v1"),
     ("perplexity", "https://api.perplexity.ai"),
     (
         "qianwen",
