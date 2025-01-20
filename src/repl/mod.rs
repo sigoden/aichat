@@ -31,8 +31,8 @@ const MENU_NAME: &str = "completion_menu";
 lazy_static::lazy_static! {
     static ref REPL_COMMANDS: [ReplCommand; 36] = [
         ReplCommand::new(".help", "Show this help guide", AssertState::pass()),
-        ReplCommand::new(".info", "View system info", AssertState::pass()),
-        ReplCommand::new(".edit config", "Edit configuration file", AssertState::False(StateFlags::AGENT)),
+        ReplCommand::new(".info", "Show system info", AssertState::pass()),
+        ReplCommand::new(".edit config", "Modify configuration file", AssertState::False(StateFlags::AGENT)),
         ReplCommand::new(".model", "Switch LLM model", AssertState::pass()),
         ReplCommand::new(
             ".prompt",
@@ -46,12 +46,12 @@ lazy_static::lazy_static! {
         ),
         ReplCommand::new(
             ".info role",
-            "View role info",
+            "Show role info",
             AssertState::True(StateFlags::ROLE),
         ),
         ReplCommand::new(
             ".edit role",
-            "Edit current role",
+            "Modify current role",
             AssertState::TrueFalse(StateFlags::ROLE, StateFlags::SESSION),
         ),
         ReplCommand::new(
@@ -81,12 +81,12 @@ lazy_static::lazy_static! {
         ),
         ReplCommand::new(
             ".info session",
-            "View session info",
+            "Show session info",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION),
         ),
         ReplCommand::new(
             ".edit session",
-            "Edit current session",
+            "Modify current session",
             AssertState::True(StateFlags::SESSION_EMPTY | StateFlags::SESSION)
         ),
         ReplCommand::new(
@@ -107,12 +107,12 @@ lazy_static::lazy_static! {
         ),
         ReplCommand::new(
             ".edit agent-config",
-            "Edit agent configuration file",
+            "Modify agent configuration file",
             AssertState::True(StateFlags::AGENT),
         ),
         ReplCommand::new(
             ".info agent",
-            "View agent info",
+            "Show agent info",
             AssertState::True(StateFlags::AGENT),
         ),
         ReplCommand::new(
@@ -127,7 +127,7 @@ lazy_static::lazy_static! {
         ),
         ReplCommand::new(
             ".edit rag-docs",
-            "Manage RAG documents",
+            "Add or remove documents from an existing RAG",
             AssertState::TrueFalse(StateFlags::RAG, StateFlags::AGENT),
         ),
         ReplCommand::new(
@@ -137,12 +137,12 @@ lazy_static::lazy_static! {
         ),
         ReplCommand::new(
             ".sources rag",
-            "View RAG sources for last query",
+            "Show RAG sources for last query",
             AssertState::True(StateFlags::RAG),
         ),
         ReplCommand::new(
             ".info rag",
-            "View RAG info",
+            "Show RAG info",
             AssertState::True(StateFlags::RAG),
         ),
         ReplCommand::new(
