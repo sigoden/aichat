@@ -249,9 +249,6 @@ impl Input {
         model: &Model,
         stream: bool,
     ) -> Result<ChatCompletionsData> {
-        if !self.medias.is_empty() && !model.supports_vision() {
-            bail!("The current model does not support vision. Is the model configured with `supports_vision: true`?");
-        }
         let mut messages = self.build_messages()?;
         if model.no_system_message() {
             patch_system_message(&mut messages);

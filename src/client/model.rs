@@ -178,10 +178,6 @@ impl Model {
         self.data.max_output_tokens
     }
 
-    pub fn supports_vision(&self) -> bool {
-        self.data.supports_vision
-    }
-
     pub fn no_stream(&self) -> bool {
         self.data.no_stream
     }
