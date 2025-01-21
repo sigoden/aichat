@@ -2568,7 +2568,7 @@ fn create_config_file(config_path: &Path) -> Result<()> {
         process::exit(0);
     }
 
-    let client = Select::new("Platform:", list_client_types()).prompt()?;
+    let client = Select::new("API Provider (required):", list_client_types()).prompt()?;
 
     let mut config = serde_json::json!({});
     let (model, clients_config) = create_client_config(client)?;

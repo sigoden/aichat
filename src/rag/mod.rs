@@ -842,6 +842,24 @@ fn select_embedding_model(models: &[&Model]) -> Result<String> {
     Ok(result.value)
 }
 
+#[derive(Debug)]
+struct SelectOption {
+    pub value: String,
+    pub description: String,
+}
+
+impl SelectOption {
+    pub fn new(value: String, description: String) -> Self {
+        Self { value, description }
+    }
+}
+
+impl std::fmt::Display for SelectOption {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} ({})", self.value, self.description)
+    }
+}
+
 fn set_chunk_size(model: &Model) -> Result<usize> {
     let default_value = model.default_chunk_size().to_string();
     let help_message = model

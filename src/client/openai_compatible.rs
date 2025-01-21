@@ -21,18 +21,7 @@ impl OpenAICompatibleClient {
     config_get_fn!(api_base, get_api_base);
     config_get_fn!(api_key, get_api_key);
 
-    pub const PROMPTS: [PromptAction<'static>; 5] = [
-        ("name", "Platform Name:", true, PromptKind::String),
-        ("api_base", "API Base:", true, PromptKind::String),
-        ("api_key", "API Key:", false, PromptKind::String),
-        ("models[].name", "Model Name:", true, PromptKind::String),
-        (
-            "models[].max_input_tokens",
-            "Max Input Tokens:",
-            false,
-            PromptKind::Integer,
-        ),
-    ];
+    pub const PROMPTS: [PromptAction<'static>; 0] = [];
 }
 
 impl_client_trait!(

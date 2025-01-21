@@ -7,7 +7,6 @@ mod model;
 mod stream;
 
 pub use crate::function::ToolCall;
-pub use crate::utils::PromptKind;
 pub use common::*;
 pub use message::*;
 pub use model::*;
@@ -37,7 +36,10 @@ register_client!(
 
 pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 22] = [
     ("ai21", "https://api.ai21.com/studio/v1"),
-    ("cloudflare", ""),
+    (
+        "cloudflare",
+        "https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/ai/v1",
+    ),
     ("deepinfra", "https://api.deepinfra.com/v1/openai"),
     ("deepseek", "https://api.deepseek.com"),
     ("fireworks", "https://api.fireworks.ai/inference/v1"),
@@ -49,7 +51,7 @@ pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 22] = [
     ("mistral", "https://api.mistral.ai/v1"),
     ("moonshot", "https://api.moonshot.cn/v1"),
     ("openrouter", "https://openrouter.ai/api/v1"),
-    ("ollama", "http://127.0.0.1:11434/v1"),
+    ("ollama", "http://{OLLAMA_HOST}:11434/v1"),
     ("perplexity", "https://api.perplexity.ai"),
     (
         "qianwen",
