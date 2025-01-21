@@ -137,7 +137,7 @@ lazy_static::lazy_static! {
         ),
         ReplCommand::new(
             ".sources rag",
-            "Show RAG sources for last query",
+            "Show citation sources used in last query",
             AssertState::True(StateFlags::RAG),
         ),
         ReplCommand::new(
