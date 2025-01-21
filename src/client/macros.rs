@@ -89,7 +89,7 @@ macro_rules! register_client {
 
         pub fn create_client_config(client: &str) -> anyhow::Result<(String, serde_json::Value)> {
             $(
-                if client == $client::NAME {
+                if client == $client::NAME && client != $crate::client::OpenAICompatibleClient::NAME {
                     return create_config(&$client::PROMPTS, $client::NAME)
                 }
             )+

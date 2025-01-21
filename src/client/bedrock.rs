@@ -31,19 +31,9 @@ impl BedrockClient {
     config_get_fn!(region, get_region);
 
     pub const PROMPTS: [PromptAction<'static>; 3] = [
-        (
-            "access_key_id",
-            "AWS Access Key ID",
-            true,
-            PromptKind::String,
-        ),
-        (
-            "secret_access_key",
-            "AWS Secret Access Key",
-            true,
-            PromptKind::String,
-        ),
-        ("region", "AWS Region", true, PromptKind::String),
+        ("access_key_id", "AWS Access Key ID", None),
+        ("secret_access_key", "AWS Secret Access Key", None),
+        ("region", "AWS Region", None),
     ];
 
     fn chat_completions_builder(
