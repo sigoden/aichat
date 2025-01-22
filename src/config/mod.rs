@@ -3,7 +3,7 @@ mod input;
 mod role;
 mod session;
 
-pub use self::agent::{list_agents, Agent, AgentDefinition, AgentVariables};
+pub use self::agent::{complete_agent_variables, list_agents, Agent, AgentVariables};
 pub use self::input::Input;
 pub use self::role::{
     Role, RoleLike, CODE_ROLE, CREATE_TITLE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE,
@@ -12,7 +12,7 @@ use self::session::Session;
 
 use crate::client::{
     create_client_config, list_client_types, list_models, ClientConfig, MessageContentToolCalls,
-    Model, ModelType, OPENAI_COMPATIBLE_PLATFORMS,
+    Model, ModelType, ProviderModels, OPENAI_COMPATIBLE_PROVIDERS,
 };
 use crate::function::{FunctionDeclaration, Functions, ToolResult};
 use crate::rag::Rag;
@@ -24,7 +24,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use indexmap::IndexMap;
 use inquire::{list_option::ListOption, validator::Validation, Confirm, MultiSelect, Select, Text};
 use parking_lot::RwLock;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use simplelog::LevelFilter;
 use std::collections::{HashMap, HashSet};
@@ -63,6 +63,9 @@ const AGENTS_DIR_NAME: &str = "agents";
 const CLIENTS_FIELD: &str = "clients";
 
 const SERVE_ADDR: &str = "127.0.0.1:8000";
+
+const SYNC_MODELS_URL: &str =
+    "https://raw.githubusercontent.com/sigoden/aichat/refs/heads/main/models.yaml";
 
 const SUMMARIZE_PROMPT: &str =
     "Summarize the discussion briefly in 200 words or less to use as a prompt for future context.";
@@ -140,6 +143,7 @@ pub struct Config {
     pub serve_addr: Option<String>,
     pub user_agent: Option<String>,
     pub save_shell_history: bool,
+    pub sync_models_url: Option<String>,
 
     pub clients: Vec<ClientConfig>,
 
@@ -214,6 +218,7 @@ impl Default for Config {
             serve_addr: None,
             user_agent: None,
             save_shell_history: true,
+            sync_models_url: None,
 
             clients: vec![],
 
@@ -240,9 +245,12 @@ impl Config {
     pub fn init(working_mode: WorkingMode, info_flag: bool) -> Result<Self> {
         let config_path = Self::config_file();
         let mut config = if !config_path.exists() {
-            match env::var(get_env_name("platform")) {
-                Ok(v) => Self::load_dynamic(&v)?,
-                Err(_) => {
+            match env::var(get_env_name("provider"))
+                .ok()
+                .or_else(|| env::var(get_env_name("platform")).ok())
+            {
+                Some(v) => Self::load_dynamic(&v)?,
+                None => {
                     if *IS_STDOUT_TERMINAL {
                         create_config_file(&config_path)?;
                     }
@@ -417,6 +425,10 @@ impl Config {
         }
     }
 
+    pub fn models_override_file() -> PathBuf {
+        Self::local_path("models-override.json")
+    }
+
     pub fn state(&self) -> StateFlags {
         let mut flags = StateFlags::empty();
         if let Some(session) = &self.session {
@@ -472,6 +484,18 @@ impl Config {
             },
         };
         Ok((log_level, log_path))
+    }
+
+    pub fn edit_config(&self) -> Result<()> {
+        let config_path = Self::config_file();
+        let editor = self.editor()?;
+        edit_file(&editor, &config_path)?;
+        println!(
+            "NOTE: Remember to restart {} if there are changes made to '{}",
+            env!("CARGO_CRATE_NAME"),
+            config_path.display(),
+        );
+        Ok(())
     }
 
     pub fn current_model(&self) -> &Model {
@@ -953,6 +977,9 @@ impl Config {
         ensure_parent_exists(&role_path)?;
         let editor = self.editor()?;
         edit_file(&editor, &role_path)?;
+        if self.working_mode.is_repl() {
+            println!("✓ Saved the role to '{}'.", role_path.display());
+        }
         Ok(())
     }
 
@@ -1347,23 +1374,12 @@ impl Config {
         let temp_file = temp_file(&format!("-rag-{}", rag.name()), ".txt");
         tokio::fs::write(&temp_file, &document_paths.join("\n"))
             .await
-            .with_context(|| {
-                format!(
-                    "Failed to write current document paths to '{}'",
-                    temp_file.display()
-                )
-            })?;
+            .with_context(|| format!("Failed to write to '{}'", temp_file.display()))?;
         let editor = config.read().editor()?;
         edit_file(&editor, &temp_file)?;
-        let new_document_paths =
-            tokio::fs::read_to_string(&temp_file)
-                .await
-                .with_context(|| {
-                    format!(
-                        "Failed to read new document paths from '{}'",
-                        temp_file.display()
-                    )
-                })?;
+        let new_document_paths = tokio::fs::read_to_string(&temp_file)
+            .await
+            .with_context(|| format!("Failed to read '{}'", temp_file.display()))?;
         let new_document_paths = new_document_paths
             .split('\n')
             .filter_map(|v| {
@@ -1506,6 +1522,29 @@ impl Config {
         } else {
             bail!("No agent")
         }
+    }
+
+    pub fn edit_agent_config(&self) -> Result<()> {
+        let agent_name = match &self.agent {
+            Some(agent) => agent.name(),
+            None => bail!("No agent"),
+        };
+        let agent_config_path = Config::agent_config_file(agent_name);
+        ensure_parent_exists(&agent_config_path)?;
+        if !agent_config_path.exists() {
+            std::fs::write(
+                &agent_config_path,
+                "# see https://github.com/sigoden/aichat/blob/main/config.agent.example.yaml\n",
+            )
+            .with_context(|| format!("Failed to write to '{}'", agent_config_path.display()))?;
+        }
+        let editor = self.editor()?;
+        edit_file(&editor, &agent_config_path)?;
+        println!(
+            "NOTE: Remember to reload the agent if there are changes made to '{}'",
+            agent_config_path.display()
+        );
+        Ok(())
     }
 
     pub fn exit_agent(&mut self) -> Result<()> {
@@ -1696,7 +1735,7 @@ impl Config {
         _line: &str,
     ) -> Vec<(String, Option<String>)> {
         let mut values: Vec<(String, Option<String>)> = vec![];
-        let mut filter = "";
+        let filter = args.last().unwrap_or(&"");
         if args.len() == 1 {
             values = match cmd {
                 ".role" => map_completion_values(Self::list_roles(true)),
@@ -1756,7 +1795,6 @@ impl Config {
                 }
                 _ => vec![],
             };
-            filter = args[0]
         } else if cmd == ".set" && args.len() == 2 {
             let candidates = match args[0] {
                 "max_output_tokens" => match self.model.max_output_tokens() {
@@ -1802,7 +1840,6 @@ impl Config {
                 _ => vec![],
             };
             values = candidates.into_iter().map(|v| (v, None)).collect();
-            filter = args[1];
         } else if cmd == ".agent" {
             if args.len() == 2 {
                 let dir = Self::agent_data_dir(args[0]).join(SESSIONS_DIR_NAME);
@@ -1811,22 +1848,56 @@ impl Config {
                     .map(|v| (v, None))
                     .collect();
             }
-            let definition_file_path = Self::agent_functions_dir(args[0]).join("index.yaml");
-            if definition_file_path.exists() {
-                if let Ok(definition) = AgentDefinition::load(&definition_file_path) {
-                    values.extend(
-                        definition
-                            .variables
-                            .iter()
-                            .map(|v| (format!("{}=", v.name), Some(v.description.clone()))),
-                    );
-                }
-            }
+            values.extend(complete_agent_variables(args[0]));
         };
         values
             .into_iter()
             .filter(|(value, _)| fuzzy_match(value, filter))
             .collect()
+    }
+
+    pub fn sync_models_url(&self) -> String {
+        self.sync_models_url
+            .clone()
+            .unwrap_or_else(|| SYNC_MODELS_URL.into())
+    }
+
+    pub async fn sync_models(url: &str, abort_signal: AbortSignal) -> Result<()> {
+        let content = abortable_run_with_spinner(fetch(url), "Fetching models.yaml", abort_signal)
+            .await
+            .with_context(|| format!("Failed to fetch '{url}'"))?;
+        println!("✓ Fetched '{url}'");
+        let list = serde_yaml::from_str::<Vec<ProviderModels>>(&content)
+            .with_context(|| "Failed to parse models.yaml")?;
+        let models_override = ModelsOverride {
+            version: env!("CARGO_PKG_VERSION").to_string(),
+            list,
+        };
+        let models_override_data =
+            serde_json::to_string_pretty(&models_override).with_context(|| "Failed to serde {}")?;
+
+        let model_override_path = Self::models_override_file();
+        ensure_parent_exists(&model_override_path)?;
+        std::fs::write(&model_override_path, models_override_data)
+            .with_context(|| format!("Failed to write to '{}'", model_override_path.display()))?;
+        println!("✓ Updated '{}'", model_override_path.display());
+        Ok(())
+    }
+
+    pub fn loal_models_override() -> Result<Vec<ProviderModels>> {
+        let model_override_path = Self::models_override_file();
+        let err = || {
+            format!(
+                "Failed to load models at '{}'",
+                model_override_path.display()
+            )
+        };
+        let content = read_to_string(&model_override_path).with_context(err)?;
+        let models_override: ModelsOverride = serde_json::from_str(&content).with_context(err)?;
+        if models_override.version != env!("CARGO_PKG_VERSION") {
+            bail!("Incompatible version")
+        }
+        Ok(models_override.list)
     }
 
     pub fn render_options(&self) -> Result<RenderOptions> {
@@ -2144,17 +2215,17 @@ impl Config {
     }
 
     fn load_dynamic(model_id: &str) -> Result<Self> {
-        let platform = match model_id.split_once(':') {
+        let provider = match model_id.split_once(':') {
             Some((v, _)) => v,
             _ => model_id,
         };
-        let is_openai_compatible = OPENAI_COMPATIBLE_PLATFORMS
+        let is_openai_compatible = OPENAI_COMPATIBLE_PROVIDERS
             .into_iter()
-            .any(|(name, _)| platform == name);
+            .any(|(name, _)| provider == name);
         let client = if is_openai_compatible {
-            json!({ "type": "openai-compatible", "name": platform })
+            json!({ "type": "openai-compatible", "name": provider })
         } else {
-            json!({ "type": platform })
+            json!({ "type": provider })
         };
         let config = json!({
             "model": model_id.to_string(),
@@ -2291,6 +2362,9 @@ impl Config {
         }
         if let Some(Some(v)) = read_env_bool(&get_env_name("save_shell_history")) {
             self.save_shell_history = v;
+        }
+        if let Some(v) = read_env_value::<String>(&get_env_name("sync_models_url")) {
+            self.sync_models_url = v;
         }
     }
 
@@ -2471,6 +2545,12 @@ pub struct MacroVariable {
     pub default: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModelsOverride {
+    pub version: String,
+    pub list: Vec<ProviderModels>,
+}
+
 #[derive(Debug, Clone)]
 pub struct LastMessage {
     pub input: Input,
@@ -2537,7 +2617,7 @@ fn create_config_file(config_path: &Path) -> Result<()> {
         process::exit(0);
     }
 
-    let client = Select::new("Platform:", list_client_types()).prompt()?;
+    let client = Select::new("API Provider (required):", list_client_types()).prompt()?;
 
     let mut config = serde_json::json!({});
     let (model, clients_config) = create_client_config(client)?;
@@ -2550,7 +2630,8 @@ fn create_config_file(config_path: &Path) -> Result<()> {
     );
 
     ensure_parent_exists(config_path)?;
-    std::fs::write(config_path, config_data).with_context(|| "Failed to write to config file")?;
+    std::fs::write(config_path, config_data)
+        .with_context(|| format!("Failed to write to '{}'", config_path.display()))?;
     #[cfg(unix)]
     {
         use std::os::unix::prelude::PermissionsExt;
@@ -2558,7 +2639,7 @@ fn create_config_file(config_path: &Path) -> Result<()> {
         std::fs::set_permissions(config_path, perms)?;
     }
 
-    println!("✓ Saved config file to '{}'.\n", config_path.display());
+    println!("✓ Saved the config file to '{}'.\n", config_path.display());
 
     Ok(())
 }

@@ -60,6 +60,9 @@ pub struct Cli {
     /// Display information
     #[clap(long)]
     pub info: bool,
+    /// Sync models updates
+    #[clap(long)]
+    pub sync_models: bool,
     /// List all available chat models
     #[clap(long)]
     pub list_models: bool,

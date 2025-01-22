@@ -19,16 +19,13 @@ impl AzureOpenAIClient {
     config_get_fn!(api_base, get_api_base);
     config_get_fn!(api_key, get_api_key);
 
-    pub const PROMPTS: [PromptAction<'static>; 4] = [
-        ("api_base", "API Base:", true, PromptKind::String),
-        ("api_key", "API Key:", true, PromptKind::String),
-        ("models[].name", "Model Name:", true, PromptKind::String),
+    pub const PROMPTS: [PromptAction<'static>; 2] = [
         (
-            "models[].max_input_tokens",
-            "Max Input Tokens:",
-            false,
-            PromptKind::Integer,
+            "api_base",
+            "API Base",
+            Some("e.g. https://{RESOURCE}.openai.azure.com"),
         ),
+        ("api_key", "API Key", None),
     ];
 }
 

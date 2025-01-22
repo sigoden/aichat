@@ -22,8 +22,7 @@ impl ClaudeClient {
     config_get_fn!(api_key, get_api_key);
     config_get_fn!(api_base, get_api_base);
 
-    pub const PROMPTS: [PromptAction<'static>; 1] =
-        [("api_key", "API Key:", true, PromptKind::String)];
+    pub const PROMPTS: [PromptAction<'static>; 1] = [("api_key", "API Key", None)];
 }
 
 impl_client_trait!(

@@ -16,6 +16,7 @@ complete -c aichat -s f -l file -d 'Include files, directories, or URLs' -r -F
 complete -c aichat -s S -l no-stream -d 'Turn off stream mode'
 complete -c aichat -l dry-run -d 'Display the message without sending it'
 complete -c aichat -l info -d 'Display information'
+complete -c aichat -l sync-models -d 'Sync models updates'
 complete -c aichat -l list-models -d 'List all available chat models'
 complete -c aichat -l list-roles -d 'List all roles'
 complete -c aichat -l list-sessions -d 'List all sessions'

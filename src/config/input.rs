@@ -88,7 +88,7 @@ impl Input {
                 }
             }
         }
-        let (files, medias, data_urls) =
+        let (documents, medias, data_urls) =
             load_documents(config, external_cmds, local_paths, remote_urls)
                 .await
                 .context("Failed to load files")?;
@@ -104,17 +104,22 @@ impl Input {
                     last_reply = Some(v.clone());
                 }
                 if let Some(v) = last_reply.clone() {
-                    texts.push(format!("\n{v}\n"));
+                    texts.push(format!("\n{v}"));
                 }
             }
-            if last_reply.is_none() && files.is_empty() && medias.is_empty() {
+            if last_reply.is_none() && documents.is_empty() && medias.is_empty() {
                 bail!("No last reply found");
             }
         }
-        for (kind, path, contents) in files {
-            texts.push(format!(
-                "\n============ {kind}: {path} ============\n{contents}"
-            ));
+        let documents_len = documents.len();
+        for (kind, path, contents) in documents {
+            if documents_len == 1 {
+                texts.push(format!("\n{contents}"));
+            } else {
+                texts.push(format!(
+                    "\n============ {kind}: {path} ============\n{contents}"
+                ));
+            }
         }
         let (role, with_session, with_agent) = resolve_role(&config.read(), role);
         Ok(Self {
@@ -244,9 +249,6 @@ impl Input {
         model: &Model,
         stream: bool,
     ) -> Result<ChatCompletionsData> {
-        if !self.medias.is_empty() && !model.supports_vision() {
-            bail!("The current model does not support vision. Is the model configured with `supports_vision: true`?");
-        }
         let mut messages = self.build_messages()?;
         if model.no_system_message() {
             patch_system_message(&mut messages);
@@ -440,7 +442,7 @@ async fn load_documents(
     }
 
     for file_url in remote_urls {
-        let (contents, extension) = fetch(&loaders, &file_url, true)
+        let (contents, extension) = fetch_with_loaders(&loaders, &file_url, true)
             .await
             .with_context(|| format!("Failed to load url '{file_url}'"))?;
         if extension == MEDIA_URL_EXTENSION {

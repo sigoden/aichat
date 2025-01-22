@@ -25,8 +25,8 @@ impl ErnieClient {
     config_get_fn!(api_key, get_api_key);
     config_get_fn!(secret_key, get_secret_key);
     pub const PROMPTS: [PromptAction<'static>; 2] = [
-        ("api_key", "API Key:", true, PromptKind::String),
-        ("secret_key", "Secret Key:", true, PromptKind::String),
+        ("api_key", "API Key", None),
+        ("secret_key", "Secret Key", None),
     ];
 }
 

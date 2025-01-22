@@ -178,10 +178,6 @@ impl Model {
         self.data.max_output_tokens
     }
 
-    pub fn supports_vision(&self) -> bool {
-        self.data.supports_vision
-    }
-
     pub fn no_stream(&self) -> bool {
         self.data.no_stream
     }
@@ -281,26 +277,33 @@ pub struct ModelData {
     pub name: String,
     #[serde(default = "default_model_type", rename = "type")]
     pub model_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub max_input_tokens: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub input_price: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub output_price: Option<f64>,
 
     // chat-only properties
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub max_output_tokens: Option<isize>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub require_max_tokens: bool,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub supports_vision: bool,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub supports_function_calling: bool,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     no_stream: bool,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     no_system_message: bool,
 
     // embedding-only properties
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub max_tokens_per_chunk: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub default_chunk_size: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub max_batch_size: Option<usize>,
 }
 
@@ -314,9 +317,9 @@ impl ModelData {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct PredefinedModels {
-    pub platform: String,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProviderModels {
+    pub provider: String,
     pub models: Vec<ModelData>,
 }
 

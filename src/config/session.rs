@@ -438,7 +438,7 @@ impl Session {
         })?;
 
         if is_repl {
-            println!("✓ Saved session to '{}'.", session_path.display());
+            println!("✓ Saved the session to '{}'.", session_path.display());
         }
 
         if self.name() != session_name {

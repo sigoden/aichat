@@ -79,9 +79,11 @@ right_prompt:
   '{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}'
 
 # ---- misc ----
-serve_addr: 127.0.0.1:8000                  # Default serve listening address 
+serve_addr: 127.0.0.1:8000                  # Server listening address 
 user_agent: null                            # Set User-Agent HTTP header, use `auto` for aichat/<current-version>
 save_shell_history: true                    # Whether to save shell execution command to the history file
+# URL to sync model changes from, e.g., https://cdn.jsdelivr.net/gh/sigoden/aichat@main/models.yaml
+sync_models_url: https://raw.githubusercontent.com/sigoden/aichat/refs/heads/main/models.yaml
 
 # ---- clients ----
 clients:
@@ -324,6 +326,12 @@ clients:
   - type: openai-compatible
     name: together
     api_base: https://api.together.xyz/v1
+    api_key: xxx
+
+  # See https://docs.hyperbolic.xyz/docs/getting-started
+  - type: openai-compatible
+    name: hyperbolic
+    api_base: https://api.hyperbolic.xyz/v1
     api_key: xxx
 
   # ----- RAG dedicated -----

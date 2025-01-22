@@ -52,10 +52,10 @@ macro_rules! register_client {
                 pub fn list_models(local_config: &$config) -> Vec<Model> {
                     let client_name = Self::name(local_config);
                     if local_config.models.is_empty() {
-                        if let Some(models) = $crate::client::ALL_PREDEFINED_MODELS.iter().find(|v| {
-                            v.platform == $name ||
+                        if let Some(models) = $crate::client::ALL_PROVIDER_MODELS.iter().find(|v| {
+                            v.provider == $name ||
                                 ($name == OpenAICompatibleClient::NAME
-                                    && local_config.name.as_ref().map(|name| name.starts_with(&v.platform)).unwrap_or_default())
+                                    && local_config.name.as_ref().map(|name| name.starts_with(&v.provider)).unwrap_or_default())
                         }) {
                             return Model::from_config(client_name, &models.models);
                         }
@@ -83,13 +83,13 @@ macro_rules! register_client {
 
         pub fn list_client_types() -> Vec<&'static str> {
             let mut client_types: Vec<_> = vec![$($client::NAME,)+];
-            client_types.extend($crate::client::OPENAI_COMPATIBLE_PLATFORMS.iter().map(|(name, _)| *name));
+            client_types.extend($crate::client::OPENAI_COMPATIBLE_PROVIDERS.iter().map(|(name, _)| *name));
             client_types
         }
 
         pub fn create_client_config(client: &str) -> anyhow::Result<(String, serde_json::Value)> {
             $(
-                if client == $client::NAME {
+                if client == $client::NAME && client != $crate::client::OpenAICompatibleClient::NAME {
                     return create_config(&$client::PROMPTS, $client::NAME)
                 }
             )+

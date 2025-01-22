@@ -46,6 +46,7 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             [CompletionResult]::new('--no-stream', '--no-stream', [CompletionResultType]::ParameterName, 'Turn off stream mode')
             [CompletionResult]::new('--dry-run', '--dry-run', [CompletionResultType]::ParameterName, 'Display the message without sending it')
             [CompletionResult]::new('--info', '--info', [CompletionResultType]::ParameterName, 'Display information')
+            [CompletionResult]::new('--sync-models', '--sync-models', [CompletionResultType]::ParameterName, 'Sync models updates')
             [CompletionResult]::new('--list-models', '--list-models', [CompletionResultType]::ParameterName, 'List all available chat models')
             [CompletionResult]::new('--list-roles', '--list-roles', [CompletionResultType]::ParameterName, 'List all roles')
             [CompletionResult]::new('--list-sessions', '--list-sessions', [CompletionResultType]::ParameterName, 'List all sessions')
