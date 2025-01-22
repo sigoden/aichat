@@ -1783,6 +1783,58 @@
       input_price: 0.1
 
 # Links:
+#  - https://app.hyperbolic.xyz/models
+#  - https://docs.hyperbolic.xyz/docs/hyperbolic-ai-inference-pricing
+- provider: hyperbolic
+  models:
+    - name: meta-llama/Llama-3.3-70B-Instruct
+      max_input_tokens: 131072
+      input_price: 0.4
+      output_price: 0.4
+    - name: meta-llama/Meta-Llama-3.1-405B-Instruct
+      max_input_tokens: 32768
+      input_price: 4
+      output_price: 4
+    - name: meta-llama/Meta-Llama-3.1-70B-Instruct
+      max_input_tokens: 32768
+      input_price: 0.4
+      output_price: 0.4
+    - name: meta-llama/Meta-Llama-3.1-8B-Instruct
+      max_input_tokens: 32768
+      input_price: 0.1
+      output_price: 0.1
+    - name: Qwen/Qwen2.5-72B-Instruct
+      max_input_tokens: 32768
+      input_price: 0.4
+      output_price: 0.4
+    - name: Qwen/Qwen2.5-Coder-32B-Instruct
+      max_input_tokens: 131072
+      input_price: 0.2
+      output_price: 0.2
+    - name: Qwen/QwQ-32B-Preview
+      max_input_tokens: 32768
+      input_price: 0.2
+      output_price: 0.2
+    - name: Qwen/Qwen2-VL-72B-Instruct
+      max_input_tokens: 32768
+      input_price: 0.4
+      output_price: 0.4
+      supports_vision: true
+    - name: deepseek-ai/DeepSeek-V3
+      max_input_tokens: 131072
+      input_price: 0.25
+      output_price: 0.25
+    - name: deepseek-ai/DeepSeek-R1
+      max_input_tokens: 163840
+      input_price: 2
+      output_price: 2
+    - name: mistralai/Pixtral-12B-2409
+      max_input_tokens: 128000
+      input_price: 0.1
+      output_price: 0.1
+      supports_vision: true
+
+# Links:
 #  - https://jina.ai/models
 #  - https://api.jina.ai/redoc
 - provider: jina

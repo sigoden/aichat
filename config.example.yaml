@@ -328,6 +328,12 @@ clients:
     api_base: https://api.together.xyz/v1
     api_key: xxx
 
+  # See https://docs.hyperbolic.xyz/docs/getting-started
+  - type: openai-compatible
+    name: hyperbolic
+    api_base: https://api.hyperbolic.xyz/v1
+    api_key: xxx
+
   # ----- RAG dedicated -----
 
   # See https://jina.ai
