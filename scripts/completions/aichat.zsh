@@ -41,6 +41,7 @@ _aichat() {
 '--no-stream[Turn off stream mode]' \
 '--dry-run[Display the message without sending it]' \
 '--info[Display information]' \
+'--sync-models[Sync models updates]' \
 '--list-models[List all available chat models]' \
 '--list-roles[List all roles]' \
 '--list-sessions[List all sessions]' \

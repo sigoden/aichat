@@ -4,7 +4,7 @@ set -e
 # @meta dotenv
 # @env DRY_RUN Dry run mode
 
-# @cmd Test first running
+# @cmd Test configuration initialization
 # @env AICHAT_CONFIG_DIR=tmp/test-init-config
 # @arg args~
 test-init-config() {
@@ -17,10 +17,13 @@ test-init-config() {
     cargo run -- "$@"
 }
 
-# @cmd Test running with AICHAT_PLATFORM environment variable
-# @env AICHAT_PLATFORM!
+# @cmd Test running without configuration file
+# @env AICHAT_PROVIDER!
+# @env AICHAT_CONFIG_DIR=tmp/test-provider-env
 # @arg args~
-test-platform-env() {
+test-no-config() {
+    mkdir -p "$AICHAT_CONFIG_DIR"
+    rm -rf "$AICHAT_CONFIG_DIR/config.yaml"
     cargo run -- "$@"
 }
 
@@ -80,27 +83,27 @@ test-server() {
 
 # @cmd Chat with any LLM api 
 # @flag -S --no-stream
-# @arg platform_model![?`_choice_platform_model`]
+# @arg provider_model![?`_choice_provider_model`]
 # @arg text~
 chat() {
-    if [[ "$argc_platform_model" == *':'* ]]; then
-        model="${argc_platform_model##*:}"
-        argc_platform="${argc_platform_model%:*}"
+    if [[ "$argc_provider_model" == *':'* ]]; then
+        model="${argc_provider_model##*:}"
+        argc_provider="${argc_provider_model%:*}"
     else
-        argc_platform="${argc_platform_model}"
+        argc_provider="${argc_provider_model}"
     fi
-    for platform_config in "${OPENAI_COMPATIBLE_PLATFORMS[@]}"; do
-        if [[ "$argc_platform" == "${platform_config%%,*}" ]]; then
+    for provider_config in "${OPENAI_COMPATIBLE_PROVIDERS[@]}"; do
+        if [[ "$argc_provider" == "${provider_config%%,*}" ]]; then
             _retrieve_api_base
             break
         fi
     done
     if [[ -n "$api_base" ]]; then
-        env_prefix="$(echo "$argc_platform" | tr '[:lower:]' '[:upper:]')"
+        env_prefix="$(echo "$argc_provider" | tr '[:lower:]' '[:upper:]')"
         api_key_env="${env_prefix}_API_KEY"
         api_key="${!api_key_env}" 
         if [[ -z "$model" ]]; then
-            model="$(echo "$platform_config" | cut -d, -f2)"
+            model="$(echo "$provider_config" | cut -d, -f2)"
         fi
         if [[ -z "$model" ]]; then
             model_env="${env_prefix}_MODEL"
@@ -112,27 +115,27 @@ chat() {
             --model "$model" \
             "${argc_text[@]}"
     else
-        argc chat-$argc_platform "${argc_text[@]}"
+        argc chat-$argc_provider "${argc_text[@]}"
     fi
 }
 
 # @cmd List models by openai-compatible api
 # @flag --name-only Print model name only
-# @arg platform![`_choice_platform`]
+# @arg provider![`_choice_provider`]
 models() {
-    for platform_config in "${OPENAI_COMPATIBLE_PLATFORMS[@]}"; do
-        if [[ "$argc_platform" == "${platform_config%%,*}" ]]; then
+    for provider_config in "${OPENAI_COMPATIBLE_PROVIDERS[@]}"; do
+        if [[ "$argc_provider" == "${provider_config%%,*}" ]]; then
             _retrieve_api_base
             break
         fi
     done
     if [[ -n "$api_base" ]]; then
-        env_prefix="$(echo "$argc_platform" | tr '[:lower:]' '[:upper:]')"
+        env_prefix="$(echo "$argc_provider" | tr '[:lower:]' '[:upper:]')"
         api_key_env="${env_prefix}_API_KEY"
         api_key="${!api_key_env}" 
         jq_args=()
         if [[ -n "$argc_name_only" ]]; then
-            case "$argc_platform" in
+            case "$argc_provider" in
                 cloudflare)
                     jq_args+=(-r '.result[].name')
                     ;;
@@ -149,14 +152,14 @@ models() {
         fi
         _openai_compatible_models | jq "${jq_args[@]}"
     else
-        if ! cat "$0" | grep -q "^models-$argc_platform"; then
-            _die "error: platform '$argc_platform' does not have a models api"
+        if ! cat "$0" | grep -q "^models-$argc_provider"; then
+            _die "error: provider '$argc_provider' does not have a models api"
         fi
         cli_args=()
         if [[ -n "$argc_name_only" ]]; then
             cli_args+=(--name-only)
         fi
-        argc models-$argc_platform "${cli_args[@]}"
+        argc models-$argc_provider "${cli_args[@]}"
     fi
 }
 
@@ -202,7 +205,7 @@ chat-azure-openai() {
 
 # @cmd Chat with gemini api
 # @env GEMINI_API_KEY!
-# @option -m --model=gemini-1.0-pro-latest $GEMINI_MODEL
+# @option -m --model=gemini-1.5-pro-latest $GEMINI_MODEL
 # @flag -S --no-stream
 # @arg text~
 chat-gemini() {
@@ -246,7 +249,7 @@ chat-claude() {
 
 # @cmd Chat with cohere api
 # @env COHERE_API_KEY!
-# @option -m --model=command-r $COHERE_MODEL
+# @option -m --model=command-r-08-2024 $COHERE_MODEL
 # @flag -S --no-stream
 # @arg text~
 chat-cohere() {
@@ -274,7 +277,7 @@ models-cohere() {
 # @env require-tools gcloud
 # @env VERTEXAI_PROJECT_ID!
 # @env VERTEXAI_LOCATION!
-# @option -m --model=gemini-1.0-pro $VERTEXAI_GEMINI_MODEL
+# @option -m --model=gemini-1.5-flash-002 $VERTEXAI_GEMINI_MODEL
 # @flag -S --no-stream
 # @arg text~
 chat-vertexai() {
@@ -307,7 +310,7 @@ chat-ernie() {
 }
 
 _argc_before() {
-    OPENAI_COMPATIBLE_PLATFORMS=( \
+    OPENAI_COMPATIBLE_PROVIDERS=( \
         openai,gpt-4o-mini,https://api.openai.com/v1 \
         ai21,jamba-1.5-mini,https://api.ai21.com/studio/v1 \
         cloudflare,@cf/meta/llama-3.1-8b-instruct,https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/v1 \
@@ -317,7 +320,7 @@ _argc_before() {
         github,gpt-4o-mini,https://models.inference.ai.azure.com \
         groq,llama-3.1-8b-instant,https://api.groq.com/openai/v1 \
         hunyuan,hunyuan-large,https://api.hunyuan.cloud.tencent.com/v1 \
-        lingyiwanwu,yi-large,https://api.lingyiwanwu.com/v1 \
+        lingyiwanwu,yi-lightning,https://api.lingyiwanwu.com/v1 \
         minimax,MiniMax-Text-01,https://api.minimax.chat/v1 \
         mistral,mistral-small-latest,https://api.mistral.ai/v1 \
         moonshot,moonshot-v1-8k,https://api.moonshot.cn/v1 \
@@ -341,7 +344,7 @@ _openai_compatible_models() {
     api_base="${api_base:-"$argc_api_base"}"
     api_key="${api_key:-"$argc_api_key"}"
     url="${api_base}/models"
-    if [[ "$argc_platform" == "cloudflare" ]]; then
+    if [[ "$argc_provider" == "cloudflare" ]]; then
         url="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/models/search"
     fi
 
@@ -351,12 +354,12 @@ _openai_compatible_models() {
 }
 
 _retrieve_api_base() {
-    api_base="${platform_config##*,}"
+    api_base="${provider_config##*,}"
     if [[ -z "$api_base" ]]; then
-        key="$(echo $argc_platform |  tr '[:lower:]' '[:upper:]')_API_BASE"
+        key="$(echo $argc_provider |  tr '[:lower:]' '[:upper:]')_API_BASE"
         api_base="${!key}"
         if [[ -z "$api_base" ]]; then
-            _die "error: miss api_base for $argc_platform; please set $key"
+            _die "error: miss api_base for $argc_provider; please set $key"
         fi
     fi
 }
@@ -365,23 +368,23 @@ _choice_model() {
     aichat --list-models
 }
 
-_choice_platform_model() {
-    _choice_platform
+_choice_provider_model() {
+    _choice_provider
     _choice_model
 }
 
-_choice_platform() {
+_choice_provider() {
     _choice_client
-    _choice_openai_compatible_platform
+    _choice_openai_compatible_provider
 }
 
 _choice_client() {
     printf "%s\n" gemini claude cohere azure-openai vertexai bedrock ernie
 }
 
-_choice_openai_compatible_platform() {
-    for platform_config in "${OPENAI_COMPATIBLE_PLATFORMS[@]}"; do
-        echo "${platform_config%%,*}"
+_choice_openai_compatible_provider() {
+    for provider_config in "${OPENAI_COMPATIBLE_PROVIDERS[@]}"; do
+        echo "${provider_config%%,*}"
     done
 }
 

@@ -40,7 +40,6 @@ module completions {
     | parse "{value}" 
   }
 
-  # All-in-one chat and copilot CLI that integrates 10+ AI platforms
   export extern aichat [
     --model(-m): string@"nu-complete aichat model"      # Select a LLM model
     --prompt                                            # Use the system prompt
@@ -60,6 +59,7 @@ module completions {
     --no-stream(-S)                                     # Turn off stream mode
     --dry-run                                           # Display the message without sending it
     --info                                              # Display information
+    --sync-models                                       # Sync models updates
     --list-models                                       # List all available chat models
     --list-roles                                        # List all roles
     --list-sessions                                     # List all sessions

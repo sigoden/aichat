@@ -82,6 +82,8 @@ right_prompt:
 serve_addr: 127.0.0.1:8000                  # Default serve listening address 
 user_agent: null                            # Set User-Agent HTTP header, use `auto` for aichat/<current-version>
 save_shell_history: true                    # Whether to save shell execution command to the history file
+# Sync models changes from the specified URL, using a CDN link rather than a direct GitHub raw link due to the higher availability and reliability of the CDN.
+sync_models_url: https://cdn.jsdelivr.net/gh/sigoden/aichat/models.yaml # Or https://raw.githubusercontent.com/sigoden/aichat/refs/heads/main/models.yaml
 
 # ---- clients ----
 clients:

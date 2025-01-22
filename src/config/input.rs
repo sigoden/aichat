@@ -442,7 +442,7 @@ async fn load_documents(
     }
 
     for file_url in remote_urls {
-        let (contents, extension) = fetch(&loaders, &file_url, true)
+        let (contents, extension) = fetch_with_loaders(&loaders, &file_url, true)
             .await
             .with_context(|| format!("Failed to load url '{file_url}'"))?;
         if extension == MEDIA_URL_EXTENSION {
