@@ -46,6 +46,7 @@ async fn main() -> Result<()> {
         WorkingMode::Cmd
     };
     let info_flag = cli.info
+        || cli.sync_models
         || cli.list_models
         || cli.list_roles
         || cli.list_agents
@@ -63,6 +64,11 @@ async fn main() -> Result<()> {
 
 async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()> {
     let abort_signal = create_abort_signal();
+
+    if cli.sync_models {
+        let url = config.read().sync_models_url();
+        return Config::sync_models(&url, abort_signal.clone()).await;
+    }
 
     if cli.list_models {
         for model in list_models(&config.read(), ModelType::Chat) {

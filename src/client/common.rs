@@ -1,7 +1,7 @@
 use super::*;
 
 use crate::{
-    config::{GlobalConfig, Input},
+    config::{Config, GlobalConfig, Input},
     function::{eval_tool_calls, FunctionDeclaration, ToolCall, ToolResult},
     render::render_stream,
     utils::*,
@@ -20,7 +20,9 @@ use tokio::sync::mpsc::unbounded_channel;
 const MODELS_YAML: &str = include_str!("../../models.yaml");
 
 lazy_static::lazy_static! {
-    pub static ref ALL_PREDEFINED_MODELS: Vec<PredefinedModels> = serde_yaml::from_str(MODELS_YAML).unwrap();
+    pub static ref ALL_PROVIDER_MODELS: Vec<ProviderModels> = {
+        Config::loal_models_override().ok().unwrap_or_else(|| serde_yaml::from_str(MODELS_YAML).unwrap())
+    };
     static ref ESCAPE_SLASH_RE: Regex = Regex::new(r"(?<!\\)/").unwrap();
 }
 
@@ -338,14 +340,15 @@ pub fn create_config(prompts: &[PromptAction], client: &str) -> Result<(String, 
 }
 
 pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(String, Value)>> {
-    let api_base = super::OPENAI_COMPATIBLE_PLATFORMS
+    let api_base = super::OPENAI_COMPATIBLE_PROVIDERS
         .into_iter()
         .find(|(name, _)| client == *name)
         .map(|(_, api_base)| api_base)
         .unwrap_or("http(s)://{API_ADDR}/v1");
 
     let name = if client == OpenAICompatibleClient::NAME {
-        prompt_input_string("Provider Name", true, None)?
+        let value = prompt_input_string("Provider Name", true, None)?;
+        value.replace(' ', "-")
     } else {
         client.to_string()
     };
@@ -548,7 +551,7 @@ fn set_client_config(list: &[PromptAction], client_config: &mut Value, client: &
 }
 
 fn set_client_models_config(client_config: &mut Value, client: &str) -> Result<()> {
-    if ALL_PREDEFINED_MODELS.iter().any(|v| v.platform == client) {
+    if ALL_PROVIDER_MODELS.iter().any(|v| v.provider == client) {
         return Ok(());
     }
 

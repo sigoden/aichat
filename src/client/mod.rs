@@ -34,7 +34,7 @@ register_client!(
     (ernie, "ernie", ErnieConfig, ErnieClient),
 );
 
-pub const OPENAI_COMPATIBLE_PLATFORMS: [(&str, &str); 22] = [
+pub const OPENAI_COMPATIBLE_PROVIDERS: [(&str, &str); 22] = [
     ("ai21", "https://api.ai21.com/studio/v1"),
     (
         "cloudflare",

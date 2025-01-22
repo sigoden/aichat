@@ -61,7 +61,7 @@ pub async fn load_file(loaders: &HashMap<String, String>, path: &str) -> Result<
 }
 
 pub async fn load_url(loaders: &HashMap<String, String>, path: &str) -> Result<LoadedDocument> {
-    let (contents, extension) = fetch(loaders, path, false).await?;
+    let (contents, extension) = fetch_with_loaders(loaders, path, false).await?;
     let mut metadata: DocumentMetadata = Default::default();
     metadata.insert(EXTENSION_METADATA.into(), extension);
     Ok(LoadedDocument::new(path.into(), contents, metadata))

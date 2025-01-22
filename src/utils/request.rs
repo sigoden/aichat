@@ -50,7 +50,17 @@ lazy_static::lazy_static! {
     static ref GITHUB_REPO_RE: Regex = Regex::new(r"^https://github\.com/([^/]+)/([^/]+)/tree/([^/]+)").unwrap();
 }
 
-pub async fn fetch(
+pub async fn fetch(url: &str) -> Result<String> {
+    let client = match *CLIENT {
+        Ok(ref client) => client,
+        Err(ref err) => bail!("{err}"),
+    };
+    let res = client.get(url).send().await?;
+    let output = res.text().await?;
+    Ok(output)
+}
+
+pub async fn fetch_with_loaders(
     loaders: &HashMap<String, String>,
     path: &str,
     allow_media: bool,

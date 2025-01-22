@@ -96,7 +96,7 @@ fn get_api_base_ext(self_: &OpenAICompatibleClient) -> Result<String> {
     let api_base = match self_.get_api_base() {
         Ok(v) => v,
         Err(err) => {
-            match OPENAI_COMPATIBLE_PLATFORMS
+            match OPENAI_COMPATIBLE_PROVIDERS
                 .into_iter()
                 .find_map(|(name, api_base)| {
                     if name == self_.model.client_name() {
