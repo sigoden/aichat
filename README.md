@@ -22,9 +22,9 @@ Download pre-built binaries for macOS, Linux, and Windows from [GitHub Releases]
 
 ## Features
 
-### Multi-Platform Compatibility
+### Multi-Providers
 
-Integrate seamlessly with over 20 leading LLM platforms through a unified interface. Supported platforms include OpenAI, Claude, Gemini (Google AI Studio), Ollama, Groq, Azure-OpenAI, VertexAI, Bedrock, Huggingface, Github Models, Mistral, Deepseek, AI21, XAI Grok, Cohere, Perplexity, Cloudflare, OpenRouter, Ernie, Qianwen, Moonshot,  ZhipuAI, Lingyiwanwu, MiniMax, Deepinfra, Fireworks, Siliconflow, Together, Jina, VoyageAI, any OpenAI-Compatible platforms.
+Integrate seamlessly with over 20 leading LLM providers through a unified interface. Supported providers include OpenAI, Claude, Gemini (Google AI Studio), Ollama, Groq, Azure-OpenAI, VertexAI, Bedrock, Huggingface, Github Models, Mistral, Deepseek, AI21, XAI Grok, Cohere, Perplexity, Cloudflare, OpenRouter, Ernie, Qianwen, Moonshot,  ZhipuAI, Lingyiwanwu, MiniMax, Deepinfra, Fireworks, Siliconflow, Together, Hyperbolic, Jina, VoyageAI, any OpenAI-Compatible API provider.
 
 ### CMD Mode
 
