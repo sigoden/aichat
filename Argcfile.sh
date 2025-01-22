@@ -320,6 +320,7 @@ _argc_before() {
         github,gpt-4o-mini,https://models.inference.ai.azure.com \
         groq,llama-3.1-8b-instant,https://api.groq.com/openai/v1 \
         hunyuan,hunyuan-large,https://api.hunyuan.cloud.tencent.com/v1 \
+        hyperbolic,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.hyperbolic.xyz/v1 \
         lingyiwanwu,yi-lightning,https://api.lingyiwanwu.com/v1 \
         minimax,MiniMax-Text-01,https://api.minimax.chat/v1 \
         mistral,mistral-small-latest,https://api.mistral.ai/v1 \
