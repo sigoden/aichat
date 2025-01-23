@@ -24,6 +24,7 @@ pub use self::variables::*;
 
 use anyhow::{Context, Result};
 use fancy_regex::Regex;
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use is_terminal::IsTerminal;
 use std::{env, path::PathBuf, process};
 use unicode_segmentation::UnicodeSegmentation;
@@ -118,21 +119,8 @@ pub fn convert_option_string(value: &str) -> Option<String> {
     }
 }
 
-pub fn fuzzy_match(text: &str, pattern: &str) -> bool {
-    let text_chars: Vec<char> = text.chars().collect();
-    let pattern_chars: Vec<char> = pattern.chars().collect();
-
-    let mut pattern_index = 0;
-    let mut text_index = 0;
-
-    while pattern_index < pattern_chars.len() && text_index < text_chars.len() {
-        if pattern_chars[pattern_index] == text_chars[text_index] {
-            pattern_index += 1;
-        }
-        text_index += 1;
-    }
-
-    pattern_index == pattern_chars.len()
+pub fn fuzzy_match(choice: &str, pattern: &str) -> Option<i64> {
+    SkimMatcherV2::default().fuzzy_match(choice, pattern)
 }
 
 pub fn pretty_error(err: &anyhow::Error) -> String {
@@ -233,13 +221,6 @@ pub fn set_proxy(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_fuzzy_match() {
-        assert!(fuzzy_match("openai:gpt-4-turbo", "gpt4"));
-        assert!(fuzzy_match("openai:gpt-4-turbo", "oai4"));
-        assert!(!fuzzy_match("openai:gpt-4-turbo", "4gpt"));
-    }
 
     #[test]
     #[cfg(not(target_os = "windows"))]

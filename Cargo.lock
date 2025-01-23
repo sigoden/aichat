@@ -59,6 +59,7 @@ dependencies = [
  "dirs",
  "fancy-regex",
  "futures-util",
+ "fuzzy-matcher",
  "hmac",
  "hnsw_rs",
  "html_to_markdown",

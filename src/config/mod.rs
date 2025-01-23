@@ -1850,10 +1850,15 @@ impl Config {
             }
             values.extend(complete_agent_variables(args[0]));
         };
-        values
+        let mut values_with_score: Vec<_> = values
             .into_iter()
-            .filter(|(value, _)| fuzzy_match(value, filter))
-            .collect()
+            .filter_map(|v| {
+                let score = fuzzy_match(&v.0, filter)?;
+                Some((v, score))
+            })
+            .collect();
+        values_with_score.sort_unstable_by(|a, b| b.1.cmp(&a.1));
+        values_with_score.into_iter().map(|v| v.0).collect()
     }
 
     pub fn sync_models_url(&self) -> String {
