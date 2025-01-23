@@ -45,7 +45,7 @@ impl Completer for ReplCompleter {
                 if line == "." {
                     return true;
                 }
-                line.starts_with(&cmd.name[..2]) && fuzzy_match(cmd.name, &line)
+                line.starts_with(&cmd.name[..2]) && fuzzy_match(cmd.name, &line).is_some()
             })
             .collect();
 

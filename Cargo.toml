@@ -66,6 +66,7 @@ rust-embed = "8.5.0"
 os_info = { version = "3.8.2", default-features = false }
 bm25 = { version = "2.0.1", features = ["parallelism"] }
 which = "7.0.1"
+fuzzy-matcher = "0.3.7"
 
 [dependencies.reqwest]
 version = "0.12.0"
