@@ -1,6 +1,6 @@
 use super::{ReplCommand, REPL_COMMANDS};
 
-use crate::{config::GlobalConfig, utils::fuzzy_match};
+use crate::{config::GlobalConfig, utils::fuzzy_filter};
 
 use reedline::{Completer, Span, Suggestion};
 use std::collections::HashMap;
@@ -29,25 +29,21 @@ impl Completer for ReplCompleter {
 
         let state = self.config.read().state();
 
+        let command_filter = parts
+            .iter()
+            .take(2)
+            .map(|(v, _)| *v)
+            .collect::<Vec<&str>>()
+            .join(" ");
         let commands: Vec<_> = self
             .commands
             .iter()
             .filter(|cmd| {
-                if !cmd.is_valid(state) {
-                    return false;
-                }
-                let line = parts
-                    .iter()
-                    .take(2)
-                    .map(|(v, _)| *v)
-                    .collect::<Vec<&str>>()
-                    .join(" ");
-                if line == "." {
-                    return true;
-                }
-                line.starts_with(&cmd.name[..2]) && fuzzy_match(cmd.name, &line)
+                cmd.is_valid(state)
+                    && (command_filter.len() == 1 || cmd.name.starts_with(&command_filter[..2]))
             })
             .collect();
+        let commands = fuzzy_filter(commands, |v| v.name, &command_filter);
 
         if parts_len > 1 {
             let span = Span::new(parts[parts_len - 1].1, pos);

@@ -1850,10 +1850,7 @@ impl Config {
             }
             values.extend(complete_agent_variables(args[0]));
         };
-        values
-            .into_iter()
-            .filter(|(value, _)| fuzzy_match(value, filter))
-            .collect()
+        fuzzy_filter(values, |v| v.0.as_str(), filter)
     }
 
     pub fn sync_models_url(&self) -> String {

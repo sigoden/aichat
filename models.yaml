@@ -360,18 +360,14 @@
 #  - https://docs.perplexity.ai/api-reference/chat-completions
 - provider: perplexity
   models:
-    - name: llama-3.1-sonar-huge-128k-online
-      max_input_tokens: 127072
-      input_price: 5
-      output_price: 5
-    - name: llama-3.1-sonar-large-128k-online
-      max_input_tokens: 127072
+    - name: sonar-pro
+      max_input_tokens: 200000
+      input_price: 3
+      output_price: 15
+    - name: sonar
+      max_input_tokens: 127000
       input_price: 1
       output_price: 1
-    - name: llama-3.1-sonar-small-128k-online
-      max_input_tokens: 127072
-      input_price: 0.2
-      output_price: 0.2
 
 # Links:
 #  - https://console.groq.com/docs/models
@@ -413,18 +409,14 @@
     - name: llama3.2-vision
       max_input_tokens: 131072
       supports_vision: true
-    - name: llama3.3
-      max_input_tokens: 131072
-      supports_function_calling: true
-    - name: qwq
-      max_input_tokens: 32768
-      supports_function_calling: true
     - name: qwen2.5
       max_input_tokens: 131072
       supports_function_calling: true
     - name: qwen2.5-coder
       max_input_tokens: 32768
       supports_function_calling: true
+    - name: deepseek-r1
+      max_input_tokens: 131072
     - name: phi4
       max_input_tokens: 16384
     - name: nomic-embed-text
@@ -1273,18 +1265,6 @@
       max_input_tokens: 163840
       input_price: 0.55
       output_price: 2.19
-    - name: perplexity/llama-3.1-sonar-huge-128k-online
-      max_input_tokens: 127072
-      input_price: 5
-      output_price: 5
-    - name: perplexity/llama-3.1-sonar-large-128k-online
-      max_input_tokens: 127072
-      input_price: 1
-      output_price: 1
-    - name: perplexity/llama-3.1-sonar-small-128k-online
-      max_input_tokens: 127072
-      input_price: 0.2
-      output_price: 0.2
     - name: microsoft/phi-4
       max_input_tokens: 16384
       input_price: 0.07
@@ -1498,6 +1478,10 @@
       max_input_tokens: 32768
       input_price: 0.85
       output_price: 0.9
+    - name: deepseek-ai/DeepSeek-R1
+      max_input_tokens: 16000
+      input_price: 0.85
+      output_price: 2.5
     - name: microsoft/phi-4
       max_input_tokens: 16384
       input_price: 0.07
