@@ -119,8 +119,20 @@ pub fn convert_option_string(value: &str) -> Option<String> {
     }
 }
 
-pub fn fuzzy_match(choice: &str, pattern: &str) -> Option<i64> {
-    SkimMatcherV2::default().fuzzy_match(choice, pattern)
+pub fn fuzzy_filter<T, F>(values: Vec<T>, get: F, pattern: &str) -> Vec<T>
+where
+    F: Fn(&T) -> &str,
+{
+    let matcher = SkimMatcherV2::default();
+    let mut list: Vec<(T, i64)> = values
+        .into_iter()
+        .filter_map(|v| {
+            let score = matcher.fuzzy_match(get(&v), pattern)?;
+            Some((v, score))
+        })
+        .collect();
+    list.sort_unstable_by(|a, b| b.1.cmp(&a.1));
+    list.into_iter().map(|(v, _)| v).collect()
 }
 
 pub fn pretty_error(err: &anyhow::Error) -> String {
