@@ -294,21 +294,6 @@ chat-vertexai() {
 -d "$(_build_body vertexai "$@")" 
 }
 
-# @cmd Chat with ernie api
-# @meta require-tools jq
-# @env ERNIE_API_KEY!
-# @option -m --model=ernie-tiny-8k $ERNIE_MODEL
-# @flag -S --no-stream
-# @arg text~
-chat-ernie() {
-    auth_url="https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=$ERNIE_API_KEY&client_secret=$ERNIE_SECRET_KEY"
-    ACCESS_TOKEN="$(curl -fsSL "$auth_url" | jq -r '.access_token')"
-    url="https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/$argc_model?access_token=$ACCESS_TOKEN"
-    _wrapper curl -i "$url" \
--X POST \
--d "$(_build_body ernie "$@")"
-}
-
 _argc_before() {
     OPENAI_COMPATIBLE_PROVIDERS=( \
         openai,gpt-4o-mini,https://api.openai.com/v1 \
@@ -316,6 +301,7 @@ _argc_before() {
         cloudflare,@cf/meta/llama-3.1-8b-instruct,https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/v1 \
         deepinfra,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.deepinfra.com/v1/openai \
         deepseek,deepseek-chat,https://api.deepseek.com \
+        ernie,ernie-4.0-turbo-8k-latest,https://qianfan.baidubce.com/v2 \
         fireworks,accounts/fireworks/models/llama-v3p1-8b-instruct,https://api.fireworks.ai/inference/v1 \
         github,gpt-4o-mini,https://models.inference.ai.azure.com \
         groq,llama-3.1-8b-instant,https://api.groq.com/openai/v1 \
@@ -380,7 +366,7 @@ _choice_provider() {
 }
 
 _choice_client() {
-    printf "%s\n" gemini claude cohere azure-openai vertexai bedrock ernie
+    printf "%s\n" gemini claude cohere azure-openai vertexai bedrock
 }
 
 _choice_openai_compatible_provider() {
@@ -440,17 +426,6 @@ _build_body() {
         ]
     }],
     "safetySettings":[{"category":"HARM_CATEGORY_HARASSMENT","threshold":"BLOCK_ONLY_HIGH"},{"category":"HARM_CATEGORY_HATE_SPEECH","threshold":"BLOCK_ONLY_HIGH"},{"category":"HARM_CATEGORY_SEXUALLY_EXPLICIT","threshold":"BLOCK_ONLY_HIGH"},{"category":"HARM_CATEGORY_DANGEROUS_CONTENT","threshold":"BLOCK_ONLY_HIGH"}]
-}'
-            ;;
-        ernie)
-            echo '{
-    "messages": [
-        {
-            "role": "user",
-            "content": "'"$*"'"
-        }
-    ],
-    "stream": '$stream'
 }'
             ;;
         *)

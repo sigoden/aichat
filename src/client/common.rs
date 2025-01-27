@@ -525,19 +525,6 @@ pub fn json_str_from_map<'a>(
     map.get(field_name).and_then(|v| v.as_str())
 }
 
-pub fn maybe_catch_error(data: &Value) -> Result<()> {
-    if let (Some(code), Some(message)) = (data["code"].as_str(), data["message"].as_str()) {
-        debug!("Invalid response: {}", data);
-        bail!("{message} (code: {code})");
-    } else if let (Some(error_code), Some(error_msg)) =
-        (data["error_code"].as_number(), data["error_msg"].as_str())
-    {
-        debug!("Invalid response: {}", data);
-        bail!("{error_msg} (error_code: {error_code})");
-    }
-    Ok(())
-}
-
 fn set_client_config(list: &[PromptAction], client_config: &mut Value, client: &str) -> Result<()> {
     for (key, desc, help_message) in list {
         let env_name = format!("{client}_{key}").to_ascii_uppercase();
