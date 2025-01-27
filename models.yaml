@@ -746,19 +746,19 @@
       max_input_tokens: 128000
       input_price: 0.042
       output_price: 0.084
-    - name: bge_large_zh
+    - name: bge-large-zh
       type: embedding
       input_price: 0.07
       max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 16
-    - name: bge_large_en
+    - name: bge-large-en
       type: embedding
       input_price: 0.07
       max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 16
-    - name: bce_reranker_base
+    - name: bce-reranker-base
       type: reranker
       max_input_tokens: 1024
       input_price: 0.07
