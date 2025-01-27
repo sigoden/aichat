@@ -79,7 +79,11 @@ fn prepare_rerank(self_: &OpenAICompatibleClient, data: &RerankData) -> Result<R
     let api_key = self_.get_api_key().ok();
     let api_base = get_api_base_ext(self_)?;
 
-    let url = format!("{api_base}/rerank");
+    let url = if self_.name().starts_with("ernie") {
+        format!("{api_base}/rerankers")
+    } else {
+        format!("{api_base}/rerank")
+    };
 
     let body = generic_build_rerank_body(data, &self_.model);
 
@@ -149,7 +153,7 @@ pub fn generic_build_rerank_body(data: &RerankData, model: &Model) -> Value {
         "query": query,
         "documents": documents,
     });
-    if model.client_name() == "voyageai" {
+    if model.client_name().starts_with("voyageai") {
         body["top_k"] = (*top_n).into()
     } else {
         body["top_n"] = (*top_n).into()
