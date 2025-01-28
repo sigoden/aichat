@@ -426,7 +426,7 @@ impl Config {
     }
 
     pub fn models_override_file() -> PathBuf {
-        Self::local_path("models-override.json")
+        Self::local_path("models-override.yaml")
     }
 
     pub fn state(&self) -> StateFlags {
@@ -1871,7 +1871,7 @@ impl Config {
             list,
         };
         let models_override_data =
-            serde_json::to_string_pretty(&models_override).with_context(|| "Failed to serde {}")?;
+            serde_yaml::to_string(&models_override).with_context(|| "Failed to serde {}")?;
 
         let model_override_path = Self::models_override_file();
         ensure_parent_exists(&model_override_path)?;
@@ -1890,7 +1890,7 @@ impl Config {
             )
         };
         let content = read_to_string(&model_override_path).with_context(err)?;
-        let models_override: ModelsOverride = serde_json::from_str(&content).with_context(err)?;
+        let models_override: ModelsOverride = serde_yaml::from_str(&content).with_context(err)?;
         if models_override.version != env!("CARGO_PKG_VERSION") {
             bail!("Incompatible version")
         }
