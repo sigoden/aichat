@@ -22,9 +22,9 @@ Download pre-built binaries for macOS, Linux, and Windows from [GitHub Releases]
 
 ## Features
 
-### Multi-Platform Compatibility
+### Multi-Providers
 
-Integrate seamlessly with over 20 leading LLM platforms through a unified interface. Supported platforms include OpenAI, Claude, Gemini (Google AI Studio), Ollama, Groq, Azure-OpenAI, VertexAI, Bedrock, Huggingface, Github Models, Mistral, Deepseek, AI21, XAI Grok, Cohere, Perplexity, Cloudflare, OpenRouter, Ernie, Qianwen, Moonshot,  ZhipuAI, Lingyiwanwu, Deepinfra, Fireworks, Siliconflow, Together, Jina, VoyageAI, any OpenAI-Compatible platforms.
+Integrate seamlessly with over 20 leading LLM providers through a unified interface. Supported providers include OpenAI, Claude, Gemini (Google AI Studio), Ollama, Groq, Azure-OpenAI, VertexAI, Bedrock, Huggingface, Github Models, Mistral, Deepseek, AI21, XAI Grok, Cohere, Perplexity, Cloudflare, OpenRouter, Ernie, Qianwen, Moonshot, ZhipuAI, Lingyiwanwu, MiniMax, Deepinfra, Fireworks, Siliconflow, Together, Hyperbolic, Novita, Jina, VoyageAI, any OpenAI-Compatible API provider.
 
 ### CMD Mode
 
@@ -52,12 +52,14 @@ Accept diverse input forms such as stdin, local files and directories, and remot
 | ----------------- | ------------------------------------ | -------------------------------- |
 | CMD               | `aichat hello`                       |                                  |
 | STDIN             | `cat data.txt \| aichat`             |                                  |
+| Last Reply        |                                      | `.file %%`                       |
 | Local files       | `aichat -f image.png -f data.txt`    | `.file image.png data.txt`       |
 | Local directories | `aichat -f dir/`                     | `.file dir/`                     |
 | Remote URLs       | `aichat -f https://example.com`      | `.file https://example.com`      |
+| External commands | ```aichat -f '`git diff`'```         | ```.file `git diff` ```          |
 | Combine Inputs    | `aichat -f dir/ -f data.txt explain` | `.file dir/ data.txt -- explain` |
 
-### Role Management
+### Role
 
 Customize roles to tailor LLM behavior, enhancing interaction efficiency and boosting productivity.
 
@@ -65,7 +67,7 @@ Customize roles to tailor LLM behavior, enhancing interaction efficiency and boo
 
 > The role consists of a prompt and model configuration.
 
-### Session Management
+### Session
 
 Maintain context-aware conversations through sessions, ensuring continuity in interactions.
 
@@ -73,10 +75,15 @@ Maintain context-aware conversations through sessions, ensuring continuity in in
 
 > The left side uses a session, while the right side does not use a session.
 
-### RAG (Chat with your documents)
+### Macro
+
+Streamline repetitive tasks by combining a series of REPL commands into a custom macro.
+
+![aichat-macro](https://github.com/user-attachments/assets/23c2a08f-5bd7-4bf3-817c-c484aa74a651)
+
+### RAG
 
 Integrate external documents into your LLM conversations for more accurate and contextually relevant responses.
-
 
 ![aichat-rag](https://github.com/user-attachments/assets/359f0cb8-ee37-432f-a89f-96a2ebab01f6)
 
@@ -148,6 +155,7 @@ AIChat supports custom dark and light themes, which highlight response text and 
 - [Chat-REPL Guide](https://github.com/sigoden/aichat/wiki/Chat-REPL-Guide)
 - [Command-Line Guide](https://github.com/sigoden/aichat/wiki/Command-Line-Guide)
 - [Role Guide](https://github.com/sigoden/aichat/wiki/Role-Guide)
+- [Macro Guide](https://github.com/sigoden/aichat/wiki/Macro-Guide)
 - [RAG Guide](https://github.com/sigoden/aichat/wiki/RAG-Guide)
 - [Environment Variables](https://github.com/sigoden/aichat/wiki/Environment-Variables)
 - [Configuration Guide](https://github.com/sigoden/aichat/wiki/Configuration-Guide)
