@@ -334,6 +334,12 @@ clients:
     name: hyperbolic
     api_base: https://api.hyperbolic.xyz/v1
     api_key: xxx
+  
+  # See https://novita.ai/docs/guides/introduction
+  - type: openai-compatible
+    name: novita
+    api_base: https://api.novita.ai/v3/openai
+    api_key: xxx
 
   # ----- RAG dedicated -----
 
