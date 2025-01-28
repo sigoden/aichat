@@ -311,6 +311,7 @@ _argc_before() {
         minimax,MiniMax-Text-01,https://api.minimax.chat/v1 \
         mistral,mistral-small-latest,https://api.mistral.ai/v1 \
         moonshot,moonshot-v1-8k,https://api.moonshot.cn/v1 \
+        novita,meta-llama/llama-3.1-8b-instruct,https://api.novita.ai/v3/openai \
         openrouter,openai/gpt-4o-mini,https://openrouter.ai/api/v1 \
         ollama,llama3.1:latest,http://${OLLAMA_HOST:-"127.0.0.1:11434"}/v1 \
         perplexity,llama-3.1-8b-instruct,https://api.perplexity.ai \
