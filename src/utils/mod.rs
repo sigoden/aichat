@@ -217,15 +217,12 @@ pub fn is_url(path: &str) -> bool {
 
 pub fn set_proxy(
     mut builder: reqwest::ClientBuilder,
-    proxy: Option<&String>,
+    proxy: &str,
 ) -> Result<reqwest::ClientBuilder> {
-    if let Some(proxy) = proxy {
-        builder = builder.no_proxy();
-        if !proxy.is_empty() && proxy != "-" {
-            builder = builder.proxy(
-                reqwest::Proxy::all(proxy).with_context(|| format!("Invalid proxy `{proxy}`"))?,
-            );
-        }
+    builder = builder.no_proxy();
+    if !proxy.is_empty() && proxy != "-" {
+        builder = builder
+            .proxy(reqwest::Proxy::all(proxy).with_context(|| format!("Invalid proxy `{proxy}`"))?);
     };
     Ok(builder)
 }
