@@ -288,6 +288,8 @@ impl Config {
     pub fn config_dir() -> PathBuf {
         if let Ok(v) = env::var(get_env_name("config_dir")) {
             PathBuf::from(v)
+        } else if let Ok(v) = env::var("XDG_CONFIG_HOME") {
+            PathBuf::from(v).join(env!("CARGO_CRATE_NAME"))
         } else {
             let dir = dirs::config_dir().expect("No user's config directory");
             dir.join(env!("CARGO_CRATE_NAME"))
