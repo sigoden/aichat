@@ -46,6 +46,13 @@
       output_price: 30
       supports_vision: true
       supports_function_calling: true
+    - name: o3-mini
+      max_input_tokens: 200000
+      input_price: 1.1
+      output_price: 4.4
+      supports_vision: true
+      supports_function_calling: true
+      no_system_message: true
     - name: o1
       max_input_tokens: 200000
       input_price: 15
@@ -213,8 +220,8 @@
       supports_function_calling: true
     - name: mistral-small-latest
       max_input_tokens: 32000
-      input_price: 0.2
-      output_price: 0.6
+      input_price: 0.1
+      output_price: 0.3
       supports_function_calling: true
     - name: codestral-latest
       max_input_tokens: 256000
@@ -364,6 +371,10 @@
       max_input_tokens: 200000
       input_price: 3
       output_price: 15
+    - name: sonar-reasoning
+      max_input_tokens: 127000
+      input_price: 1
+      output_price: 5
     - name: sonar
       max_input_tokens: 127000
       input_price: 1
@@ -712,6 +723,12 @@
       require_max_tokens: true
       input_price: 0
       output_price: 0
+    - name: '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b'
+      max_input_tokens: 6144
+      max_output_tokens: 2048
+      require_max_tokens: true
+      input_price: 0
+      output_price: 0
     - name: '@cf/baai/bge-large-en-v1.5'
       type: embedding
       input_price: 0
@@ -772,13 +789,13 @@
 - provider: qianwen
   models:
     - name: qwen-max-latest
-      max_input_tokens: 30720
+      max_input_tokens: 32678
       max_output_tokens: 8192
-      input_price: 2.8
-      output_price: 8.4
+      input_price: 1.6
+      output_price: 6.4
       supports_function_calling: true
     - name: qwen-plus-latest
-      max_input_tokens: 129024
+      max_input_tokens: 131072
       max_output_tokens: 8192
       input_price: 0.112
       output_price: 0.28
@@ -1095,6 +1112,13 @@
       output_price: 30
       supports_vision: true
       supports_function_calling: true
+    - name: openai/o3-mini
+      max_input_tokens: 200000
+      input_price: 1.1
+      output_price: 4.4
+      supports_vision: true
+      supports_function_calling: true
+      no_system_message: true
     - name: openai/o1
       max_input_tokens: 128000
       input_price: 15
@@ -1203,16 +1227,15 @@
       input_price: 0.055
       output_price: 0.055
       supports_vision: true
-    - name: mistralai/mistral-large
+    - name: mistralai/mistral-large-2411
       max_input_tokens: 128000
       input_price: 2
       output_price: 6
       supports_function_calling: true
-    - name: mistralai/mistral-small
-      max_input_tokens: 32000
-      input_price: 0.2
-      output_price: 0.6
-      supports_function_calling: true
+    - name: mistralai/mistral-small-24b-instruct-2501
+      max_input_tokens: 32768
+      input_price: 0.1
+      output_price: 0.3
     - name: mistralai/codestral-2501
       max_input_tokens: 256000
       input_price: 0.3
@@ -1271,6 +1294,28 @@
       max_input_tokens: 131072
       input_price: 0.23
       output_price: 0.69
+    - name: deepseek/deepseek-r1-distill-qwen-32b
+      max_input_tokens: 131072
+      input_price: 0.12
+      output_price: 0.18
+    - name: qwen/qwen-max
+      max_input_tokens: 32768
+      max_output_tokens: 8192
+      input_price: 1.6
+      output_price: 6.4
+      supports_function_calling: true
+    - name: qwen/qwen-plus
+      max_input_tokens: 131072
+      max_output_tokens: 8192
+      input_price: 0.4
+      output_price: 1.2
+      supports_function_calling: true
+    - name: qwen/qwen-turbo
+      max_input_tokens: 1000000
+      max_output_tokens: 8192
+      input_price: 0.05
+      output_price: 0.2
+      supports_function_calling: true
     - name: qwen/qwen-2.5-72b-instruct
       max_input_tokens: 131072
       input_price: 0.35
@@ -1331,6 +1376,14 @@
       max_output_tokens: 5120
       input_price: 0.035
       output_price: 0.14
+    - name: perplexity/sonar-reasoning
+      max_input_tokens: 127000
+      input_price: 1
+      output_price: 5
+    - name: perplexity/sonar
+      max_input_tokens: 127000
+      input_price: 1
+      output_price: 1
     - name: minimax/minimax-01
       max_input_tokens: 1000192
       input_price: 0.2
@@ -1347,11 +1400,15 @@
     - name: gpt-4o-mini
       max_input_tokens: 128000
       supports_function_calling: true
+    - name: o3-mini
+      max_input_tokens: 200000
+      supports_function_calling: true
+      supports_vision: true
+      no_system_message: true
     - name: o1
       max_input_tokens: 200000
       supports_function_calling: true
       supports_vision: true
-      no_stream: true
       no_system_message: true
     - name: o1-preview
       max_input_tokens: 128000
@@ -1413,6 +1470,8 @@
     - name: ai21-jamba-1.5-mini
       max_input_tokens: 256000
       supports_function_calling: true
+    - name: deepseek-r1
+      max_input_tokens: 163840
     - name: phi-4
       max_input_tokens: 16384
     - name: phi-3.5-moe-instruct
@@ -1484,6 +1543,14 @@
       max_input_tokens: 131072
       input_price: 0.23
       output_price: 0.69
+    - name: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
+      max_input_tokens: 131072
+      input_price: 0.12
+      output_price: 0.18
+    - name: mistralai/Mistral-Small-24B-Instruct-2501
+      max_input_tokens: 32768
+      input_price: 0.07
+      output_price: 0.14
     - name: BAAI/bge-large-en-v1.5
       type: embedding
       input_price: 0.01
@@ -1574,6 +1641,18 @@
       max_input_tokens: 160000
       input_price: 8
       output_price: 8
+    - name: accounts/fireworks/models/deepseek-r1-distill-llama-70b
+      max_input_tokens: 131072
+      input_price: 0.9
+      output_price: 0.9
+    - name: accounts/fireworks/models/deepseek-r1-distill-qwen-32b
+      max_input_tokens: 131072
+      input_price: 0.9
+      output_price: 0.9
+    - name: accounts/fireworks/models/mistral-small-24b-instruct-2501
+      max_input_tokens: 32768
+      input_price: 0.9
+      output_price: 0.9
     - name: nomic-ai/nomic-embed-text-v1.5
       type: embedding
       input_price: 0.008
@@ -1650,10 +1729,18 @@
       max_input_tokens: 32768
       input_price: 0.176
       output_price: 0.176
+    - name: deepseek-ai/DeepSeek-V3
+      max_input_tokens: 65536
+      input_price: 0.28
+      output_price: 0.28
+    - name: deepseek-ai/DeepSeek-R1
+      max_input_tokens: 65536
+      input_price: 2.24
+      output_price: 2.24
     - name: deepseek-ai/DeepSeek-V2.5
       max_input_tokens: 32768
-      input_price: 0.186
-      output_price: 0.186
+      input_price: 0.7
+      output_price: 0.7
       supports_function_calling: true
     - name: deepseek-ai/deepseek-vl2
       max_input_tokens: 32768
@@ -1747,6 +1834,10 @@
       max_input_tokens: 163840
       input_price: 7
       output_price: 7
+    - name: mistralai/Mistral-Small-24B-Instruct-2501
+      max_input_tokens: 32768
+      input_price: 0.8
+      output_price: 0.8
     - name: WhereIsAI/UAE-Large-V1
       type: embedding
       input_price: 0.016
@@ -1859,6 +1950,10 @@
       max_input_tokens: 32000
       input_price: 0.8
       output_price: 0.8
+    - name: deepseek/deepseek-r1-distill-qwen-32b
+      max_input_tokens: 128000
+      input_price: 0.3
+      output_price: 0.3
 
 # Links:
 #  - https://jina.ai/models
