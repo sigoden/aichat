@@ -29,7 +29,6 @@ const USER_AGENT: &str = "curl/8.6.0";
 lazy_static::lazy_static! {
     static ref CLIENT: Result<reqwest::Client> = {
         let builder = reqwest::ClientBuilder::new().timeout(Duration::from_secs(30));
-        let builder = set_proxy(builder, None)?;
         let client = builder.build()?;
         Ok(client)
     };
