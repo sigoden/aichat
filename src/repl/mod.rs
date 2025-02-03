@@ -713,7 +713,7 @@ async fn ask(
     let (output, tool_results) = if input.stream() {
         call_chat_completions_streaming(&input, client.as_ref(), abort_signal.clone()).await?
     } else {
-        call_chat_completions(&input, false, client.as_ref(), abort_signal.clone()).await?
+        call_chat_completions(&input, true, false, client.as_ref(), abort_signal.clone()).await?
     };
     config
         .write()

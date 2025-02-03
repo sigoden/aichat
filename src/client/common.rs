@@ -14,7 +14,7 @@ use inquire::{required, Text};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::{future::Future, time::Duration};
+use std::time::Duration;
 use tokio::sync::mpsc::unbounded_channel;
 
 const MODELS_YAML: &str = include_str!("../../models.yaml");
@@ -378,6 +378,7 @@ pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(St
 
 pub async fn call_chat_completions(
     input: &Input,
+    print: bool,
     extract_code: bool,
     client: &dyn Client,
     abort_signal: AbortSignal,
@@ -397,10 +398,12 @@ pub async fn call_chat_completions(
                 ..
             } = ret;
             if !text.is_empty() {
-                if extract_code && text.trim_start().starts_with("```") {
-                    text = extract_block(&text);
+                if extract_code {
+                    text = extract_code_block(&text).to_string();
                 }
-                client.global_config().read().print_markdown(&text)?;
+                if print {
+                    client.global_config().read().print_markdown(&text)?;
+                }
             }
             Ok((text, eval_tool_calls(client.global_config(), tool_calls)?))
         }
@@ -442,23 +445,6 @@ pub async fn call_chat_completions_streaming(
             Err(err)
         }
     }
-}
-
-#[allow(unused)]
-pub async fn chat_completions_as_streaming<F, Fut>(
-    builder: RequestBuilder,
-    handler: &mut SseHandler,
-    f: F,
-) -> Result<()>
-where
-    F: FnOnce(RequestBuilder) -> Fut,
-    Fut: Future<Output = Result<String>>,
-{
-    let text = f(builder).await?;
-    handler.text(&text)?;
-    handler.done();
-
-    Ok(())
 }
 
 pub fn noop_prepare_embeddings<T>(_client: &T, _data: &EmbeddingsData) -> Result<RequestData> {
