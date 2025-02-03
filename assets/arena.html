@@ -1009,8 +1009,35 @@
 </div>`;
         }
       };
+      const thinkExtension = {
+        name: 'think',
+        level: 'block',
+        start(src) {
+          return src.indexOf('<think>');
+        },
+        tokenizer(src, tokens) {
+          const rule = /^\s*<think>([\s\S]*?)(<\/think>|$)/;
+          const match = rule.exec(src);
+          if (match) {
+            return {
+              type: 'think',
+              raw: match[0],
+              text: match[1].trim(),
+            };
+          }
+        },
+        renderer(token) {
+          const isOpen = !token.raw.endsWith('</think>');
+          const text = '<p>' + token.text.trim().replace(/\n+/g, '</p><p>') + '</p>';
+          return `<details ${isOpen ? "open" : ""} class="think">
+            <summary>Deeply thought</summary>
+            <blockquote>${text}</blockquote>
+          </details>`;
+        },
+      };
       marked.use({ renderer });
-      marked.use(markedKatex({ throwOnError: false, inlineTolerantNoSpace: true  }));
+      marked.use(markedKatex({ throwOnError: false, inlineTolerantNoSpace: true }));
+      marked.use({ extensions: [thinkExtension] })
     }
 
     function escapeForHTML(input) {
