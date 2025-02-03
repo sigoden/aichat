@@ -1262,8 +1262,7 @@ impl Config {
             .clone()
             .unwrap_or_else(|| SUMMARIZE_PROMPT.into());
         let input = Input::from_str(config, &prompt, None);
-        let client = input.create_client()?;
-        let summary = client.chat_completions(input).await?.text;
+        let summary = input.fetch_chat_text().await?;
         let summary_prompt = config
             .read()
             .summary_prompt
@@ -1322,8 +1321,7 @@ impl Config {
         };
         let role = config.read().retrieve_role(CREATE_TITLE_ROLE)?;
         let input = Input::from_str(config, &text, Some(role));
-        let client = input.create_client()?;
-        let text = client.chat_completions(input).await?.text;
+        let text = input.fetch_chat_text().await?;
         if let Some(session) = config.write().session.as_mut() {
             session.set_autoname(&text);
         }

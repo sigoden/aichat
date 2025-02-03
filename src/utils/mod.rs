@@ -61,8 +61,8 @@ pub fn parse_bool(value: &str) -> Option<bool> {
     }
 }
 
-pub fn strip_think_tag(input: &str) -> Cow<str> {
-    THINK_TAG_RE.replace_all(input, "")
+pub fn strip_think_tag(text: &str) -> Cow<str> {
+    THINK_TAG_RE.replace_all(text, "")
 }
 
 pub fn estimate_token_length(text: &str) -> usize {
