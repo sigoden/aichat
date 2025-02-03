@@ -208,7 +208,14 @@ async fn start_directive(
     let extract_code = !*IS_STDOUT_TERMINAL && code_mode;
     config.write().before_chat_completion(&input)?;
     let (output, tool_results) = if !input.stream() || extract_code {
-        call_chat_completions(&input, extract_code, client.as_ref(), abort_signal.clone()).await?
+        call_chat_completions(
+            &input,
+            true,
+            extract_code,
+            client.as_ref(),
+            abort_signal.clone(),
+        )
+        .await?
     } else {
         call_chat_completions_streaming(&input, client.as_ref(), abort_signal.clone()).await?
     };
@@ -244,17 +251,9 @@ async fn shell_execute(
 ) -> Result<()> {
     let client = input.create_client()?;
     config.write().before_chat_completion(&input)?;
-    let ret = abortable_run_with_spinner(
-        client.chat_completions(input.clone()),
-        "Generating",
-        abort_signal.clone(),
-    )
-    .await;
-    let mut eval_str = ret?.text;
-    eval_str = strip_think_tag(&eval_str).to_string();
-    if let Ok(true) = CODE_BLOCK_RE.is_match(&eval_str) {
-        eval_str = extract_block(&eval_str);
-    }
+    let (eval_str, _) =
+        call_chat_completions(&input, false, true, client.as_ref(), abort_signal.clone()).await?;
+
     config
         .write()
         .after_chat_completion(&input, &eval_str, &[])?;
@@ -314,8 +313,14 @@ async fn shell_execute(
                         )
                         .await?;
                     } else {
-                        call_chat_completions(&input, false, client.as_ref(), abort_signal.clone())
-                            .await?;
+                        call_chat_completions(
+                            &input,
+                            true,
+                            false,
+                            client.as_ref(),
+                            abort_signal.clone(),
+                        )
+                        .await?;
                     }
                     println!();
                     continue;

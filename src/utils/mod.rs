@@ -61,10 +61,6 @@ pub fn parse_bool(value: &str) -> Option<bool> {
     }
 }
 
-pub fn strip_think_tag(text: &str) -> Cow<str> {
-    THINK_TAG_RE.replace_all(text, "")
-}
-
 pub fn estimate_token_length(text: &str) -> usize {
     let words: Vec<&str> = text.unicode_words().collect();
     let mut output: f32 = 0.0;
@@ -101,20 +97,16 @@ pub fn light_theme_from_colorfgbg(colorfgbg: &str) -> Option<bool> {
     Some(light)
 }
 
-pub fn extract_block(input: &str) -> String {
-    let output: String = CODE_BLOCK_RE
-        .captures_iter(input)
-        .filter_map(|m| {
-            m.ok()
-                .and_then(|cap| cap.get(1))
-                .map(|m| String::from(m.as_str()))
-        })
-        .collect();
-    if output.is_empty() {
-        input.trim().to_string()
-    } else {
-        output.trim().to_string()
-    }
+pub fn strip_think_tag(text: &str) -> Cow<str> {
+    THINK_TAG_RE.replace_all(text, "")
+}
+
+pub fn extract_code_block(text: &str) -> &str {
+    CODE_BLOCK_RE
+        .captures(text)
+        .ok()
+        .and_then(|v| v?.get(1).map(|v| v.as_str().trim()))
+        .unwrap_or(text)
 }
 
 pub fn convert_option_string(value: &str) -> Option<String> {
