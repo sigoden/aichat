@@ -65,6 +65,10 @@ impl MessageRole {
     pub fn is_user(&self) -> bool {
         matches!(self, MessageRole::User)
     }
+
+    pub fn is_assistant(&self) -> bool {
+        matches!(self, MessageRole::Assistant)
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
