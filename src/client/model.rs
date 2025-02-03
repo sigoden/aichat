@@ -5,7 +5,7 @@ use super::{
 };
 
 use crate::config::Config;
-use crate::utils::estimate_token_length;
+use crate::utils::{estimate_token_length, strip_think_tag};
 
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
@@ -220,10 +220,18 @@ impl Model {
     }
 
     pub fn messages_tokens(&self, messages: &[Message]) -> usize {
+        let messages_len = messages.len();
         messages
             .iter()
-            .map(|v| match &v.content {
-                MessageContent::Text(text) => estimate_token_length(text),
+            .enumerate()
+            .map(|(i, v)| match &v.content {
+                MessageContent::Text(text) => {
+                    if v.role.is_assistant() && i != messages_len - 1 {
+                        estimate_token_length(&strip_think_tag(text))
+                    } else {
+                        estimate_token_length(text)
+                    }
+                }
                 MessageContent::Array(list) => list
                     .iter()
                     .map(|v| match v {

@@ -1,5 +1,7 @@
 use super::*;
 
+use crate::utils::strip_think_tag;
+
 use anyhow::{bail, Context, Result};
 use reqwest::RequestBuilder;
 use serde::Deserialize;
@@ -219,9 +221,11 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
         stream,
     } = data;
 
+    let messages_len = messages.len();
     let messages: Vec<Value> = messages
         .into_iter()
-        .flat_map(|message| {
+        .enumerate()
+        .flat_map(|(i, message)| {
             let Message { role, content } = message;
             match content {
                 MessageContent::ToolCalls(MessageContentToolCalls {
@@ -281,6 +285,9 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
                         }).collect()
                     }
                 },
+                MessageContent::Text(text) if role.is_assistant() && i != messages_len - 1 => vec![
+                    json!({ "role": role, "content": strip_think_tag(&text) }
+                )],
                 _ => vec![json!({ "role": role, "content": content })]
             }
         })

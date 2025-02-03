@@ -244,6 +244,13 @@ impl Input {
         init_client(&self.config, Some(self.role().model().clone()))
     }
 
+    pub async fn fetch_chat_text(&self) -> Result<String> {
+        let client = self.create_client()?;
+        let text = client.chat_completions(self.clone()).await?.text;
+        let text = strip_think_tag(&text).to_string();
+        Ok(text)
+    }
+
     pub fn prepare_completion_data(
         &self,
         model: &Model,

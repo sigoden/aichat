@@ -870,6 +870,7 @@
               });
             }
           }
+          sanitizeMessages(messages);
           const body = {
             model: chat.model,
             messages: messages,
@@ -991,6 +992,20 @@
       });
     }
 
+    function sanitizeMessages(messages) {
+      let messagesLen = messages.length;
+      for (let i = 0; i < messagesLen; i++) {
+        const message = messages[i];
+        if (typeof message.content === "string" && message.role === "assistant" && i !== messagesLen - 1) {
+          message.content = stripThinkTag(message.content);
+        }
+      }
+    }
+
+    function stripThinkTag(text) {
+      return text.replace(/^\s*<think>([\s\S]*?)<\/think>(\s*|$)/g, '')
+    }
+
     function setupMarked() {
       const renderer = {
         code({ text, lang }) {
@@ -1013,7 +1028,12 @@
         name: 'think',
         level: 'block',
         start(src) {
-          return src.indexOf('<think>');
+          const match = /^(\s*)<think>/.exec(src);
+          if (match) {
+            return match[1].length
+          } else {
+            return -1;
+          }
         },
         tokenizer(src, tokens) {
           const rule = /^\s*<think>([\s\S]*?)(<\/think>|$)/;

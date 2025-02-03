@@ -26,11 +26,13 @@ use anyhow::{Context, Result};
 use fancy_regex::Regex;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use is_terminal::IsTerminal;
+use std::borrow::Cow;
 use std::{env, path::PathBuf, process};
 use unicode_segmentation::UnicodeSegmentation;
 
 lazy_static::lazy_static! {
     pub static ref CODE_BLOCK_RE: Regex = Regex::new(r"(?ms)```\w*(.*)```").unwrap();
+    pub static ref THINK_TAG_RE: Regex = Regex::new(r"(?s)^\s*<think>.*?</think>(\s*|$)").unwrap();
     pub static ref IS_STDOUT_TERMINAL: bool = std::io::stdout().is_terminal();
     pub static ref NO_COLOR: bool = env::var("NO_COLOR").ok().and_then(|v| parse_bool(&v)).unwrap_or_default() || !*IS_STDOUT_TERMINAL;
 }
@@ -57,6 +59,10 @@ pub fn parse_bool(value: &str) -> Option<bool> {
         "0" | "false" => Some(false),
         _ => None,
     }
+}
+
+pub fn strip_think_tag(text: &str) -> Cow<str> {
+    THINK_TAG_RE.replace_all(text, "")
 }
 
 pub fn estimate_token_length(text: &str) -> usize {

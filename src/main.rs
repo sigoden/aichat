@@ -251,6 +251,7 @@ async fn shell_execute(
     )
     .await;
     let mut eval_str = ret?.text;
+    eval_str = strip_think_tag(&eval_str).to_string();
     if let Ok(true) = CODE_BLOCK_RE.is_match(&eval_str) {
         eval_str = extract_block(&eval_str);
     }
