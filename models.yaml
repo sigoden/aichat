@@ -233,6 +233,11 @@
       input_price: 0.1
       output_price: 0.1
       supports_function_calling: true
+    - name: open-mistral-nemo
+      max_input_tokens: 128000
+      input_price: 0.15
+      output_price: 0.15
+      supports_function_calling: true
     - name: pixtral-large-latest
       max_input_tokens: 128000
       input_price: 2
@@ -525,6 +530,11 @@
       max_input_tokens: 256000
       input_price: 0.3
       output_price: 0.9
+      supports_function_calling: true
+    - name: mistral-nemo@2407
+      max_input_tokens: 128000
+      input_price: 0.15
+      output_price: 0.15
       supports_function_calling: true
     - name: text-embedding-005
       type: embedding
@@ -1246,6 +1256,11 @@
       input_price: 0.1
       output_price: 0.1
       supports_function_calling: true
+    - name: mistralai/mistral-nemo
+      max_input_tokens: 128000
+      input_price: 0.035
+      output_price: 0.08
+      supports_function_calling: true
     - name: mistralai/pixtral-large-2411
       max_input_tokens: 128000
       input_price: 2
@@ -1448,6 +1463,9 @@
     - name: codestral-2501
       max_input_tokens: 256000
       supports_function_calling: true
+    - name: mistral-nemo
+      max_input_tokens: 128000
+      supports_function_calling: true
     - name: cohere-command-r-plus-08-2024
       max_input_tokens: 128000
       supports_function_calling: true
@@ -1551,6 +1569,10 @@
       max_input_tokens: 32768
       input_price: 0.07
       output_price: 0.14
+    - name: mistralai/Mistral-Nemo-Instruct-2407
+      max_input_tokens: 131072
+      input_price: 0.035
+      output_price: 0.08
     - name: BAAI/bge-large-en-v1.5
       type: embedding
       input_price: 0.01
@@ -1954,6 +1976,10 @@
       max_input_tokens: 128000
       input_price: 0.3
       output_price: 0.3
+    - name: mistralai/mistral-nemo
+      max_input_tokens: 131072
+      input_price: 0.17
+      output_price: 0.17
 
 # Links:
 #  - https://jina.ai/models
