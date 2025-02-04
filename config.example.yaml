@@ -95,6 +95,7 @@ clients:
   #       max_input_tokens: 100000
   #       supports_vision: true
   #       supports_function_calling: true
+  #       supports_reasoning: true
   #     - name: xxxx                                  # Embedding model
   #       type: embedding
   #       max_input_tokens: 200000
