@@ -1047,9 +1047,8 @@
           }
         },
         renderer(token) {
-          const isOpen = !token.raw.endsWith('</think>');
           const text = '<p>' + token.text.trim().replace(/\n+/g, '</p><p>') + '</p>';
-          return `<details ${isOpen ? "open" : ""} class="think">
+          return `<details open class="think">
             <summary>Deeply thought</summary>
             <blockquote>${text}</blockquote>
           </details>`;
