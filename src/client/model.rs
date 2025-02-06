@@ -103,6 +103,10 @@ impl Model {
         &self.data.name
     }
 
+    pub fn real_name(&self) -> &str {
+        self.data.real_name.as_deref().unwrap_or(&self.data.name)
+    }
+
     pub fn model_type(&self) -> ModelType {
         if self.data.model_type.starts_with("embed") {
             ModelType::Embedding
@@ -293,6 +297,8 @@ pub struct ModelData {
     pub name: String,
     #[serde(default = "default_model_type", rename = "type")]
     pub model_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub real_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_input_tokens: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]

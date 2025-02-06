@@ -50,7 +50,7 @@ fn prepare_chat_completions(
     let url = format!(
         "{}/openai/deployments/{}/chat/completions?api-version=2024-10-21",
         &api_base,
-        self_.model.name()
+        self_.model.real_name()
     );
 
     let body = openai_build_chat_completions_body(data, &self_.model);
@@ -69,7 +69,7 @@ fn prepare_embeddings(self_: &AzureOpenAIClient, data: &EmbeddingsData) -> Resul
     let url = format!(
         "{}/openai/deployments/{}/embeddings?api-version=2024-10-21",
         &api_base,
-        self_.model.name()
+        self_.model.real_name()
     );
 
     let body = openai_build_embeddings_body(data, &self_.model);
