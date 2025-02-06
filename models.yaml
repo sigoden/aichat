@@ -53,7 +53,6 @@
       supports_vision: true
       supports_function_calling: true
       supports_reasoning: true
-      no_system_message: true
     - name: o1
       max_input_tokens: 200000
       input_price: 15
@@ -61,7 +60,6 @@
       supports_vision: true
       supports_function_calling: true
       supports_reasoning: true
-      no_system_message: true
     - name: o1-preview
       max_input_tokens: 128000
       max_output_tokens: 32768
@@ -122,6 +120,20 @@
       output_price: 0
       supports_vision: true
       supports_function_calling: true
+    - name: gemini-2.0-flash
+      max_input_tokens: 1048576
+      max_output_tokens: 8192
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-2.0-flash-lite-preview
+      max_input_tokens: 1048576
+      max_output_tokens: 8192
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
     - name: gemini-2.0-flash-exp
       max_input_tokens: 1048576
       max_output_tokens: 8192
@@ -136,7 +148,7 @@
       output_price: 0
       supports_vision: true
       supports_reasoning: true
-    - name: gemini-exp-1206
+    - name: gemini-2.0-pro-exp
       max_input_tokens: 2097152
       max_output_tokens: 8192
       input_price: 0
@@ -468,8 +480,22 @@
     - name: gemini-1.5-flash-002
       max_input_tokens: 1048576
       max_output_tokens: 8192
-      input_price: 0.01875
+      input_price: 0.019
       output_price: 0.075
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-2.0-flash-001
+      max_input_tokens: 1048576
+      max_output_tokens: 8192
+      input_price: 0.15
+      output_price: 0.6
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-2.0-flash-lite-preview-02-05
+      max_input_tokens: 1048576
+      max_output_tokens: 8192
+      input_price: 0.075
+      output_price: 0.3
       supports_vision: true
       supports_function_calling: true
     - name: gemini-2.0-flash-exp
@@ -482,6 +508,11 @@
       max_output_tokens: 8192
       supports_vision: true
       supports_reasoning: true
+    - name: gemini-2.0-pro-exp-02-05
+      max_input_tokens: 2097152
+      max_output_tokens: 8192
+      supports_vision: true
+      supports_function_calling: true
     - name: claude-3-5-sonnet-v2@20241022
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -757,7 +788,7 @@
       max_batch_size: 100
 
 # Links:
-#  - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu
+#  - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Fm2vrveyu
 #  - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7
 - provider: ernie
   models:
@@ -1141,7 +1172,6 @@
       supports_vision: true
       supports_function_calling: true
       supports_reasoning: true
-      no_system_message: true
     - name: openai/o1
       max_input_tokens: 128000
       input_price: 15
@@ -1149,7 +1179,6 @@
       supports_vision: true
       supports_function_calling: true
       supports_reasoning: true
-      no_system_message: true
     - name: openai/o1-preview
       max_input_tokens: 128000
       input_price: 15
@@ -1183,6 +1212,12 @@
       max_input_tokens: 1000000
       input_price: 0.0375
       output_price: 0.15
+      supports_vision: true
+      supports_function_calling: true
+    - name: google/gemini-2.0-flash-001
+      max_input_tokens: 1000000
+      input_price: 0.1
+      output_price: 0.4
       supports_vision: true
       supports_function_calling: true
     - name: anthropic/claude-3.5-sonnet
@@ -1442,13 +1477,11 @@
       supports_function_calling: true
       supports_vision: true
       supports_reasoning: true
-      no_system_message: true
     - name: o1
       max_input_tokens: 200000
       supports_function_calling: true
       supports_vision: true
       supports_reasoning: true
-      no_system_message: true
     - name: o1-preview
       max_input_tokens: 128000
       supports_reasoning: true
@@ -1729,6 +1762,7 @@
       max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 100
+
 # Links
 #  - https://cloud.siliconflow.cn/models
 #  - https://docs.siliconflow.cn/api-reference/chat-completions/chat-completions
@@ -1797,6 +1831,16 @@
       max_input_tokens: 65536
       input_price: 2.24
       output_price: 2.24
+      supports_reasoning: true
+    - name: deepseek-ai/DeepSeek-R1-Distill-Llama-70B
+      max_input_tokens: 32768
+      input_price: 0.578 
+      output_price: 0.578 
+      supports_reasoning: true
+    - name: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
+      max_input_tokens: 32768
+      input_price: 0.176
+      output_price: 0.176
       supports_reasoning: true
     - name: deepseek-ai/DeepSeek-V2.5
       max_input_tokens: 32768

@@ -146,7 +146,7 @@ impl Model {
                     capabilities.push('⚒');
                 };
                 if *supports_reasoning {
-                    capabilities.push('🄡');
+                    capabilities.push('💭');
                 }
                 let capabilities: String = capabilities
                     .into_iter()
