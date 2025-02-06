@@ -149,7 +149,7 @@ pub fn generic_build_rerank_body(data: &RerankData, model: &Model) -> Value {
     } = data;
 
     let mut body = json!({
-        "model": model.name(),
+        "model": model.real_name(),
         "query": query,
         "documents": documents,
     });

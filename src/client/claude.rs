@@ -248,7 +248,7 @@ pub fn claude_build_chat_completions_body(
     }
 
     let mut body = json!({
-        "model": model.name(),
+        "model": model.real_name(),
         "messages": messages,
     });
     if let Some(v) = system_message {

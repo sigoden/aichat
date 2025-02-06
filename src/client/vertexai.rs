@@ -43,7 +43,7 @@ impl Client for VertexAIClient {
     ) -> Result<ChatCompletionsOutput> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let model = self.model();
-        let model_category = ModelCategory::from_str(model.name())?;
+        let model_category = ModelCategory::from_str(model.real_name())?;
         let request_data = prepare_chat_completions(self, data, &model_category)?;
         let builder = self.request_builder(client, request_data);
         match model_category {
@@ -61,7 +61,7 @@ impl Client for VertexAIClient {
     ) -> Result<()> {
         prepare_gcloud_access_token(client, self.name(), &self.config.adc_file).await?;
         let model = self.model();
-        let model_category = ModelCategory::from_str(model.name())?;
+        let model_category = ModelCategory::from_str(model.real_name())?;
         let request_data = prepare_chat_completions(self, data, &model_category)?;
         let builder = self.request_builder(client, request_data);
         match model_category {
@@ -100,7 +100,7 @@ fn prepare_chat_completions(
 
     let base_url = format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers");
 
-    let model_name = self_.model.name();
+    let model_name = self_.model.real_name();
 
     let url = match model_category {
         ModelCategory::Gemini => {
@@ -135,7 +135,7 @@ fn prepare_chat_completions(
         ModelCategory::Mistral => {
             let mut body = openai_build_chat_completions_body(data, &self_.model);
             if let Some(body_obj) = body.as_object_mut() {
-                body_obj["model"] = strip_model_version(self_.model.name()).into();
+                body_obj["model"] = strip_model_version(self_.model.real_name()).into();
             }
             body
         }
@@ -154,7 +154,7 @@ fn prepare_embeddings(self_: &VertexAIClient, data: &EmbeddingsData) -> Result<R
     let access_token = get_access_token(self_.name())?;
 
     let base_url = format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers");
-    let url = format!("{base_url}/google/models/{}:predict", self_.model.name());
+    let url = format!("{base_url}/google/models/{}:predict", self_.model.real_name());
 
     let instances: Vec<_> = data.texts.iter().map(|v| json!({"content": v})).collect();
 

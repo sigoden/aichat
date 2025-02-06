@@ -54,7 +54,7 @@ fn prepare_chat_completions(
     let url = format!(
         "{}/models/{}:{}?key={}",
         api_base.trim_end_matches('/'),
-        self_.model.name(),
+        self_.model.real_name(),
         func,
         api_key
     );
@@ -75,11 +75,11 @@ fn prepare_embeddings(self_: &GeminiClient, data: &EmbeddingsData) -> Result<Req
     let url = format!(
         "{}/models/{}:batchEmbedContents?key={}",
         api_base.trim_end_matches('/'),
-        self_.model.name(),
+        self_.model.real_name(),
         api_key
     );
 
-    let model_id = format!("models/{}", self_.model.name());
+    let model_id = format!("models/{}", self_.model.real_name());
 
     let requests: Vec<_> = data
         .texts

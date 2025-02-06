@@ -294,7 +294,7 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
         .collect();
 
     let mut body = json!({
-        "model": &model.name(),
+        "model": &model.real_name(),
         "messages": messages,
     });
 
@@ -330,7 +330,7 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
 pub fn openai_build_embeddings_body(data: &EmbeddingsData, model: &Model) -> Value {
     json!({
         "input": data.texts,
-        "model": model.name()
+        "model": model.real_name()
     })
 }
 

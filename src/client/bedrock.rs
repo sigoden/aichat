@@ -46,7 +46,7 @@ impl BedrockClient {
         let region = self.get_region()?;
         let host = format!("bedrock-runtime.{region}.amazonaws.com");
 
-        let model_name = &self.model.name();
+        let model_name = &self.model.real_name();
 
         let uri = if data.stream {
             format!("/model/{model_name}/converse-stream")
@@ -95,7 +95,7 @@ impl BedrockClient {
         let region = self.get_region()?;
         let host = format!("bedrock-runtime.{region}.amazonaws.com");
 
-        let uri = format!("/model/{}/invoke", self.model.name());
+        let uri = format!("/model/{}/invoke", self.model.real_name());
 
         let input_type = match data.query {
             true => "search_query",

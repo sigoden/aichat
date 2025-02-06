@@ -76,7 +76,7 @@ fn prepare_embeddings(self_: &CohereClient, data: &EmbeddingsData) -> Result<Req
     };
 
     let body = json!({
-        "model": self_.model.name(),
+        "model": self_.model.real_name(),
         "texts": data.texts,
         "input_type": input_type,
         "embedding_types": ["float"],
