@@ -107,9 +107,8 @@ pub fn run_command_with_output<T: AsRef<OsStr>>(
 }
 
 pub fn run_loader_command(path: &str, extension: &str, loader_command: &str) -> Result<String> {
-    let cmd_args = shell_words::split(loader_command).with_context(|| {
-        anyhow!("Invalid rag document loader '{extension}': `{loader_command}`")
-    })?;
+    let cmd_args = shell_words::split(loader_command)
+        .with_context(|| anyhow!("Invalid document loader '{extension}': `{loader_command}`"))?;
     let mut use_stdout = true;
     let outpath = temp_file("-output-", "").display().to_string();
     let cmd_args: Vec<_> = cmd_args

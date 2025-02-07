@@ -2,6 +2,7 @@ use std::path::{Component, Path, PathBuf};
 
 use anyhow::{bail, Result};
 use indexmap::IndexSet;
+use path_absolutize::Absolutize;
 
 pub fn safe_join_path<T1: AsRef<Path>, T2: AsRef<Path>>(
     base_path: T1,
@@ -73,6 +74,20 @@ pub fn get_patch_extension(path: &str) -> Option<String> {
     Path::new(&path)
         .extension()
         .map(|v| v.to_string_lossy().to_lowercase())
+}
+
+pub fn to_absolute_path(path: &str) -> Result<String> {
+    Ok(Path::new(&path).absolutize()?.display().to_string())
+}
+
+pub fn resolve_home_dir(path: &str) -> String {
+    let mut path = path.to_string();
+    if path.starts_with("~/") || path.starts_with("~\\") {
+        if let Some(home_dir) = dirs::home_dir() {
+            path.replace_range(..1, &home_dir.display().to_string());
+        }
+    }
+    path
 }
 
 fn parse_glob(path_str: &str) -> Result<(String, Vec<String>)> {
