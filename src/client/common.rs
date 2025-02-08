@@ -10,7 +10,7 @@ use crate::{
 use anyhow::{bail, Context, Result};
 use fancy_regex::Regex;
 use indexmap::IndexMap;
-use inquire::{required, Text};
+use inquire::{required, Select, Text};
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -335,9 +335,9 @@ pub fn create_config(prompts: &[PromptAction], client: &str) -> Result<(String, 
     let mut config = json!({
         "type": client,
     });
-    set_client_config(prompts, &mut config, client)?;
+    let model = set_client_config(prompts, &mut config, client)?;
     let clients = json!(vec![config]);
-    Ok((client.to_string(), clients))
+    Ok((model, clients))
 }
 
 pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(String, Value)>> {
@@ -371,9 +371,9 @@ pub fn create_openai_compatible_client_config(client: &str) -> Result<Option<(St
         config["api_key"] = api_key.into();
     }
 
-    set_client_models_config(&mut config, &name)?;
+    let model = set_client_models_config(&mut config, &name)?;
     let clients = json!(vec![config]);
-    Ok(Some((name, clients)))
+    Ok(Some((model, clients)))
 }
 
 pub async fn call_chat_completions(
@@ -512,7 +512,11 @@ pub fn json_str_from_map<'a>(
     map.get(field_name).and_then(|v| v.as_str())
 }
 
-fn set_client_config(list: &[PromptAction], client_config: &mut Value, client: &str) -> Result<()> {
+fn set_client_config(
+    list: &[PromptAction],
+    client_config: &mut Value,
+    client: &str,
+) -> Result<String> {
     for (key, desc, help_message) in list {
         let env_name = format!("{client}_{key}").to_ascii_uppercase();
         let required = std::env::var(&env_name).is_err();
@@ -524,9 +528,16 @@ fn set_client_config(list: &[PromptAction], client_config: &mut Value, client: &
     set_client_models_config(client_config, client)
 }
 
-fn set_client_models_config(client_config: &mut Value, client: &str) -> Result<()> {
-    if ALL_PROVIDER_MODELS.iter().any(|v| v.provider == client) {
-        return Ok(());
+fn set_client_models_config(client_config: &mut Value, client: &str) -> Result<String> {
+    if let Some(provider) = ALL_PROVIDER_MODELS.iter().find(|v| v.provider == client) {
+        let models: Vec<String> = provider
+            .models
+            .iter()
+            .filter(|v| v.model_type == "chat")
+            .map(|v| v.name.clone())
+            .collect();
+        let model_name = select_model(models)?;
+        return Ok(format!("{client}:{model_name}"));
     }
 
     let model_names = prompt_input_string(
@@ -534,12 +545,36 @@ fn set_client_models_config(client_config: &mut Value, client: &str) -> Result<(
         true,
         Some("Separated by commas, e.g. llama3.3,qwen2.5"),
     )?;
-    let models: Vec<Value> = model_names
+    let model_names = model_names
         .split(',')
-        .map(|v| json!({"name": v.trim()}))
-        .collect();
+        .filter_map(|v| {
+            let v = v.trim();
+            if v.is_empty() {
+                None
+            } else {
+                Some(v.to_string())
+            }
+        })
+        .collect::<Vec<_>>();
+    if model_names.is_empty() {
+        bail!("No models");
+    }
+    let models: Vec<Value> = model_names.iter().map(|v| json!({"name": v})).collect();
     client_config["models"] = models.into();
-    Ok(())
+    let model_name = select_model(model_names)?;
+    Ok(format!("{client}:{model_name}"))
+}
+
+fn select_model(model_names: Vec<String>) -> Result<String> {
+    if model_names.is_empty() {
+        bail!("No models");
+    }
+    let model = if model_names.len() == 1 {
+        model_names[0].clone()
+    } else {
+        Select::new("Select model:", model_names).prompt()?
+    };
+    Ok(model)
 }
 
 fn prompt_input_string(
