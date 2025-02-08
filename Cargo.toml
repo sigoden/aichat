@@ -89,7 +89,7 @@ arboard = { version = "3.3.0", default-features = false }
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
-rand = "0.8.5"
+rand = "0.9.0"
 
 [profile.release]
 lto = true
