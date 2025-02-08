@@ -2072,7 +2072,7 @@ impl Config {
             return Ok(());
         }
         let mut file = self.open_message_file()?;
-        if output.is_empty() || !self.save {
+        if output.is_empty() && input.tool_calls().is_none() {
             return Ok(());
         }
         let now = now();
