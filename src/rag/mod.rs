@@ -13,7 +13,6 @@ use hnsw_rs::prelude::*;
 use indexmap::{IndexMap, IndexSet};
 use inquire::{required, validator::Validation, Confirm, Select, Text};
 use parking_lot::RwLock;
-use path_absolutize::Absolutize;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{collections::HashMap, env, fmt::Debug, fs, hash::Hash, path::Path, time::Duration};
@@ -321,8 +320,8 @@ impl Rag {
         if let Some(spinner) = &spinner {
             let _ = spinner.set_message(String::new());
         }
-        let (document_paths, mut recursive_urls, mut urls, mut local_paths) =
-            resolve_paths(paths).await?;
+        let (document_paths, mut recursive_urls, mut urls, mut protocol_paths, mut local_paths) =
+            resolve_paths(&loaders, paths).await?;
         let mut to_deleted: IndexMap<String, Vec<FileId>> = Default::default();
         if refresh {
             for (file_id, file) in &self.data.files {
@@ -342,9 +341,23 @@ impl Rag {
                 .into_iter()
                 .filter(|v| !self.data.document_paths.contains(&format!("{v}**")))
                 .collect();
+            let protocol_paths_cloned = protocol_paths.clone();
+            let match_protocol_path =
+                |v: &str| protocol_paths_cloned.iter().any(|root| v.starts_with(root));
+            protocol_paths = protocol_paths
+                .into_iter()
+                .filter(|v| !self.data.document_paths.contains(v))
+                .collect();
             for (file_id, file) in &self.data.files {
                 if is_url(&file.path) {
                     if !urls.swap_remove(&file.path) && !match_recursive_url(&file.path) {
+                        to_deleted
+                            .entry(file.hash.clone())
+                            .or_default()
+                            .push(*file_id);
+                    }
+                } else if is_loader_protocol(&loaders, &file.path) {
+                    if !match_protocol_path(&file.path) {
                         to_deleted
                             .entry(file.hash.clone())
                             .or_default()
@@ -362,7 +375,7 @@ impl Rag {
         let mut loaded_documents = vec![];
         let mut has_error = false;
         let mut index = 0;
-        let total = recursive_urls.len() + urls.len() + local_paths.len();
+        let total = recursive_urls.len() + urls.len() + protocol_paths.len() + local_paths.len();
         let handle_error = |error: anyhow::Error, has_error: &mut bool| {
             println!("{}", warning_text(&format!("⚠️ {error}")));
             *has_error = true;
@@ -380,6 +393,14 @@ impl Rag {
             println!("Load {url} [{index}/{total}]");
             match load_url(&loaders, &url).await {
                 Ok(v) => loaded_documents.push(v),
+                Err(err) => handle_error(err, &mut has_error),
+            }
+        }
+        for protocol_path in protocol_paths {
+            index += 1;
+            println!("Load {protocol_path} [{index}/{total}]");
+            match load_protocol_path(&loaders, &protocol_path) {
+                Ok(v) => loaded_documents.extend(v),
                 Err(err) => handle_error(err, &mut has_error),
             }
         }
@@ -899,7 +920,7 @@ fn set_chunk_overlay(default_value: usize) -> Result<usize> {
 fn add_documents() -> Result<Vec<String>> {
     let text = Text::new("Add documents:")
         .with_validator(required!("This field is required"))
-        .with_help_message("e.g. file;dir/;dir/**/*.{md,mdx};solo-url;site-url/**")
+        .with_help_message("e.g. file;dir/;dir/**/*.{md,mdx};loader:resource;url;website/**")
         .prompt()?;
     let paths = text
         .split(';')
@@ -916,8 +937,10 @@ fn add_documents() -> Result<Vec<String>> {
 }
 
 async fn resolve_paths<T: AsRef<str>>(
+    loaders: &HashMap<String, String>,
     paths: &[T],
 ) -> Result<(
+    IndexSet<String>,
     IndexSet<String>,
     IndexSet<String>,
     IndexSet<String>,
@@ -926,6 +949,7 @@ async fn resolve_paths<T: AsRef<str>>(
     let mut document_paths = IndexSet::new();
     let mut recursive_urls = IndexSet::new();
     let mut urls = IndexSet::new();
+    let mut protocol_paths = IndexSet::new();
     let mut absolute_paths = vec![];
     for path in paths {
         let path = path.as_ref().trim();
@@ -936,18 +960,25 @@ async fn resolve_paths<T: AsRef<str>>(
                 urls.insert(path.to_string());
             }
             document_paths.insert(path.to_string());
+        } else if is_loader_protocol(loaders, path) {
+            protocol_paths.insert(path.to_string());
+            document_paths.insert(path.to_string());
         } else {
-            let absolute_path = Path::new(path)
-                .absolutize()
-                .with_context(|| format!("Invalid path '{path}'"))?
-                .display()
-                .to_string();
-            absolute_paths.push(absolute_path.clone());
+            let resolved_path = resolve_home_dir(path);
+            let absolute_path = to_absolute_path(&resolved_path)
+                .with_context(|| format!("Invalid path '{path}'"))?;
+            absolute_paths.push(resolved_path);
             document_paths.insert(absolute_path);
         }
     }
     let local_paths = expand_glob_paths(&absolute_paths, false).await?;
-    Ok((document_paths, recursive_urls, urls, local_paths))
+    Ok((
+        document_paths,
+        recursive_urls,
+        urls,
+        protocol_paths,
+        local_paths,
+    ))
 }
 
 fn progress(spinner: &Option<Spinner>, message: String) {

@@ -579,14 +579,15 @@ pub async fn run_repl_command(
                     ask(config, abort_signal.clone(), input, true).await?;
                 }
                 None => println!(
-                    r#"Usage: .file <file|dir|url|%%|cmd>... [-- <text>...]
+                    r#"Usage: .file <file|dir|url|cmd|loader:resource|%%>... [-- <text>...]
 
 .file /tmp/file.txt
 .file src/ Cargo.toml -- analyze
 .file https://example.com/file.txt -- summarize
 .file https://example.com/image.png -- recognize text
-.file %% -- translate last reply to english
-.file `git diff` -- Generate git commit message"#
+.file `git diff` -- Generate git commit message
+.file jina:https://example.com
+.file %% -- translate last reply to english"#
                 ),
             },
             ".continue" => {

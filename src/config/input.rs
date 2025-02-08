@@ -5,11 +5,11 @@ use crate::client::{
     MessageContent, MessageContentPart, MessageContentToolCalls, MessageRole, Model,
 };
 use crate::function::ToolResult;
-use crate::utils::{base64_encode, sha256, AbortSignal};
+use crate::utils::{base64_encode, is_loader_protocol, sha256, AbortSignal};
 
 use anyhow::{bail, Context, Result};
-use path_absolutize::Absolutize;
-use std::{collections::HashMap, fs::File, io::Read, path::Path};
+use indexmap::IndexSet;
+use std::{collections::HashMap, fs::File, io::Read};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 const IMAGE_EXTS: [&str; 5] = ["png", "jpeg", "jpg", "webp", "gif"];
@@ -60,38 +60,19 @@ impl Input {
         paths: Vec<String>,
         role: Option<Role>,
     ) -> Result<Self> {
-        let mut raw_paths = vec![];
-        let mut external_cmds = vec![];
-        let mut local_paths = vec![];
-        let mut remote_urls = vec![];
+        let loaders = config.read().document_loaders.clone();
+        let (raw_paths, local_paths, remote_urls, external_cmds, protocol_paths, with_last_reply) =
+            resolve_paths(&loaders, paths)?;
         let mut last_reply = None;
-        let mut with_last_reply = false;
-        for path in paths {
-            match resolve_local_path(&path) {
-                Some(v) => {
-                    if v == "%%" {
-                        with_last_reply = true;
-                        raw_paths.push(v);
-                    } else if v.len() > 2 && v.starts_with('`') && v.ends_with('`') {
-                        external_cmds.push(v[1..v.len() - 1].to_string());
-                        raw_paths.push(v);
-                    } else {
-                        if let Ok(path) = Path::new(&v).absolutize() {
-                            raw_paths.push(path.display().to_string());
-                        }
-                        local_paths.push(v);
-                    }
-                }
-                None => {
-                    raw_paths.push(path.clone());
-                    remote_urls.push(path);
-                }
-            }
-        }
-        let (documents, medias, data_urls) =
-            load_documents(config, external_cmds, local_paths, remote_urls)
-                .await
-                .context("Failed to load files")?;
+        let (documents, medias, data_urls) = load_documents(
+            &loaders,
+            local_paths,
+            remote_urls,
+            external_cmds,
+            protocol_paths,
+        )
+        .await
+        .context("Failed to load files")?;
         let mut texts = vec![];
         if !raw_text.is_empty() {
             texts.push(raw_text.to_string());
@@ -409,11 +390,65 @@ fn resolve_role(config: &Config, role: Option<Role>) -> (Role, bool, bool) {
     }
 }
 
+type ResolvePathsOutput = (
+    Vec<String>,
+    Vec<String>,
+    Vec<String>,
+    Vec<String>,
+    Vec<String>,
+    bool,
+);
+
+fn resolve_paths(
+    loaders: &HashMap<String, String>,
+    paths: Vec<String>,
+) -> Result<ResolvePathsOutput> {
+    let mut raw_paths = IndexSet::new();
+    let mut local_paths = IndexSet::new();
+    let mut remote_urls = IndexSet::new();
+    let mut external_cmds = IndexSet::new();
+    let mut protocol_paths = IndexSet::new();
+    let mut with_last_reply = false;
+    for path in paths {
+        if path == "%%" {
+            with_last_reply = true;
+            raw_paths.insert(path);
+        } else if path.starts_with('`') && path.len() > 2 && path.ends_with('`') {
+            external_cmds.insert(path[1..path.len() - 1].to_string());
+            raw_paths.insert(path);
+        } else if is_url(&path) {
+            if path.strip_suffix("**").is_some() {
+                bail!("Invalid website '{path}'");
+            }
+            remote_urls.insert(path.clone());
+            raw_paths.insert(path);
+        } else if is_loader_protocol(loaders, &path) {
+            protocol_paths.insert(path.clone());
+            raw_paths.insert(path);
+        } else {
+            let resolved_path = resolve_home_dir(&path);
+            let absolute_path = to_absolute_path(&resolved_path)
+                .with_context(|| format!("Invalid path '{path}'"))?;
+            local_paths.insert(resolved_path);
+            raw_paths.insert(absolute_path);
+        }
+    }
+    Ok((
+        raw_paths.into_iter().collect(),
+        local_paths.into_iter().collect(),
+        remote_urls.into_iter().collect(),
+        external_cmds.into_iter().collect(),
+        protocol_paths.into_iter().collect(),
+        with_last_reply,
+    ))
+}
+
 async fn load_documents(
-    config: &GlobalConfig,
-    external_cmds: Vec<String>,
+    loaders: &HashMap<String, String>,
     local_paths: Vec<String>,
     remote_urls: Vec<String>,
+    external_cmds: Vec<String>,
+    protocol_paths: Vec<String>,
 ) -> Result<(
     Vec<(&'static str, String, String)>,
     Vec<String>,
@@ -422,6 +457,7 @@ async fn load_documents(
     let mut files = vec![];
     let mut medias = vec![];
     let mut data_urls = HashMap::new();
+
     for cmd in external_cmds {
         let (success, stdout, stderr) =
             run_command_with_output(&SHELL.cmd, &[&SHELL.arg, &cmd], None)?;
@@ -433,15 +469,14 @@ async fn load_documents(
     }
 
     let local_files = expand_glob_paths(&local_paths, true).await?;
-    let loaders = config.read().document_loaders.clone();
     for file_path in local_files {
         if is_image(&file_path) {
             let contents = read_media_to_data_url(&file_path)
-                .with_context(|| format!("Unable to read media file '{file_path}'"))?;
+                .with_context(|| format!("Unable to read media '{file_path}'"))?;
             data_urls.insert(sha256(&contents), file_path);
             medias.push(contents)
         } else {
-            let document = load_file(&loaders, &file_path)
+            let document = load_file(loaders, &file_path)
                 .await
                 .with_context(|| format!("Unable to read file '{file_path}'"))?;
             files.push(("FILE", file_path, document.contents));
@@ -449,7 +484,7 @@ async fn load_documents(
     }
 
     for file_url in remote_urls {
-        let (contents, extension) = fetch_with_loaders(&loaders, &file_url, true)
+        let (contents, extension) = fetch_with_loaders(loaders, &file_url, true)
             .await
             .with_context(|| format!("Failed to load url '{file_url}'"))?;
         if extension == MEDIA_URL_EXTENSION {
@@ -459,6 +494,17 @@ async fn load_documents(
             files.push(("URL", file_url, contents));
         }
     }
+
+    for protocol_path in protocol_paths {
+        let documents = load_protocol_path(loaders, &protocol_path)
+            .with_context(|| format!("Failed to load from '{protocol_path}'"))?;
+        files.extend(
+            documents
+                .into_iter()
+                .map(|document| ("FROM", document.path, document.contents)),
+        );
+    }
+
     Ok((files, medias, data_urls))
 }
 
@@ -472,18 +518,6 @@ pub fn resolve_data_url(data_urls: &HashMap<String, String>, data_url: String) -
     } else {
         data_url
     }
-}
-
-fn resolve_local_path(path: &str) -> Option<String> {
-    if is_url(path) {
-        return None;
-    }
-    let new_path = if let (Some(file), Some(home)) = (path.strip_prefix("~/"), dirs::home_dir()) {
-        home.join(file).display().to_string()
-    } else {
-        path.to_string()
-    };
-    Some(new_path)
 }
 
 fn is_image(path: &str) -> bool {
