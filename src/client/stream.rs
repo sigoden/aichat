@@ -243,13 +243,13 @@ mod tests {
 
     use bytes::Bytes;
     use futures_util::stream;
-    use rand::{thread_rng, Rng};
+    use rand::Rng;
 
     fn split_chunks(text: &str) -> Vec<Vec<u8>> {
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
         let len = text.len();
-        let cut1 = rng.gen_range(1..len - 1);
-        let cut2 = rng.gen_range(cut1 + 1..len);
+        let cut1 = rng.random_range(1..len - 1);
+        let cut2 = rng.random_range(cut1 + 1..len);
         let chunk1 = text[..cut1].as_bytes().to_vec();
         let chunk2 = text[cut1..cut2].as_bytes().to_vec();
         let chunk3 = text[cut2..].as_bytes().to_vec();
