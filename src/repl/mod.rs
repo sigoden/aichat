@@ -262,7 +262,7 @@ Type ".help" for additional help.
             .with_ansi_colors(true);
 
         if let Ok(cmd) = config.read().editor() {
-            let temp_file = temp_file("-repl-", ".txt");
+            let temp_file = temp_file("-repl-", ".md");
             let command = process::Command::new(cmd);
             editor = editor.with_buffer_editor(command, temp_file);
         }
