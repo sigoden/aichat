@@ -171,6 +171,8 @@ pub struct Config {
     pub rag: Option<Arc<Rag>>,
     #[serde(skip)]
     pub agent: Option<Agent>,
+    #[serde(skip)]
+    pub run_output: Option<String>,
 }
 
 impl Default for Config {
@@ -235,6 +237,7 @@ impl Default for Config {
             session: None,
             rag: None,
             agent: None,
+            run_output: None,
         }
     }
 }
@@ -2033,7 +2036,10 @@ impl Config {
         output
     }
 
-    pub fn before_chat_completion(&mut self, input: &Input) -> Result<()> {
+    pub fn before_chat_completion(&mut self, input: &mut Input) -> Result<()> {
+        if let Some(output) = self.run_output.take() {
+            input.text.insert_str(0, &format!("{} ", output));
+        }
         self.last_message = Some(LastMessage::new(input.clone(), String::new()));
         Ok(())
     }

@@ -177,7 +177,8 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         if cfg!(target_os = "macos") && !stdin().is_terminal() {
             bail!("Unable to read the pipe for shell execution on MacOS")
         }
-        let input = create_input(&config, text, &cli.file, abort_signal.clone()).await?;
+        let mut input = create_input(&config, text, &cli.file, abort_signal.clone()).await?;
+        config.write().before_chat_completion(&mut input)?;
         shell_execute(&config, &SHELL, input, abort_signal.clone()).await?;
         return Ok(());
     }
@@ -185,6 +186,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     match is_repl {
         false => {
             let mut input = create_input(&config, text, &cli.file, abort_signal.clone()).await?;
+            config.write().before_chat_completion(&mut input)?;
             input.use_embeddings(abort_signal.clone()).await?;
             start_directive(&config, input, cli.code, abort_signal).await
         }
@@ -200,13 +202,13 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
 #[async_recursion::async_recursion]
 async fn start_directive(
     config: &GlobalConfig,
-    input: Input,
+    mut input: Input,
     code_mode: bool,
     abort_signal: AbortSignal,
 ) -> Result<()> {
     let client = input.create_client()?;
     let extract_code = !*IS_STDOUT_TERMINAL && code_mode;
-    config.write().before_chat_completion(&input)?;
+    config.write().before_chat_completion(&mut input)?;
     let (output, tool_results) = if !input.stream() || extract_code {
         call_chat_completions(
             &input,
@@ -250,7 +252,7 @@ async fn shell_execute(
     abort_signal: AbortSignal,
 ) -> Result<()> {
     let client = input.create_client()?;
-    config.write().before_chat_completion(&input)?;
+    config.write().before_chat_completion(&mut input)?;
     let (eval_str, _) =
         call_chat_completions(&input, false, true, client.as_ref(), abort_signal.clone()).await?;
 

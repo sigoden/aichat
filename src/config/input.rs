@@ -18,7 +18,7 @@ const SUMMARY_MAX_WIDTH: usize = 80;
 #[derive(Debug, Clone)]
 pub struct Input {
     config: GlobalConfig,
-    text: String,
+    pub text: String,
     raw: (String, Vec<String>),
     patched_text: Option<String>,
     last_reply: Option<String>,
