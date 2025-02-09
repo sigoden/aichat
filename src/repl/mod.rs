@@ -6,15 +6,16 @@ use self::completer::ReplCompleter;
 use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
+use crate::{
+    abortable_run_with_spinner, create_abort_signal, create_input, dimmed_text, set_text, temp_file, AbortSignal,
+    GlobalConfig, Input,
+};
 use crate::client::{call_chat_completions, call_chat_completions_streaming};
 use crate::config::{
-    macro_execute, AgentVariables, AssertState, Config, GlobalConfig, Input, LastMessage,
-    StateFlags,
+    macro_execute, AgentVariables, AssertState, Config, LastMessage, StateFlags,
 };
 use crate::render::render_error;
-use crate::utils::{
-    abortable_run_with_spinner, create_abort_signal, dimmed_text, set_text, temp_file, AbortSignal,
-};
+use crate::utils::SHELL;
 
 use anyhow::{bail, Context, Result};
 use fancy_regex::Regex;
@@ -29,7 +30,7 @@ use std::{env, process};
 const MENU_NAME: &str = "completion_menu";
 
 lazy_static::lazy_static! {
-    static ref REPL_COMMANDS: [ReplCommand; 36] = [
+    static ref REPL_COMMANDS: [ReplCommand; 37] = [
         ReplCommand::new(".help", "Show this help guide", AssertState::pass()),
         ReplCommand::new(".info", "Show system info", AssertState::pass()),
         ReplCommand::new(".edit config", "Modify configuration file", AssertState::False(StateFlags::AGENT)),
@@ -169,6 +170,7 @@ lazy_static::lazy_static! {
         ReplCommand::new(".copy", "Copy last response", AssertState::pass()),
         ReplCommand::new(".set", "Modify runtime settings", AssertState::pass()),
         ReplCommand::new(".delete", "Delete roles, sessions, RAGs, or agents", AssertState::pass()),
+        ReplCommand::new(".run", "Execute a command in the current shell", AssertState::pass()),
         ReplCommand::new(".exit", "Exit REPL", AssertState::pass()),
     ];
     static ref COMMAND_RE: Regex = Regex::new(r"^\s*(\.\S*)\s*").unwrap();
@@ -636,19 +638,33 @@ pub async fn run_repl_command(
                     println!("Usage: .delete <role|session|rag|macro|agent-data>")
                 }
             },
-            ".copy" => {
-                let output = match config
-                    .read()
-                    .last_message
-                    .as_ref()
-                    .filter(|v| v.continuous && !v.output.is_empty())
-                    .map(|v| v.output.clone())
-                {
-                    Some(v) => v,
-                    None => bail!("No chat response to copy"),
-                };
-                set_text(&output).context("Failed to copy the last chat response")?;
-            }
+            ".run" => match args {
+                Some(args) => {
+                    let cmd_output = match std::process::Command::new(&SHELL.cmd)
+                        .arg(&SHELL.arg)
+                        .arg(args)
+                        .output() 
+                    {
+                        Ok(output) => {
+                            let mut result = String::new();
+                            result.push_str(&format!("$ {}\n", args));
+                            if !output.stdout.is_empty() {
+                                result.push_str(&String::from_utf8_lossy(&output.stdout));
+                            }
+                            if !output.stderr.is_empty() {
+                                result.push_str(&String::from_utf8_lossy(&output.stderr));
+                            }
+                            result.trim().to_string()
+                        }
+                        Err(e) => format!("Failed to execute command: {}", e),
+                    };
+                    let shell_name = if cfg!(windows) { "powershell" } else { "shell" };
+                    let output = format!("```{}\n{}\n```\n", shell_name, cmd_output);
+                    config.write().run_output = Some(output.clone());
+                    println!("{}", output);
+                }
+                None => println!("Usage: .run <command>"),
+            },
             ".exit" => match args {
                 Some("role") => {
                     config.write().exit_role()?;
@@ -680,7 +696,8 @@ pub async fn run_repl_command(
             _ => unknown_command()?,
         },
         None => {
-            let input = Input::from_str(config, line, None);
+            let mut input = create_input(config, Some(line.to_string()), &[], abort_signal.clone()).await?;
+            config.write().before_chat_completion(&mut input)?;
             ask(config, abort_signal.clone(), input, true).await?;
         }
     }
@@ -710,7 +727,7 @@ async fn ask(
     }
 
     let client = input.create_client()?;
-    config.write().before_chat_completion(&input)?;
+    config.write().before_chat_completion(&mut input)?;
     let (output, tool_results) = if input.stream() {
         call_chat_completions_streaming(&input, client.as_ref(), abort_signal.clone()).await?
     } else {
