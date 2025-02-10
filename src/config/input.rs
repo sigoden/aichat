@@ -240,8 +240,11 @@ impl Input {
         let mut messages = self.build_messages()?;
         patch_messages(&mut messages, model);
         model.guard_max_input_tokens(&messages)?;
-        let temperature = self.role().temperature();
-        let top_p = self.role().top_p();
+        let (temperature, top_p) = if model.no_temperature() {
+            (None, None)
+        } else {
+            (self.role().temperature(), self.role().top_p())
+        };
         let functions = self.config.read().select_functions(self.role());
         Ok(ChatCompletionsData {
             messages,
