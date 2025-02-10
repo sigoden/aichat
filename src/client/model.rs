@@ -198,6 +198,10 @@ impl Model {
         self.data.no_system_message
     }
 
+    pub fn system_prompt_prefix(&self) -> Option<&str> {
+        self.data.system_prompt_prefix.as_deref()
+    }
+
     pub fn max_tokens_per_chunk(&self) -> Option<usize> {
         self.data.max_tokens_per_chunk
     }
@@ -321,6 +325,8 @@ pub struct ModelData {
     no_stream: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     no_system_message: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    system_prompt_prefix: Option<String>,
 
     // embedding-only properties
     #[serde(skip_serializing_if = "Option::is_none")]
