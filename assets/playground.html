@@ -1001,6 +1001,9 @@
         },
 
         handleRoleChange() {
+          if (this.settings.prompt && !this.settings.role) {
+            return;
+          }
           this.settings.prompt = this.roles.find(role => role.name === this.settings.role).prompt;
         },
 
