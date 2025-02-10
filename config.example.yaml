@@ -98,13 +98,10 @@ clients:
   #       supports_reasoning: true
   #     - name: xxxx                                  # Embedding model
   #       type: embedding
-  #       max_input_tokens: 200000
-  #       max_tokens_per_chunk: 2000
   #       default_chunk_size: 1500                        
   #       max_batch_size: 100
   #     - name: xxxx                                  # Reranker model
   #       type: reranker 
-  #       max_input_tokens: 2048
   #   patch:                                          # Patch api
   #     chat_completions:                             # Api type, possible values: chat_completions, embeddings, and rerank
   #       <regex>:                                    # The regex to match model names, e.g. '.*' 'gpt-4o' 'gpt-4o|gpt-4-.*'
@@ -125,19 +122,23 @@ clients:
 
   # For any platform compatible with OpenAI's API
   - type: openai-compatible
-    name: local
-    api_base: http://localhost:8080/v1
+    name: ollama
+    api_base: http://localhost:11434/v1
     api_key: xxx                                      # Optional
     models:
+      - name: deepseek-r1
+        max_input_tokens: 131072
+        supports_reasoning: true
       - name: llama3.1
         max_input_tokens: 128000
         supports_function_calling: true
-      - name: jina-embeddings-v2-base-en
+      - name: llama3.2-vision
+        max_input_tokens: 131072
+        supports_vision: true
+      - name: nomic-embed-text
         type: embedding
-        default_chunk_size: 1500
-        max_batch_size: 100
-      - name: jina-reranker-v2-base-multilingual
-        type: reranker
+        default_chunk_size: 1000
+        max_batch_size: 50
 
   # See https://ai.google.dev/docs
   - type: gemini
@@ -196,11 +197,6 @@ clients:
     name: groq
     api_base: https://api.groq.com/openai/v1
     api_key: xxx
-
-  # See https://github.com/jmorganca/ollama
-  - type: openai-compatible
-    name: ollama
-    api_base: http://localhost:11434/v1
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
   - type: azure-openai

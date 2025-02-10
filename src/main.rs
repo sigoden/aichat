@@ -54,7 +54,7 @@ async fn main() -> Result<()> {
         || cli.list_macros
         || cli.list_sessions;
     setup_logger(working_mode.is_serve())?;
-    let config = Arc::new(RwLock::new(Config::init(working_mode, info_flag)?));
+    let config = Arc::new(RwLock::new(Config::init(working_mode, info_flag).await?));
     if let Err(err) = run(config, cli, text).await {
         render_error(err);
         std::process::exit(1);
