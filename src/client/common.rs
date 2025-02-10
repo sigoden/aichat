@@ -553,24 +553,29 @@ async fn set_client_models_config(client_config: &mut Value, client: &str) -> Re
                 std::env::var(&env_name).ok()
             }),
     ) {
-        if let Ok(fetched_models) = abortable_run_with_spinner(
+        match abortable_run_with_spinner(
             fetch_models(api_base, api_key.as_deref()),
             "Fetching models",
             create_abort_signal(),
         )
         .await
         {
-            model_names = MultiSelect::new("LLM models (required):", fetched_models)
-                .with_validator(|list: &[ListOption<&String>]| {
-                    if list.is_empty() {
-                        Ok(Validation::Invalid(
-                            "At least one item must be selected".into(),
-                        ))
-                    } else {
-                        Ok(Validation::Valid)
-                    }
-                })
-                .prompt()?;
+            Ok(fetched_models) => {
+                model_names = MultiSelect::new("LLM models (required):", fetched_models)
+                    .with_validator(|list: &[ListOption<&String>]| {
+                        if list.is_empty() {
+                            Ok(Validation::Invalid(
+                                "At least one item must be selected".into(),
+                            ))
+                        } else {
+                            Ok(Validation::Valid)
+                        }
+                    })
+                    .prompt()?;
+            }
+            Err(err) => {
+                eprintln!("✗ Unable to fetch models: {err}");
+            }
         }
     }
     if model_names.is_empty() {

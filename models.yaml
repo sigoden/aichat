@@ -441,35 +441,6 @@
       supports_reasoning: true
 
 # Links:
-#  - https://ollama.com/library
-#  - https://github.com/ollama/ollama/blob/main/docs/openai.md
-- provider: ollama
-  models:
-    - name: llama3.1
-      max_input_tokens: 131072
-      supports_function_calling: true
-    - name: llama3.2
-      max_input_tokens: 131072
-      supports_function_calling: true
-    - name: llama3.2-vision
-      max_input_tokens: 131072
-      supports_vision: true
-    - name: qwen2.5
-      max_input_tokens: 131072
-      supports_function_calling: true
-    - name: qwen2.5-coder
-      max_input_tokens: 32768
-      supports_function_calling: true
-    - name: deepseek-r1
-      max_input_tokens: 131072
-      supports_reasoning: true
-    - name: nomic-embed-text
-      type: embedding
-      max_tokens_per_chunk: 8192
-      default_chunk_size: 1000
-      max_batch_size: 50
-
-# Links:
 #  - https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
 #  - https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/explore-models
 #  - https://cloud.google.com/vertex-ai/generative-ai/pricing
