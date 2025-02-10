@@ -242,7 +242,7 @@ impl Default for Config {
 pub type GlobalConfig = Arc<RwLock<Config>>;
 
 impl Config {
-    pub fn init(working_mode: WorkingMode, info_flag: bool) -> Result<Self> {
+    pub async fn init(working_mode: WorkingMode, info_flag: bool) -> Result<Self> {
         let config_path = Self::config_file();
         let mut config = if !config_path.exists() {
             match env::var(get_env_name("provider"))
@@ -252,7 +252,7 @@ impl Config {
                 Some(v) => Self::load_dynamic(&v)?,
                 None => {
                     if *IS_STDOUT_TERMINAL {
-                        create_config_file(&config_path)?;
+                        create_config_file(&config_path).await?;
                     }
                     Self::load_from_file(&config_path)?
                 }
@@ -2604,7 +2604,7 @@ impl AssertState {
     }
 }
 
-fn create_config_file(config_path: &Path) -> Result<()> {
+async fn create_config_file(config_path: &Path) -> Result<()> {
     let ans = Confirm::new("No config file, create a new one?")
         .with_default(true)
         .prompt()?;
@@ -2615,7 +2615,7 @@ fn create_config_file(config_path: &Path) -> Result<()> {
     let client = Select::new("API Provider (required):", list_client_types()).prompt()?;
 
     let mut config = serde_json::json!({});
-    let (model, clients_config) = create_client_config(client)?;
+    let (model, clients_config) = create_client_config(client).await?;
     config["model"] = model.into();
     config[CLIENTS_FIELD] = clients_config;
 
