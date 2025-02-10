@@ -1334,6 +1334,7 @@ impl Config {
     pub async fn use_rag(
         config: &GlobalConfig,
         rag: Option<&str>,
+        files: &[String],
         abort_signal: AbortSignal,
     ) -> Result<()> {
         if config.read().agent.is_some() {
@@ -1347,15 +1348,17 @@ impl Config {
                         format!("Failed to cleanup previous '{TEMP_RAG_NAME}' rag")
                     })?;
                 }
-                Rag::init(config, TEMP_RAG_NAME, &rag_path, &[], abort_signal).await?
+                Rag::init(config, TEMP_RAG_NAME, &rag_path, files, abort_signal).await?
             }
             Some(name) => {
                 let rag_path = config.read().rag_file(name);
                 if !rag_path.exists() {
-                    if config.read().working_mode.is_cmd() {
+                    if config.read().working_mode.is_cmd() && files.is_empty() {
                         bail!("Unknown RAG '{name}'")
                     }
-                    Rag::init(config, name, &rag_path, &[], abort_signal).await?
+                    Rag::init(config, name, &rag_path, files, abort_signal).await?
+                } else if !files.is_empty() {
+                    bail!("RAG '{name}' already exists. To add documents to an existing RAG, use the REPL command 'rag add'")
                 } else {
                     Rag::load(config, name, &rag_path)?
                 }

@@ -425,7 +425,7 @@ pub async fn run_repl_command(
                 Config::maybe_autoname_session(config.clone());
             }
             ".rag" => {
-                Config::use_rag(config, args, abort_signal.clone()).await?;
+                Config::use_rag(config, args, &[], abort_signal.clone()).await?;
             }
             ".agent" => match split_first_arg(args) {
                 Some((agent_name, args)) => {

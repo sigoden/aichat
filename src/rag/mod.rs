@@ -158,9 +158,14 @@ impl Rag {
                 config.rag_chunk_overlap,
             )
         };
+
+        let is_cmd = config.read().working_mode.is_cmd();
+
         let embedding_model_id = match embedding_model_id {
             Some(value) => {
-                println!("Select embedding model: {value}");
+                if !is_cmd {
+                    println!("Select embedding model: {value}");
+                }
                 value
             }
             None => {
@@ -168,7 +173,12 @@ impl Rag {
                 if models.is_empty() {
                     bail!("No available embedding model");
                 }
-                select_embedding_model(&models)?
+                if is_cmd {
+                    // In command line mode, use the first available model
+                    models[0].id().to_string()
+                } else {
+                    select_embedding_model(&models)?
+                }
             }
         };
         let embedding_model =
@@ -176,19 +186,35 @@ impl Rag {
 
         let chunk_size = match chunk_size {
             Some(value) => {
-                println!("Set chunk size: {value}");
-                value
-            }
-            None => set_chunk_size(&embedding_model)?,
-        };
-        let chunk_overlap = match chunk_overlap {
-            Some(value) => {
-                println!("Set chunk overlay: {value}");
+                if !is_cmd {
+                    println!("Set chunk size: {value}");
+                }
                 value
             }
             None => {
-                let value = chunk_size / 20;
-                set_chunk_overlay(value)?
+                let default_size = 1000;
+                if is_cmd {
+                    default_size
+                } else {
+                    set_chunk_size(&embedding_model)?
+                }
+            }
+        };
+
+        let chunk_overlap = match chunk_overlap {
+            Some(value) => {
+                if !is_cmd {
+                    println!("Set chunk overlay: {value}");
+                }
+                value
+            }
+            None => {
+                let default_value = chunk_size / 20;
+                if is_cmd {
+                    default_value
+                } else {
+                    set_chunk_overlay(default_value)?
+                }
             }
         };
 

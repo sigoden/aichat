@@ -134,7 +134,10 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
                 .use_session(session.as_ref().map(|v| v.as_str()))?;
         }
         if let Some(rag) = &cli.rag {
-            Config::use_rag(&config, Some(rag), abort_signal.clone()).await?;
+            Config::use_rag(&config, Some(rag), &cli.file, abort_signal.clone()).await?;
+            if !config.read().working_mode.is_repl() {
+                return Ok(());
+            }
         }
     }
     if cli.list_sessions {
