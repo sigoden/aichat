@@ -11,20 +11,6 @@
       output_price: 10
       supports_vision: true
       supports_function_calling: true
-    - name: gpt-4o-2024-11-20
-      max_input_tokens: 128000
-      max_output_tokens: 16384
-      input_price: 2.5
-      output_price: 10
-      supports_vision: true
-      supports_function_calling: true
-    - name: gpt-4o-2024-08-06
-      max_input_tokens: 128000
-      max_output_tokens: 16384
-      input_price: 2.5
-      output_price: 10
-      supports_vision: true
-      supports_function_calling: true
     - name: chatgpt-4o-latest
       max_input_tokens: 128000
       max_output_tokens: 16384
@@ -105,27 +91,6 @@
 #  - https://ai.google.dev/api/rest/v1beta/models/streamGenerateContent
 - provider: gemini
   models:
-    - name: gemini-1.5-pro-latest
-      max_input_tokens: 2097152
-      max_output_tokens: 8192
-      input_price: 0
-      output_price: 0
-      supports_vision: true
-      supports_function_calling: true
-    - name: gemini-1.5-flash-latest
-      max_input_tokens: 1048576
-      max_output_tokens: 8192
-      input_price: 0
-      output_price: 0
-      supports_vision: true
-      supports_function_calling: true
-    - name: gemini-1.5-flash-8b-latest
-      max_input_tokens: 1048576
-      max_output_tokens: 8192
-      input_price: 0
-      output_price: 0
-      supports_vision: true
-      supports_function_calling: true
     - name: gemini-2.0-flash
       max_input_tokens: 1048576
       max_output_tokens: 8192
@@ -156,6 +121,27 @@
       supports_reasoning: true
     - name: gemini-2.0-pro-exp
       max_input_tokens: 2097152
+      max_output_tokens: 8192
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-1.5-pro-latest
+      max_input_tokens: 2097152
+      max_output_tokens: 8192
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-1.5-flash-latest
+      max_input_tokens: 1048576
+      max_output_tokens: 8192
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-1.5-flash-8b-latest
+      max_input_tokens: 1048576
       max_output_tokens: 8192
       input_price: 0
       output_price: 0
@@ -399,15 +385,20 @@
       max_input_tokens: 200000
       input_price: 3
       output_price: 15
+    - name: sonar
+      max_input_tokens: 127000
+      input_price: 1
+      output_price: 1
+    - name: sonar-reasoning-pro
+      max_input_tokens: 127000
+      input_price: 2
+      output_price: 8
+      supports_reasoning: true
     - name: sonar-reasoning
       max_input_tokens: 127000
       input_price: 1
       output_price: 5
       supports_reasoning: true
-    - name: sonar
-      max_input_tokens: 127000
-      input_price: 1
-      output_price: 1
 
 # Links:
 #  - https://console.groq.com/docs/models
@@ -447,20 +438,6 @@
 #  - https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/gemini
 - provider: vertexai
   models:
-    - name: gemini-1.5-pro-002
-      max_input_tokens: 2097152
-      max_output_tokens: 8192
-      input_price: 1.25
-      output_price: 3.75
-      supports_vision: true
-      supports_function_calling: true
-    - name: gemini-1.5-flash-002
-      max_input_tokens: 1048576
-      max_output_tokens: 8192
-      input_price: 0.019
-      output_price: 0.075
-      supports_vision: true
-      supports_function_calling: true
     - name: gemini-2.0-flash-001
       max_input_tokens: 1048576
       max_output_tokens: 8192
@@ -488,6 +465,20 @@
     - name: gemini-2.0-pro-exp-02-05
       max_input_tokens: 2097152
       max_output_tokens: 8192
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-1.5-pro-002
+      max_input_tokens: 2097152
+      max_output_tokens: 8192
+      input_price: 1.25
+      output_price: 3.75
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-1.5-flash-002
+      max_input_tokens: 1048576
+      max_output_tokens: 8192
+      input_price: 0.019
+      output_price: 0.075
       supports_vision: true
       supports_function_calling: true
     - name: claude-3-5-sonnet-v2@20241022
@@ -1071,6 +1062,10 @@
       input_price: 0.07
       max_tokens_per_chunk: 8192
       default_chunk_size: 2000
+    - name: rerank
+      type: reranker
+      max_input_tokens: 4096
+      input_price: 0.112
 
 # Links:
 #  - https://platform.lingyiwanwu.com/docs#%E6%A8%A1%E5%9E%8B%E4%B8%8E%E8%AE%A1%E8%B4%B9

@@ -561,7 +561,7 @@ async fn set_client_models_config(client_config: &mut Value, client: &str) -> Re
         .await
         {
             Ok(fetched_models) => {
-                model_names = MultiSelect::new("LLM models (required):", fetched_models)
+                model_names = MultiSelect::new("LLMs to include (required):", fetched_models)
                     .with_validator(|list: &[ListOption<&String>]| {
                         if list.is_empty() {
                             Ok(Validation::Invalid(
@@ -580,7 +580,7 @@ async fn set_client_models_config(client_config: &mut Value, client: &str) -> Re
     }
     if model_names.is_empty() {
         model_names = prompt_input_string(
-            "LLM models",
+            "LLMs to add",
             true,
             Some("Separated by commas, e.g. llama3.3,qwen2.5"),
         )?
