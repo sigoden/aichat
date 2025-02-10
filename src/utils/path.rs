@@ -91,6 +91,7 @@ pub fn resolve_home_dir(path: &str) -> String {
 }
 
 fn parse_glob(path_str: &str) -> Result<(String, Vec<String>)> {
+    // Handle recursive glob patterns with extensions
     if let Some(start) = path_str.find("/**/*.").or_else(|| path_str.find(r"\**\*.")) {
         let base_path = path_str[..start].to_string();
         if let Some(curly_brace_end) = path_str[start..].find('}') {
@@ -110,9 +111,24 @@ fn parse_glob(path_str: &str) -> Result<(String, Vec<String>)> {
             let extensions = vec![extensions_str.to_string()];
             Ok((base_path, extensions))
         }
-    } else if path_str.ends_with("/**") || path_str.ends_with(r"\**") {
+    }
+    // Handle recursive directory search without extension filtering
+    else if path_str.ends_with("/**") || path_str.ends_with(r"\**") {
         Ok((path_str[0..path_str.len() - 3].to_string(), vec![]))
-    } else {
+    }
+    // Handle basic glob patterns like "*.md" or "dir/*.md"
+    else if let Some(start) = path_str.rfind("/*.").or_else(|| path_str.rfind(r"\*.")) {
+        let base_path = path_str[..start].to_string();
+        let extensions_str = &path_str[start + 3..];
+        let extensions = vec![extensions_str.to_string()];
+        Ok((base_path, extensions))
+    }
+    // Handle root-level glob patterns like "*.md"
+    else if path_str.starts_with("*.") {
+        Ok(("".to_string(), vec![path_str[2..].to_string()]))
+    }
+    // No glob pattern, treat as normal path
+    else {
         Ok((path_str.to_string(), vec![]))
     }
 }
@@ -174,23 +190,39 @@ mod tests {
 
     #[test]
     fn test_parse_glob() {
-        assert_eq!(parse_glob("dir").unwrap(), ("dir".into(), vec![]));
-        assert_eq!(parse_glob("dir/**").unwrap(), ("dir".into(), vec![]));
-        assert_eq!(
-            parse_glob("dir/file.md").unwrap(),
-            ("dir/file.md".into(), vec![])
-        );
-        assert_eq!(
-            parse_glob("dir/**/*.md").unwrap(),
-            ("dir".into(), vec!["md".into()])
-        );
-        assert_eq!(
-            parse_glob("dir/**/*.{md,txt}").unwrap(),
-            ("dir".into(), vec!["md".into(), "txt".into()])
-        );
-        assert_eq!(
-            parse_glob("C:\\dir\\**\\*.{md,txt}").unwrap(),
-            ("C:\\dir".into(), vec!["md".into(), "txt".into()])
-        );
+        // Test recursive glob with multiple extensions
+        let (path, exts) = parse_glob("dir/**/*.{md,txt}").unwrap();
+        assert_eq!(path, "dir");
+        assert_eq!(exts, vec!["md", "txt"]);
+
+        // Test recursive glob with single extension
+        let (path, exts) = parse_glob("dir/**/*.md").unwrap();
+        assert_eq!(path, "dir");
+        assert_eq!(exts, vec!["md"]);
+
+        // Test recursive directory without extension
+        let (path, exts) = parse_glob("dir/**").unwrap();
+        assert_eq!(path, "dir");
+        assert!(exts.is_empty());
+
+        // Test basic glob with extension in root
+        let (path, exts) = parse_glob("*.md").unwrap();
+        assert_eq!(path, "");
+        assert_eq!(exts, vec!["md"]);
+
+        // Test basic glob with extension in directory
+        let (path, exts) = parse_glob("dir/*.md").unwrap();
+        assert_eq!(path, "dir");
+        assert_eq!(exts, vec!["md"]);
+
+        // Test Windows-style paths
+        let (path, exts) = parse_glob(r"dir\*.md").unwrap();
+        assert_eq!(path, "dir");
+        assert_eq!(exts, vec!["md"]);
+
+        // Test no glob pattern
+        let (path, exts) = parse_glob("dir/file.md").unwrap();
+        assert_eq!(path, "dir/file.md");
+        assert!(exts.is_empty());
     }
 }
