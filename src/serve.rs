@@ -309,9 +309,7 @@ impl Server {
 
         let completion_id = generate_completion_id();
         let created = Utc::now().timestamp();
-        if client.model().no_system_message() {
-            patch_system_message(&mut messages);
-        }
+        patch_messages(&mut messages, client.model());
         let data: ChatCompletionsData = ChatCompletionsData {
             messages,
             temperature,

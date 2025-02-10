@@ -1,8 +1,8 @@
 use super::*;
 
 use crate::client::{
-    init_client, patch_system_message, ChatCompletionsData, Client, ImageUrl, Message,
-    MessageContent, MessageContentPart, MessageContentToolCalls, MessageRole, Model,
+    init_client, patch_messages, ChatCompletionsData, Client, ImageUrl, Message, MessageContent,
+    MessageContentPart, MessageContentToolCalls, MessageRole, Model,
 };
 use crate::function::ToolResult;
 use crate::utils::{base64_encode, is_loader_protocol, sha256, AbortSignal};
@@ -238,9 +238,7 @@ impl Input {
         stream: bool,
     ) -> Result<ChatCompletionsData> {
         let mut messages = self.build_messages()?;
-        if model.no_system_message() {
-            patch_system_message(&mut messages);
-        }
+        patch_messages(&mut messages, model);
         model.guard_max_input_tokens(&messages)?;
         let temperature = self.role().temperature();
         let top_p = self.role().top_p();
