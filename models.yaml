@@ -39,8 +39,11 @@
       supports_vision: true
       supports_function_calling: true
       supports_reasoning: true
-      no_temperature: true
       system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          temperature: null
+          top_p: null
     - name: o1
       max_input_tokens: 200000
       input_price: 15
@@ -48,8 +51,11 @@
       supports_vision: true
       supports_function_calling: true
       supports_reasoning: true
-      no_temperature: true
       system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          temperature: null
+          top_p: null
     - name: o1-preview
       max_input_tokens: 128000
       max_output_tokens: 32768
@@ -57,7 +63,10 @@
       output_price: 60
       supports_reasoning: true
       no_system_message: true
-      no_temperature: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
     - name: o1-mini
       max_input_tokens: 128000
       max_output_tokens: 65536
@@ -65,7 +74,10 @@
       output_price: 12
       supports_reasoning: true
       no_system_message: true
-      no_temperature: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
     - name: gpt-3.5-turbo
       max_input_tokens: 16385
       max_output_tokens: 4096
@@ -1010,7 +1022,6 @@
       input_price: 0.55
       output_price: 2.19
       supports_reasoning: true
-      no_temperature: true
 
 # Links:
 #  - https://open.bigmodel.cn/pricing
@@ -1145,8 +1156,11 @@
       supports_vision: true
       supports_function_calling: true
       supports_reasoning: true
-      no_temperature: true
       system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          temperature: null
+          top_p: null
     - name: openai/o1
       max_input_tokens: 128000
       input_price: 15
@@ -1154,22 +1168,31 @@
       supports_vision: true
       supports_function_calling: true
       supports_reasoning: true
-      no_temperature: true
       system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          temperature: null
+          top_p: null
     - name: openai/o1-preview
       max_input_tokens: 128000
       input_price: 15
       output_price: 60
       supports_reasoning: true
       no_system_message: true
-      no_temperature: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
     - name: openai/o1-mini
       max_input_tokens: 128000
       input_price: 3
       output_price: 12
       supports_reasoning: true
       no_system_message: true
-      no_temperature: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
     - name: openai/gpt-3.5-turbo
       max_input_tokens: 16385
       input_price: 0.5
@@ -1456,27 +1479,39 @@
       supports_function_calling: true
       supports_vision: true
       supports_reasoning: true
-      no_temperature: true
       system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          temperature: null
+          top_p: null
     - name: o1
       max_input_tokens: 200000
       supports_function_calling: true
       supports_vision: true
       supports_reasoning: true
-      no_temperature: true
       system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          temperature: null
+          top_p: null
     - name: o1-preview
       max_input_tokens: 128000
       supports_reasoning: true
       no_stream: true
       no_system_message: true
-      no_temperature: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
     - name: o1-mini
       max_input_tokens: 128000
       supports_reasoning: true
       no_stream: true
       no_system_message: true
-      no_temperature: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
     - name: text-embedding-3-large
       type: embedding
       max_tokens_per_chunk: 8191
