@@ -9,6 +9,7 @@ use crate::utils::{estimate_token_length, strip_think_tag};
 
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::fmt::Display;
 
 const PER_MESSAGES_TOKENS: usize = 5;
@@ -178,6 +179,10 @@ impl Model {
         }
     }
 
+    pub fn patch(&self) -> Option<&Value> {
+        self.data.patch.as_ref()
+    }
+
     pub fn max_input_tokens(&self) -> Option<usize> {
         self.data.max_input_tokens
     }
@@ -313,6 +318,8 @@ pub struct ModelData {
     pub input_price: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub output_price: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub patch: Option<Value>,
 
     // chat-only properties
     #[serde(skip_serializing_if = "Option::is_none")]
