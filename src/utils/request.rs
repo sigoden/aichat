@@ -163,11 +163,11 @@ pub async fn fetch_models(api_base: &str, api_key: Option<&str>) -> Result<Vec<S
         Ok(ref client) => client,
         Err(ref err) => bail!("{err}"),
     };
-    let mut request_builder = client.get(format!("{}/models", api_base.trim_end_matches('/')));
+    let mut builder = client.get(format!("{}/models", api_base.trim_end_matches('/')));
     if let Some(api_key) = api_key {
-        request_builder = request_builder.bearer_auth(api_key);
+        builder = builder.bearer_auth(api_key);
     }
-    let res_body: Value = request_builder.send().await?.json().await?;
+    let res_body: Value = builder.send().await?.json().await?;
     let result: Vec<String> = res_body
         .get("data")
         .and_then(|v| v.as_array())
