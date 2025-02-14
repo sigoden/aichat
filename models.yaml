@@ -41,6 +41,7 @@
       system_prompt_prefix: Formatting re-enabled
       patch:
         body:
+          max_tokens: null
           temperature: null
           top_p: null
     - name: o1
@@ -52,6 +53,7 @@
       system_prompt_prefix: Formatting re-enabled
       patch:
         body:
+          max_tokens: null
           temperature: null
           top_p: null
     - name: o1-preview
@@ -62,6 +64,7 @@
       no_system_message: true
       patch:
         body:
+          max_tokens: null
           temperature: null
           top_p: null
     - name: o1-mini
@@ -72,6 +75,7 @@
       no_system_message: true
       patch:
         body:
+          max_tokens: null
           temperature: null
           top_p: null
     - name: gpt-3.5-turbo
@@ -1469,6 +1473,7 @@
       system_prompt_prefix: Formatting re-enabled
       patch:
         body:
+          max_tokens: null
           temperature: null
           top_p: null
     - name: o1
@@ -1478,6 +1483,7 @@
       system_prompt_prefix: Formatting re-enabled
       patch:
         body:
+          max_tokens: null
           temperature: null
           top_p: null
     - name: o1-preview
@@ -1486,6 +1492,7 @@
       no_system_message: true
       patch:
         body:
+          max_tokens: null
           temperature: null
           top_p: null
     - name: o1-mini
@@ -1494,6 +1501,7 @@
       no_system_message: true
       patch:
         body:
+          max_tokens: null
           temperature: null
           top_p: null
     - name: text-embedding-3-large
