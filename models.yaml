@@ -166,8 +166,8 @@
       max_batch_size: 100
 
 # Links:
-#  - https://docs.anthropic.com/claude/docs/models-overview
-#  - https://docs.anthropic.com/claude/reference/messages-streaming
+#  - https://docs.anthropic.com/en/docs/about-claude/models
+#  - https://docs.anthropic.com/en/api/messages
 - provider: claude
   models:
     - name: claude-3-5-sonnet-latest
@@ -229,7 +229,7 @@
 
 # Links:
 #  - https://docs.mistral.ai/getting-started/models/models_overview/
-#  - https://mistral.ai/technology/#pricing
+#  - https://mistral.ai/en/products/la-plateforme#pricing
 #  - https://docs.mistral.ai/api/
 - provider: mistral
   models:
@@ -351,6 +351,7 @@
 
 # Links:
 #  - https://docs.x.ai/docs/models
+#  - https://docs.x.ai/docs/api-reference#chat-completions
 - provider: xai
   models:
     - name: grok-2-latest
@@ -453,7 +454,6 @@
 
 # Links:
 #  - https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
-#  - https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/explore-models
 #  - https://cloud.google.com/vertex-ai/generative-ai/pricing
 #  - https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/gemini
 - provider: vertexai
@@ -737,31 +737,25 @@
 - provider: cloudflare
   models:
     - name: '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
-      max_input_tokens: 6144
+      max_input_tokens: 131072
       max_output_tokens: 2048
       require_max_tokens: true
       input_price: 0
       output_price: 0
     - name: '@cf/meta/llama-3.1-70b-instruct'
-      max_input_tokens: 6144
+      max_input_tokens: 131072
       max_output_tokens: 2048
       require_max_tokens: true
       input_price: 0
       output_price: 0
     - name: '@cf/meta/llama-3.1-8b-instruct'
-      max_input_tokens: 6144
-      max_output_tokens: 2048
-      require_max_tokens: true
-      input_price: 0
-      output_price: 0
-    - name: '@cf/meta/llama-3.2-11b-vision-instruct'
-      max_input_tokens: 6144
+      max_input_tokens: 131072
       max_output_tokens: 2048
       require_max_tokens: true
       input_price: 0
       output_price: 0
     - name: '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b'
-      max_input_tokens: 6144
+      max_input_tokens: 131072
       max_output_tokens: 2048
       require_max_tokens: true
       input_price: 0
@@ -1017,8 +1011,8 @@
     - name: deepseek-chat
       max_input_tokens: 64000
       max_output_tokens: 8192
-      input_price: 0.14
-      output_price: 0.28
+      input_price: 0.27
+      output_price: 1.1
       supports_function_calling: true
     - name: deepseek-reasoner
       max_input_tokens: 64000
@@ -1113,6 +1107,7 @@
 
 # Links:
 #  - https://openrouter.ai/models
+#  - https://openrouter.ai/docs/api-reference/chat-completion
 - provider: openrouter
   models:
     - name: openai/gpt-4o
@@ -1596,6 +1591,7 @@
 
 # Links:
 #  - https://deepinfra.com/models
+#  - https://deepinfra.com/docs/openai_api
 - provider: deepinfra
   models:
     - name: meta-llama/Llama-3.3-70B-Instruct
@@ -1701,6 +1697,7 @@
 # Links:
 #  - https://fireworks.ai/models
 #  - https://fireworks.ai/pricing
+#  - https://docs.fireworks.ai/api-reference/post-chatcompletions
 - provider: fireworks
   models:
     - name: accounts/fireworks/models/llama-v3p3-70b-instruct
@@ -1898,6 +1895,7 @@
 # Links:
 #  - https://docs.together.ai/docs/serverless-models
 #  - https://www.together.ai/pricing
+#  - https://docs.together.ai/reference/chat-completions-1
 - provider: together
   models:
     - name: meta-llama/Llama-3.3-70B-Instruct-Turbo

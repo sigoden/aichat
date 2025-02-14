@@ -618,7 +618,7 @@ async fn set_client_models_config(client_config: &mut Value, client: &str) -> Re
                     "name": v,
                     "type": "embedding",
                     "default_chunk_size": 1000,
-                    "max_batch_size": 16
+                    "max_batch_size": 100
                 })
             } else if v.contains("vision") {
                 json!({
