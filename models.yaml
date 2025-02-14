@@ -438,6 +438,18 @@
       max_input_tokens: 131072
       input_price: 0
       output_price: 0
+    - name: deepseek-r1-distill-qwen-32b
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
+    - name: qwen-2.5-32b
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
+    - name: qwen-2.5-coder-32b
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
 
 # Links:
 #  - https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
@@ -1140,6 +1152,17 @@
       supports_vision: true
       supports_function_calling: true
     - name: openai/o3-mini
+      max_input_tokens: 200000
+      input_price: 1.1
+      output_price: 4.4
+      supports_vision: true
+      supports_function_calling: true
+      system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          temperature: null
+          top_p: null
+    - name: openai/o3-mini-high
       max_input_tokens: 200000
       input_price: 1.1
       output_price: 4.4
