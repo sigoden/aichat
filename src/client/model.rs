@@ -136,7 +136,6 @@ impl Model {
                     output_price,
                     supports_vision,
                     supports_function_calling,
-                    supports_reasoning,
                     ..
                 } = &self.data;
                 let max_input_tokens = stringify_option_value(max_input_tokens);
@@ -150,9 +149,6 @@ impl Model {
                 if *supports_function_calling {
                     capabilities.push('⚒');
                 };
-                if *supports_reasoning {
-                    capabilities.push('💭');
-                }
                 let capabilities: String = capabilities
                     .into_iter()
                     .map(|v| format!("{v} "))
@@ -189,10 +185,6 @@ impl Model {
 
     pub fn max_output_tokens(&self) -> Option<isize> {
         self.data.max_output_tokens
-    }
-
-    pub fn supports_reasoning(&self) -> bool {
-        self.data.supports_reasoning
     }
 
     pub fn no_stream(&self) -> bool {
@@ -326,8 +318,6 @@ pub struct ModelData {
     pub supports_vision: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub supports_function_calling: bool,
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    supports_reasoning: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     no_stream: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
