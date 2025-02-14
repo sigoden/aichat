@@ -95,7 +95,6 @@ clients:
   #       max_input_tokens: 100000
   #       supports_vision: true
   #       supports_function_calling: true
-  #       supports_reasoning: true
   #     - name: xxxx                                  # Embedding model
   #       type: embedding
   #       default_chunk_size: 1500                        
@@ -128,7 +127,6 @@ clients:
     models:
       - name: deepseek-r1
         max_input_tokens: 131072
-        supports_reasoning: true
       - name: llama3.1
         max_input_tokens: 128000
         supports_function_calling: true

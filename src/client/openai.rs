@@ -299,10 +299,11 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
     });
 
     if let Some(v) = model.max_tokens_param() {
-        body["max_tokens"] = v.into();
-    }
-    if model.client_name().starts_with("openrouter") && model.supports_reasoning() {
-        body["include_reasoning"] = true.into();
+        if model.patch().and_then(|v| v.get("body").and_then(|v| v.get("max_tokens"))) == Some(&Value::Null) {
+            body["max_completion_tokens"] = v.into();
+        } else {
+            body["max_tokens"] = v.into();
+        }
     }
     if let Some(v) = temperature {
         body["temperature"] = v.into();

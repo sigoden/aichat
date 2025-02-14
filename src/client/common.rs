@@ -154,7 +154,11 @@ pub trait Client: Sync + Send {
 
     fn patch_request_data(&self, request_data: &mut RequestData) {
         let model_type = self.model().model_type();
-        let map = std::env::var(get_env_name(&format!(
+        if let Some(patch) = self.model().patch() {
+            request_data.apply_patch(patch.clone());
+        }
+
+        let patch_map = std::env::var(get_env_name(&format!(
             "patch_{}_{}",
             self.model().client_name(),
             model_type.api_name(),
@@ -166,11 +170,11 @@ pub trait Client: Sync + Send {
                 .and_then(|v| model_type.extract_patch(v))
                 .cloned()
         });
-        let map = match map {
+        let patch_map = match patch_map {
             Some(v) => v,
             _ => return,
         };
-        for (key, patch) in map {
+        for (key, patch) in patch_map {
             let key = ESCAPE_SLASH_RE.replace_all(&key, r"\/");
             if let Ok(regex) = Regex::new(&format!("^({key})$")) {
                 if let Ok(true) = regex.is_match(self.model().name()) {
@@ -260,6 +264,8 @@ impl RequestData {
             for (key, value) in patch_headers {
                 if let Some(value) = value.as_str() {
                     self.header(key, value)
+                } else if value.is_null() {
+                    self.headers.swap_remove(key);
                 }
             }
         }
@@ -561,7 +567,7 @@ async fn set_client_models_config(client_config: &mut Value, client: &str) -> Re
         .await
         {
             Ok(fetched_models) => {
-                model_names = MultiSelect::new("LLM models (required):", fetched_models)
+                model_names = MultiSelect::new("LLMs to include (required):", fetched_models)
                     .with_validator(|list: &[ListOption<&String>]| {
                         if list.is_empty() {
                             Ok(Validation::Invalid(
@@ -580,7 +586,7 @@ async fn set_client_models_config(client_config: &mut Value, client: &str) -> Re
     }
     if model_names.is_empty() {
         model_names = prompt_input_string(
-            "LLM models",
+            "LLMs to add",
             true,
             Some("Separated by commas, e.g. llama3.3,qwen2.5"),
         )?

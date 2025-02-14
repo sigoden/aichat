@@ -9,6 +9,7 @@ use crate::utils::{estimate_token_length, strip_think_tag};
 
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::fmt::Display;
 
 const PER_MESSAGES_TOKENS: usize = 5;
@@ -135,7 +136,6 @@ impl Model {
                     output_price,
                     supports_vision,
                     supports_function_calling,
-                    supports_reasoning,
                     ..
                 } = &self.data;
                 let max_input_tokens = stringify_option_value(max_input_tokens);
@@ -149,9 +149,6 @@ impl Model {
                 if *supports_function_calling {
                     capabilities.push('⚒');
                 };
-                if *supports_reasoning {
-                    capabilities.push('💭');
-                }
                 let capabilities: String = capabilities
                     .into_iter()
                     .map(|v| format!("{v} "))
@@ -178,6 +175,10 @@ impl Model {
         }
     }
 
+    pub fn patch(&self) -> Option<&Value> {
+        self.data.patch.as_ref()
+    }
+
     pub fn max_input_tokens(&self) -> Option<usize> {
         self.data.max_input_tokens
     }
@@ -186,20 +187,12 @@ impl Model {
         self.data.max_output_tokens
     }
 
-    pub fn supports_reasoning(&self) -> bool {
-        self.data.supports_reasoning
-    }
-
     pub fn no_stream(&self) -> bool {
         self.data.no_stream
     }
 
     pub fn no_system_message(&self) -> bool {
         self.data.no_system_message
-    }
-
-    pub fn no_temperature(&self) -> bool {
-        self.data.no_temperature
     }
 
     pub fn system_prompt_prefix(&self) -> Option<&str> {
@@ -313,6 +306,8 @@ pub struct ModelData {
     pub input_price: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub output_price: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub patch: Option<Value>,
 
     // chat-only properties
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -324,13 +319,9 @@ pub struct ModelData {
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub supports_function_calling: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    supports_reasoning: bool,
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     no_stream: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     no_system_message: bool,
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    no_temperature: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     system_prompt_prefix: Option<String>,
 

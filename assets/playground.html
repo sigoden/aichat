@@ -639,17 +639,17 @@
           <label for="max_output_tokens"
             x-text="'Max Output Tokens' + (modelData.max_output_token ? ' [1, ' + modelData.max_output_token + ']' : '')">Max
             Output Tokens</label>
-          <input type="number" id="max_output_tokens" x-model="settings.max_output_tokens">
+          <input type="number" id="max_output_tokens" x-model.number="settings.max_output_tokens">
         </div>
 
         <div class="control">
           <label for="temperature">Temperature</label>
-          <input type="number" id="temperature" x-model="settings.temperature">
+          <input type="number" id="temperature" x-model.number="settings.temperature">
         </div>
 
         <div class="control">
           <label for="top_p">Top P</label>
-          <input type="number" id="top_p" x-model="settings.top_p">
+          <input type="number" id="top_p" x-model.number="settings.top_p">
         </div>
 
       </div>

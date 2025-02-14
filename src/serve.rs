@@ -270,8 +270,8 @@ impl Server {
         let ChatCompletionsReqBody {
             model,
             messages,
-            mut temperature,
-            mut top_p,
+            temperature,
+            top_p,
             max_tokens,
             stream,
             tools,
@@ -311,11 +311,6 @@ impl Server {
         let created = Utc::now().timestamp();
 
         patch_messages(&mut messages, client.model());
-
-        if client.model().no_temperature() {
-            temperature = None;
-            top_p = None;
-        }
 
         let data: ChatCompletionsData = ChatCompletionsData {
             messages,
