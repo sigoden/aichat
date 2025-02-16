@@ -247,6 +247,21 @@ chat-claude() {
 -d "$(_build_body claude "$@")"
 }
 
+# @cmd List claude models
+# @env CLAUDE_API_KEY!
+# @flag --name-only Print model name only
+models-claude() {
+    jq_args=()
+    if [[ -n "$argc_name_only" ]]; then
+        jq_args+=(-r '.data[].id')
+    fi
+    _wrapper curl -fsSL "https://api.anthropic.com/v1/models" \
+-H 'Content-Type: application/json' \
+-H 'anthropic-version: 2023-06-01' \
+-H "x-api-key: $CLAUDE_API_KEY" \
+    | jq "${jq_args[@]}"
+}
+
 # @cmd Chat with cohere api
 # @env COHERE_API_KEY!
 # @option -m --model=command-r-08-2024 $COHERE_MODEL
@@ -436,7 +451,7 @@ _build_body() {
 
 _wrapper() {
     if [[ "$DRY_RUN" == "true" ]] || [[ "$DRY_RUN" == "1" ]]; then
-        echo "$@"
+        echo "$@" >&2
     else
         "$@"
     fi
