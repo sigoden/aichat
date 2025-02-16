@@ -168,7 +168,7 @@ pub async fn fetch_models(api_base: &str, api_key: Option<&str>) -> Result<Vec<S
         builder = builder.bearer_auth(api_key);
     }
     let res_body: Value = builder.send().await?.json().await?;
-    let result: Vec<String> = res_body
+    let mut result: Vec<String> = res_body
         .get("data")
         .and_then(|v| v.as_array())
         .map(|v| {
@@ -178,8 +178,9 @@ pub async fn fetch_models(api_base: &str, api_key: Option<&str>) -> Result<Vec<S
         })
         .unwrap_or_default();
     if result.is_empty() {
-        bail!("No models")
+        bail!("No valid models")
     }
+    result.sort_unstable();
     Ok(result)
 }
 

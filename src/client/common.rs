@@ -25,7 +25,7 @@ lazy_static::lazy_static! {
     pub static ref ALL_PROVIDER_MODELS: Vec<ProviderModels> = {
         Config::loal_models_override().ok().unwrap_or_else(|| serde_yaml::from_str(MODELS_YAML).unwrap())
     };
-    static ref EMBEDDING_MODEL_RE: Regex = Regex::new(r"(^(bge-|e5-|uae-|gte-|text-)|embed|multilingual|minilm)").unwrap();
+    static ref EMBEDDING_MODEL_RE: Regex = Regex::new(r"((^|/)(bge-|e5-|uae-|gte-|text-)|embed|multilingual|minilm)").unwrap();
     static ref ESCAPE_SLASH_RE: Regex = Regex::new(r"(?<!\\)/").unwrap();
 }
 
@@ -580,7 +580,7 @@ async fn set_client_models_config(client_config: &mut Value, client: &str) -> Re
                     .prompt()?;
             }
             Err(err) => {
-                eprintln!("✗ Unable to fetch models: {err}");
+                eprintln!("✗ Fetch models failed: {err}");
             }
         }
     }
