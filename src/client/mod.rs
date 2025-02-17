@@ -33,7 +33,7 @@ register_client!(
     (bedrock, "bedrock", BedrockConfig, BedrockClient),
 );
 
-pub const OPENAI_COMPATIBLE_PROVIDERS: [(&str, &str); 22] = [
+pub const OPENAI_COMPATIBLE_PROVIDERS: [(&str, &str); 19] = [
     ("ai21", "https://api.ai21.com/studio/v1"),
     (
         "cloudflare",
@@ -42,7 +42,6 @@ pub const OPENAI_COMPATIBLE_PROVIDERS: [(&str, &str); 22] = [
     ("deepinfra", "https://api.deepinfra.com/v1/openai"),
     ("deepseek", "https://api.deepseek.com"),
     ("ernie", "https://qianfan.baidubce.com/v2"),
-    ("fireworks", "https://api.fireworks.ai/inference/v1"),
     ("github", "https://models.inference.ai.azure.com"),
     ("groq", "https://api.groq.com/openai/v1"),
     ("hunyuan", "https://api.hunyuan.cloud.tencent.com/v1"),
@@ -56,8 +55,6 @@ pub const OPENAI_COMPATIBLE_PROVIDERS: [(&str, &str); 22] = [
         "qianwen",
         "https://dashscope.aliyuncs.com/compatible-mode/v1",
     ),
-    ("siliconflow", "https://api.siliconflow.cn/v1"),
-    ("together", "https://api.together.xyz/v1"),
     ("xai", "https://api.x.ai/v1"),
     ("zhipuai", "https://open.bigmodel.cn/api/paas/v4"),
     // RAG-dedicated

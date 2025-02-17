@@ -142,9 +142,6 @@ models() {
                 github)
                     jq_args+=(-r '.[].name')
                     ;;
-                together)
-                    jq_args+=(-r '.[].id')
-                    ;;
                 *)
                     jq_args+=(-r '.data[].id')
                     ;;
@@ -317,7 +314,6 @@ _argc_before() {
         deepinfra,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.deepinfra.com/v1/openai \
         deepseek,deepseek-chat,https://api.deepseek.com \
         ernie,ernie-4.0-turbo-8k-latest,https://qianfan.baidubce.com/v2 \
-        fireworks,accounts/fireworks/models/llama-v3p1-8b-instruct,https://api.fireworks.ai/inference/v1 \
         github,gpt-4o-mini,https://models.inference.ai.azure.com \
         groq,llama-3.1-8b-instant,https://api.groq.com/openai/v1 \
         hunyuan,hunyuan-large,https://api.hunyuan.cloud.tencent.com/v1 \
@@ -328,8 +324,6 @@ _argc_before() {
         openrouter,openai/gpt-4o-mini,https://openrouter.ai/api/v1 \
         perplexity,llama-3.1-8b-instruct,https://api.perplexity.ai \
         qianwen,qwen-turbo-latest,https://dashscope.aliyuncs.com/compatible-mode/v1 \
-        siliconflow,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.siliconflow.cn/v1 \
-        together,meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo,https://api.together.xyz/v1 \
         xai,grok-beta,https://api.x.ai/v1 \
         zhipuai,glm-4-0520,https://open.bigmodel.cn/api/paas/v4 \
     )
