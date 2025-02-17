@@ -44,6 +44,20 @@
           max_tokens: null
           temperature: null
           top_p: null
+    - name: o3-mini-high
+      real_name: o3-mini
+      max_input_tokens: 200000
+      input_price: 1.1
+      output_price: 4.4
+      supports_vision: true
+      supports_function_calling: true
+      system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          reasoning_effort: high 
+          max_tokens: null
+          temperature: null
+          top_p: null
     - name: o1
       max_input_tokens: 200000
       input_price: 15
@@ -1491,6 +1505,18 @@
       system_prompt_prefix: Formatting re-enabled
       patch:
         body:
+          max_tokens: null
+          temperature: null
+          top_p: null
+    - name: o3-mini-high
+      real_name: o3-mini
+      max_input_tokens: 200000
+      supports_function_calling: true
+      supports_vision: true
+      system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          reasoning_effort: high
           max_tokens: null
           temperature: null
           top_p: null
