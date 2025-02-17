@@ -7,11 +7,10 @@ assignees: ''
 
 ---
 
-<!-- Your issue may already be reported!  Please search for it before creating one. -->
+<!-- Your issue may already be reported! Please search for it before creating one. -->
 
 **Describe the bug**
-<!-- A clear and concise description of what the bug is. 
-If the problem is related to dynamic response data, you should see if it can be reproduced through `--dry-run`. -->
+<!-- A clear and concise description of what the bug is. -->
 
 **To Reproduce**
 <!-- Steps to reproduce the behavior, including any relevant code snippets. -->
@@ -19,7 +18,10 @@ If the problem is related to dynamic response data, you should see if it can be 
 **Expected behavior**
 <!-- A clear and concise description of what you expected to happen. -->
 
-**Screenshots/Logs**
+**Logs**
+<!-- If applicable, Attach relevant log outputs that can help diagnose the issue, see https://github.com/sigoden/aichat/wiki/FAQ#how-to-log-or-debug for logging. -->
+
+**Screenshots**
 <!-- If applicable, add screenshots to help explain your problem. -->
 
 **Configuration**
