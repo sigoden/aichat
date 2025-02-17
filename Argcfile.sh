@@ -142,9 +142,6 @@ models() {
                 github)
                     jq_args+=(-r '.[].name')
                     ;;
-                together)
-                    jq_args+=(-r '.[].id')
-                    ;;
                 *)
                     jq_args+=(-r '.data[].id')
                     ;;
@@ -247,6 +244,21 @@ chat-claude() {
 -d "$(_build_body claude "$@")"
 }
 
+# @cmd List claude models
+# @env CLAUDE_API_KEY!
+# @flag --name-only Print model name only
+models-claude() {
+    jq_args=()
+    if [[ -n "$argc_name_only" ]]; then
+        jq_args+=(-r '.data[].id')
+    fi
+    _wrapper curl -fsSL "https://api.anthropic.com/v1/models" \
+-H 'Content-Type: application/json' \
+-H 'anthropic-version: 2023-06-01' \
+-H "x-api-key: $CLAUDE_API_KEY" \
+    | jq "${jq_args[@]}"
+}
+
 # @cmd Chat with cohere api
 # @env COHERE_API_KEY!
 # @option -m --model=command-r-08-2024 $COHERE_MODEL
@@ -302,21 +314,16 @@ _argc_before() {
         deepinfra,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.deepinfra.com/v1/openai \
         deepseek,deepseek-chat,https://api.deepseek.com \
         ernie,ernie-4.0-turbo-8k-latest,https://qianfan.baidubce.com/v2 \
-        fireworks,accounts/fireworks/models/llama-v3p1-8b-instruct,https://api.fireworks.ai/inference/v1 \
         github,gpt-4o-mini,https://models.inference.ai.azure.com \
         groq,llama-3.1-8b-instant,https://api.groq.com/openai/v1 \
         hunyuan,hunyuan-large,https://api.hunyuan.cloud.tencent.com/v1 \
-        hyperbolic,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.hyperbolic.xyz/v1 \
         lingyiwanwu,yi-lightning,https://api.lingyiwanwu.com/v1 \
         minimax,MiniMax-Text-01,https://api.minimax.chat/v1 \
         mistral,mistral-small-latest,https://api.mistral.ai/v1 \
         moonshot,moonshot-v1-8k,https://api.moonshot.cn/v1 \
-        novita,meta-llama/llama-3.1-8b-instruct,https://api.novita.ai/v3/openai \
         openrouter,openai/gpt-4o-mini,https://openrouter.ai/api/v1 \
         perplexity,llama-3.1-8b-instruct,https://api.perplexity.ai \
         qianwen,qwen-turbo-latest,https://dashscope.aliyuncs.com/compatible-mode/v1 \
-        siliconflow,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.siliconflow.cn/v1 \
-        together,meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo,https://api.together.xyz/v1 \
         xai,grok-beta,https://api.x.ai/v1 \
         zhipuai,glm-4-0520,https://open.bigmodel.cn/api/paas/v4 \
     )
@@ -438,7 +445,7 @@ _build_body() {
 
 _wrapper() {
     if [[ "$DRY_RUN" == "true" ]] || [[ "$DRY_RUN" == "1" ]]; then
-        echo "$@"
+        echo "$@" >&2
     else
         "$@"
     fi
