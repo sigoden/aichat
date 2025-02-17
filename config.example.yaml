@@ -288,10 +288,10 @@ clients:
     api_base: https://api.minimax.chat/v1
     api_key: xxx
 
-  # See https://deepinfra.com/docs
+  # See https://openrouter.ai/docs#quick-start
   - type: openai-compatible
-    name: deepinfra
-    api_base: https://api.deepinfra.com/v1/openai
+    name: openrouter
+    api_base: https://openrouter.ai/api/v1
     api_key: xxx
 
   # See https://github.com/marketplace/models
@@ -300,29 +300,12 @@ clients:
     api_base: https://models.inference.ai.azure.com
     api_key: xxx
 
-  # See https://readme.fireworks.ai/docs/quickstart
+  # See https://deepinfra.com/docs
   - type: openai-compatible
-    name: fireworks
-    api_base: https://api.fireworks.ai/inference/v1
+    name: deepinfra
+    api_base: https://api.deepinfra.com/v1/openai
     api_key: xxx
 
-  # See https://openrouter.ai/docs#quick-start
-  - type: openai-compatible
-    name: openrouter
-    api_base: https://openrouter.ai/api/v1
-    api_key: xxx
-
-  # See https://docs.siliconflow.cn/docs/getting-started
-  - type: openai-compatible
-    name: siliconflow
-    api_base: https://api.siliconflow.cn/v1
-    api_key: xxx
-
-  # See https://docs.together.ai/docs/quickstart
-  - type: openai-compatible
-    name: together
-    api_base: https://api.together.xyz/v1
-    api_key: xxx
 
   # ----- RAG dedicated -----
 
