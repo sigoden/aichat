@@ -142,7 +142,8 @@ pub async fn openai_chat_completions_streaming(
                 reason_state = 1;
             }
             handler.text(text)?;
-        } else if let (Some(function), index, id) = (
+        }
+        if let (Some(function), index, id) = (
             data["choices"][0]["delta"]["tool_calls"][0]["function"].as_object(),
             data["choices"][0]["delta"]["tool_calls"][0]["index"].as_u64(),
             data["choices"][0]["delta"]["tool_calls"][0]["id"]
