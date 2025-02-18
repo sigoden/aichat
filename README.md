@@ -165,7 +165,7 @@ AIChat supports custom dark and light themes, which highlight response text and 
 
 ## License
 
-Copyright (c) 2023-2024 aichat-developers.
+Copyright (c) 2023-2025 aichat-developers.
 
 AIChat is made available under the terms of either the MIT License or the Apache License 2.0, at your option.
 
