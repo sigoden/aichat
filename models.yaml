@@ -131,13 +131,6 @@
       output_price: 0
       supports_vision: true
       supports_function_calling: true
-    - name: gemini-2.0-flash-exp
-      max_input_tokens: 1048576
-      max_output_tokens: 8192
-      input_price: 0
-      output_price: 0
-      supports_vision: true
-      supports_function_calling: true
     - name: gemini-2.0-flash-thinking-exp
       max_input_tokens: 32767
       max_output_tokens: 8192
@@ -486,12 +479,7 @@
       output_price: 0.3
       supports_vision: true
       supports_function_calling: true
-    - name: gemini-2.0-flash-exp
-      max_input_tokens: 1048576
-      max_output_tokens: 8192
-      supports_vision: true
-      supports_function_calling: true
-    - name: gemini-2.0-flash-thinking-exp-1219
+    - name: gemini-2.0-flash-thinking-exp-01-21
       max_input_tokens: 32760
       max_output_tokens: 8192
       supports_vision: true
@@ -810,6 +798,14 @@
       max_input_tokens: 128000
       input_price: 0.042
       output_price: 0.084
+    - name: deepseek-v3
+      max_input_tokens: 131072
+      input_price: 0.112
+      output_price: 0.224
+    - name: deepseek-r1
+      max_input_tokens: 131072
+      input_price: 0.28
+      output_price: 1.12
     - name: bge-large-zh
       type: embedding
       input_price: 0.07
@@ -901,6 +897,14 @@
       input_price: 0.49
       output_price: 0.98
       supports_function_calling: true
+    - name: deepseek-v3 
+      max_input_tokens: 65792
+      input_price: 0.14
+      output_price: 0.56
+    - name: deepseek-r1 
+      max_input_tokens: 65792
+      input_price: 0.28
+      output_price: 1.12
     - name: text-embedding-v3
       type: embedding
       input_price: 0.1
@@ -986,6 +990,9 @@
 #  - https://platform.moonshot.cn/docs/api/chat#%E5%85%AC%E5%BC%80%E7%9A%84%E6%9C%8D%E5%8A%A1%E5%9C%B0%E5%9D%80
 - provider: moonshot
   models:
+    - name: kimi-latest
+      supports_vision: true
+      supports_function_calling: true
     - name: moonshot-v1-8k
       max_input_tokens: 8192
       input_price: 1.68
@@ -1118,6 +1125,10 @@
       input_price: 0.14
       output_price: 0.14
       supports_vision: true
+    - name: deepseek-r1
+      max_input_tokens: 131072
+      input_price: 0.56
+      output_price: 2.24
 
 # Links:
 #  - https://openrouter.ai/models
@@ -1424,15 +1435,6 @@
       max_input_tokens: 32768
       input_price: 0.4
       output_price: 0.4
-    - name: qwen/qwq-32b-preview
-      max_input_tokens: 32768
-      input_price: 0.15
-      output_price: 0.6
-    - name: qwen/qvq-72b-preview
-      max_input_tokens: 128000
-      input_price: 0.25
-      output_price: 0.5
-      supports_vision: true
     - name: x-ai/grok-2-1212
       max_input_tokens: 131072
       input_price: 2
@@ -1656,23 +1658,14 @@
       max_input_tokens: 32768
       input_price: 0.07
       output_price: 0.16
-    - name: Qwen/QVQ-72B-Preview
-      max_input_tokens: 32768
-      input_price: 0.25
-      output_price: 0.50
-      supports_vision: true
-    - name: Qwen/QwQ-32B-Preview
-      max_input_tokens: 32768
-      input_price: 0.12
-      output_price: 0.18
     - name: deepseek-ai/DeepSeek-V3
-      max_input_tokens: 32768
-      input_price: 0.85
-      output_price: 0.9
+      max_input_tokens: 65536
+      input_price: 0.49
+      output_price: 0.89
     - name: deepseek-ai/DeepSeek-R1
-      max_input_tokens: 16000
-      input_price: 0.85
-      output_price: 2.5
+      max_input_tokens: 65536
+      input_price: 0.75
+      output_price: 2.4
     - name: deepseek-ai/DeepSeek-R1-Distill-Llama-70B
       max_input_tokens: 131072
       input_price: 0.23
