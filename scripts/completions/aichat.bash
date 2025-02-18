@@ -60,12 +60,12 @@ _aichat() {
                     ;;
                 -f|--file)
                     local oldifs
-                    if [[ -v IFS ]]; then
+                    if [[ -n "${IFS+x}" ]]; then
                         oldifs="$IFS"
                     fi
                     IFS=$'\n'
                     COMPREPLY=($(compgen -f "${cur}"))
-                    if [[ -v oldifs ]]; then
+                    if [[ -n "${oldifs+x}" ]]; then
                         IFS="$oldifs"
                     fi
                     if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
