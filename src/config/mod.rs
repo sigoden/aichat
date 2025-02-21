@@ -591,7 +591,7 @@ impl Config {
             ("use_tools", format_option_value(&role.use_tools())),
             (
                 "max_output_tokens",
-                self.model
+                role.model()
                     .max_tokens_param()
                     .map(|v| format!("{v} (current model)"))
                     .unwrap_or_else(|| "null".into()),
@@ -867,7 +867,7 @@ impl Config {
 
     pub fn use_prompt(&mut self, prompt: &str) -> Result<()> {
         let mut role = Role::new(TEMP_ROLE_NAME, prompt);
-        role.set_model(&self.model);
+        role.set_model(self.current_model());
         self.use_role_obj(role)
     }
 
@@ -923,16 +923,17 @@ impl Config {
         } else {
             Role::builtin(name)?
         };
+        let current_model = self.current_model();
         match role.model_id() {
             Some(model_id) => {
-                if self.model.id() != model_id {
+                if current_model.id() != model_id {
                     let model = Model::retrieve_model(self, model_id, ModelType::Chat)?;
                     role.set_model(&model);
                 } else {
-                    role.set_model(&self.model);
+                    role.set_model(current_model);
                 }
             }
-            None => role.set_model(&self.model),
+            None => role.set_model(current_model),
         }
         Ok(role)
     }
@@ -1795,7 +1796,7 @@ impl Config {
             };
         } else if cmd == ".set" && args.len() == 2 {
             let candidates = match args[0] {
-                "max_output_tokens" => match self.model.max_output_tokens() {
+                "max_output_tokens" => match self.current_model().max_output_tokens() {
                     Some(v) => vec![v.to_string()],
                     None => vec![],
                 },

@@ -841,7 +841,7 @@ impl Debug for DocumentId {
 
 impl DocumentId {
     pub fn new(file_index: usize, document_index: usize) -> Self {
-        let value = file_index << (usize::BITS / 2) | document_index;
+        let value = (file_index << (usize::BITS / 2)) | document_index;
         Self(value)
     }
 
