@@ -19,9 +19,9 @@ mapping_tools:                   # Alias for a tool or toolset
 use_tools: null                  # Which tools to use by default. (e.g. 'fs,web_search')
 
 # ---- prelude ----
-prelude: null                    # Set a default role or session to start with (e.g. role:<name>, session:<name>, <session>:<role>)
-repl_prelude: null               # Overrides the `prelude` setting specifically for conversations started in REPL
-agent_prelude: null              # Set a session to use when starting a agent. (e.g. temp, default)
+repl_prelude: null               # Set a default role or session for REPL mode (e.g. role:<name>, session:<name>, <session>:<role>)
+cmd_prelude: null                # Set a default role or session for CMD mode (e.g. role:<name>, session:<name>, <session>:<role>)
+agent_prelude: null              # Set a session to use when starting a agent (e.g. temp, default)
 
 # ---- session ----
 # Controls the persistence of the session. if true, auto save; if false, not save; if null, asking the user
