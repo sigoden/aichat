@@ -116,8 +116,8 @@ pub struct Config {
     pub mapping_tools: IndexMap<String, String>,
     pub use_tools: Option<String>,
 
-    pub prelude: Option<String>,
     pub repl_prelude: Option<String>,
+    pub cmd_prelude: Option<String>,
     pub agent_prelude: Option<String>,
 
     pub save_session: Option<bool>,
@@ -192,8 +192,8 @@ impl Default for Config {
             mapping_tools: Default::default(),
             use_tools: None,
 
-            prelude: None,
             repl_prelude: None,
+            cmd_prelude: None,
             agent_prelude: None,
 
             save_session: None,
@@ -1606,8 +1606,8 @@ impl Config {
             return Ok(());
         }
         let prelude = match self.working_mode {
-            WorkingMode::Cmd => self.prelude.as_ref(),
-            WorkingMode::Repl => self.repl_prelude.as_ref().or(self.prelude.as_ref()),
+            WorkingMode::Repl => self.repl_prelude.as_ref(),
+            WorkingMode::Cmd => self.cmd_prelude.as_ref(),
             WorkingMode::Serve => return Ok(()),
         };
         let prelude = match prelude {
@@ -2280,11 +2280,11 @@ impl Config {
             self.use_tools = v;
         }
 
-        if let Some(v) = read_env_value::<String>(&get_env_name("prelude")) {
-            self.prelude = v;
-        }
         if let Some(v) = read_env_value::<String>(&get_env_name("repl_prelude")) {
             self.repl_prelude = v;
+        }
+        if let Some(v) = read_env_value::<String>(&get_env_name("cmd_prelude")) {
+            self.cmd_prelude = v;
         }
         if let Some(v) = read_env_value::<String>(&get_env_name("agent_prelude")) {
             self.agent_prelude = v;
