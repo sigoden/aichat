@@ -416,6 +416,10 @@
       max_input_tokens: 127000
       input_price: 1
       output_price: 5
+    - name: r1-1776
+      max_input_tokens: 127000
+      input_price: 2
+      output_price: 8
 
 # Links:
 #  - https://console.groq.com/docs/models
@@ -806,6 +810,14 @@
       max_input_tokens: 131072
       input_price: 0.28
       output_price: 1.12
+    - name: deepseek-r1-distill-llama-70b
+      max_input_tokens: 131072
+      input_price: 0.28
+      output_price: 1.12
+    - name: deepseek-r1-distill-qwen-32b
+      max_input_tokens: 131072
+      input_price: 0.21
+      output_price: 0.84
     - name: bge-large-zh
       type: embedding
       input_price: 0.07
@@ -905,6 +917,12 @@
       max_input_tokens: 65792
       input_price: 0.28
       output_price: 1.12
+    - name: deepseek-r1-distill-llama-70b
+      max_input_tokens: 32768
+    - name: deepseek-r1-distill-qwen-32b
+      max_input_tokens: 32768
+      input_price: 0.28
+      output_price: 0.84
     - name: text-embedding-v3
       type: embedding
       input_price: 0.1
@@ -1484,6 +1502,13 @@
       max_input_tokens: 127000
       input_price: 1
       output_price: 1
+    - name: perplexity/r1-1776
+      max_input_tokens: 127000
+      input_price: 2
+      output_price: 8
+      patch:
+        body:
+          include_reasoning: true
     - name: minimax/minimax-01
       max_input_tokens: 1000192
       input_price: 0.2
