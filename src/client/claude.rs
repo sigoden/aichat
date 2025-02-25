@@ -80,6 +80,7 @@ pub async fn claude_chat_completions_streaming(
     let mut function_name = String::new();
     let mut function_arguments = String::new();
     let mut function_id = String::new();
+    let mut reasoning_state = 0;
     let handle = |message: SseMmessage| -> Result<bool> {
         let data: Value = serde_json::from_str(&message.data)?;
         debug!("stream-data: {data}");
@@ -110,6 +111,12 @@ pub async fn claude_chat_completions_streaming(
                 "content_block_delta" => {
                     if let Some(text) = data["delta"]["text"].as_str() {
                         handler.text(text)?;
+                    } else if let Some(text) = data["delta"]["thinking"].as_str() {
+                        if reasoning_state == 0 {
+                            handler.text("<think>\n")?;
+                            reasoning_state = 1;
+                        }
+                        handler.text(text)?;
                     } else if let (true, Some(partial_json)) = (
                         !function_name.is_empty(),
                         data["delta"]["partial_json"].as_str(),
@@ -118,6 +125,10 @@ pub async fn claude_chat_completions_streaming(
                     }
                 }
                 "content_block_stop" => {
+                    if reasoning_state == 1 {
+                        handler.text("\n</think>\n\n")?;
+                        reasoning_state = 0;
+                    }
                     if !function_name.is_empty() {
                         let arguments: Value = if function_arguments.is_empty() {
                             json!({})
@@ -282,34 +293,45 @@ pub fn claude_build_chat_completions_body(
 }
 
 pub fn claude_extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
-    let text = data["content"][0]["text"].as_str().unwrap_or_default();
-
+    let mut text = String::new();
+    let mut reasoning = None;
     let mut tool_calls = vec![];
-    if let Some(calls) = data["content"].as_array().map(|content| {
-        content
-            .iter()
-            .filter(|content| matches!(content["type"].as_str(), Some("tool_use")))
-            .collect::<Vec<&Value>>()
-    }) {
-        tool_calls = calls
-            .into_iter()
-            .filter_map(|call| {
-                if let (Some(name), Some(input), Some(id)) = (
-                    call["name"].as_str(),
-                    call.get("input"),
-                    call["id"].as_str(),
-                ) {
-                    Some(ToolCall::new(
-                        name.to_string(),
-                        input.clone(),
-                        Some(id.to_string()),
-                    ))
-                } else {
-                    None
+    if let Some(list) = data["content"].as_array() {
+        for item in list {
+            match item["type"].as_str() {
+                Some("thinking") => {
+                    if let Some(v) = item["thinking"].as_str() {
+                        reasoning = Some(v.to_string());
+                    }
                 }
-            })
-            .collect();
-    };
+                Some("text") => {
+                    if let Some(v) = item["text"].as_str() {
+                        if !text.is_empty() {
+                            text.push_str("\n\n");
+                        }
+                        text.push_str(v);
+                    }
+                }
+                Some("tool_use") => {
+                    if let (Some(name), Some(input), Some(id)) = (
+                        item["name"].as_str(),
+                        item.get("input"),
+                        item["id"].as_str(),
+                    ) {
+                        tool_calls.push(ToolCall::new(
+                            name.to_string(),
+                            input.clone(),
+                            Some(id.to_string()),
+                        ));
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    if let Some(reasoning) = reasoning {
+        text = format!("<think>\n{reasoning}\n</think>\n\n{text}")
+    }
 
     if text.is_empty() && tool_calls.is_empty() {
         bail!("Invalid response data: {data}");

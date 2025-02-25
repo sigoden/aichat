@@ -106,7 +106,7 @@ pub async fn openai_chat_completions_streaming(
     let mut function_name = String::new();
     let mut function_arguments = String::new();
     let mut function_id = String::new();
-    let mut reason_state = 0;
+    let mut reasoning_state = 0;
     let handle = |message: SseMmessage| -> Result<bool> {
         if message.data == "[DONE]" {
             if !function_name.is_empty() {
@@ -127,9 +127,9 @@ pub async fn openai_chat_completions_streaming(
             .as_str()
             .filter(|v| !v.is_empty())
         {
-            if reason_state == 1 {
+            if reasoning_state == 1 {
                 handler.text("\n</think>\n\n")?;
-                reason_state = 0;
+                reasoning_state = 0;
             }
             handler.text(text)?;
         } else if let Some(text) = data["choices"][0]["delta"]["reasoning_content"]
@@ -137,9 +137,9 @@ pub async fn openai_chat_completions_streaming(
             .or_else(|| data["choices"][0]["delta"]["reasoning"].as_str())
             .filter(|v| !v.is_empty())
         {
-            if reason_state == 0 {
+            if reasoning_state == 0 {
                 handler.text("<think>\n")?;
-                reason_state = 1;
+                reasoning_state = 1;
             }
             handler.text(text)?;
         }
