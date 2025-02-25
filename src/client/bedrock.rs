@@ -198,6 +198,7 @@ async fn chat_completions_streaming(
     let mut function_name = String::new();
     let mut function_arguments = String::new();
     let mut function_id = String::new();
+    let mut reasoning_state = 0;
 
     let mut stream = res.bytes_stream();
     let mut buffer = BytesMut::new();
@@ -240,11 +241,21 @@ async fn chat_completions_streaming(
                         "contentBlockDelta" => {
                             if let Some(text) = data["delta"]["text"].as_str() {
                                 handler.text(text)?;
+                            } else if let Some(text) = data["delta"]["reasoningContent"]["text"].as_str() {
+                                if reasoning_state == 0 {
+                                    handler.text("<think>\n")?;
+                                    reasoning_state = 1;
+                                }
+                                handler.text(text)?;
                             } else if let Some(input) = data["delta"]["toolUse"]["input"].as_str() {
                                 function_arguments.push_str(input);
                             }
                         }
                         "contentBlockStop" => {
+                            if reasoning_state == 1 {
+                                handler.text("\n</think>\n\n")?;
+                                reasoning_state = 0;
+                            }
                             if !function_name.is_empty() {
                                 let arguments: Value = function_arguments.parse().with_context(|| {
                                     format!("Tool call '{function_name}' have non-JSON arguments '{function_arguments}'")
@@ -448,12 +459,20 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
 }
 
 fn extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
-    let mut texts = vec![];
+    let mut text = String::new();
+    let mut reasoning = None;
     let mut tool_calls = vec![];
     if let Some(array) = data["output"]["message"]["content"].as_array() {
         for item in array {
-            if let Some(text) = item["text"].as_str() {
-                texts.push(text);
+            if let Some(v) = item["text"].as_str() {
+                if !text.is_empty() {
+                    text.push_str("\n\n");
+                }
+                text.push_str(v);
+            } else if let Some(reasoning_text) = item["reasoningContent"]["reasoningText"].as_object() {
+                if let Some(text) = json_str_from_map(reasoning_text, "text") {
+                    reasoning = Some(text.to_string());
+                }
             } else if let Some(tool_use) = item["toolUse"].as_object() {
                 if let (Some(id), Some(name), Some(input)) = (
                     json_str_from_map(tool_use, "toolUseId"),
@@ -470,12 +489,16 @@ fn extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
         }
     }
 
-    if texts.is_empty() && tool_calls.is_empty() {
+    if let Some(reasoning) = reasoning {
+        text = format!("<think>\n{reasoning}\n</think>\n\n{text}")
+    }
+
+    if text.is_empty() && tool_calls.is_empty() {
         bail!("Invalid response data: {data}");
     }
 
     let output = ChatCompletionsOutput {
-        text: texts.join("\n\n"),
+        text,
         tool_calls,
         id: None,
         input_tokens: data["usage"]["inputTokens"].as_u64(),

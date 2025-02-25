@@ -307,7 +307,7 @@ pub fn claude_extract_chat_completions(data: &Value) -> Result<ChatCompletionsOu
                 Some("text") => {
                     if let Some(v) = item["text"].as_str() {
                         if !text.is_empty() {
-                            text.push('\n');
+                            text.push_str("\n\n");
                         }
                         text.push_str(v);
                     }
