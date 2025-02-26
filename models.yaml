@@ -173,10 +173,33 @@
       max_batch_size: 100
 
 # Links:
-#  - https://docs.anthropic.com/en/docs/about-claude/models
+#  - https://docs.anthropic.com/en/docs/about-claude/models/all-models
 #  - https://docs.anthropic.com/en/api/messages
 - provider: claude
   models:
+    - name: claude-3-7-sonnet-20250219
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-3-7-sonnet-20250219:thinking
+      real_name: claude-3-7-sonnet-20250219
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
+          thinking: 
+            type: enabled
+            budget_tokens: 16000
     - name: claude-3-5-sonnet-latest
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -506,6 +529,29 @@
       output_price: 0.075
       supports_vision: true
       supports_function_calling: true
+    - name: claude-3-7-sonnet@20250219
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-3-7-sonnet@20250219:thinking
+      real_name: claude-3-7-sonnet@20250219
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
+          thinking: 
+            type: enabled
+            budget_tokens: 16000
     - name: claude-3-5-sonnet-v2@20241022
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -586,10 +632,36 @@
 
 # Links:
 #  - https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html#model-ids-arns
+#  - https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html
 #  - https://aws.amazon.com/bedrock/pricing/
-#  - https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference-support.html
+#  - https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-call.html
 - provider: bedrock
   models:
+    - name: us.anthropic.claude-3-7-sonnet-20250219-v1:0
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+    - name: us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking
+      real_name: us.anthropic.claude-3-7-sonnet-20250219-v1:0
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      patch:
+        body:
+          inferenceConfig:
+            temperature: null
+            topP: null
+          additionalModelRequestFields:
+            thinking: 
+              type: enabled
+              budget_tokens: 16000
     - name: anthropic.claude-3-5-sonnet-20241022-v2:0
       max_input_tokens: 200000
       max_output_tokens: 8192
