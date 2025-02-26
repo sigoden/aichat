@@ -1,5 +1,7 @@
 use super::*;
 
+use crate::utils::strip_think_tag;
+
 use anyhow::{bail, Context, Result};
 use reqwest::RequestBuilder;
 use serde::Deserialize;
@@ -169,11 +171,16 @@ pub fn claude_build_chat_completions_body(
 
     let mut network_image_urls = vec![];
 
+    let messages_len = messages.len();
     let messages: Vec<Value> = messages
         .into_iter()
-        .flat_map(|message| {
+        .enumerate()
+        .flat_map(|(i, message)| {
             let Message { role, content } = message;
             match content {
+                MessageContent::Text(text) if role.is_assistant() && i != messages_len - 1 => {
+                    vec![json!({ "role": role, "content": strip_think_tag(&text) })]
+                }
                 MessageContent::Text(text) => vec![json!({
                     "role": role,
                     "content": text,

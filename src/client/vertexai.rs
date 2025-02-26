@@ -154,7 +154,10 @@ fn prepare_embeddings(self_: &VertexAIClient, data: &EmbeddingsData) -> Result<R
     let access_token = get_access_token(self_.name())?;
 
     let base_url = format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers");
-    let url = format!("{base_url}/google/models/{}:predict", self_.model.real_name());
+    let url = format!(
+        "{base_url}/google/models/{}:predict",
+        self_.model.real_name()
+    );
 
     let instances: Vec<_> = data.texts.iter().map(|v| json!({"content": v})).collect();
 
