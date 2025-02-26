@@ -124,7 +124,7 @@
       output_price: 0
       supports_vision: true
       supports_function_calling: true
-    - name: gemini-2.0-flash-lite-preview
+    - name: gemini-2.0-flash-lite
       max_input_tokens: 1048576
       max_output_tokens: 8192
       input_price: 0
@@ -200,14 +200,6 @@
           thinking: 
             type: enabled
             budget_tokens: 16000
-    - name: claude-3-5-sonnet-latest
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 3
-      output_price: 15
-      supports_vision: true
-      supports_function_calling: true
     - name: claude-3-5-sonnet-20241022
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -216,12 +208,12 @@
       output_price: 15
       supports_vision: true
       supports_function_calling: true
-    - name: claude-3-5-haiku-latest
+    - name: claude-3-5-sonnet-20240620
       max_input_tokens: 200000
       max_output_tokens: 8192
       require_max_tokens: true
-      input_price: 0.8
-      output_price: 4
+      input_price: 3
+      output_price: 15
       supports_vision: true
       supports_function_calling: true
     - name: claude-3-5-haiku-20241022
@@ -499,7 +491,7 @@
       output_price: 0.6
       supports_vision: true
       supports_function_calling: true
-    - name: gemini-2.0-flash-lite-preview-02-05
+    - name: gemini-2.0-flash-lite-001
       max_input_tokens: 1048576
       max_output_tokens: 8192
       input_price: 0.075
@@ -1341,6 +1333,30 @@
       output_price: 0.4
       supports_vision: true
       supports_function_calling: true
+    - name: google/gemini-2.0-flash-lite-001
+      max_input_tokens: 1048576 
+      input_price: 0.075
+      output_price: 0.3
+      supports_vision: true
+      supports_function_calling: true
+    - name: anthropic/claude-3.7-sonnet
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+    - name: anthropic/claude-3.7-sonnet:thinking
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      patch:
+        body:
+          include_reasoning: true
     - name: anthropic/claude-3.5-sonnet
       max_input_tokens: 200000
       max_output_tokens: 8192

@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::utils::{base64_decode, encode_uri, hex_encode, hmac_sha256, sha256};
+use crate::utils::{base64_decode, encode_uri, hex_encode, hmac_sha256, sha256, strip_think_tag};
 
 use anyhow::{bail, Context, Result};
 use aws_smithy_eventstream::frame::{DecodedFrame, MessageFrameDecoder};
@@ -241,7 +241,9 @@ async fn chat_completions_streaming(
                         "contentBlockDelta" => {
                             if let Some(text) = data["delta"]["text"].as_str() {
                                 handler.text(text)?;
-                            } else if let Some(text) = data["delta"]["reasoningContent"]["text"].as_str() {
+                            } else if let Some(text) =
+                                data["delta"]["reasoningContent"]["text"].as_str()
+                            {
                                 if reasoning_state == 0 {
                                     handler.text("<think>\n")?;
                                     reasoning_state = 1;
@@ -317,11 +319,16 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
 
     let mut network_image_urls = vec![];
 
+    let messages_len = messages.len();
     let messages: Vec<Value> = messages
         .into_iter()
-        .flat_map(|message| {
+        .enumerate()
+        .flat_map(|(i, message)| {
             let Message { role, content } = message;
             match content {
+                MessageContent::Text(text) if role.is_assistant() && i != messages_len - 1 => {
+                    vec![json!({ "role": role, "content": [ { "text": strip_think_tag(&text) } ] })]
+                }
                 MessageContent::Text(text) => vec![json!({
                     "role": role,
                     "content": [
@@ -469,7 +476,9 @@ fn extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
                     text.push_str("\n\n");
                 }
                 text.push_str(v);
-            } else if let Some(reasoning_text) = item["reasoningContent"]["reasoningText"].as_object() {
+            } else if let Some(reasoning_text) =
+                item["reasoningContent"]["reasoningText"].as_object()
+            {
                 if let Some(text) = json_str_from_map(reasoning_text, "text") {
                     reasoning = Some(text.to_string());
                 }
