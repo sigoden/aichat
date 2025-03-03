@@ -222,6 +222,9 @@ async fn chat_completions_streaming(
                                     json_str_from_map(tool_use, "name"),
                                 ) {
                                     if !function_name.is_empty() {
+                                        if function_arguments.is_empty() {
+                                            function_arguments = String::from("{}");
+                                        }
                                         let arguments: Value =
                                         function_arguments.parse().with_context(|| {
                                             format!("Tool call '{function_name}' have non-JSON arguments '{function_arguments}'")
@@ -259,6 +262,9 @@ async fn chat_completions_streaming(
                                 reasoning_state = 0;
                             }
                             if !function_name.is_empty() {
+                                if function_arguments.is_empty() {
+                                    function_arguments = String::from("{}");
+                                }
                                 let arguments: Value = function_arguments.parse().with_context(|| {
                                     format!("Tool call '{function_name}' have non-JSON arguments '{function_arguments}'")
                                 })?;
