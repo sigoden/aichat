@@ -1038,17 +1038,9 @@ impl Config {
 
     pub fn list_roles(with_builtin: bool) -> Vec<String> {
         let mut names = HashSet::new();
-        if let Ok(rd) = read_dir(Self::roles_dir()) {
-            for entry in rd.flatten() {
-                if let Some(name) = entry
-                    .file_name()
-                    .to_str()
-                    .and_then(|v| v.strip_suffix(".md"))
-                {
-                    names.insert(name.to_string());
-                }
-            }
-        }
+
+        names.extend(list_file_names(Self::roles_dir(), ".md"));
+
         if with_builtin {
             names.extend(Role::list_builtin_role_names());
         }
@@ -1370,7 +1362,7 @@ impl Config {
         };
 
         let document_paths = rag.document_paths();
-        let temp_file = temp_file(&format!("-rag-{}", rag.name()), ".txt");
+        let temp_file = temp_file(&format!("-rag-{}", rag.name().replace("/", "::")), ".txt");
         tokio::fs::write(&temp_file, &document_paths.join("\n"))
             .await
             .with_context(|| format!("Failed to write to '{}'", temp_file.display()))?;
@@ -1450,20 +1442,7 @@ impl Config {
     }
 
     pub fn list_rags() -> Vec<String> {
-        match read_dir(Self::rags_dir()) {
-            Ok(rd) => {
-                let mut names = vec![];
-                for entry in rd.flatten() {
-                    let name = entry.file_name();
-                    if let Some(name) = name.to_string_lossy().strip_suffix(".yaml") {
-                        names.push(name.to_string());
-                    }
-                }
-                names.sort_unstable();
-                names
-            }
-            Err(_) => vec![],
-        }
+        list_file_names(Self::rags_dir(), ".yaml")
     }
 
     pub fn rag_template(&self, embeddings: &str, text: &str) -> String {

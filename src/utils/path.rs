@@ -58,6 +58,14 @@ pub fn list_file_names<T: AsRef<Path>>(dir: T, ext: &str) -> Vec<String> {
         Ok(rd) => {
             let mut names = vec![];
             for entry in rd.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    names.extend(
+                        list_file_names(&path, ext)
+                            .into_iter()
+                            .map(|v| format!("{}/{}", entry.file_name().to_string_lossy(), v)),
+                    );
+                }
                 let name = entry.file_name();
                 if let Some(name) = name.to_string_lossy().strip_suffix(ext) {
                     names.push(name.to_string());
