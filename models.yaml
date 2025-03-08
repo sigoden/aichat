@@ -32,6 +32,13 @@
       output_price: 30
       supports_vision: true
       supports_function_calling: true
+    - name: gpt-4.5-preview
+      max_input_tokens: 128000
+      max_output_tokens: 16384
+      input_price: 75
+      output_price: 150
+      supports_vision: true
+      supports_function_calling: true
     - name: o3-mini
       max_input_tokens: 200000
       input_price: 1.1
@@ -298,17 +305,17 @@
       default_chunk_size: 2000
 
 # Links:
-#  - https://docs.ai21.com/docs/jamba-15-models
+#  - https://docs.ai21.com/docs/jamba-foundation-models
 #  - https://www.ai21.com/pricing
-#  - https://docs.ai21.com/reference/jamba-15-api-ref
+#  - https://docs.ai21.com/reference/jamba-1-6-api-ref
 - provider: ai21
   models:
-    - name: jamba-1.5-large
+    - name: jamba-large
       max_input_tokens: 256000
       input_price: 2
       output_price: 8
       supports_function_calling: true
-    - name: jamba-1.5-mini
+    - name: jamba-mini
       max_input_tokens: 256000
       input_price: 0.2
       output_price: 0.4
@@ -420,19 +427,23 @@
       input_price: 3
       output_price: 15
     - name: sonar
-      max_input_tokens: 127000
+      max_input_tokens: 128000
       input_price: 1
       output_price: 1
     - name: sonar-reasoning-pro
-      max_input_tokens: 127000
+      max_input_tokens: 128000
       input_price: 2
       output_price: 8
     - name: sonar-reasoning
-      max_input_tokens: 127000
+      max_input_tokens: 128000
       input_price: 1
       output_price: 5
+    - name: sonar-deep-research
+      max_input_tokens: 128000
+      input_price: 2
+      output_price: 8
     - name: r1-1776
-      max_input_tokens: 127000
+      max_input_tokens: 128000
       input_price: 2
       output_price: 8
 
@@ -469,10 +480,16 @@
       max_input_tokens: 131072
       input_price: 0
       output_price: 0
+    - name: qwen-qwq-32b
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
+      supports_function_calling: true
     - name: qwen-2.5-32b
       max_input_tokens: 131072
       input_price: 0
       output_price: 0
+      supports_function_calling: true
     - name: qwen-2.5-coder-32b
       max_input_tokens: 131072
       input_price: 0
@@ -923,32 +940,20 @@
       input_price: 0.042
       output_price: 0.084
       supports_function_calling: true
-    - name: qwen-coder-plus-latest
-      max_input_tokens: 129024
-      max_output_tokens: 8192
-      input_price: 0.49
-      output_price: 0.98
-      supports_function_calling: true
-    - name: qwen-coder-turbo-latest
-      max_input_tokens: 129024
-      max_output_tokens: 8192
-      input_price: 0.28
-      output_price: 0.84
-      supports_function_calling: true
     - name: qwen-long
       max_input_tokens: 1000000
       input_price: 0.07
       output_price: 0.28
-    - name: qvq-72b-preview
-      max_input_tokens: 16384
-      max_output_tokens: 16384
+    - name: qwen-omni-turbo-latest
+      max_input_tokens: 32768
+      max_output_tokens: 2048
       supports_vision: true
-    - name: qwq-32b-preview
-      max_input_tokens: 30720
-      max_output_tokens: 16384
-      input_price: 0.49
-      output_price: 0.98
-      supports_function_calling: true
+    - name: qwq-plus-latest
+      max_input_tokens: 131072
+      max_output_tokens: 8192
+    - name: qwq-32b
+      max_input_tokens: 131072
+      max_output_tokens: 8192
     - name: qwen-vl-max-latest
       max_input_tokens: 30720
       max_output_tokens: 2048
@@ -967,6 +972,12 @@
       input_price: 0.56
       output_price: 1.68
       supports_function_calling: true
+    - name: qwen2.5-vl-72b-instruct 
+      max_input_tokens: 129024
+      max_output_tokens: 8192
+      input_price: 2.24
+      output_price: 6.72
+      supports_vision: true
     - name: qwen2.5-coder-32b-instruct
       max_input_tokens: 129024
       max_output_tokens: 8192
@@ -1006,11 +1017,17 @@
 #  - https://cloud.tencent.com/document/product/1729/111007
 - provider: hunyuan
   models:
+    - name: hunyuan-turbos-latest
+      max_input_tokens: 24000
+      max_output_tokens: 8192
+      input_price: 0.112
+      output_price: 0.28
+      supports_function_calling: true
     - name: hunyuan-turbo-latest
       max_input_tokens: 28000
       max_output_tokens: 4096
-      input_price: 2.1
-      output_price: 7.0
+      input_price: 0.336
+      output_price: 1.344
       supports_function_calling: true
     - name: hunyuan-large
       max_input_tokens: 28000
@@ -1251,6 +1268,13 @@
       max_input_tokens: 128000
       input_price: 10
       output_price: 30
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-4.5-preview
+      max_input_tokens: 128000
+      max_output_tokens: 16384
+      input_price: 75
+      output_price: 150
       supports_vision: true
       supports_function_calling: true
     - name: openai/o3-mini
@@ -1528,19 +1552,29 @@
       input_price: 0.05
       output_price: 0.2
       supports_function_calling: true
+    - name: qwen/qwen-vl-plus
+      max_input_tokens: 7500
+      input_price: 0.21
+      output_price: 0.63
+      supports_vision: true
+    - name: qwen/qwq-32b
+      max_input_tokens: 128000
+      input_price: 0.29
+      output_price: 0.39
     - name: qwen/qwen-2.5-72b-instruct
       max_input_tokens: 131072
       input_price: 0.35
       output_price: 0.4
       supports_function_calling: true
+    - name: qwen/qwen2.5-vl-72b-instruct
+      max_input_tokens: 32000
+      input_price: 0.7
+      output_price: 0.7
+      supports_vision: true
     - name: qwen/qwen-2.5-coder-32b-instruct
       max_input_tokens: 32768
       input_price: 0.18
       output_price: 0.18
-    - name: qwen/qwen-2-vl-72b-instruct
-      max_input_tokens: 32768
-      input_price: 0.4
-      output_price: 0.4
     - name: x-ai/grok-2-1212
       max_input_tokens: 131072
       input_price: 2
@@ -1579,6 +1613,21 @@
       max_output_tokens: 5120
       input_price: 0.035
       output_price: 0.14
+    - name: perplexity/sonar-pro
+      max_input_tokens: 200000
+      input_price: 3
+      output_price: 15
+    - name: perplexity/sonar
+      max_input_tokens: 127072
+      input_price: 1
+      output_price: 1
+    - name: perplexity/sonar-reasoning-pro
+      max_input_tokens: 128000
+      input_price: 2
+      output_price: 8
+      patch:
+        body:
+          include_reasoning: true
     - name: perplexity/sonar-reasoning
       max_input_tokens: 127000
       input_price: 1
@@ -1586,10 +1635,13 @@
       patch:
         body:
           include_reasoning: true
-    - name: perplexity/sonar
-      max_input_tokens: 127000
-      input_price: 1
-      output_price: 1
+    - name: perplexity/sonar-deep-research
+      max_input_tokens: 200000
+      input_price: 2
+      output_price: 8
+      patch:
+        body:
+          include_reasoning: true
     - name: perplexity/r1-1776
       max_input_tokens: 127000
       input_price: 2
@@ -1722,6 +1774,8 @@
       max_input_tokens: 163840
     - name: phi-4
       max_input_tokens: 16384
+    - name: phi-4-mini-instruct
+      max_input_tokens: 128000
     - name: phi-3.5-moe-instruct
       max_input_tokens: 128000
     - name: phi-3.5-mini-instruct
@@ -1767,6 +1821,10 @@
       input_price: 0.23
       output_price: 0.40
       supports_function_calling: true
+    - name: Qwen/QwQ-32B
+      max_input_tokens: 131072
+      input_price: 0.12
+      output_price: 0.18
     - name: Qwen/Qwen2.5-Coder-32B-Instruct
       max_input_tokens: 32768
       input_price: 0.07
