@@ -421,7 +421,7 @@ pub async fn call_chat_completions(
             } = ret;
             if !text.is_empty() {
                 if extract_code {
-                    text = extract_code_block(&text).to_string();
+                    text = extract_code_block(&strip_think_tag(&text)).to_string();
                 }
                 if print {
                     client.global_config().read().print_markdown(&text)?;
