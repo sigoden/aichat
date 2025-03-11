@@ -153,6 +153,10 @@ pub async fn openai_chat_completions_streaming(
                 .as_str()
                 .filter(|v| !v.is_empty()),
         ) {
+            if reasoning_state == 1 {
+                handler.text("\n</think>\n\n")?;
+                reasoning_state = 0;
+            }
             let maybe_call_id = format!("{}/{}", id.unwrap_or_default(), index.unwrap_or_default());
             if maybe_call_id != call_id && maybe_call_id.len() >= call_id.len() {
                 if !function_name.is_empty() {
