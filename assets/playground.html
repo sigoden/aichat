@@ -856,6 +856,7 @@
         max_output_tokens: parseInt(QUERY.max_output_tokens) || null,
         temperature: QUERY.temperature ? parseFloat(QUERY.temperature) : null,
         top_p: QUERY.top_p ? parseFloat(QUERY.top_p) : null,
+        voice: QUERY.voice || "",
       };
 
       Alpine.data("app", () => ({
@@ -877,6 +878,7 @@
         sessionTitle: "",
         selectSessionId: null,
         sessions: [],
+        voice: null,
 
         async init() {
           await Promise.all([
@@ -985,10 +987,21 @@
           if (!!window.speechSynthesis) {
             if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
               window.speechSynthesis.cancel();
-            } else {
-              let utterance = new SpeechSynthesisUtterance(messageToUtter);
-              window.speechSynthesis.speak(utterance);
+              return;
             }
+
+            if (!this.voice && this.settings.voice) {
+              this.voice = window.speechSynthesis
+                .getVoices()
+                .find(voice => voice.name === this.settings.voice);
+
+              // If we couldnt find, clear the voice string to prevent retry
+              if (!this.voice) this.settings.voice = null;
+            }
+
+            let utterance = new SpeechSynthesisUtterance(messageToUtter);
+            utterance.voice = this.voice;
+            window.speechSynthesis.speak(utterance);
           }
         },
 
