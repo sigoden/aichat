@@ -183,8 +183,14 @@ pub fn append_to_shell_history(shell: &str, command: &str, exit_code: i32) -> io
 
 fn get_history_file(shell: &str) -> Option<PathBuf> {
     match shell {
-        "bash" | "sh" => Some(home_dir()?.join(".bash_history")),
-        "zsh" => Some(home_dir()?.join(".zsh_history")),
+        "bash" | "sh" => env::var("HISTFILE")
+            .ok()
+            .map(PathBuf::from)
+            .or(Some(home_dir()?.join(".bash_history"))),
+        "zsh" => env::var("HISTFILE")
+            .ok()
+            .map(PathBuf::from)
+            .or(Some(home_dir()?.join(".zsh_history"))),
         "nushell" => Some(dirs::config_dir()?.join("nushell").join("history.txt")),
         "fish" => Some(
             home_dir()?
