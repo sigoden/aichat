@@ -14,7 +14,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use dirs::home_dir;
 use std::sync::LazyLock;
 
-pub static SHELL: LazyLock<Shell> = LazyLock::new(|| detect_shell());
+pub static SHELL: LazyLock<Shell> = LazyLock::new(detect_shell);
 
 pub struct Shell {
     pub name: String,
