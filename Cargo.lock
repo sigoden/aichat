@@ -71,7 +71,6 @@ dependencies = [
  "inquire",
  "is-terminal",
  "json-patch",
- "lazy_static",
  "log",
  "nu-ansi-term 0.50.1",
  "os_info",

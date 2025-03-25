@@ -2,11 +2,10 @@ use anyhow::{anyhow, Result};
 use chrono::Utc;
 use indexmap::IndexMap;
 use parking_lot::RwLock;
+use std::sync::LazyLock;
 
-lazy_static::lazy_static! {
-    static ref ACCESS_TOKENS: RwLock<IndexMap<String, (String, i64)>> =
-        RwLock::new(IndexMap::new());
-}
+static ACCESS_TOKENS: LazyLock<RwLock<IndexMap<String, (String, i64)>>> =
+    LazyLock::new(|| RwLock::new(IndexMap::new()));
 
 pub fn get_access_token(client_name: &str) -> Result<String> {
     ACCESS_TOKENS

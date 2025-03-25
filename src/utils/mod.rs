@@ -27,15 +27,22 @@ use fancy_regex::Regex;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use is_terminal::IsTerminal;
 use std::borrow::Cow;
+use std::sync::LazyLock;
 use std::{env, path::PathBuf, process};
 use unicode_segmentation::UnicodeSegmentation;
 
-lazy_static::lazy_static! {
-    pub static ref CODE_BLOCK_RE: Regex = Regex::new(r"(?ms)```\w*(.*)```").unwrap();
-    pub static ref THINK_TAG_RE: Regex = Regex::new(r"(?s)^\s*<think>.*?</think>(\s*|$)").unwrap();
-    pub static ref IS_STDOUT_TERMINAL: bool = std::io::stdout().is_terminal();
-    pub static ref NO_COLOR: bool = env::var("NO_COLOR").ok().and_then(|v| parse_bool(&v)).unwrap_or_default() || !*IS_STDOUT_TERMINAL;
-}
+pub static CODE_BLOCK_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?ms)```\w*(.*)```").unwrap());
+pub static THINK_TAG_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?s)^\s*<think>.*?</think>(\s*|$)").unwrap());
+pub static IS_STDOUT_TERMINAL: LazyLock<bool> = LazyLock::new(|| std::io::stdout().is_terminal());
+pub static NO_COLOR: LazyLock<bool> = LazyLock::new(|| {
+    env::var("NO_COLOR")
+        .ok()
+        .and_then(|v| parse_bool(&v))
+        .unwrap_or_default()
+        || !*IS_STDOUT_TERMINAL
+});
 
 pub fn now() -> String {
     chrono::Local::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, false)

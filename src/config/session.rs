@@ -12,10 +12,9 @@ use serde_json::json;
 use std::collections::HashMap;
 use std::fs::{read_to_string, write};
 use std::path::Path;
+use std::sync::LazyLock;
 
-lazy_static::lazy_static! {
-    static ref RE_AUTONAME_PREFIX: Regex = Regex::new(r"\d{8}T\d{6}-").unwrap();
-}
+static RE_AUTONAME_PREFIX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\d{8}T\d{6}-").unwrap());
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct Session {
