@@ -232,6 +232,7 @@ clients:
   - type: bedrock
     access_key_id: xxx
     secret_access_key: xxx
+    session_token: xxx          # Optional
     region: xxx
 
   # See https://developers.cloudflare.com/workers-ai/

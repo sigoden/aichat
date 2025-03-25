@@ -18,6 +18,7 @@ pub struct BedrockConfig {
     pub name: Option<String>,
     pub access_key_id: Option<String>,
     pub secret_access_key: Option<String>,
+    pub session_token: Option<String>,
     pub region: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
@@ -28,6 +29,7 @@ pub struct BedrockConfig {
 impl BedrockClient {
     config_get_fn!(access_key_id, get_access_key_id);
     config_get_fn!(secret_access_key, get_secret_access_key);
+    config_get_fn!(session_token, get_session_token);
     config_get_fn!(region, get_region);
 
     pub const PROMPTS: [PromptAction<'static>; 3] = [
@@ -43,6 +45,7 @@ impl BedrockClient {
     ) -> Result<RequestBuilder> {
         let access_key_id = self.get_access_key_id()?;
         let secret_access_key = self.get_secret_access_key()?;
+        let session_token = self.get_session_token().ok();
         let region = self.get_region()?;
         let host = format!("bedrock-runtime.{region}.amazonaws.com");
 
@@ -69,6 +72,7 @@ impl BedrockClient {
             &AwsCredentials {
                 access_key_id,
                 secret_access_key,
+                session_token,
                 region,
             },
             AwsRequest {
@@ -92,6 +96,7 @@ impl BedrockClient {
     ) -> Result<RequestBuilder> {
         let access_key_id = self.get_access_key_id()?;
         let secret_access_key = self.get_secret_access_key()?;
+        let session_token = self.get_session_token().ok();
         let region = self.get_region()?;
         let host = format!("bedrock-runtime.{region}.amazonaws.com");
 
@@ -120,6 +125,7 @@ impl BedrockClient {
             &AwsCredentials {
                 access_key_id,
                 secret_access_key,
+                session_token,
                 region,
             },
             AwsRequest {
@@ -526,6 +532,7 @@ fn extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
 struct AwsCredentials {
     access_key_id: String,
     secret_access_key: String,
+    session_token: Option<String>,
     region: String,
 }
 
@@ -613,6 +620,10 @@ fn aws_fetch(
     );
 
     headers.insert("authorization".into(), authorization_header);
+
+    if let Some(session_token) = &credentials.session_token {
+        headers.insert("X-Amz-Security-Token".into(), session_token.to_string());
+    }
 
     debug!("Request {endpoint} {body}");
 
