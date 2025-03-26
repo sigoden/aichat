@@ -1,8 +1,6 @@
 #[cfg(not(any(target_os = "android", target_os = "emscripten")))]
-lazy_static::lazy_static! {
-    static ref CLIPBOARD: std::sync::Arc<std::sync::Mutex<Option<arboard::Clipboard>>> =
-        std::sync::Arc::new(std::sync::Mutex::new(arboard::Clipboard::new().ok()));
-}
+static CLIPBOARD: std::sync::LazyLock<std::sync::Mutex<Option<arboard::Clipboard>>> =
+    std::sync::LazyLock::new(|| std::sync::Mutex::new(arboard::Clipboard::new().ok()));
 
 #[cfg(not(any(target_os = "android", target_os = "emscripten")))]
 pub fn set_text(text: &str) -> anyhow::Result<()> {

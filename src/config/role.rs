@@ -7,6 +7,7 @@ use fancy_regex::Regex;
 use rust_embed::Embed;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::sync::LazyLock;
 
 pub const SHELL_ROLE: &str = "%shell%";
 pub const EXPLAIN_SHELL_ROLE: &str = "%explain-shell%";
@@ -19,9 +20,8 @@ pub const INPUT_PLACEHOLDER: &str = "__INPUT__";
 #[folder = "assets/roles/"]
 struct RolesAsset;
 
-lazy_static::lazy_static! {
-    static ref RE_METADATA: Regex = Regex::new(r"(?s)-{3,}\s*(.*?)\s*-{3,}\s*(.*)").unwrap();
-}
+static RE_METADATA: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?s)-{3,}\s*(.*?)\s*-{3,}\s*(.*)").unwrap());
 
 pub trait RoleLike {
     fn to_role(&self) -> Role;

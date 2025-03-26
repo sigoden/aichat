@@ -16,18 +16,23 @@ use inquire::{
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::sync::mpsc::unbounded_channel;
 
 const MODELS_YAML: &str = include_str!("../../models.yaml");
 
-lazy_static::lazy_static! {
-    pub static ref ALL_PROVIDER_MODELS: Vec<ProviderModels> = {
-        Config::loal_models_override().ok().unwrap_or_else(|| serde_yaml::from_str(MODELS_YAML).unwrap())
-    };
-    static ref EMBEDDING_MODEL_RE: Regex = Regex::new(r"((^|/)(bge-|e5-|uae-|gte-|text-)|embed|multilingual|minilm)").unwrap();
-    static ref ESCAPE_SLASH_RE: Regex = Regex::new(r"(?<!\\)/").unwrap();
-}
+pub static ALL_PROVIDER_MODELS: LazyLock<Vec<ProviderModels>> = LazyLock::new(|| {
+    Config::loal_models_override()
+        .ok()
+        .unwrap_or_else(|| serde_yaml::from_str(MODELS_YAML).unwrap())
+});
+
+static EMBEDDING_MODEL_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"((^|/)(bge-|e5-|uae-|gte-|text-)|embed|multilingual|minilm)").unwrap()
+});
+
+static ESCAPE_SLASH_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?<!\\)/").unwrap());
 
 #[async_trait::async_trait]
 pub trait Client: Sync + Send {
