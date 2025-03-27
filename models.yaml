@@ -11,6 +11,12 @@
       output_price: 10
       supports_vision: true
       supports_function_calling: true
+    - name: gpt-4o-search-preview
+      max_input_tokens: 128000
+      max_output_tokens: 16384
+      input_price: 2.5
+      output_price: 10
+      supports_vision: true
     - name: chatgpt-4o-latest
       max_input_tokens: 128000
       max_output_tokens: 16384
@@ -25,6 +31,12 @@
       output_price: 0.6
       supports_vision: true
       supports_function_calling: true
+    - name: gpt-4o-mini-search-preview
+      max_input_tokens: 128000
+      max_output_tokens: 16384
+      input_price: 0.15
+      output_price: 0.6
+      supports_vision: true
     - name: gpt-4-turbo
       max_input_tokens: 128000
       max_output_tokens: 4096
@@ -62,6 +74,18 @@
       patch:
         body:
           reasoning_effort: high 
+          max_tokens: null
+          temperature: null
+          top_p: null
+    - name: o1-pro
+      max_input_tokens: 200000
+      input_price: 150
+      output_price: 600
+      supports_vision: true
+      supports_function_calling: true
+      system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
           max_tokens: null
           temperature: null
           top_p: null
@@ -151,6 +175,18 @@
       output_price: 0
       supports_vision: true
       supports_function_calling: true
+    - name: gemini-2.5-pro-exp-03-25
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemma-3-27b-it
+      max_input_tokens: 131072
+      max_output_tokens: 8192
+      input_price: 0
+      output_price: 0
     - name: gemini-1.5-pro-latest
       max_input_tokens: 2097152
       max_output_tokens: 8192
@@ -322,11 +358,17 @@
       supports_function_calling: true
 
 # Links:
-#  - https://docs.cohere.com/docs/command-r-plus
+#  - https://docs.cohere.com/docs/models
 #  - https://cohere.com/pricing
 #  - https://docs.cohere.com/reference/chat
 - provider: cohere
   models:
+    - name: command-a-03-2025
+      max_input_tokens: 256000
+      max_output_tokens: 8192
+      input_price: 2.5
+      output_price: 10
+      supports_function_calling: true
     - name: command-r-plus-08-2024
       max_input_tokens: 128000
       max_output_tokens: 4096
@@ -859,20 +901,25 @@
 #  - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7
 - provider: ernie
   models:
+    - name: ernie-4.0-8k-latest
+      max_input_tokens: 8192
+      input_price: 0.56
+      output_price: 2.24
+      supports_function_calling: true
     - name: ernie-4.0-turbo-8k-latest
       max_input_tokens: 8192
-      input_price: 2.8
-      output_price: 8.4
+      input_price: 0.42
+      output_price: 1.26
       supports_function_calling: true
     - name: ernie-4.0-turbo-128k
       max_input_tokens: 128000
-      input_price: 2.8
-      output_price: 8.4
+      input_price: 0.42
+      output_price: 1.26
       supports_function_calling: true
     - name: ernie-4.0-8k-latest
       max_input_tokens: 8192
-      input_price: 4.2
-      output_price: 12.6
+      input_price: 0.56
+      output_price: 2.24
       supports_function_calling: true
     - name: ernie-3.5-128k
       max_input_tokens: 128000
@@ -1023,6 +1070,11 @@
       input_price: 0.112
       output_price: 0.28
       supports_function_calling: true
+    - name: hunyuan-t1-latest
+      max_input_tokens: 28000
+      max_output_tokens: 64000
+      input_price: 0.14
+      output_price: 0.56
     - name: hunyuan-turbo-latest
       max_input_tokens: 28000
       max_output_tokens: 4096
@@ -1058,12 +1110,6 @@
       max_output_tokens: 6144
       input_price: 0
       output_price: 0
-      supports_function_calling: true
-    - name: hunyuan-functioncall
-      max_input_tokens: 28000
-      max_output_tokens: 4096
-      input_price: 0.56
-      output_price: 1.12
       supports_function_calling: true
     - name: hunyuan-turbo-vision
       max_input_tokens: 6144
@@ -1240,18 +1286,12 @@
       output_price: 10
       supports_vision: true
       supports_function_calling: true
-    - name: openai/gpt-4o-2024-11-20
+    - name: openai/gpt-4o-search-preview
       max_input_tokens: 128000
+      max_output_tokens: 16384
       input_price: 2.5
       output_price: 10
       supports_vision: true
-      supports_function_calling: true
-    - name: openai/gpt-4o-2024-08-06
-      max_input_tokens: 128000
-      input_price: 2.5
-      output_price: 10
-      supports_vision: true
-      supports_function_calling: true
     - name: openai/chatgpt-4o-latest
       max_input_tokens: 128000
       input_price: 5
@@ -1264,6 +1304,12 @@
       output_price: 0.6
       supports_vision: true
       supports_function_calling: true
+    - name: openai/gpt-4o-mini-search-preview
+      max_input_tokens: 128000
+      max_output_tokens: 16384
+      input_price: 0.15
+      output_price: 0.6
+      supports_vision: true
     - name: openai/gpt-4-turbo
       max_input_tokens: 128000
       input_price: 10
@@ -1297,6 +1343,18 @@
       system_prompt_prefix: Formatting re-enabled
       patch:
         body:
+          temperature: null
+          top_p: null
+    - name: openai/o1-pro
+      max_input_tokens: 200000
+      input_price: 150
+      output_price: 600
+      supports_vision: true
+      supports_function_calling: true
+      system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          max_tokens: null
           temperature: null
           top_p: null
     - name: openai/o1
@@ -1363,6 +1421,10 @@
       output_price: 0.3
       supports_vision: true
       supports_function_calling: true
+    - name: google/gemma-3-27b-it
+      max_input_tokens: 131072
+      input_price: 0.1
+      output_price: 0.2
     - name: anthropic/claude-3.7-sonnet
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -1454,8 +1516,8 @@
       input_price: 2
       output_price: 6
       supports_function_calling: true
-    - name: mistralai/mistral-small-24b-instruct-2501
-      max_input_tokens: 32768
+    - name: mistralai/mistral-small-3.1-24b-instruct
+      max_input_tokens: 131072
       input_price: 0.1
       output_price: 0.3
     - name: mistralai/codestral-2501
@@ -1483,15 +1545,20 @@
       input_price: 0.1
       output_price: 0.1
       supports_vision: true
-    - name: ai21/jamba-1-5-large
+    - name: ai21/jamba-1.6-large
       max_input_tokens: 256000
       input_price: 2
       output_price: 8
       supports_function_calling: true
-    - name: ai21/jamba-1-5-mini
+    - name: ai21/jamba-1.6-mini
       max_input_tokens: 256000
       input_price: 0.2
       output_price: 0.4
+      supports_function_calling: true
+    - name: cohere/command-a
+      max_input_tokens: 256000
+      input_price: 2.5
+      output_price: 10
       supports_function_calling: true
     - name: cohere/command-r-plus-08-2024
       max_input_tokens: 128000
@@ -1508,10 +1575,10 @@
       max_output_tokens: 4096
       input_price: 0.0375
       output_price: 0.15
-    - name: deepseek/deepseek-chat
+    - name: deepseek/deepseek-chat-v3-0324
       max_input_tokens: 64000
-      input_price: 0.14
-      output_price: 0.28
+      input_price: 0.27
+      output_price: 1.1
       supports_function_calling: true
     - name: deepseek/deepseek-r1
       max_input_tokens: 163840
@@ -1656,7 +1723,7 @@
 
 
 # Links:
-#  - https://github.com/marketplace/models
+#  - https://github.com/marketplace?type=models
 - provider: github
   models:
     - name: gpt-4o
@@ -1740,6 +1807,9 @@
       max_input_tokens: 131072
       supports_vision: true
     - name: mistral-large-2411
+      max_input_tokens: 128000
+      supports_function_calling: true
+    - name: mistral-small-2503
       max_input_tokens: 128000
       supports_function_calling: true
     - name: codestral-2501
@@ -1829,9 +1899,9 @@
       max_input_tokens: 32768
       input_price: 0.07
       output_price: 0.16
-    - name: deepseek-ai/DeepSeek-V3
-      max_input_tokens: 65536
-      input_price: 0.49
+    - name: deepseek-ai/DeepSeek-V3-0324
+      max_input_tokens: 163840
+      input_price: 0.40
       output_price: 0.89
     - name: deepseek-ai/DeepSeek-R1
       max_input_tokens: 65536
@@ -1845,6 +1915,10 @@
       max_input_tokens: 131072
       input_price: 0.12
       output_price: 0.18
+    - name: google/gemma-3-27b-it
+      max_input_tokens: 131072
+      input_price: 0.1
+      output_price: 0.2
     - name: mistralai/Mistral-Small-24B-Instruct-2501
       max_input_tokens: 32768
       input_price: 0.07
