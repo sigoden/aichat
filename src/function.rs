@@ -1,5 +1,5 @@
 use crate::{
-    config::{Config, GlobalConfig},
+    config::{Agent, Config, GlobalConfig},
     utils::*,
 };
 
@@ -140,6 +140,8 @@ pub struct ToolCall {
     pub id: Option<String>,
 }
 
+type CallConfig = (String, String, Vec<String>, HashMap<String, String>);
+
 impl ToolCall {
     pub fn dedup(calls: Vec<Self>) -> Vec<Self> {
         let mut new_calls = vec![];
@@ -169,39 +171,11 @@ impl ToolCall {
     }
 
     pub fn eval(&self, config: &GlobalConfig) -> Result<Value> {
-        let function_name = self.name.clone();
         let (call_name, cmd_name, mut cmd_args, envs) = match &config.read().agent {
-            Some(agent) => match agent.functions().find(&function_name) {
-                Some(function) => {
-                    let agent_name = agent.name().to_string();
-                    if function.agent {
-                        (
-                            format!("{agent_name}-{function_name}"),
-                            agent_name,
-                            vec![function_name],
-                            agent.variable_envs(),
-                        )
-                    } else {
-                        (
-                            function_name.clone(),
-                            function_name,
-                            vec![],
-                            Default::default(),
-                        )
-                    }
-                }
-                None => bail!("Unexpected call: {function_name} {}", self.arguments),
-            },
-            None => match config.read().functions.contains(&function_name) {
-                true => (
-                    function_name.clone(),
-                    function_name,
-                    vec![],
-                    Default::default(),
-                ),
-                false => bail!("Unexpected call: {function_name} {}", self.arguments),
-            },
+            Some(agent) => self.extract_call_config_from_agent(config, agent)?,
+            None => self.extract_call_config_from_config(config)?,
         };
+
         let json_data = if self.arguments.is_object() {
             self.arguments.clone()
         } else if let Some(arguments) = self.arguments.as_str() {
@@ -226,6 +200,48 @@ impl ToolCall {
         };
 
         Ok(output)
+    }
+
+    fn extract_call_config_from_agent(
+        &self,
+        config: &GlobalConfig,
+        agent: &Agent,
+    ) -> Result<CallConfig> {
+        let function_name = self.name.clone();
+        match agent.functions().find(&function_name) {
+            Some(function) => {
+                let agent_name = agent.name().to_string();
+                if function.agent {
+                    Ok((
+                        format!("{agent_name}-{function_name}"),
+                        agent_name,
+                        vec![function_name],
+                        agent.variable_envs(),
+                    ))
+                } else {
+                    Ok((
+                        function_name.clone(),
+                        function_name,
+                        vec![],
+                        Default::default(),
+                    ))
+                }
+            }
+            None => self.extract_call_config_from_config(config),
+        }
+    }
+
+    fn extract_call_config_from_config(&self, config: &GlobalConfig) -> Result<CallConfig> {
+        let function_name = self.name.clone();
+        match config.read().functions.contains(&function_name) {
+            true => Ok((
+                function_name.clone(),
+                function_name,
+                vec![],
+                Default::default(),
+            )),
+            false => bail!("Unexpected call: {function_name} {}", self.arguments),
+        }
     }
 }
 
