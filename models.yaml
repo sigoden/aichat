@@ -162,19 +162,6 @@
       output_price: 0
       supports_vision: true
       supports_function_calling: true
-    - name: gemini-2.0-flash-thinking-exp
-      max_input_tokens: 32767
-      max_output_tokens: 8192
-      input_price: 0
-      output_price: 0
-      supports_vision: true
-    - name: gemini-2.0-pro-exp
-      max_input_tokens: 2097152
-      max_output_tokens: 8192
-      input_price: 0
-      output_price: 0
-      supports_vision: true
-      supports_function_calling: true
     - name: gemini-2.5-pro-exp-03-25
       max_input_tokens: 1048576
       max_output_tokens: 65536
@@ -425,20 +412,28 @@
 #  - https://docs.x.ai/docs/api-reference#chat-completions
 - provider: xai
   models:
+    - name: grok-3-latest
+      max_input_tokens: 131072
+      input_price: 3
+      output_price: 15
+      supports_function_calling: true
+    - name: grok-3-fast-latest
+      max_input_tokens: 131072
+      input_price: 5
+      output_price: 25
+      supports_function_calling: true
+    - name: grok-3-mini-latest
+      max_input_tokens: 131072
+      input_price: 0.3
+      output_price: 0.5
+    - name: grok-3-mini-fast-latest
+      max_input_tokens: 131072
+      input_price: 0.6
+      output_price: 4
     - name: grok-2-latest
       max_input_tokens: 131072
       input_price: 2
       output_price: 10
-      supports_function_calling: true
-    - name: grok-2-1212
-      max_input_tokens: 131072
-      input_price: 2
-      output_price: 10
-      supports_function_calling: true
-    - name: grok-beta
-      max_input_tokens: 131072
-      input_price: 5
-      output_price: 15
       supports_function_calling: true
     - name: grok-2-vision-latest
       max_input_tokens: 32768
@@ -446,17 +441,6 @@
       output_price: 10
       supports_vision: true
       supports_function_calling: true
-    - name: grok-2-vision-1212
-      max_input_tokens: 32768
-      input_price: 2
-      output_price: 10
-      supports_vision: true
-      supports_function_calling: true
-    - name: grok-vision-beta
-      max_input_tokens: 8192
-      input_price: 5
-      output_price: 15
-      supports_vision: true
 
 # Links:
 #  - https://docs.perplexity.ai/guides/model-cards
@@ -494,6 +478,18 @@
 #  - https://console.groq.com/docs/api-reference#chat
 - provider: groq
   models:
+    - name: meta-llama/llama-4-maverick-17b-128e-instruct
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: meta-llama/llama-4-scout-17b-16e-instruct
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
     - name: llama-3.3-70b-versatile
       max_input_tokens: 131072
       input_price: 0
@@ -504,38 +500,11 @@
       input_price: 0
       output_price: 0
       supports_function_calling: true
-    - name: llama-3.2-90b-vision-preview
-      max_input_tokens: 131072
-      input_price: 0
-      output_price: 0
-      supports_vision: true
-    - name: llama-3.2-11b-vision-preview
-      max_input_tokens: 131072
-      input_price: 0
-      output_price: 0
-      supports_vision: true
-    - name: deepseek-r1-distill-llama-70b
-      max_input_tokens: 131072
-      input_price: 0
-      output_price: 0
-    - name: deepseek-r1-distill-qwen-32b
-      max_input_tokens: 131072
-      input_price: 0
-      output_price: 0
     - name: qwen-qwq-32b
       max_input_tokens: 131072
       input_price: 0
       output_price: 0
       supports_function_calling: true
-    - name: qwen-2.5-32b
-      max_input_tokens: 131072
-      input_price: 0
-      output_price: 0
-      supports_function_calling: true
-    - name: qwen-2.5-coder-32b
-      max_input_tokens: 131072
-      input_price: 0
-      output_price: 0
 
 # Links:
 #  - https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
@@ -557,13 +526,11 @@
       output_price: 0.3
       supports_vision: true
       supports_function_calling: true
-    - name: gemini-2.0-flash-thinking-exp-01-21
-      max_input_tokens: 32760
-      max_output_tokens: 8192
-      supports_vision: true
-    - name: gemini-2.0-pro-exp-02-05
-      max_input_tokens: 2097152
-      max_output_tokens: 8192
+    - name: gemini-2.5-pro-preview-03-25
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 1.25
+      output_price: 10
       supports_vision: true
       supports_function_calling: true
     - name: gemini-1.5-pro-002
@@ -656,15 +623,15 @@
       input_price: 2
       output_price: 6
       supports_function_calling: true
+    - name: mistral-small-2503
+      max_input_tokens: 32000
+      input_price: 0.1
+      output_price: 0.3
+      supports_function_calling: true
     - name: codestral-2501
       max_input_tokens: 256000
       input_price: 0.3
       output_price: 0.9
-      supports_function_calling: true
-    - name: mistral-nemo@2407
-      max_input_tokens: 128000
-      input_price: 0.15
-      output_price: 0.15
       supports_function_calling: true
     - name: text-embedding-005
       type: embedding
@@ -859,12 +826,22 @@
       input_price: 0.2
       output_price: 0.4
       supports_function_calling: true
+    - name: us.deepseek.r1-v1:0
+      max_input_tokens: 128000
+      input_price: 1.35
+      output_price: 5.4
 
 # Links:
 #  - https://developers.cloudflare.com/workers-ai/models/
 #  - https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/
 - provider: cloudflare
   models:
+    - name: '@cf/meta/llama-4-scout-17b-16e-instruct'
+      max_input_tokens: 131072
+      max_output_tokens: 2048
+      require_max_tokens: true
+      input_price: 0
+      output_price: 0
     - name: '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
       max_input_tokens: 131072
       max_output_tokens: 2048
@@ -883,7 +860,25 @@
       require_max_tokens: true
       input_price: 0
       output_price: 0
-    - name: '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b'
+    - name: '@cf/qwen/qwq-32b'
+      max_input_tokens: 131072
+      max_output_tokens: 2048
+      require_max_tokens: true
+      input_price: 0
+      output_price: 0
+    - name: '@cf/qwen/qwen2.5-coder-32b-instruct'
+      max_input_tokens: 131072
+      max_output_tokens: 2048
+      require_max_tokens: true
+      input_price: 0
+      output_price: 0
+    - name: '@cf/google/gemma-3-12b-it'
+      max_input_tokens: 131072
+      max_output_tokens: 2048
+      require_max_tokens: true
+      input_price: 0
+      output_price: 0
+    - name: '@cf/mistralai/mistral-small-3.1-24b-instruct'
       max_input_tokens: 131072
       max_output_tokens: 2048
       require_max_tokens: true
@@ -901,11 +896,15 @@
 #  - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7
 - provider: ernie
   models:
-    - name: ernie-4.0-8k-latest
+    - name: ernie-4.5-8k-preview
       max_input_tokens: 8192
       input_price: 0.56
       output_price: 2.24
       supports_function_calling: true
+    - name: ernie-x1-32k-preview
+      max_input_tokens: 32768
+      input_price: 0.28
+      output_price: 1.12
     - name: ernie-4.0-turbo-8k-latest
       max_input_tokens: 8192
       input_price: 0.42
@@ -938,13 +937,9 @@
       max_input_tokens: 131072
       input_price: 0.28
       output_price: 1.12
-    - name: deepseek-r1-distill-llama-70b
+    - name: qwq-32b
       max_input_tokens: 131072
       input_price: 0.28
-      output_price: 1.12
-    - name: deepseek-r1-distill-qwen-32b
-      max_input_tokens: 131072
-      input_price: 0.21
       output_price: 0.84
     - name: bge-large-zh
       type: embedding
@@ -1039,12 +1034,6 @@
       max_input_tokens: 65792
       input_price: 0.28
       output_price: 1.12
-    - name: deepseek-r1-distill-llama-70b
-      max_input_tokens: 32768
-    - name: deepseek-r1-distill-qwen-32b
-      max_input_tokens: 32768
-      input_price: 0.28
-      output_price: 0.84
     - name: text-embedding-v3
       type: embedding
       input_price: 0.1
@@ -1391,6 +1380,28 @@
       input_price: 0.5
       output_price: 1.5
       supports_function_calling: true
+    - name: google/gemini-2.0-flash-001
+      max_input_tokens: 1000000
+      input_price: 0.1
+      output_price: 0.4
+      supports_vision: true
+      supports_function_calling: true
+    - name: google/gemini-2.0-flash-lite-001
+      max_input_tokens: 1048576 
+      input_price: 0.075
+      output_price: 0.3
+      supports_vision: true
+      supports_function_calling: true
+    - name: google/gemini-2.5-pro-preview-03-25
+      max_input_tokens: 1048576
+      input_price: 1.25
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
+    - name: google/gemma-3-27b-it
+      max_input_tokens: 131072
+      input_price: 0.1
+      output_price: 0.2
     - name: google/gemini-pro-1.5
       max_input_tokens: 2000000
       input_price: 1.25
@@ -1409,22 +1420,6 @@
       output_price: 0.15
       supports_vision: true
       supports_function_calling: true
-    - name: google/gemini-2.0-flash-001
-      max_input_tokens: 1000000
-      input_price: 0.1
-      output_price: 0.4
-      supports_vision: true
-      supports_function_calling: true
-    - name: google/gemini-2.0-flash-lite-001
-      max_input_tokens: 1048576 
-      input_price: 0.075
-      output_price: 0.3
-      supports_vision: true
-      supports_function_calling: true
-    - name: google/gemma-3-27b-it
-      max_input_tokens: 131072
-      input_price: 0.1
-      output_price: 0.2
     - name: anthropic/claude-3.7-sonnet
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -1481,6 +1476,18 @@
       require_max_tokens: true
       input_price: 0.25
       output_price: 1.25
+      supports_vision: true
+      supports_function_calling: true
+    - name: meta-llama/llama-4-maverick
+      max_input_tokens: 1048576
+      input_price: 0.18
+      output_price: 0.6
+      supports_vision: true
+      supports_function_calling: true
+    - name: meta-llama/llama-4-scout
+      max_input_tokens: 327680 
+      input_price: 0.08
+      output_price: 0.3
       supports_vision: true
       supports_function_calling: true
     - name: meta-llama/llama-3.3-70b-instruct
@@ -1587,20 +1594,6 @@
       patch:
         body:
           include_reasoning: true
-    - name: deepseek/deepseek-r1-distill-llama-70b
-      max_input_tokens: 131072
-      input_price: 0.23
-      output_price: 0.69
-      patch:
-        body:
-          include_reasoning: true
-    - name: deepseek/deepseek-r1-distill-qwen-32b
-      max_input_tokens: 131072
-      input_price: 0.12
-      output_price: 0.18
-      patch:
-        body:
-          include_reasoning: true
     - name: qwen/qwen-max
       max_input_tokens: 32768
       max_output_tokens: 8192
@@ -1642,15 +1635,19 @@
       max_input_tokens: 32768
       input_price: 0.18
       output_price: 0.18
+    - name: x-ai/grok-3-beta
+      max_input_tokens: 131072
+      input_price: 3
+      output_price: 15
+      supports_function_calling: true
+    - name: x-ai/grok-3-mini-beta
+      max_input_tokens: 131072
+      input_price: 0.3
+      output_price: 0.5
     - name: x-ai/grok-2-1212
       max_input_tokens: 131072
       input_price: 2
       output_price: 10
-      supports_function_calling: true
-    - name: x-ai/grok-beta
-      max_input_tokens: 32768
-      input_price: 5
-      output_price: 15
       supports_function_calling: true
     - name: x-ai/grok-2-vision-1212
       max_input_tokens: 32768
@@ -1658,11 +1655,6 @@
       output_price: 10
       supports_vision: true
       supports_function_calling: true
-    - name: x-ai/grok-vision-beta
-      max_input_tokens: 8192
-      input_price: 5
-      output_price: 15
-      supports_vision: true
     - name: amazon/nova-pro-v1
       max_input_tokens: 300000
       max_output_tokens: 5120
@@ -1792,6 +1784,12 @@
       max_tokens_per_chunk: 8191
       default_chunk_size: 2000
       max_batch_size: 100
+    - name: llama-4-maverick-17b-128e-instruct-fp8
+      max_input_tokens: 1048576
+      supports_vision: true
+    - name: llama-4-scout-17b-16e-instruct
+      max_input_tokens: 327680 
+      supports_vision: true
     - name: llama-3.3-70b-instruct
       max_input_tokens: 131072
     - name: meta-llama-3.1-405b-instruct
@@ -1842,23 +1840,28 @@
       supports_function_calling: true
     - name: deepseek-r1
       max_input_tokens: 163840
+    - name: deepseek-v3-0324
+      max_input_tokens: 163840
     - name: phi-4
       max_input_tokens: 16384
     - name: phi-4-mini-instruct
       max_input_tokens: 128000
-    - name: phi-3.5-moe-instruct
-      max_input_tokens: 128000
-    - name: phi-3.5-mini-instruct
-      max_input_tokens: 128000
-    - name: phi-3.5-vision-instruct
-      max_input_tokens: 128000
-      supports_vision: true
 
 # Links:
 #  - https://deepinfra.com/models
 #  - https://deepinfra.com/docs/openai_api
 - provider: deepinfra
   models:
+    - name: meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8
+      max_input_tokens: 1048576
+      input_price: 0.18
+      output_price: 0.6
+      supports_vision: true
+    - name: meta-llama/Llama-4-Scout-17B-16E-Instruct
+      max_input_tokens: 327680 
+      input_price: 0.08
+      output_price: 0.3
+      supports_vision: true
     - name: meta-llama/Llama-3.3-70B-Instruct
       max_input_tokens: 131072
       input_price: 0.23
@@ -1907,14 +1910,6 @@
       max_input_tokens: 65536
       input_price: 0.75
       output_price: 2.4
-    - name: deepseek-ai/DeepSeek-R1-Distill-Llama-70B
-      max_input_tokens: 131072
-      input_price: 0.23
-      output_price: 0.69
-    - name: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
-      max_input_tokens: 131072
-      input_price: 0.12
-      output_price: 0.18
     - name: google/gemma-3-27b-it
       max_input_tokens: 131072
       input_price: 0.1
