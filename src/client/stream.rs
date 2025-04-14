@@ -250,9 +250,9 @@ mod tests {
         let len = text.len();
         let cut1 = rng.random_range(1..len - 1);
         let cut2 = rng.random_range(cut1 + 1..len);
-        let chunk1 = text[..cut1].as_bytes().to_vec();
-        let chunk2 = text[cut1..cut2].as_bytes().to_vec();
-        let chunk3 = text[cut2..].as_bytes().to_vec();
+        let chunk1 = text.as_bytes()[..cut1].to_vec();
+        let chunk2 = text.as_bytes()[cut1..cut2].to_vec();
+        let chunk3 = text.as_bytes()[cut2..].to_vec();
         vec![chunk1, chunk2, chunk3]
     }
 
