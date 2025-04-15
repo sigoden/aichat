@@ -4,6 +4,23 @@
 #  - https://platform.openai.com/docs/api-reference/chat
 - provider: openai
   models:
+    - name: gpt-4.1
+      max_input_tokens: 1047576
+      input_price: 2
+      output_price: 8
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-4.1-mini
+      max_input_tokens: 1047576
+      input_price: 0.4
+      output_price: 1.6
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-4.1-nano
+      max_input_tokens: 1047576
+      input_price: 0.1
+      output_price: 0.4
+      supports_vision: true
     - name: gpt-4o
       max_input_tokens: 128000
       max_output_tokens: 16384
@@ -1269,6 +1286,24 @@
 #  - https://openrouter.ai/docs/api-reference/chat-completion
 - provider: openrouter
   models:
+    - name: openai/gpt-4.1
+      max_input_tokens: 1047576
+      input_price: 2
+      output_price: 8
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-4.1-mini
+      max_input_tokens: 1047576
+      input_price: 0.4
+      output_price: 1.6
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-4.1-nano
+      max_input_tokens: 1047576
+      input_price: 0.1
+      output_price: 0.4
+      supports_vision: true
+      supports_function_calling: true
     - name: openai/gpt-4o
       max_input_tokens: 128000
       input_price: 2.5
