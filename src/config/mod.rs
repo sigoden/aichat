@@ -111,6 +111,7 @@ pub struct Config {
     pub editor: Option<String>,
     pub wrap: Option<String>,
     pub wrap_code: bool,
+    pub default_multi_line: bool,
 
     pub function_calling: bool,
     pub mapping_tools: IndexMap<String, String>,
@@ -187,6 +188,7 @@ impl Default for Config {
             editor: None,
             wrap: None,
             wrap_code: false,
+            default_multi_line: false,
 
             function_calling: true,
             mapping_tools: Default::default(),
@@ -2266,6 +2268,9 @@ impl Config {
         }
         if let Some(Some(v)) = read_env_bool(&get_env_name("wrap_code")) {
             self.wrap_code = v;
+        }
+        if let Some(Some(v)) = read_env_bool(&get_env_name("default_multi_line")) {
+            self.default_multi_line = v;
         }
 
         if let Some(Some(v)) = read_env_bool(&get_env_name("function_calling")) {

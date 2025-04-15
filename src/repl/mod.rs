@@ -220,7 +220,11 @@ Type ".help" for additional help.
 "#,
                 env!("CARGO_CRATE_NAME"),
                 env!("CARGO_PKG_VERSION"),
-            )
+            );
+            
+            if self.config.read().default_multi_line {
+                println!("Multi-line mode is enabled. Press Alt+Enter to submit, Enter for new line.");
+            }
         }
 
         loop {
@@ -271,7 +275,7 @@ Type ".help" for additional help.
             .with_quick_completions(true)
             .with_partial_completions(true)
             .use_bracketed_paste(true)
-            .with_validator(Box::new(ReplValidator))
+            .with_validator(Box::new(ReplValidator::new(config)))
             .with_ansi_colors(true);
 
         if let Ok(cmd) = config.read().editor() {
@@ -283,7 +287,7 @@ Type ".help" for additional help.
         Ok(editor)
     }
 
-    fn extra_keybindings(keybindings: &mut Keybindings) {
+    fn extra_keybindings(keybindings: &mut Keybindings, default_multi_line: bool) {
         keybindings.add_binding(
             KeyModifiers::NONE,
             KeyCode::Tab,
@@ -302,18 +306,29 @@ Type ".help" for additional help.
             KeyCode::Enter,
             ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
         );
+
+        // Special keybindings for multi-line mode to submit input
+        if default_multi_line {
+            // Alt+Enter to submit in multi-line mode
+            keybindings.add_binding(
+                KeyModifiers::ALT,
+                KeyCode::Enter,
+                ReedlineEvent::Submit,
+            );
+        }
     }
 
     fn create_edit_mode(config: &GlobalConfig) -> Box<dyn EditMode> {
+        let default_multi_line = config.read().default_multi_line;
         let edit_mode: Box<dyn EditMode> = if config.read().keybindings == "vi" {
             let mut normal_keybindings = default_vi_normal_keybindings();
             let mut insert_keybindings = default_vi_insert_keybindings();
-            Self::extra_keybindings(&mut normal_keybindings);
-            Self::extra_keybindings(&mut insert_keybindings);
+            Self::extra_keybindings(&mut normal_keybindings, default_multi_line);
+            Self::extra_keybindings(&mut insert_keybindings, default_multi_line);
             Box::new(Vi::new(insert_keybindings, normal_keybindings))
         } else {
             let mut keybindings = default_emacs_keybindings();
-            Self::extra_keybindings(&mut keybindings);
+            Self::extra_keybindings(&mut keybindings, default_multi_line);
             Box::new(Emacs::new(keybindings))
         };
         edit_mode
@@ -347,12 +362,26 @@ impl ReplCommand {
 }
 
 /// A default validator which checks for mismatched quotes and brackets
-struct ReplValidator;
+/// When default_multi_line is true, always returns Incomplete unless a special marker is detected
+struct ReplValidator {
+    default_multi_line: bool,
+}
+
+impl ReplValidator {
+    fn new(config: &GlobalConfig) -> Self {
+        let default_multi_line = config.read().default_multi_line;
+        Self { default_multi_line }
+    }
+}
 
 impl Validator for ReplValidator {
     fn validate(&self, line: &str) -> ValidationResult {
         let line = line.trim();
         if line.starts_with(r#":::"#) && !line[3..].ends_with(r#":::"#) {
+            ValidationResult::Incomplete
+        } else if self.default_multi_line && !line.is_empty() && !line.starts_with('.') {
+            // In multi-line mode, consider input incomplete by default unless it's a dot command
+            // Will be submitted with special key binding instead of Enter
             ValidationResult::Incomplete
         } else {
             ValidationResult::Complete
@@ -762,7 +791,9 @@ fn dump_repl_help() {
 
 Type ::: to start multi-line editing, type ::: to finish it.
 Press Ctrl+O to open an editor for editing the input buffer.
-Press Ctrl+C to cancel the response, Ctrl+D to exit the REPL."###,
+Press Ctrl+C to cancel the response, Ctrl+D to exit the REPL.
+Press Ctrl+Enter to add a new line.
+In multi-line mode: Press Alt+Enter to submit input."###,
     );
 }
 

@@ -10,6 +10,7 @@ keybindings: emacs               # Choose keybinding style (emacs, vi)
 editor: null                     # Specifies the command used to edit input buffer or session. (e.g. vim, emacs, nano).
 wrap: no                         # Controls text wrapping (no, auto, <max-width>)
 wrap_code: false                 # Enables or disables wrapping of code blocks
+default_multi_line: false        # Use multi-line mode by default. When true, Enter adds newline and Alt+Enter submits.
 
 # ---- function-calling ----
 # Visit https://github.com/sigoden/llm-functions for setup instructions
