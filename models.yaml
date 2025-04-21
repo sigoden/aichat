@@ -1,9 +1,29 @@
 # Links:
 #  - https://platform.openai.com/docs/models
-#  - https://openai.com/api/pricing/
 #  - https://platform.openai.com/docs/api-reference/chat
 - provider: openai
   models:
+    - name: gpt-4.1
+      max_input_tokens: 1047576
+      max_output_tokens: 32768
+      input_price: 2
+      output_price: 8
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-4.1-mini
+      max_input_tokens: 1047576
+      max_output_tokens: 32768
+      input_price: 0.4
+      output_price: 1.6
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-4.1-nano
+      max_input_tokens: 1047576
+      max_output_tokens: 32768
+      input_price: 0.1
+      output_price: 0.4
+      supports_vision: true
+      supports_function_calling: true
     - name: gpt-4o
       max_input_tokens: 128000
       max_output_tokens: 16384
@@ -51,6 +71,44 @@
       output_price: 150
       supports_vision: true
       supports_function_calling: true
+    - name: o4-mini
+      max_input_tokens: 200000
+      input_price: 1.1
+      output_price: 4.4
+      supports_vision: true
+      supports_function_calling: true
+      system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          max_tokens: null
+          temperature: null
+          top_p: null
+    - name: o4-mini-high
+      real_name: o4-mini
+      max_input_tokens: 200000
+      input_price: 1.1
+      output_price: 4.4
+      supports_vision: true
+      supports_function_calling: true
+      system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          reasoning_effort: high 
+          max_tokens: null
+          temperature: null
+          top_p: null
+    - name: o3
+      max_input_tokens: 200000
+      input_price: 10
+      output_price: 40
+      supports_vision: true
+      supports_function_calling: true
+      system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          max_tokens: null
+          temperature: null
+          top_p: null
     - name: o3-mini
       max_input_tokens: 200000
       input_price: 1.1
@@ -96,17 +154,6 @@
       supports_vision: true
       supports_function_calling: true
       system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          max_tokens: null
-          temperature: null
-          top_p: null
-    - name: o1-preview
-      max_input_tokens: 128000
-      max_output_tokens: 32768
-      input_price: 15
-      output_price: 60
-      no_system_message: true
       patch:
         body:
           max_tokens: null
@@ -158,6 +205,13 @@
     - name: gemini-2.0-flash-lite
       max_input_tokens: 1048576
       max_output_tokens: 8192
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-2.5-flash-preview-04-17
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
       input_price: 0
       output_price: 0
       supports_vision: true
@@ -356,6 +410,11 @@
       input_price: 2.5
       output_price: 10
       supports_function_calling: true
+    - name: command-r7b-12-2024
+      max_input_tokens: 128000
+      max_output_tokens: 4096
+      input_price: 0.0375
+      output_price: 0.15
     - name: command-r-plus-08-2024
       max_input_tokens: 128000
       max_output_tokens: 4096
@@ -368,34 +427,23 @@
       input_price: 0.15
       output_price: 0.6
       supports_function_calling: true
-    - name: command-r7b-12-2024
-      max_input_tokens: 128000
-      max_output_tokens: 4096
-      input_price: 0.0375
-      output_price: 0.15
+    - name: embed-v4.0
+      type: embedding
+      input_price: 0.12
+      max_tokens_per_chunk: 2048
+      default_chunk_size: 2000
+      max_batch_size: 96
     - name: embed-english-v3.0
       type: embedding
       input_price: 0.1
       max_tokens_per_chunk: 512
       default_chunk_size: 1000
       max_batch_size: 96
-    - name: embed-english-light-v3.0
-      type: embedding
-      input_price: 0.1
-      max_tokens_per_chunk: 512
-      default_chunk_size: 700
-      max_batch_size: 96
     - name: embed-multilingual-v3.0
       type: embedding
       input_price: 0.1
       max_tokens_per_chunk: 512
       default_chunk_size: 1000
-      max_batch_size: 96
-    - name: embed-multilingual-light-v3.0
-      type: embedding
-      input_price: 0.1
-      max_tokens_per_chunk: 512
-      default_chunk_size: 700
       max_batch_size: 96
     - name: rerank-v3.5
       type: reranker
@@ -524,6 +572,13 @@
       max_output_tokens: 8192
       input_price: 0.075
       output_price: 0.3
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-2.5-flash-preview-04-17
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 0.15
+      output_price: 0.6
       supports_vision: true
       supports_function_calling: true
     - name: gemini-2.5-pro-preview-03-25
@@ -892,7 +947,7 @@
       max_batch_size: 100
 
 # Links:
-#  - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Fm2vrveyu
+#  - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Wm9cvy6rl
 #  - https://cloud.baidu.com/doc/WENXINWORKSHOP/s/hlrk4akp7
 - provider: ernie
   models:
@@ -1269,6 +1324,27 @@
 #  - https://openrouter.ai/docs/api-reference/chat-completion
 - provider: openrouter
   models:
+    - name: openai/gpt-4.1
+      max_input_tokens: 1047576
+      max_output_tokens: 32768
+      input_price: 2
+      output_price: 8
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-4.1-mini
+      max_input_tokens: 1047576
+      max_output_tokens: 32768
+      input_price: 0.4
+      output_price: 1.6
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-4.1-nano
+      max_input_tokens: 1047576
+      max_output_tokens: 32768
+      input_price: 0.1
+      output_price: 0.4
+      supports_vision: true
+      supports_function_calling: true
     - name: openai/gpt-4o
       max_input_tokens: 128000
       input_price: 2.5
@@ -1312,6 +1388,43 @@
       output_price: 150
       supports_vision: true
       supports_function_calling: true
+    - name: openai/o4-mini
+      max_input_tokens: 200000
+      input_price: 1.1
+      output_price: 4.4
+      supports_vision: true
+      supports_function_calling: true
+      system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          max_tokens: null
+          temperature: null
+          top_p: null
+    - name: openai/o4-mini-high
+      max_input_tokens: 200000
+      input_price: 1.1
+      output_price: 4.4
+      supports_vision: true
+      supports_function_calling: true
+      system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          reasoning_effort: high 
+          max_tokens: null
+          temperature: null
+          top_p: null
+    - name: openai/o3
+      max_input_tokens: 200000
+      input_price: 10
+      output_price: 40
+      supports_vision: true
+      supports_function_calling: true
+      system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          max_tokens: null
+          temperature: null
+          top_p: null
     - name: openai/o3-mini
       max_input_tokens: 200000
       input_price: 1.1
@@ -1357,15 +1470,6 @@
         body:
           temperature: null
           top_p: null
-    - name: openai/o1-preview
-      max_input_tokens: 128000
-      input_price: 15
-      output_price: 60
-      no_system_message: true
-      patch:
-        body:
-          temperature: null
-          top_p: null
     - name: openai/o1-mini
       max_input_tokens: 128000
       input_price: 3
@@ -1392,6 +1496,17 @@
       output_price: 0.3
       supports_vision: true
       supports_function_calling: true
+    - name: google/gemini-2.5-flash-preview
+      max_input_tokens: 1048576
+      input_price: 0.15
+      output_price: 0.6
+      supports_vision: true
+      supports_function_calling: true
+    - name: google/gemini-2.5-flash-preview:thinking
+      max_input_tokens: 1048576
+      input_price: 0.15
+      output_price: 0.6
+      supports_vision: true
     - name: google/gemini-2.5-pro-preview-03-25
       max_input_tokens: 1048576
       input_price: 1.25
@@ -1718,16 +1833,65 @@
 #  - https://github.com/marketplace?type=models
 - provider: github
   models:
+    - name: gpt-4.1
+      max_input_tokens: 1047576
+      max_output_tokens: 32768
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-4.1-mini
+      max_input_tokens: 1047576
+      max_output_tokens: 32768
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-4.1-nano
+      max_input_tokens: 1047576
+      max_output_tokens: 32768
+      supports_vision: true
+      supports_function_calling: true
     - name: gpt-4o
       max_input_tokens: 128000
+      max_output_tokens: 16384
       supports_function_calling: true
     - name: gpt-4o-mini
       max_input_tokens: 128000
+      max_output_tokens: 16384
       supports_function_calling: true
+    - name: o4-mini
+      max_input_tokens: 200000
+      supports_vision: true
+      supports_function_calling: true
+      system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          max_tokens: null
+          temperature: null
+          top_p: null
+    - name: o4-mini-high
+      real_name: o4-mini
+      max_input_tokens: 200000
+      supports_vision: true
+      supports_function_calling: true
+      system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          reasoning_effort: high
+          max_tokens: null
+          temperature: null
+          top_p: null
+    - name: o3
+      max_input_tokens: 200000
+      supports_vision: true
+      supports_function_calling: true
+      system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
+          max_tokens: null
+          temperature: null
+          top_p: null
     - name: o3-mini
       max_input_tokens: 200000
-      supports_function_calling: true
       supports_vision: true
+      supports_function_calling: true
       system_prompt_prefix: Formatting re-enabled
       patch:
         body:
@@ -1737,8 +1901,8 @@
     - name: o3-mini-high
       real_name: o3-mini
       max_input_tokens: 200000
-      supports_function_calling: true
       supports_vision: true
+      supports_function_calling: true
       system_prompt_prefix: Formatting re-enabled
       patch:
         body:
@@ -1748,18 +1912,9 @@
           top_p: null
     - name: o1
       max_input_tokens: 200000
-      supports_function_calling: true
       supports_vision: true
+      supports_function_calling: true
       system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          max_tokens: null
-          temperature: null
-          top_p: null
-    - name: o1-preview
-      max_input_tokens: 128000
-      no_stream: true
-      no_system_message: true
       patch:
         body:
           max_tokens: null
@@ -1841,6 +1996,8 @@
     - name: deepseek-r1
       max_input_tokens: 163840
     - name: deepseek-v3-0324
+      max_input_tokens: 163840
+    - name: mai-ds-r1
       max_input_tokens: 163840
     - name: phi-4
       max_input_tokens: 16384
