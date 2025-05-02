@@ -17,7 +17,9 @@ use crate::utils::{
 };
 
 use anyhow::{bail, Context, Result};
+use crossterm::cursor::SetCursorStyle;
 use fancy_regex::Regex;
+use reedline::CursorConfig;
 use reedline::{
     default_emacs_keybindings, default_vi_insert_keybindings, default_vi_normal_keybindings,
     ColumnarMenu, EditCommand, EditMode, Emacs, KeyCode, KeyModifiers, Keybindings, Reedline,
@@ -263,11 +265,17 @@ Type ".help" for additional help.
         let highlighter = ReplHighlighter::new(config);
         let menu = Self::create_menu();
         let edit_mode = Self::create_edit_mode(config);
+        let cursor_config = CursorConfig {
+            vi_insert: Some(SetCursorStyle::BlinkingBar),
+            vi_normal: Some(SetCursorStyle::SteadyBlock),
+            emacs: Some(SetCursorStyle::SteadyBlock),
+        };
         let mut editor = Reedline::create()
             .with_completer(Box::new(completer))
             .with_highlighter(Box::new(highlighter))
             .with_menu(menu)
             .with_edit_mode(edit_mode)
+            .with_cursor_config(cursor_config)
             .with_quick_completions(true)
             .with_partial_completions(true)
             .use_bracketed_paste(true)
