@@ -44,7 +44,6 @@ pub fn set_text(text: &str) -> anyhow::Result<()> {
 }
 
 #[cfg(any(target_os = "android", target_os = "emscripten"))]
-pub fn set_text(text: &str) -> Result<()> {
-    // Try OSC52 even on platforms unsupported by arboard:
-    set_text_osc52(text).context("Failed to copy")
+pub fn set_text(_text: &str) -> anyhow::Result<()> {
+    Err(anyhow::anyhow!("No clipboard available").context("Failed to copy"))
 }
