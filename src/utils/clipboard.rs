@@ -24,15 +24,12 @@ fn set_text_osc52(text: &str) -> anyhow::Result<()> {
 pub fn set_text(text: &str) -> anyhow::Result<()> {
     // First try arboard:
     let mut clipboard = CLIPBOARD.lock().unwrap();
-    match clipboard.as_mut() {
-        Some(clipboard) => {
-            if let Ok(()) = clipboard.set_text(text) {
-                #[cfg(target_os = "linux")]
-                std::thread::sleep(std::time::Duration::from_millis(50));
-                return Ok(());
-            }
+    if let Some(clipboard) = clipboard.as_mut() {
+        if let Ok(()) = clipboard.set_text(text) {
+            #[cfg(target_os = "linux")]
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            return Ok(());
         }
-        None => {}
     }
     // If arboard failed, try OSC52:
     match set_text_osc52(text) {
