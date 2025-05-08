@@ -1,4 +1,4 @@
-use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 
 #[cfg(not(any(target_os = "android", target_os = "emscripten")))]
 static CLIPBOARD: std::sync::LazyLock<std::sync::Mutex<Option<arboard::Clipboard>>> =
@@ -34,9 +34,8 @@ pub fn set_text(text: &str) -> anyhow::Result<()> {
     // If arboard failed, try OSC52:
     match set_text_osc52(text) {
         Ok(()) => Ok(()),
-        Err(osc_err) => {
-            Err(anyhow::anyhow!("No clipboard available").context(format!("Failed to copy (OSC52 error: {})", osc_err)))
-        }
+        Err(osc_err) => Err(anyhow::anyhow!("No clipboard available")
+            .context(format!("Failed to copy (OSC52 error: {})", osc_err))),
     }
 }
 
