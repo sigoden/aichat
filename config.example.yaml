@@ -26,6 +26,8 @@ agent_prelude: null              # Set a session to use when starting a agent (e
 # ---- session ----
 # Controls the persistence of the session. if true, auto save; if false, not save; if null, asking the user
 save_session: null
+# Automatically save the session after each message exchange without prompting
+auto_save_session: false
 # Compress session when token count reaches or exceeds this threshold
 compress_threshold: 4000
 # Text prompt used for creating a concise summary of session message

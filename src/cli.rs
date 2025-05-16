@@ -24,6 +24,9 @@ pub struct Cli {
     /// Ensure the new conversation is saved to the session
     #[clap(long)]
     pub save_session: bool,
+    /// Automatically save the session after each message
+    #[clap(long)]
+    pub auto_save_session: bool,
     /// Start a agent
     #[clap(short = 'a', long)]
     pub agent: Option<String>,

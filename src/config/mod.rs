@@ -121,6 +121,7 @@ pub struct Config {
     pub agent_prelude: Option<String>,
 
     pub save_session: Option<bool>,
+    pub auto_save_session: bool,
     pub compress_threshold: usize,
     pub summarize_prompt: Option<String>,
     pub summary_prompt: Option<String>,
@@ -197,6 +198,7 @@ impl Default for Config {
             agent_prelude: None,
 
             save_session: None,
+            auto_save_session: false,
             compress_threshold: 4000,
             summarize_prompt: None,
             summary_prompt: None,
@@ -694,6 +696,10 @@ impl Config {
             "highlight" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
                 config.write().highlight = value;
+            },
+            "auto_save_session" => {
+                let value = value.parse().with_context(|| "Invalid value")?;
+                config.write().auto_save_session = value;
             }
             _ => bail!("Unknown key '{key}'"),
         }
@@ -2051,6 +2057,11 @@ impl Config {
         self.last_message = Some(LastMessage::new(input.clone(), output.to_string()));
         if !self.dry_run {
             self.save_message(input, output)?;
+            
+            // Automatically save session if feature is enabled
+            if self.auto_save_session && self.session.is_some() {
+                self.save_session(None)?;
+            }
         }
         Ok(())
     }
