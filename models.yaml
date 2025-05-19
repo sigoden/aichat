@@ -216,7 +216,7 @@
       output_price: 0
       supports_vision: true
       supports_function_calling: true
-    - name: gemini-2.5-pro-exp-03-25
+    - name: gemini-2.5-pro-preview-05-06
       max_input_tokens: 1048576
       max_output_tokens: 65536
       input_price: 0
@@ -335,17 +335,22 @@
 
 # Links:
 #  - https://docs.mistral.ai/getting-started/models/models_overview/
-#  - https://mistral.ai/en/products/la-plateforme#pricing
+#  - https://mistral.ai/pricing#api-pricing
 #  - https://docs.mistral.ai/api/
 - provider: mistral
   models:
     - name: mistral-large-latest
-      max_input_tokens: 128000
+      max_input_tokens: 131072
       input_price: 2
       output_price: 6
       supports_function_calling: true
+    - name: mistral-medium-latest
+      max_input_tokens: 131072
+      input_price: 0.4
+      output_price: 2
+      supports_function_calling: true
     - name: mistral-small-latest
-      max_input_tokens: 32000
+      max_input_tokens: 32768
       input_price: 0.1
       output_price: 0.3
       supports_function_calling: true
@@ -355,22 +360,22 @@
       output_price: 0.9
       supports_function_calling: true
     - name: ministral-8b-latest
-      max_input_tokens: 128000
+      max_input_tokens: 131072
       input_price: 0.1
       output_price: 0.1
       supports_function_calling: true
     - name: open-mistral-nemo
-      max_input_tokens: 128000
+      max_input_tokens: 131072
       input_price: 0.15
       output_price: 0.15
       supports_function_calling: true
     - name: pixtral-large-latest
-      max_input_tokens: 128000
+      max_input_tokens: 131072
       input_price: 2
       output_price: 6
       supports_vision: true
     - name: pixtral-12b-latest
-      max_input_tokens: 128000
+      max_input_tokens: 131072
       input_price: 0.15
       output_price: 0.15
       supports_vision: true
@@ -914,12 +919,6 @@
       input_price: 0
       output_price: 0
     - name: '@cf/meta/llama-3.1-70b-instruct'
-      max_input_tokens: 131072
-      max_output_tokens: 2048
-      require_max_tokens: true
-      input_price: 0
-      output_price: 0
-    - name: '@cf/meta/llama-3.1-8b-instruct'
       max_input_tokens: 131072
       max_output_tokens: 2048
       require_max_tokens: true
@@ -1640,9 +1639,14 @@
       input_price: 0.02
       output_price: 0.05
     - name: mistralai/mistral-large-2411
-      max_input_tokens: 128000
+      max_input_tokens: 131072
       input_price: 2
       output_price: 6
+      supports_function_calling: true
+    - name: mistralai/mistral-medium-3
+      max_input_tokens: 131072
+      input_price: 0.4
+      output_price: 2
       supports_function_calling: true
     - name: mistralai/mistral-small-3.1-24b-instruct
       max_input_tokens: 131072
@@ -1983,16 +1987,19 @@
     - name: meta-llama-3.1-8b-instruct
       max_input_tokens: 131072
     - name: mistral-large-2411
-      max_input_tokens: 128000
+      max_input_tokens: 131072
+      supports_function_calling: true
+    - name: mistral-medium-2505
+      max_input_tokens: 131072
       supports_function_calling: true
     - name: mistral-small-2503
-      max_input_tokens: 128000
+      max_input_tokens: 131072
       supports_function_calling: true
     - name: codestral-2501
       max_input_tokens: 256000
       supports_function_calling: true
     - name: mistral-nemo
-      max_input_tokens: 128000
+      max_input_tokens: 131072
       supports_function_calling: true
     - name: cohere-command-r-plus-08-2024
       max_input_tokens: 128000
