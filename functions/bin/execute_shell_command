@@ -1,0 +1,70 @@
+#!/bin/sh
+
+# Script to execute a shell command, with a safelist for security.
+# Expects a JSON string as the first argument, e.g., {"command": "some command"}
+# Outputs a JSON string with stdout, stderr, and exit_code.
+
+# Function to output JSON
+output_json() {
+  stdout_json=$(echo "$1" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+  stderr_json=$(echo "$2" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+  exit_code_json=$3
+  echo "{\"stdout\": \"$stdout_json\", \"stderr\": \"$stderr_json\", \"exit_code\": $exit_code_json}"
+}
+
+# Extract the command from the JSON input
+command_str=$(echo "$1" | sed -n 's/.*"command":"\([^"]*\)".*/\1/p')
+
+# --- Safelist of allowed commands ---
+# For now, only very specific and safe commands are allowed.
+# Add more commands here as needed, with extreme caution.
+# Example: "ls -la" is allowed, but "ls" by itself might not be if you want to be very strict.
+is_safe=0
+case "$command_str" in
+  "ls -la")
+    is_safe=1
+    ;;
+  "pwd")
+    is_safe=1
+    ;;
+  "date")
+    is_safe=1
+    ;;
+  "echo hello") # Example with a specific argument
+    is_safe=1
+    ;;
+  "id -u") # A common safe command to get user ID
+    is_safe=1
+    ;;
+  *)
+    # Check if the command starts with "echo " and contains no other special characters
+    # This is a more flexible but still relatively safe "echo"
+    if echo "$command_str" | grep -Eq '^echo "[^;&|]*"$'; then
+        is_safe=1
+    elif echo "$command_str" | grep -Eq "^echo '[^;&|]*'$"; then
+        is_safe=1
+    elif echo "$command_str" | grep -Eq '^echo [^;&|]*$'; then
+        # Allow echo without quotes but no special characters
+        if ! echo "$command_str" | grep -q '[;&|]'; then
+            is_safe=1
+        fi
+    fi
+    ;;
+esac
+
+if [ "$is_safe" -eq 1 ]; then
+  # Execute the command, capturing stdout, stderr, and exit code
+  # Use a temporary file for stderr to handle it properly
+  tmp_stderr=$(mktemp)
+  
+  # Execute using sh -c to handle commands with arguments correctly
+  actual_stdout=$(sh -c "$command_str" 2> "$tmp_stderr")
+  actual_exit_code=$?
+  actual_stderr=$(cat "$tmp_stderr")
+  rm "$tmp_stderr"
+  
+  output_json "$actual_stdout" "$actual_stderr" "$actual_exit_code"
+else
+  error_message="Command not allowed: '$command_str'. Only specific safe commands are permitted."
+  output_json "" "$error_message" 1
+fi

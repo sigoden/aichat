@@ -65,6 +65,50 @@ async fn main() -> Result<()> {
 async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()> {
     let abort_signal = create_abort_signal();
 
+    if let Some(query) = cli.search_query {
+        use crate::function::ToolCall;
+        use serde_json::json;
+
+        let arguments = json!({"query": query});
+        let tool_call = ToolCall::new("web_search".to_string(), arguments, None);
+
+        match tool_call.eval(&config.read()) {
+            Ok(value) => {
+                if let Ok(pretty_json) = serde_json::to_string_pretty(&value) {
+                    println!("{}", pretty_json);
+                } else {
+                    eprintln!("Failed to serialize search results: {:?}", value);
+                }
+            }
+            Err(e) => {
+                eprintln!("Error during web search: {}", e);
+            }
+        }
+        return Ok(());
+    }
+
+    if let Some(command_string) = cli.exec_command {
+        use crate::function::ToolCall;
+        use serde_json::json;
+
+        let arguments = json!({"command": command_string});
+        let tool_call = ToolCall::new("execute_shell_command".to_string(), arguments, None);
+
+        match tool_call.eval(&config.read()) {
+            Ok(value) => {
+                if let Ok(pretty_json) = serde_json::to_string_pretty(&value) {
+                    println!("{}", pretty_json);
+                } else {
+                    eprintln!("Failed to serialize command execution results: {:?}", value);
+                }
+            }
+            Err(e) => {
+                eprintln!("Error during command execution: {}", e);
+            }
+        }
+        return Ok(());
+    }
+
     if cli.sync_models {
         let url = config.read().sync_models_url();
         return Config::sync_models(&url, abort_signal.clone()).await;
