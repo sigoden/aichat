@@ -42,12 +42,15 @@ module completions {
 
   export extern aichat [
     --model(-m): string@"nu-complete aichat model"      # Select a LLM model
-    --prompt                                            # Use the system prompt
+    # --prompt is for system prompt & arena initial prompt.
+    --prompt: string                                    # Use the system prompt / Initial prompt for the arena
     --role(-r): string@"nu-complete aichat role"        # Select a role
     --session(-s): string@"nu-complete aichat session"  # Start or join a session
     --empty-session                                     # Ensure the session is empty
     --save-session                                      # Ensure the new conversation is saved to the session
-    --agent(-a): string@"nu-complete aichat agent"      # Start a agent
+    # --agent is for single agent & arena agents (multiple).
+    --agent(-a): string@"nu-complete aichat agent"      # Start a single agent / Agent names for the arena (can be multiple)
+    --max-turns: string                                 # Maximum number of turns in the arena (arena mode)
     --agent-variable                                    # Set agent variables
     --rag: string@"nu-complete aichat rag"              # Start a RAG
     --rebuild-rag                                       # Rebuild the RAG to sync document changes

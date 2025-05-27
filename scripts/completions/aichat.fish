@@ -25,3 +25,13 @@ complete -c aichat -l list-rags -d 'List all RAGs'
 complete -c aichat -l list-macros -d 'List all macros'
 complete -c aichat -s h -l help -d 'Print help'
 complete -c aichat -s V -l version -d 'Print version'
+
+# Arena Mode Arguments
+# --agent is already listed for single agent mode.
+# The same flag --agent is used for arena mode (multiple times).
+# Fish's `complete` allows options to be repeated by default.
+# The existing completion `-a "(aichat --list-agents)"` is appropriate for arena's --agent too.
+# --prompt is already listed for system prompt. For arena, it's a different context but same flag.
+# We can update the description for --prompt to reflect its dual use.
+complete -c aichat -l prompt -r -d 'Use the system prompt / Initial prompt for the arena'
+complete -c aichat -l max-turns -r -d 'Maximum number of turns in the arena'
