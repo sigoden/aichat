@@ -286,6 +286,76 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     if let Some(addr) = cli.serve {
         return serve::run(config, addr).await;
     }
+    // Note: `text` here is Option<String> from `cli.text()?`
+    // `cli.agent` is Option<String> for the agent name.
+
+    // If an agent is specified, and it's a ReAct agent, handle it here before REPL/CMD split.
+    if let Some(agent_name) = &cli.agent {
+        // We need to get the agent instance that was initialized by Config::use_agent or init it here.
+        // Config::use_agent already called Agent::init and set it as current_agent.
+        // We need a mutable reference to it.
+        let mut agent_instance_opt = config.write().current_agent.take(); // Take ownership from config
+
+        if let Some(mut agent) = agent_instance_opt {
+            if agent.definition().is_react_agent() {
+                let query = text.clone().unwrap_or_default(); // Use text from CLI or default to empty
+                if query.is_empty() && agent.conversation_staters().is_empty() {
+                     // For ReAct agent, if no query and no conversation starters, it might be ambiguous what to do.
+                     // However, the ReAct loop expects an initial query.
+                     // If `text` is None, perhaps prompt the user or use a default starter if available.
+                     // For now, if text is empty, we'll let it proceed, ReAct loop might need a query.
+                     // Or, more robustly:
+                    if query.is_empty() {
+                        // This is a command-line execution of a ReAct agent without a direct query.
+                        // This scenario might require prompting or specific handling.
+                        // For now, we'll just print the agent's banner and exit,
+                        // as ReAct loop needs an initial goal/query.
+                        // Or, we can try to run it with an empty query if the agent is designed for it.
+                        // The subtask implies `text` is the query.
+                        // If text is None, it means `aichat --agent react_search_agent` without further input.
+                        // This should probably show help or error.
+                        // For now, let's assume `text` must be provided for a ReAct agent in non-REPL.
+                        if !config.read().working_mode.is_repl() {
+                            // In CMD mode, a query is expected for ReAct.
+                            // If `text` (from `cli.text()?`) is None, it means no direct query was passed.
+                            // We could bail, or use a default conversation starter if any.
+                            // The `run_react_loop` takes `current_user_query` and `initial_goal`.
+                            // These would come from `text`.
+                            if text.is_none() {
+                                bail!("ReAct agent '{}' in command mode requires an initial query.", agent_name);
+                            }
+                        }
+                        // If it's REPL mode, the query will be asked inside the REPL loop.
+                        // So, if text is None AND it's CMD mode, that's an issue.
+                    }
+                }
+
+                // If not in REPL mode, execute the ReAct loop directly.
+                if !config.read().working_mode.is_repl() {
+                    let client = client::LLMClient::from_config(&config, Some(agent.model().clone()))?;
+                    let current_query = text.unwrap_or_default(); // text is already Option<String>
+                    let initial_goal = current_query.clone(); 
+
+                    let result = agent.run_react_loop(current_query, initial_goal, &client, &config, true).await?;
+                    println!("{}", result);
+                    
+                    config.write().current_agent = Some(agent); // Put agent back if needed, or handle session exit
+                    config.write().exit_session()?; // Properly exit session, clears agent.react_scratchpad
+                    return Ok(());
+                } else {
+                    // In REPL mode, the ReAct agent will be handled by the REPL's loop.
+                    // Put the agent back into the config so REPL can use it.
+                    config.write().current_agent = Some(agent);
+                }
+            } else {
+                // Not a ReAct agent, put it back
+                config.write().current_agent = Some(agent);
+            }
+        }
+        // If agent_instance_opt was None, it means Config::use_agent didn't set current_agent,
+        // or it was already taken. This would be an issue with internal logic flow.
+    }
+
     let is_repl = config.read().working_mode.is_repl();
     if cli.rebuild_rag {
         Config::rebuild_rag(&config, abort_signal.clone()).await?;

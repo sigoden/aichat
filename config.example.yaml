@@ -43,6 +43,12 @@ rag_chunk_overlap: null          # Defines the overlap between chunks
 # Defines the query structure using variables like __CONTEXT__ and __INPUT__ to tailor searches to specific needs
 rag_template: |
   Answer the query based on the context while respecting the rules. (user query, some textual context and rules, all inside xml tags)
+# ---- Native PDF Extraction ----
+# If true, attempts to use a built-in Rust library for PDF text extraction.
+# Falls back to 'document_loaders.pdf' if native extraction fails or is disabled.
+rag_native_pdf_extraction: true
+
+# Define document loaders to control how RAG and `.file`/`--file` load files of specific formats.
 
   <context>
   __CONTEXT__
