@@ -272,7 +272,7 @@
     - name: claude-opus-4-20250514:thinking
       real_name: claude-opus-4-20250514
       max_input_tokens: 200000
-      max_output_tokens: 8192
+      max_output_tokens: 24000
       require_max_tokens: true
       input_price: 15
       output_price: 75
@@ -296,7 +296,7 @@
     - name: claude-sonnet-4-20250514:thinking
       real_name: claude-sonnet-4-20250514
       max_input_tokens: 200000
-      max_output_tokens: 8192
+      max_output_tokens: 24000
       require_max_tokens: true
       input_price: 3
       output_price: 15
@@ -823,7 +823,7 @@
       supports_vision: true
       supports_function_calling: true
     - name: us.anthropic.claude-opus-4-20250514-v1:0:thinking
-      real_name: anthropic.claude-opus-4-20250514-v1:0
+      real_name: us.anthropic.claude-opus-4-20250514-v1:0
       max_input_tokens: 200000
       max_output_tokens: 24000
       require_max_tokens: true
@@ -848,7 +848,7 @@
       supports_vision: true
       supports_function_calling: true
     - name: us.anthropic.claude-sonnet-4-20250514-v1:0:thinking
-      real_name: anthropic.claude-sonnet-4-20250514-v1:0
+      real_name: us.anthropic.claude-sonnet-4-20250514-v1:0
       max_input_tokens: 200000
       max_output_tokens: 24000
       require_max_tokens: true
