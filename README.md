@@ -42,6 +42,10 @@ Experience an interactive Chat-REPL with features like tab autocompletion, multi
 
 Elevate your command-line efficiency. Describe your tasks in natural language, and let AIChat transform them into precise shell commands. AIChat intelligently adjusts to your OS and shell environment.
 
+The default `%shell%` role has been updated to encourage the AI to provide explanations alongside the commands it suggests, improving clarity and safety.
+
+**Important Security Note on Command Execution:** For security reasons, AIChat has changed how shell commands are handled. If tools like `execute_shell_command` were used (or if the AI implies direct execution), they no longer execute commands directly. Instead, such tools will return the suggested command string along with a message. Users are responsible for reviewing and manually executing these commands if they choose. This prevents accidental execution of potentially harmful commands.
+
 ![aichat-execute](https://github.com/user-attachments/assets/0c77e901-0da2-4151-aefc-a2af96bbb004)
 
 ### Multi-Form Input
@@ -83,7 +87,9 @@ Streamline repetitive tasks by combining a series of REPL commands into a custom
 
 ### RAG
 
-Integrate external documents into your LLM conversations for more accurate and contextually relevant responses.
+Integrate external documents into your LLM conversations for more accurate and contextually relevant responses. AIChat supports various document types and can use external tools or native Rust libraries for parsing.
+
+**Native PDF Extraction:** By default (`rag_native_pdf_extraction: true` in `config.yaml`), AIChat uses a built-in Rust library for PDF text extraction, which can improve performance and reduce reliance on external tools for PDFs. If this fails or is disabled, it falls back to configured `document_loaders`.
 
 ![aichat-rag](https://github.com/user-attachments/assets/359f0cb8-ee37-432f-a89f-96a2ebab01f6)
 
@@ -130,9 +136,17 @@ Integrate external tools to automate tasks, retrieve information, and perform ac
 
 #### AI Agents (CLI version of OpenAI GPTs)
 
-AI Agent = Instructions (Prompt) + Tools (Function Callings) + Documents (RAG).
+AI Agent = Instructions (Prompt) + Tools (Function Callings) + Documents (RAG). AIChat supports standard agents that respond in a single turn, as well as more advanced ReAct agents.
 
 ![aichat-agent](https://github.com/user-attachments/assets/0b7e687d-e642-4e8a-b1c1-d2d9b2da2b6b)
+
+**ReAct Agents:**
+AIChat introduces support for ReAct (Reasoning and Acting) agents. These agents can perform multi-step reasoning to solve complex problems by following a "Thought, Action, Observation" loop.
+-   **Mechanism:** ReAct agents iteratively generate thoughts about the problem, decide on an action (often involving a tool), and then observe the outcome of that action to inform their next thought.
+-   **Configuration:** To define a ReAct agent, set `is_react_agent: true` in its `index.yaml` definition file. The agent's instructions must be a ReAct meta-prompt guiding the LLM through the Thought-Action-Observation cycle.
+-   **Example:** The `react_search_agent` is provided as an example of a ReAct agent that can search the web to answer questions.
+-   **Usage:** ReAct agents are best used via direct CLI invocation (e.g., `aichat --agent react_search_agent "What is the capital of France?"`). Their output will typically include the "Thought:" messages from the LLM, showing the reasoning process.
+-   *(More details on creating ReAct agents will be available in the upcoming "Creating and Using ReAct Agents" wiki page.)*
 
 ### Multi-Agent Arena Mode
 
