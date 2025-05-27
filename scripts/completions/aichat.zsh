@@ -17,15 +17,21 @@ _aichat() {
     local common=(
 '-m[Select a LLM model]:MODEL:->models' \
 '--model[Select a LLM model]:MODEL:->models' \
-'--prompt[Use the system prompt]:PROMPT: ' \
+'(system prompt)--prompt[Use the system prompt]:PROMPT: ' \
+'(arena prompt)--prompt[Initial prompt for the arena]:ARENA_PROMPT: ' \
 '-r[Select a role]:ROLE:->roles' \
 '--role[Select a role]:ROLE:->roles' \
 '-s[Start or join a session]:SESSION:->sessions' \
 '--session[Start or join a session]:SESSION:->sessions' \
 '--empty-session[Ensure the session is empty]' \
 '--save-session[Ensure the new conversation is saved to the session]' \
-'-a[Start a agent]:AGENT:->agents' \
-'--agent[Start a agent]:AGENT:->agents' \
+'(-a single agent)--agent[Start a single agent]:AGENT:->agents' \
+'(--agent single agent)--agent[Start a single agent]:AGENT:->agents' \
+# Arena mode --agent can be specified multiple times.
+# The existing :AGENT:->agents completion for listing agents is suitable.
+# Adding a separate entry for clarity, marked with * for multiple values.
+'*(arena agent)--agent[Agent names for the arena (can be multiple)]:ARENA_AGENT:->agents' \
+'--max-turns[Maximum number of turns in the arena]:MAX_TURNS: ' \
 '--agent-variable[Set agent variables]' \
 '--rag[Start a RAG]:RAG:->rags' \
 '--rebuild-rag[Rebuild the RAG to sync document changes]' \
