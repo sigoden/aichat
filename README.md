@@ -42,6 +42,10 @@ Experience an interactive Chat-REPL with features like tab autocompletion, multi
 
 Elevate your command-line efficiency. Describe your tasks in natural language, and let AIChat transform them into precise shell commands. AIChat intelligently adjusts to your OS and shell environment.
 
+The default `%shell%` role has been updated to encourage the AI to provide explanations alongside the commands it suggests, improving clarity and safety.
+
+**Important Security Note on Command Execution:** For security reasons, AIChat has changed how shell commands are handled. If tools like `execute_shell_command` were used (or if the AI implies direct execution), they no longer execute commands directly. Instead, such tools will return the suggested command string along with a message. Users are responsible for reviewing and manually executing these commands if they choose. This prevents accidental execution of potentially harmful commands.
+
 ![aichat-execute](https://github.com/user-attachments/assets/0c77e901-0da2-4151-aefc-a2af96bbb004)
 
 ### Multi-Form Input
@@ -83,9 +87,40 @@ Streamline repetitive tasks by combining a series of REPL commands into a custom
 
 ### RAG
 
-Integrate external documents into your LLM conversations for more accurate and contextually relevant responses.
+Integrate external documents into your LLM conversations for more accurate and contextually relevant responses. AIChat supports various document types and can use external tools or native Rust libraries for parsing.
+
+**Native PDF Extraction:** By default (`rag_native_pdf_extraction: true` in `config.yaml`), AIChat uses a built-in Rust library for PDF text extraction, which can improve performance and reduce reliance on external tools for PDFs. If this fails or is disabled, it falls back to configured `document_loaders`.
 
 ![aichat-rag](https://github.com/user-attachments/assets/359f0cb8-ee37-432f-a89f-96a2ebab01f6)
+
+### Terminal History Context (RAG)
+
+AIChat can further enhance its contextual understanding by leveraging your terminal command history. This allows the AI to provide more relevant assistance and suggestions based on your recent command-line activity.
+
+**Purpose:**
+- To provide `aichat` with context from your shell command history.
+- To enable more relevant and intelligent assistance, especially for shell-related queries or when recalling past commands.
+
+**User Consent:**
+Due to the sensitive nature of shell command history (which can contain passwords, API keys, personal information, etc.), `aichat` requires your explicit consent before accessing this data.
+- If `terminal_history_rag.enabled` is set to `true` in your configuration, `aichat` will prompt you for permission on its first run.
+- If you grant consent, this choice is saved, and `aichat` will proceed to use the feature.
+- If you deny consent, the feature will be automatically disabled for that session and future sessions until consent is granted (e.g., by manually setting `consent_given: true` in the config after understanding the risks, or if a command to re-prompt is added in the future).
+
+**Configuration Options (in `config.yaml` under `terminal_history_rag`):**
+```yaml
+terminal_history_rag:
+  enabled: false                 # Set to true to enable this feature (will prompt for consent if not given).
+  # consent_given: false         # Managed by aichat after your first response to the consent prompt.
+  max_history_commands: 2000     # Maximum number of recent shell commands to load and index.
+  top_k: 3                       # Number of most relevant history snippets to retrieve for context.
+  include_timestamps: true       # Whether to include command timestamps in the text sent for embedding (if available from your shell).
+```
+
+**Privacy and Security Considerations:**
+- **Sensitive Data:** Be aware that your shell history can contain sensitive information like passwords, API keys, file paths, and personal details.
+- **Data Usage:** When this feature is active, `aichat` reads your history, processes it locally to find relevant commands, and then includes snippets of these commands (the raw command text) in the prompt sent to the configured Large Language Model (LLM).
+- **Risk Acceptance:** Only enable this feature if you understand and accept the risk of parts of your command history being processed and potentially sent to the LLM provider. `aichat` does not filter or redact sensitive data from your history before using it for RAG.
 
 ### Function Calling
 
@@ -101,9 +136,44 @@ Integrate external tools to automate tasks, retrieve information, and perform ac
 
 #### AI Agents (CLI version of OpenAI GPTs)
 
-AI Agent = Instructions (Prompt) + Tools (Function Callings) + Documents (RAG).
+AI Agent = Instructions (Prompt) + Tools (Function Callings) + Documents (RAG). AIChat supports standard agents that respond in a single turn, as well as more advanced ReAct agents.
 
 ![aichat-agent](https://github.com/user-attachments/assets/0b7e687d-e642-4e8a-b1c1-d2d9b2da2b6b)
+
+**ReAct Agents:**
+AIChat introduces support for ReAct (Reasoning and Acting) agents. These agents can perform multi-step reasoning to solve complex problems by following a "Thought, Action, Observation" loop.
+-   **Mechanism:** ReAct agents iteratively generate thoughts about the problem, decide on an action (often involving a tool), and then observe the outcome of that action to inform their next thought.
+-   **Configuration:** To define a ReAct agent, set `is_react_agent: true` in its `index.yaml` definition file. The agent's instructions must be a ReAct meta-prompt guiding the LLM through the Thought-Action-Observation cycle.
+-   **Example:** The `react_search_agent` is provided as an example of a ReAct agent that can search the web to answer questions.
+-   **Usage:** ReAct agents are best used via direct CLI invocation (e.g., `aichat --agent react_search_agent "What is the capital of France?"`). Their output will typically include the "Thought:" messages from the LLM, showing the reasoning process.
+-   *(More details on creating ReAct agents will be available in the upcoming "Creating and Using ReAct Agents" wiki page.)*
+
+### Multi-Agent Arena Mode
+
+Engage multiple LLM agents in a conversation with each other. Based on an initial prompt, configured agents will take turns responding, allowing you to observe diverse perspectives and interaction styles.
+
+**CLI Usage:**
+
+```bash
+aichat --agent <AGENT_NAME_1> --agent <AGENT_NAME_2> [--agent <AGENT_NAME_N>...] --prompt <INITIAL_PROMPT> [--max-turns <TURNS>]
+```
+
+**Arguments:**
+
+*   `--agent <AGENT_NAME>`: Specify the name of a configured agent to participate. At least two agents are required. This argument can be used multiple times for additional agents.
+*   `--prompt <INITIAL_PROMPT>`: The initial prompt or topic that kicks off the conversation between the agents.
+*   `--max-turns <TURNS>`: Optional. The maximum number of LLM responses in the entire conversation (i.e., total turns taken by all agents). Defaults to 10. Each agent responding once counts as one turn.
+
+**Agent Configuration:**
+
+The agents specified with the `--agent` flag must be pre-configured in AIChat. This typically involves defining their roles, instructions, and any specific models they should use (e.g., via `assets/agents/<agent_name>/index.yaml` or as defined in your main `config.yaml` or `agents.yaml` file, depending on your setup). The unique personality, knowledge base, and conversational style of each agent are determined by its configuration.
+
+**Example:**
+
+```bash
+# Example: Have a 'philosopher' agent and a 'comedian' agent discuss the meaning of life for 6 turns
+aichat --agent philosopher --agent comedian --prompt "What is the meaning of life?" --max-turns 6
+```
 
 ### Local Server Capabilities
 

@@ -13,6 +13,7 @@ pub const SHELL_ROLE: &str = "%shell%";
 pub const EXPLAIN_SHELL_ROLE: &str = "%explain-shell%";
 pub const CODE_ROLE: &str = "%code%";
 pub const CREATE_TITLE_ROLE: &str = "%create-title%";
+pub const RIGOROUS_INTELLECTUAL_PRECISION_ROLE_NAME: &str = "%rigorous_intellectual_precision%";
 
 pub const INPUT_PLACEHOLDER: &str = "__INPUT__";
 

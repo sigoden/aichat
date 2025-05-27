@@ -31,6 +31,7 @@ pub struct Input {
     rag_name: Option<String>,
     with_session: bool,
     with_agent: bool,
+    history_rag_context: Option<String>,
 }
 
 impl Input {
@@ -51,6 +52,7 @@ impl Input {
             rag_name: None,
             with_session,
             with_agent,
+            history_rag_context: None,
         }
     }
 
@@ -118,6 +120,7 @@ impl Input {
             rag_name: None,
             with_session,
             with_agent,
+            history_rag_context: None,
         })
     }
 
@@ -211,6 +214,14 @@ impl Input {
         self.rag_name.as_deref()
     }
 
+    pub fn set_history_rag_context(&mut self, context: String) {
+        if !context.is_empty() {
+            self.history_rag_context = Some(context);
+        } else {
+            self.history_rag_context = None;
+        }
+    }
+
     pub fn merge_tool_results(mut self, output: String, tool_results: Vec<ToolResult>) -> Self {
         match self.tool_calls.as_mut() {
             Some(exist_tool_results) => {
@@ -252,10 +263,28 @@ impl Input {
     }
 
     pub fn build_messages(&self) -> Result<Vec<Message>> {
+        // Create a temporary Input that might have text augmented with history_rag_context
+        let mut temp_input_for_messages = self.clone();
+        
+        let original_text = self.text(); // Uses patched_text if available, else self.text
+        if let Some(ctx) = &self.history_rag_context {
+            // Important: We need to decide how file RAG (patched_text) and history RAG interact.
+            // Option 1: History RAG context prepends to whatever text() returns (including file RAG).
+            // Option 2: They are separate, and the LLM gets both contexts distinctly.
+            // For now, let's go with Option 1 for simplicity of integration into existing flow.
+            temp_input_for_messages.text = format!("{}\n\n{}", ctx, original_text);
+            // If original_text was from self.patched_text, we are effectively discarding
+            // self.text and using ctx + self.patched_text.
+            // If original_text was from self.text, we are using ctx + self.text.
+            // This also means `temp_input_for_messages.patched_text` should be None to ensure its `text()` method
+            // returns this combined text.
+            temp_input_for_messages.patched_text = None;
+        }
+
         let mut messages = if let Some(session) = self.session(&self.config.read().session) {
-            session.build_messages(self)
+            session.build_messages(&temp_input_for_messages)
         } else {
-            self.role().build_messages(self)
+            self.role().build_messages(&temp_input_for_messages)
         };
         if let Some(tool_calls) = &self.tool_calls {
             messages.push(Message::new(
@@ -267,10 +296,18 @@ impl Input {
     }
 
     pub fn echo_messages(&self) -> String {
+        // For echoing, we should probably show the context as well if it's going to be used.
+        let mut temp_input_for_echo = self.clone();
+        let original_text_for_echo = self.text(); // Similar logic to build_messages
+        if let Some(ctx) = &self.history_rag_context {
+            temp_input_for_echo.text = format!("{}\n\n{}", ctx, original_text_for_echo);
+            temp_input_for_echo.patched_text = None; 
+        }
+
         if let Some(session) = self.session(&self.config.read().session) {
-            session.echo_messages(self)
+            session.echo_messages(&temp_input_for_echo)
         } else {
-            self.role().echo_messages(self)
+            self.role().echo_messages(&temp_input_for_echo)
         }
     }
 
@@ -540,4 +577,104 @@ fn read_media_to_data_url(image_path: &str) -> Result<String> {
     let data_url = format!("data:{};base64,{}", mime_type, encoded_image);
 
     Ok(data_url)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::{Config, GlobalConfig, Role, WorkingMode, RIGOROUS_INTELLECTUAL_PRECISION_ROLE_NAME};
+    use crate::client::{MessageContent, MessageRole, Model, ModelType, ClientConfig};
+    use parking_lot::RwLock;
+    use std::fs;
+    use std::sync::Arc;
+
+    fn create_test_config_for_input_tests() -> GlobalConfig {
+        let mut config = Config::default();
+        // Ensure the rigorous role is set as default for prelude
+        config.repl_prelude = Some(format!("role:{}", RIGOROUS_INTELLECTUAL_PRECISION_ROLE_NAME));
+        config.cmd_prelude = Some(format!("role:{}", RIGOROUS_INTELLECTUAL_PRECISION_ROLE_NAME));
+        
+        // Manually load the functions because Config::init() is not fully called here.
+        // This is important if roles/functions might interact or if model setup depends on it.
+        // For this specific test, only role loading matters.
+        if let Ok(functions) = Functions::init(&Config::functions_file()) {
+            config.functions = functions;
+        } else {
+            // In a real test setup, might panic or handle error
+            eprintln!("Warning: Could not load functions for input test config.");
+        }
+
+
+        Arc::new(RwLock::new(config))
+    }
+    
+    fn create_dummy_chat_model() -> Model {
+        Model::new(
+            "test_client",
+            "dummy-chat-model",
+            ModelType::Chat,
+            None,
+            ClientConfig::default(),
+            Some(4096), // max_input_tokens
+            None, // max_output_tokens
+            None, // max_texts
+            false, // no_stream
+            None, // default_chunk_size
+            None, // max_batch_size
+        )
+    }
+
+    #[tokio::test]
+    async fn test_default_system_prompt_application() -> Result<()> {
+        let global_config = create_test_config_for_input_tests();
+        
+        // Apply prelude to load the default role
+        global_config.write().apply_prelude()?;
+
+        // Create a simple input; it should pick up the default role from global_config
+        let input_text = "Hello, world!";
+        let input = Input::from_str(&global_config, input_text, None);
+
+        // Prepare completion data
+        let dummy_model = create_dummy_chat_model(); // Assuming Role's model isn't critical here, or is set by prelude
+        let completion_data = input.prepare_completion_data(&dummy_model, false)?;
+
+        // Assertions
+        assert!(!completion_data.messages.is_empty(), "Messages list should not be empty");
+        
+        let first_message = &completion_data.messages[0];
+        assert_eq!(first_message.role, MessageRole::System, "First message should be a System message");
+
+        // Load the expected system prompt from the file
+        // Note: This assumes the test runner is in the project root.
+        let expected_prompt_content = fs::read_to_string(format!("assets/roles/{}.md", RIGOROUS_INTELLECTUAL_PRECISION_ROLE_NAME))
+            .with_context(|| format!("Failed to read the rigorous precision role file for test comparison. Current dir: {:?}", std::env::current_dir().unwrap_or_default()))?;
+        
+        // Role::new normalizes prompt by trimming.
+        // Role::build_messages via parse_structure_prompt also trims the system part.
+        let expected_system_prompt = expected_prompt_content.trim();
+
+
+        match &first_message.content {
+            MessageContent::Text(text_content) => {
+                assert_eq!(text_content.trim(), expected_system_prompt, "System prompt content does not match the rigorous precision role file.");
+            }
+            _ => panic!("First message content should be Text."),
+        }
+
+        // Also check that the user message is present
+        let user_message = completion_data.messages.iter().find(|m| m.role == MessageRole::User);
+        assert!(user_message.is_some(), "User message should be present");
+        match &user_message.unwrap().content {
+            MessageContent::Text(text_content) => {
+                 // If history_rag_context was empty, original text is input_text.
+                 // If Input::build_messages prepends context, this would be different.
+                 // For this test, history_rag_context is None.
+                assert_eq!(text_content, input_text);
+            }
+            _ => panic!("User message content should be Text."),
+        }
+
+        Ok(())
+    }
 }

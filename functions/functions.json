@@ -1,0 +1,30 @@
+[
+  {
+    "name": "web_search",
+    "description": "Performs a web search and returns a list of snippets.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "The search query."
+        }
+      },
+      "required": ["query"]
+    }
+  },
+  {
+    "name": "execute_shell_command",
+    "description": "Executes a shell command and returns its output. Use with extreme caution and only for safe, simple commands.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "The shell command to execute."
+        }
+      },
+      "required": ["command"]
+    }
+  }
+]

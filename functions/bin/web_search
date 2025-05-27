@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# Placeholder for web_search tool
+# Expects a JSON string as the first argument, e.g., {"query": "search terms"}
+# Outputs a JSON string representing search results
+
+# Extract the query (basic parsing, assumes simple structure)
+query=$(echo "$1" | sed -n 's/.*"query":"\([^"]*\)".*/\1/p')
+
+# Output dummy JSON results
+cat <<EOF
+{
+  "results": [
+    {
+      "title": "Dummy Result 1 for '$query'",
+      "url": "https://example.com/result1",
+      "snippet": "This is the first dummy search result."
+    },
+    {
+      "title": "Dummy Result 2 for '$query'",
+      "url": "https://example.com/result2",
+      "snippet": "This is the second dummy search result."
+    }
+  ]
+}
+EOF

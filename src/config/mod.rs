@@ -131,6 +131,7 @@ pub struct Config {
     pub rag_chunk_size: Option<usize>,
     pub rag_chunk_overlap: Option<usize>,
     pub rag_template: Option<String>,
+    pub rag_native_pdf_extraction: Option<bool>, // Added for native PDF extraction
 
     #[serde(default)]
     pub document_loaders: HashMap<String, String>,
@@ -171,6 +172,33 @@ pub struct Config {
     pub rag: Option<Arc<Rag>>,
     #[serde(skip)]
     pub agent: Option<Agent>,
+
+    #[serde(default)]
+    pub terminal_history_rag: TerminalHistoryRagConfig,
+    #[serde(skip)]
+    pub terminal_history_indexer: Option<Arc<crate::terminal_rag::TerminalHistoryIndexer>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct TerminalHistoryRagConfig {
+    pub enabled: bool,
+    pub consent_given: bool, // Managed internally after first explicit user consent
+    pub max_history_commands: usize,
+    pub top_k: usize,
+    pub include_timestamps: bool,
+}
+
+impl Default for TerminalHistoryRagConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            consent_given: false,
+            max_history_commands: 2000,
+            top_k: 3,
+            include_timestamps: true,
+        }
+    }
 }
 
 impl Default for Config {
@@ -207,6 +235,7 @@ impl Default for Config {
             rag_chunk_size: None,
             rag_chunk_overlap: None,
             rag_template: None,
+            rag_native_pdf_extraction: Some(true), // Default to true
 
             document_loaders: Default::default(),
 
@@ -2233,6 +2262,16 @@ impl Config {
         Ok(config)
     }
 
+    pub fn save_config_file(&self) -> Result<()> {
+        let config_path = Self::config_file();
+        ensure_parent_exists(&config_path)?;
+        let yaml_string = serde_yaml::to_string(self)
+            .with_context(|| "Failed to serialize config to YAML")?;
+        std::fs::write(&config_path, yaml_string)
+            .with_context(|| format!("Failed to write config to '{}'", config_path.display()))?;
+        Ok(())
+    }
+
     fn load_envs(&mut self) {
         if let Ok(v) = env::var(get_env_name("model")) {
             self.model_id = v;
@@ -2320,6 +2359,9 @@ impl Config {
         }
         if let Some(v) = read_env_value::<String>(&get_env_name("rag_template")) {
             self.rag_template = v;
+        }
+        if let Some(v) = read_env_bool(&get_env_name("rag_native_pdf_extraction")) {
+            self.rag_native_pdf_extraction = v;
         }
 
         if let Ok(v) = env::var(get_env_name("document_loaders")) {

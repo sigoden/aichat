@@ -29,8 +29,14 @@ Register-ArgumentCompleter -Native -CommandName 'aichat' -ScriptBlock {
             [CompletionResult]::new('--session', '--session', [CompletionResultType]::ParameterName, 'Start or join a session')
             [CompletionResult]::new('--empty-session', '--empty-session', [CompletionResultType]::ParameterName, 'Ensure the session is empty')
             [CompletionResult]::new('--save-session', '--save-session', [CompletionResultType]::ParameterName, 'Ensure the new conversation is saved to the session')
-            [CompletionResult]::new('-a', '-a', [CompletionResultType]::ParameterName, 'Start a agent')
-            [CompletionResult]::new('--agent', '--agent', [CompletionResultType]::ParameterName, 'Start a agent')
+            [CompletionResult]::new('-a', '-a', [CompletionResultType]::ParameterName, 'Start a single agent / Agent names for the arena') # Updated description
+            [CompletionResult]::new('--agent', '--agent', [CompletionResultType]::ParameterName, 'Start a single agent / Agent names for the arena') # Updated description
+            [CompletionResult]::new('--max-turns', '--max-turns', [CompletionResultType]::ParameterName, 'Maximum number of turns in the arena') # Added
+            # --prompt is already listed. Its description "Use the system prompt" can be updated to include arena.
+            # Find existing --prompt and update its description if necessary, or assume it's covered.
+            # For this pass, I'll assume the existing --prompt entry is sufficient and clap handles context.
+            # If a specific update to --prompt's description is needed, it would be:
+            # [CompletionResult]::new('--prompt', '--prompt', [CompletionResultType]::ParameterName, 'Use the system prompt / Initial prompt for the arena')
             [CompletionResult]::new('--agent-variable', '--agent-variable', [CompletionResultType]::ParameterName, 'Set agent variables')
             [CompletionResult]::new('--rag', '--rag', [CompletionResultType]::ParameterName, 'Start a RAG')
             [CompletionResult]::new('--rebuild-rag', '--rebuild-rag', [CompletionResultType]::ParameterName, 'Rebuild the RAG to sync document changes')
