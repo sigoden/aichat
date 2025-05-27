@@ -19,8 +19,8 @@ mapping_tools:                   # Alias for a tool or toolset
 use_tools: null                  # Which tools to use by default. (e.g. 'fs,web_search')
 
 # ---- prelude ----
-repl_prelude: null               # Set a default role or session for REPL mode (e.g. role:<name>, session:<name>, <session>:<role>)
-cmd_prelude: null                # Set a default role or session for CMD mode (e.g. role:<name>, session:<name>, <session>:<role>)
+repl_prelude: role:%rigorous_intellectual_precision%               # Set a default role or session for REPL mode (e.g. role:<name>, session:<name>, <session>:<role>)
+cmd_prelude: role:%rigorous_intellectual_precision%                # Set a default role or session for CMD mode (e.g. role:<name>, session:<name>, <session>:<role>)
 agent_prelude: null              # Set a session to use when starting a agent (e.g. temp, default)
 
 # ---- session ----
@@ -68,6 +68,21 @@ document_loaders:
   # Note: Use `$1` for input file and `$2` for output file. If `$2` is omitted, use stdout as output.
   pdf: 'pdftotext $1 -'                         # Load .pdf file, see https://poppler.freedesktop.org to set up pdftotext
   docx: 'pandoc --to plain $1'                  # Load .docx file, see https://pandoc.org to set up pandoc
+
+# ---- Terminal History RAG ----
+# Configuration for using terminal command history as a RAG source.
+# WARNING: Terminal history can contain sensitive information (passwords, API keys, etc.).
+# Enable this feature only if you understand and accept the risks.
+terminal_history_rag:
+  enabled: false                 # Set to true to enable this feature.
+                                 # If true, aichat will prompt for one-time consent on first use if not already given.
+  # consent_given: false         # This field is managed internally by aichat after your first response
+                                 # to the consent prompt. Do not manually set this unless you are resetting consent.
+  max_history_commands: 2000     # Maximum number of recent shell commands to load and index for RAG.
+  top_k: 3                       # Number of most relevant history snippets to retrieve and add to LLM context.
+  include_timestamps: true       # Whether to include command timestamps (if available from your shell's history)
+                                 # in the text sent to the embedding model. This can help the AI understand
+                                 # the recency/sequence of commands.
 
 # ---- apperence ----
 highlight: true                  # Controls syntax highlighting

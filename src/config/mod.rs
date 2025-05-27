@@ -171,6 +171,33 @@ pub struct Config {
     pub rag: Option<Arc<Rag>>,
     #[serde(skip)]
     pub agent: Option<Agent>,
+
+    #[serde(default)]
+    pub terminal_history_rag: TerminalHistoryRagConfig,
+    #[serde(skip)]
+    pub terminal_history_indexer: Option<Arc<crate::terminal_rag::TerminalHistoryIndexer>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct TerminalHistoryRagConfig {
+    pub enabled: bool,
+    pub consent_given: bool, // Managed internally after first explicit user consent
+    pub max_history_commands: usize,
+    pub top_k: usize,
+    pub include_timestamps: bool,
+}
+
+impl Default for TerminalHistoryRagConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            consent_given: false,
+            max_history_commands: 2000,
+            top_k: 3,
+            include_timestamps: true,
+        }
+    }
 }
 
 impl Default for Config {
@@ -2231,6 +2258,16 @@ impl Config {
         let config =
             serde_json::from_value(config).with_context(|| "Failed to load config from env")?;
         Ok(config)
+    }
+
+    pub fn save_config_file(&self) -> Result<()> {
+        let config_path = Self::config_file();
+        ensure_parent_exists(&config_path)?;
+        let yaml_string = serde_yaml::to_string(self)
+            .with_context(|| "Failed to serialize config to YAML")?;
+        std::fs::write(&config_path, yaml_string)
+            .with_context(|| format!("Failed to write config to '{}'", config_path.display()))?;
+        Ok(())
     }
 
     fn load_envs(&mut self) {

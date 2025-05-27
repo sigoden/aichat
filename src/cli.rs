@@ -81,6 +81,12 @@ pub struct Cli {
     /// List all macros
     #[clap(long)]
     pub list_macros: bool,
+    /// Perform a web search
+    #[clap(long = "search", value_name = "QUERY")]
+    pub search_query: Option<String>,
+    /// Execute a shell command (use with caution)
+    #[clap(long = "exec", value_name = "COMMAND")]
+    pub exec_command: Option<String>,
     /// Input text
     #[clap(trailing_var_arg = true)]
     text: Vec<String>,
