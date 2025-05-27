@@ -134,6 +134,33 @@ AI Agent = Instructions (Prompt) + Tools (Function Callings) + Documents (RAG).
 
 ![aichat-agent](https://github.com/user-attachments/assets/0b7e687d-e642-4e8a-b1c1-d2d9b2da2b6b)
 
+### Multi-Agent Arena Mode
+
+Engage multiple LLM agents in a conversation with each other. Based on an initial prompt, configured agents will take turns responding, allowing you to observe diverse perspectives and interaction styles.
+
+**CLI Usage:**
+
+```bash
+aichat --agent <AGENT_NAME_1> --agent <AGENT_NAME_2> [--agent <AGENT_NAME_N>...] --prompt <INITIAL_PROMPT> [--max-turns <TURNS>]
+```
+
+**Arguments:**
+
+*   `--agent <AGENT_NAME>`: Specify the name of a configured agent to participate. At least two agents are required. This argument can be used multiple times for additional agents.
+*   `--prompt <INITIAL_PROMPT>`: The initial prompt or topic that kicks off the conversation between the agents.
+*   `--max-turns <TURNS>`: Optional. The maximum number of LLM responses in the entire conversation (i.e., total turns taken by all agents). Defaults to 10. Each agent responding once counts as one turn.
+
+**Agent Configuration:**
+
+The agents specified with the `--agent` flag must be pre-configured in AIChat. This typically involves defining their roles, instructions, and any specific models they should use (e.g., via `assets/agents/<agent_name>/index.yaml` or as defined in your main `config.yaml` or `agents.yaml` file, depending on your setup). The unique personality, knowledge base, and conversational style of each agent are determined by its configuration.
+
+**Example:**
+
+```bash
+# Example: Have a 'philosopher' agent and a 'comedian' agent discuss the meaning of life for 6 turns
+aichat --agent philosopher --agent comedian --prompt "What is the meaning of life?" --max-turns 6
+```
+
 ### Local Server Capabilities
 
 AIChat includes a lightweight built-in HTTP server for easy deployment.

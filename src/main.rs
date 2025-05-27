@@ -1,3 +1,4 @@
+mod arena;
 mod cli;
 mod client;
 mod config;
@@ -120,6 +121,21 @@ async fn check_terminal_history_consent(config: &GlobalConfig) -> Result<()> {
 
 async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()> {
     let abort_signal = create_abort_signal();
+
+    // Arena mode check should be early
+    if let Some(arena_args) = &cli.arena {
+        // The presence of `arena_args` (due to `clap(flatten)`) means arena mode is intended.
+        // `agents` (min 2) and `prompt` are required by clap for ArenaArgs.
+        // `max_turns` has a default.
+        return crate::arena::run_arena_mode(
+            &config,
+            arena_args.agents.clone(), // run_arena_mode expects Vec<String>
+            arena_args.prompt.clone(),  // run_arena_mode expects String
+            arena_args.max_turns as usize, // run_arena_mode expects usize
+            abort_signal.clone(),
+        )
+        .await;
+    }
 
     // Prompt for terminal history RAG consent if needed
     if config.read().working_mode.is_repl() || config.read().working_mode.is_cmd() { // Only prompt in interactive modes

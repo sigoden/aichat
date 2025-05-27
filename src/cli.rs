@@ -6,6 +6,8 @@ use std::io::{stdin, Read};
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
+    #[clap(flatten)]
+    pub arena: Option<ArenaArgs>,
     /// Select a LLM model
     #[clap(short, long)]
     pub model: Option<String>,
@@ -90,6 +92,19 @@ pub struct Cli {
     /// Input text
     #[clap(trailing_var_arg = true)]
     text: Vec<String>,
+}
+
+#[derive(Parser, Debug, Clone)]
+pub struct ArenaArgs {
+    /// Agent names for the arena
+    #[clap(long = "agent", required = true, num_args = 2.., value_delimiter = ',')]
+    pub agents: Vec<String>,
+    /// Initial prompt for the arena
+    #[clap(long = "prompt", required = true)]
+    pub prompt: String,
+    /// Maximum number of turns in the arena
+    #[clap(long = "max-turns", default_value_t = 10)]
+    pub max_turns: u32,
 }
 
 impl Cli {
