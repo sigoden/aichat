@@ -2,7 +2,9 @@ mod cli;
 mod client;
 mod config;
 mod function;
+mod history_reader;
 mod rag;
+mod terminal_rag;
 mod render;
 mod repl;
 mod serve;
@@ -62,8 +64,70 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+async fn check_terminal_history_consent(config: &GlobalConfig) -> Result<()> {
+    let (enabled, consent_given, is_interactive_terminal) = {
+        let cfg = config.read();
+        (
+            cfg.terminal_history_rag.enabled,
+            cfg.terminal_history_rag.consent_given,
+            *IS_STDOUT_TERMINAL, // Check if running in an interactive terminal
+        )
+    };
+
+    if enabled && !consent_given {
+        if !is_interactive_terminal {
+            // Non-interactive mode, cannot ask for consent.
+            // Feature remains disabled for this session if consent was not previously given.
+            // Log this situation if a logger is available and configured for info/warn level.
+            // For now, we assume no verbose logging for this specific case to avoid clutter
+            // if aichat is used in scripts. The feature simply won't activate.
+            return Ok(());
+        }
+        println!("{}", yellow_text("Terminal History RAG - Consent Required:"));
+        println!("`aichat` can enhance its contextual understanding by using your terminal command history.");
+        println!("This involves reading your shell history file (e.g., ~/.bash_history, ~/.zsh_history),");
+        println!("processing commands locally, and potentially including relevant command snippets in prompts to the AI model.");
+        println!("{}", red_text("WARNING: Terminal history can contain sensitive information, including commands, arguments, paths, and even accidentally typed passwords. By enabling this, you acknowledge these risks."));
+        
+        let ans = inquire::Confirm::new("Allow `aichat` to access and process your terminal command history for this purpose?")
+            .with_default(false)
+            .with_help_message("If you choose 'no', this feature will remain disabled. You can grant consent later by editing the configuration file or (if implemented) using a specific command.")
+            .prompt()?;
+
+        if ans {
+            let mut cfg_write = config.write();
+            cfg_write.terminal_history_rag.consent_given = true;
+            if let Err(e) = cfg_write.save_config_file() {
+                warn!("Failed to save configuration after granting consent for terminal history RAG: {}. Consent might be lost for future sessions.", e);
+            } else {
+                info!("Consent for terminal history RAG granted and saved to configuration.");
+            }
+        } else {
+            // User explicitly denied consent. We can also set 'enabled = false' to prevent re-prompting
+            // until the user manually re-enables it in the config.
+            let mut cfg_write = config.write();
+            cfg_write.terminal_history_rag.enabled = false; 
+            cfg_write.terminal_history_rag.consent_given = false; // Ensure consent is false
+            if let Err(e) = cfg_write.save_config_file() {
+                 warn!("Failed to save configuration after denying consent for terminal history RAG: {}. Feature status might not persist as disabled.", e);
+            }
+            info!("Terminal history RAG feature will remain disabled as consent was not granted.");
+        }
+    }
+    Ok(())
+}
+
+
 async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()> {
     let abort_signal = create_abort_signal();
+
+    // Prompt for terminal history RAG consent if needed
+    if config.read().working_mode.is_repl() || config.read().working_mode.is_cmd() { // Only prompt in interactive modes
+        if let Err(e) = check_terminal_history_consent(&config).await {
+            warn!("Error during terminal history consent check: {}", e);
+            // Decide if this error is critical enough to halt execution. For now, just warn.
+        }
+    }
 
     if let Some(query) = cli.search_query {
         use crate::function::ToolCall;
@@ -226,13 +290,59 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         return Ok(());
     }
     config.write().apply_prelude()?;
+
+    // Terminal History RAG Indexing
+    if config.read().terminal_history_rag.enabled && config.read().terminal_history_rag.consent_given {
+        match crate::history_reader::get_terminal_history(&config) {
+            Ok(history_entries) => {
+                if !history_entries.is_empty() {
+                    debug!("Read {} terminal history entries. Building index...", history_entries.len());
+                    match crate::terminal_rag::TerminalHistoryIndexer::build_index(history_entries, &config).await {
+                        Ok(indexer) => {
+                            config.write().terminal_history_indexer = Some(Arc::new(indexer));
+                            debug!("Terminal history RAG index built successfully.");
+                        }
+                        Err(e) => warn!("Failed to build terminal history RAG index: {}", e),
+                    }
+                } else {
+                    debug!("No terminal history entries found to build RAG index.");
+                }
+            }
+            Err(e) => warn!("Failed to read terminal history for RAG: {}", e),
+        }
+    }
+
     match is_repl {
         false => {
             let mut input = create_input(&config, text, &cli.file, abort_signal.clone()).await?;
+            
+            // Augment with file-based RAG first (if any)
             input.use_embeddings(abort_signal.clone()).await?;
+
+            // Then, augment with terminal history RAG (if indexer is available)
+            if let Some(indexer) = config.read().terminal_history_indexer.clone() {
+                let query_for_history_rag = input.text(); // Use the current text (potentially augmented by file RAG) as query
+                let top_k = config.read().terminal_history_rag.top_k;
+                match indexer.search(&query_for_history_rag, top_k).await {
+                    Ok(history_results) => {
+                        if !history_results.is_empty() {
+                            let context_str = history_results.iter()
+                                .map(|entry| format!("$ {}", entry.command)) // Simple formatting
+                                .collect::<Vec<String>>()
+                                .join("\n");
+                            let full_context = format!("--- Relevant Terminal History Snippets ---\n{}\n--- End of History Snippets ---", context_str);
+                            input.set_history_rag_context(full_context);
+                            debug!("Augmented input with {} terminal history snippets.", history_results.len());
+                        }
+                    }
+                    Err(e) => warn!("Terminal history RAG search failed: {}", e),
+                }
+            }
             start_directive(&config, input, cli.code, abort_signal).await
         }
         true => {
+            // For REPL mode, the input creation and RAG augmentation will happen inside the REPL loop.
+            // The index (if built) is available in `config.read().terminal_history_indexer`.
             if !*IS_STDOUT_TERMINAL {
                 bail!("No TTY for REPL")
             }

@@ -87,6 +87,35 @@ Integrate external documents into your LLM conversations for more accurate and c
 
 ![aichat-rag](https://github.com/user-attachments/assets/359f0cb8-ee37-432f-a89f-96a2ebab01f6)
 
+### Terminal History Context (RAG)
+
+AIChat can further enhance its contextual understanding by leveraging your terminal command history. This allows the AI to provide more relevant assistance and suggestions based on your recent command-line activity.
+
+**Purpose:**
+- To provide `aichat` with context from your shell command history.
+- To enable more relevant and intelligent assistance, especially for shell-related queries or when recalling past commands.
+
+**User Consent:**
+Due to the sensitive nature of shell command history (which can contain passwords, API keys, personal information, etc.), `aichat` requires your explicit consent before accessing this data.
+- If `terminal_history_rag.enabled` is set to `true` in your configuration, `aichat` will prompt you for permission on its first run.
+- If you grant consent, this choice is saved, and `aichat` will proceed to use the feature.
+- If you deny consent, the feature will be automatically disabled for that session and future sessions until consent is granted (e.g., by manually setting `consent_given: true` in the config after understanding the risks, or if a command to re-prompt is added in the future).
+
+**Configuration Options (in `config.yaml` under `terminal_history_rag`):**
+```yaml
+terminal_history_rag:
+  enabled: false                 # Set to true to enable this feature (will prompt for consent if not given).
+  # consent_given: false         # Managed by aichat after your first response to the consent prompt.
+  max_history_commands: 2000     # Maximum number of recent shell commands to load and index.
+  top_k: 3                       # Number of most relevant history snippets to retrieve for context.
+  include_timestamps: true       # Whether to include command timestamps in the text sent for embedding (if available from your shell).
+```
+
+**Privacy and Security Considerations:**
+- **Sensitive Data:** Be aware that your shell history can contain sensitive information like passwords, API keys, file paths, and personal details.
+- **Data Usage:** When this feature is active, `aichat` reads your history, processes it locally to find relevant commands, and then includes snippets of these commands (the raw command text) in the prompt sent to the configured Large Language Model (LLM).
+- **Risk Acceptance:** Only enable this feature if you understand and accept the risk of parts of your command history being processed and potentially sent to the LLM provider. `aichat` does not filter or redact sensitive data from your history before using it for RAG.
+
 ### Function Calling
 
 Function calling supercharges LLMs by connecting them to external tools and data sources. This unlocks a world of possibilities, enabling LLMs to go beyond their core capabilities and tackle a wider range of tasks.
