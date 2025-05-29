@@ -1,14 +1,11 @@
 use super::*;
 
 use crate::{
-    client::{LLMClient, Model}, // Added LLMClient
-    function::{run_llm_function, Functions, ToolCall}, // Added ToolCall
+    client::Model,
+    function::{run_llm_function, Functions},
 };
 
-use anyhow::{Context, Result, bail}; // Added bail here for run_react_loop
-use regex::Regex; // Added Regex
-use serde_json::Value; // Added Value
-use log::info; // Added info
+use anyhow::{Context, Result};
 use inquire::{validator::Validation, Text};
 use std::{fs::read_to_string, path::Path};
 
@@ -30,7 +27,6 @@ pub struct Agent {
     functions: Functions,
     rag: Option<Arc<Rag>>,
     model: Model,
-    react_scratchpad: Vec<String>,
 }
 
 impl Agent {
@@ -111,20 +107,7 @@ impl Agent {
             functions,
             rag,
             model,
-            react_scratchpad: Vec::new(),
         })
-    }
-
-    pub fn clear_react_scratchpad(&mut self) {
-        self.react_scratchpad.clear();
-    }
-
-    pub fn add_to_react_scratchpad(&mut self, entry: String) {
-        self.react_scratchpad.push(entry);
-    }
-
-    pub fn get_react_scratchpad_content(&self) -> String {
-        self.react_scratchpad.join("\n")
     }
 
     pub fn init_agent_variables(
@@ -296,7 +279,6 @@ impl Agent {
     pub fn exit_session(&mut self) {
         self.session_variables = None;
         self.session_dynamic_instructions = None;
-        self.clear_react_scratchpad(); // Clear scratchpad when session exits
     }
 
     pub fn is_dynamic_instructions(&self) -> bool {
@@ -331,262 +313,6 @@ impl Agent {
             Some(v) => Ok(v),
             _ => bail!("No return value from '_instructions' function"),
         }
-    }
-
-    pub async fn run_react_loop(
-        &mut self,
-        current_user_query: String,
-        initial_goal: String, // The overall goal for {{user_goal}}
-        client: &LLMClient,
-        global_config: &GlobalConfig, // Renamed from 'config' to avoid conflict with self.config
-        print_thought: bool,
-    ) -> Result<String> {
-        self.clear_react_scratchpad();
-
-        const MAX_REACT_ITERATIONS: usize = 10;
-
-        // Regex for parsing LLM output
-        // Order: Final Answer, Action, Thought
-        // Action can be tool_name({"json_args"}) or None
-        let react_parser_re = Regex::new(
-            r"(?s)(?:Final Answer:\s*(?P<final_answer>.+)|Action:\s*(?P<action_tool>[a-zA-Z_][a-zA-Z0-9_]*)\s*(?P<action_args>\{.*\})|Action:\s*(?P<action_none>None)|Thought:\s*(?P<thought>.+))"
-        ).unwrap();
-
-        // Get the base ReAct instructions template
-        let mut react_instructions_template = self.interpolated_instructions();
-        if !react_instructions_template.contains("{{user_goal}}") ||
-           !react_instructions_template.contains("{{tools_list_for_prompt}}") ||
-           !react_instructions_template.contains("{{react_scratchpad_content}}") ||
-           !react_instructions_template.contains("{{current_user_query}}") {
-            bail!("Agent's instructions are not a valid ReAct meta-prompt. Placeholders missing.");
-        }
-
-        // Prepare tools list for prompt
-        let tools_list_for_prompt = self
-            .functions()
-            .declarations()
-            .iter()
-            .map(|f| format!("- {}: {}", f.name, f.description.lines().next().unwrap_or_default()))
-            .collect::<Vec<String>>()
-            .join("\n");
-
-        react_instructions_template = react_instructions_template.replace("{{user_goal}}", &initial_goal);
-        react_instructions_template = react_instructions_template.replace("{{tools_list_for_prompt}}", &tools_list_for_prompt);
-
-        for i in 0..MAX_REACT_ITERATIONS {
-            let scratchpad_content = self.get_react_scratchpad_content();
-            let full_prompt = react_instructions_template
-                .replace("{{react_scratchpad_content}}", &scratchpad_content)
-                .replace("{{current_user_query}}", &current_user_query); // current_user_query might be updated in more advanced scenarios
-
-            // Call LLM
-            // Assuming LLMClient has a method like this or adapting send_message_inner
-            // For now, let's assume a conceptual direct call.
-            // This part needs careful implementation based on LLMClient capabilities.
-            // We'll use send_message_inner for now.
-            let input_message = Message::new_user(&full_prompt);
-            let response_message = client.send_message_inner(
-                global_config, // Pass GlobalConfig
-                self.model().client(), // Get the GptClient for the agent's model
-                &input_message,
-                self.temperature(),
-                self.top_p(),
-                None, // No stream handler for ReAct's synchronous steps
-            ).await?;
-
-            let llm_response_text = response_message.content.trim();
-
-            if let Some(captures) = react_parser_re.captures(llm_response_text) {
-                if let Some(final_answer_match) = captures.name("final_answer") {
-                    let final_answer_content = final_answer_match.as_str().trim().to_string();
-                    self.add_to_react_scratchpad(format!("Final Answer: {}", final_answer_content));
-                    return Ok(final_answer_content);
-                } else if let Some(action_tool_match) = captures.name("action_tool") {
-                    let tool_name_str = action_tool_match.as_str().trim().to_string();
-                    let args_str = captures.name("action_args")
-                        .map_or("{}".to_string(), |m| m.as_str().trim().to_string());
-                    
-                    self.add_to_react_scratchpad(format!("Action: {} {}", tool_name_str, args_str));
-
-                    match serde_json::from_str::<Value>(&args_str) {
-                        Ok(parsed_json_args) => {
-                            let tool_call = ToolCall {
-                                name: tool_name_str,
-                                arguments: parsed_json_args,
-                                id: Some(format!("react-{}", i)),
-                            };
-                            match tool_call.eval(global_config) {
-                                Ok(tool_result_value) => {
-                                    let observation = format!("Observation: {}", tool_result_value.to_string());
-                                    self.add_to_react_scratchpad(observation);
-                                }
-                                Err(e) => {
-                                    let error_observation = format!("Error executing tool {}: {}", tool_call.name, e);
-                                    self.add_to_react_scratchpad(format!("Observation: {}", error_observation));
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            let error_observation = format!("System: Failed to parse JSON arguments for tool {}: {}. Error: {}", tool_name_str, args_str, e);
-                            self.add_to_react_scratchpad(error_observation);
-                        }
-                    }
-                } else if captures.name("action_none").is_some() {
-                    self.add_to_react_scratchpad("Action: None".to_string());
-                    // Loop continues, LLM should provide a new thought or eventually a final answer
-                } else if let Some(thought_match) = captures.name("thought") {
-                    let thought_content = thought_match.as_str().trim().to_string();
-                    self.add_to_react_scratchpad(format!("Thought: {}", thought_content));
-                    if print_thought {
-                        info!("Thought: {}", thought_content);
-                    }
-                     // After a thought, we must re-prompt the LLM immediately for an Action or Final Answer.
-                    // The current loop structure will do this.
-                    // However, ensure the LLM output format for Thought is just "Thought: ..." and doesn't include Action/Final Answer in the same response.
-                    // If it does, the regex should capture the Action/Final Answer part first.
-                    // The current regex prioritizes Final Answer, then Action, then Thought.
-                    // If only a thought is produced, the loop continues and the scratchpad grows.
-                } else {
-                    // This case should ideally not be reached if regex is comprehensive
-                    let system_message = "System: Invalid response format. Could not parse Thought, Action, or Final Answer.".to_string();
-                    self.add_to_react_scratchpad(system_message);
-                }
-            } else {
-                // LLM response did not match any ReAct directives
-                let system_message = format!("System: Invalid response format. The response was '{}'. Please use Thought/Action/Final Answer.", llm_response_text);
-                self.add_to_react_scratchpad(system_message);
-            }
-        }
-
-        bail!("Agent exceeded max ReAct iterations ({}).", MAX_REACT_ITERATIONS)
-    }
-
-    pub async fn run_react_loop(
-        &mut self,
-        current_user_query: String,
-        initial_goal: String, // The overall goal for {{user_goal}}
-        client: &LLMClient,
-        global_config: &GlobalConfig, 
-        print_thought: bool,
-    ) -> Result<String> {
-        self.clear_react_scratchpad();
-
-        const MAX_REACT_ITERATIONS: usize = 10;
-
-        // Regex for parsing LLM output. Prioritizes Final Answer, then Action, then Thought.
-        // Action: tool_name({"json_args"}) OR Action: None
-        let react_parser_re = Regex::new(
-            r"(?s)^\s*(?:Final Answer:\s*(?P<final_answer>.+)|Action:\s*(?P<action_tool>[a-zA-Z_][a-zA-Z0-9_]*)\s*(?P<action_args>\{.*?\})|Action:\s*(?P<action_none>None)|Thought:\s*(?P<thought>.+))"
-        ).context("Failed to compile ReAct parser regex")?;
-
-        // Get the base ReAct instructions template
-        // This template is expected to be set as the agent's instructions.
-        let mut react_instructions_template = self.interpolated_instructions(); 
-
-        // Validate that the template contains necessary placeholders
-        if !react_instructions_template.contains("{{user_goal}}") ||
-           !react_instructions_template.contains("{{tools_list_for_prompt}}") ||
-           !react_instructions_template.contains("{{react_scratchpad_content}}") ||
-           !react_instructions_template.contains("{{current_user_query}}") {
-            bail!("Agent's instructions do not conform to the expected ReAct meta-prompt format. Key placeholders like '{{user_goal}}', '{{tools_list_for_prompt}}', '{{react_scratchpad_content}}', or '{{current_user_query}}' are missing.");
-        }
-
-        // Prepare tools list for prompt
-        let tools_list_for_prompt = self
-            .functions()
-            .declarations()
-            .iter()
-            .map(|f| {
-                let desc = f.description.lines().next().unwrap_or("No description.");
-                format!("- {}: {}", f.name, desc)
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
-        
-        // Pre-fill parts of the template that don't change per iteration
-        react_instructions_template = react_instructions_template.replace("{{user_goal}}", &initial_goal);
-        react_instructions_template = react_instructions_template.replace("{{tools_list_for_prompt}}", &tools_list_for_prompt);
-
-        for i in 0..MAX_REACT_ITERATIONS {
-            let scratchpad_content = self.get_react_scratchpad_content();
-            
-            // Construct the full prompt for this iteration
-            let full_prompt = react_instructions_template
-                .replace("{{react_scratchpad_content}}", &scratchpad_content)
-                .replace("{{current_user_query}}", &current_user_query); // current_user_query could be updated based on thoughts in more advanced setups
-
-            let input_message = Message::new_user(&full_prompt);
-            
-            let response_message = client.send_message_inner(
-                global_config,
-                self.model().client(), 
-                &input_message,
-                self.temperature(),
-                self.top_p(),
-                None, // No streaming for ReAct individual steps
-            ).await.context("LLM call failed in ReAct loop")?;
-
-            let llm_response_text = response_message.content.trim();
-            self.add_to_react_scratchpad(llm_response_text.to_string()); // Add raw LLM response to scratchpad for full history
-
-            if let Some(captures) = react_parser_re.captures(llm_response_text) {
-                if let Some(final_answer_match) = captures.name("final_answer") {
-                    let final_answer_content = final_answer_match.as_str().trim().to_string();
-                    // No need to add "Final Answer: ..." to scratchpad again as raw response is already added.
-                    return Ok(final_answer_content);
-                } else if let Some(action_tool_match) = captures.name("action_tool") {
-                    let tool_name_str = action_tool_match.as_str().trim().to_string();
-                    // Ensure action_args capture group exists before trying to use it.
-                    let args_str = captures.name("action_args").map_or("{}".to_string(), |m| m.as_str().trim().to_string());
-                    
-                    // Raw action already in scratchpad. Now process it.
-                    match serde_json::from_str::<Value>(&args_str) {
-                        Ok(parsed_json_args) => {
-                            let tool_call = ToolCall {
-                                name: tool_name_str.clone(),
-                                arguments: parsed_json_args,
-                                id: Some(format!("react-{}", i)),
-                            };
-                            match tool_call.eval(global_config) {
-                                Ok(tool_result_value) => {
-                                    let observation = format!("Observation: {}", tool_result_value.to_string());
-                                    self.add_to_react_scratchpad(observation);
-                                }
-                                Err(e) => {
-                                    let error_observation = format!("Observation: Error executing tool '{}': {}", tool_name_str, e);
-                                    self.add_to_react_scratchpad(error_observation);
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            let error_observation = format!("Observation: System failed to parse JSON arguments for tool '{}' (args: '{}'). Error: {}", tool_name_str, args_str, e);
-                            self.add_to_react_scratchpad(error_observation);
-                        }
-                    }
-                } else if captures.name("action_none").is_some() {
-                    // "Action: None" is already in scratchpad from raw response. Loop continues.
-                } else if let Some(thought_match) = captures.name("thought") {
-                    let thought_content = thought_match.as_str().trim().to_string();
-                    // "Thought: ..." is already in scratchpad.
-                    if print_thought {
-                        info!("Thought: {}", thought_content);
-                    }
-                    // If only a thought is produced, the loop continues.
-                    // The LLM should then produce an Action or Final Answer in the next step.
-                } else {
-                    // This should not be reached if regex is correct and LLM adheres to one of Thought/Action/Final Answer.
-                    // Adding a generic observation if the LLM output was captured by regex but not by a specific group.
-                    let observation = format!("Observation: System received an LLM response that was partially matched but not identifiable as Thought, Action, or Final Answer: '{}'", llm_response_text);
-                    self.add_to_react_scratchpad(observation);
-                }
-            } else {
-                // LLM response did not match any ReAct directives.
-                let observation = format!("Observation: System received an invalid response format. The response was '{}'. Please use Thought/Action/Final Answer.", llm_response_text);
-                self.add_to_react_scratchpad(observation);
-            }
-        }
-
-        bail!("Agent exceeded max ReAct iterations ({}) without reaching a Final Answer.", MAX_REACT_ITERATIONS)
     }
 }
 
@@ -712,8 +438,6 @@ pub struct AgentDefinition {
     #[serde(default)]
     pub dynamic_instructions: bool,
     #[serde(default)]
-    pub is_react_agent: bool, // Added is_react_agent flag
-    #[serde(default)]
     pub variables: Vec<AgentVariable>,
     #[serde(default)]
     pub conversation_starters: Vec<String>,
@@ -722,11 +446,6 @@ pub struct AgentDefinition {
 }
 
 impl AgentDefinition {
-    // Expose is_react_agent via a getter
-    pub fn is_react_agent(&self) -> bool {
-        self.is_react_agent
-    }
-
     pub fn load(path: &Path) -> Result<Self> {
         let contents = read_to_string(path)
             .with_context(|| format!("Failed to read agent index file at '{}'", path.display()))?;

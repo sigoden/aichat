@@ -131,7 +131,6 @@ pub struct Config {
     pub rag_chunk_size: Option<usize>,
     pub rag_chunk_overlap: Option<usize>,
     pub rag_template: Option<String>,
-    pub rag_native_pdf_extraction: Option<bool>, // Added for native PDF extraction
 
     #[serde(default)]
     pub document_loaders: HashMap<String, String>,
@@ -235,7 +234,6 @@ impl Default for Config {
             rag_chunk_size: None,
             rag_chunk_overlap: None,
             rag_template: None,
-            rag_native_pdf_extraction: Some(true), // Default to true
 
             document_loaders: Default::default(),
 
@@ -2359,9 +2357,6 @@ impl Config {
         }
         if let Some(v) = read_env_value::<String>(&get_env_name("rag_template")) {
             self.rag_template = v;
-        }
-        if let Some(v) = read_env_bool(&get_env_name("rag_native_pdf_extraction")) {
-            self.rag_native_pdf_extraction = v;
         }
 
         if let Ok(v) = env::var(get_env_name("document_loaders")) {
