@@ -1,6 +1,0 @@
-# List of available agents
-# Each agent name should be on a new line
-
-coder
-shell
-react_search_agent
