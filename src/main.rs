@@ -2,6 +2,8 @@ mod arena;
 mod cli;
 mod client;
 mod config;
+mod core; // Added
+mod daemon; // Added
 mod function;
 mod history_reader;
 mod rag;
@@ -40,6 +42,21 @@ use std::{env, io::stdin, process, sync::Arc};
 async fn main() -> Result<()> {
     load_env_file()?;
     let cli = Cli::parse();
+
+    if cli.daemon {
+        // Initialize logger for daemon mode
+        env_logger::init(); // Basic setup, can be configured further
+        info!("Starting aichat in daemon mode.");
+        // Potentially adjust setup_logger or have a daemon-specific logger setup
+        // For now, env_logger::init() will provide some logging.
+        // The existing setup_logger might be too CLI-focused.
+        if let Err(e) = daemon::start_daemon() {
+            eprintln!("Daemon failed to start: {}", e);
+            std::process::exit(1);
+        }
+        return Ok(());
+    }
+
     let text = cli.text()?;
     let working_mode = if cli.serve.is_some() {
         WorkingMode::Serve
@@ -56,7 +73,7 @@ async fn main() -> Result<()> {
         || cli.list_rags
         || cli.list_macros
         || cli.list_sessions;
-    setup_logger(working_mode.is_serve())?;
+    setup_logger(working_mode.is_serve())?; // Existing logger for CLI mode
     let config = Arc::new(RwLock::new(Config::init(working_mode, info_flag).await?));
     if let Err(err) = run(config, cli, text).await {
         render_error(err);
