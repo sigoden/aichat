@@ -89,6 +89,9 @@ pub struct Cli {
     /// Execute a shell command (use with caution)
     #[clap(long = "exec", value_name = "COMMAND")]
     pub exec_command: Option<String>,
+    /// Run as a daemon
+    #[clap(long)]
+    pub daemon: bool,
     /// Input text
     #[clap(trailing_var_arg = true)]
     text: Vec<String>,

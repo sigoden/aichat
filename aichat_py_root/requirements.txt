@@ -1,0 +1,5 @@
+Flask>=2.0.0,<3.0.0
+requests>=2.25.0,<3.0.0
+textual>=0.40.0,<1.0.0
+python-daemon>=2.3.0,<3.0.0
+Werkzeug>=2.0.0,<3.0.0

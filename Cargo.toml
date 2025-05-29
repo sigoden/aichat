@@ -1,3 +1,4 @@
+workspace = { members = ["aichat-frontend"] }
 [package]
 name = "aichat"
 version = "0.29.0"
@@ -11,6 +12,7 @@ categories = ["command-line-utilities"]
 keywords = ["chatgpt", "llm", "cli", "ai", "repl"]
 
 [dependencies]
+env_logger = "0.10" # Or your preferred version
 anyhow = "1.0.69"
 bytes = "1.4.0"
 clap = { version = "4.4.8", features = ["derive"] }
@@ -95,3 +97,7 @@ rand = "0.9.0"
 lto = true
 strip = true
 opt-level = "z"
+
+[patch.crates-io]
+jsonptr = "=0.4.0"      # Simplest patch attempt for jsonptr
+idna_adapter = "=1.0.0" # Simplest patch attempt for idna_adapter
