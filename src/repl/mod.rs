@@ -6,7 +6,9 @@ use self::completer::ReplCompleter;
 use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
-use crate::client::{call_chat_completions, call_chat_completions_streaming};
+use crate::client::{
+    call_chat_completions, call_chat_completions_streaming, create_client_config, list_client_types,
+};
 use crate::config::{
     macro_execute, AgentVariables, AssertState, Config, GlobalConfig, Input, LastMessage,
     StateFlags,
@@ -15,6 +17,8 @@ use crate::render::render_error;
 use crate::utils::{
     abortable_run_with_spinner, create_abort_signal, dimmed_text, set_text, temp_file, AbortSignal,
 };
+
+use inquire::Select;
 
 use anyhow::{bail, Context, Result};
 use crossterm::cursor::SetCursorStyle;
@@ -26,12 +30,13 @@ use reedline::{
     ReedlineEvent, ReedlineMenu, ValidationResult, Validator, Vi,
 };
 use reedline::{MenuBuilder, Signal};
+use std::fs::File;
 use std::sync::LazyLock;
 use std::{env, process};
 
 const MENU_NAME: &str = "completion_menu";
 
-static REPL_COMMANDS: LazyLock<[ReplCommand; 36]> = LazyLock::new(|| {
+static REPL_COMMANDS: LazyLock<[ReplCommand; 37]> = LazyLock::new(|| {
     [
         ReplCommand::new(".help", "Show this help guide", AssertState::pass()),
         ReplCommand::new(".info", "Show system info", AssertState::pass()),
@@ -181,6 +186,11 @@ static REPL_COMMANDS: LazyLock<[ReplCommand; 36]> = LazyLock::new(|| {
         ReplCommand::new(
             ".delete",
             "Delete roles, sessions, RAGs, or agents",
+            AssertState::pass(),
+        ),
+        ReplCommand::new(
+            ".add",
+            "Add a new client & set default model based on examples",
             AssertState::pass(),
         ),
         ReplCommand::new(".exit", "Exit REPL", AssertState::pass()),
@@ -537,6 +547,10 @@ pub async fn run_repl_command(
                     }
                 }
             }
+            ".add" => {
+                add_command().await?;
+                println!("✓ Added new client & set default model in config file; restart to apply changes");
+            }
             ".compress" => match args {
                 Some("session") => {
                     abortable_run_with_spinner(
@@ -711,6 +725,36 @@ pub async fn run_repl_command(
     }
 
     Ok(false)
+}
+
+async fn add_command() -> Result<()> {
+    let client = Select::new("API Provider (required):", list_client_types()).prompt()?;
+    let (model, clients_config) = create_client_config(client).await?;
+
+    let first_client_config = clients_config
+        .as_array()
+        .and_then(|arr| arr.first())
+        .ok_or_else(|| anyhow::anyhow!("No client configuration found to add."))?;
+    let first_client_config_yml = serde_yaml::to_value(first_client_config)?;
+
+    let config_path = Config::config_file();
+    let mut config_yml: serde_yaml::Value = serde_yaml::from_reader(File::open(&config_path)?)?;
+
+    config_yml["clients"]
+        .as_sequence_mut()
+        .map(|seq| seq.push(first_client_config_yml.clone()))
+        .unwrap_or_else(|| {
+            config_yml["clients"] =
+                serde_yaml::Value::Sequence(vec![first_client_config_yml.clone()]);
+        });
+    config_yml["model"] = model.into();
+
+    let config_data =
+        serde_yaml::to_string(&config_yml).context("Failed to serialize updated config to YAML")?;
+    std::fs::write(&config_path, config_data)
+        .with_context(|| format!("Failed to write to '{}'", config_path.display()))?;
+
+    Ok(())
 }
 
 #[async_recursion::async_recursion]
