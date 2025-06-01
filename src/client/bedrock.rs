@@ -2,7 +2,13 @@ use super::*;
 
 use crate::utils::{base64_decode, encode_uri, hex_encode, hmac_sha256, sha256, strip_think_tag};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
+use aws_config::default_provider::credentials::DefaultCredentialsChain;
+use aws_config::profile::ProfileFileCredentialsProvider;
+use aws_config::provider_config::ProviderConfig;
+use aws_config::{BehaviorVersion, Region};
+use aws_credential_types::provider::ProvideCredentials;
+use aws_credential_types::Credentials;
 use aws_smithy_eventstream::frame::{DecodedFrame, MessageFrameDecoder};
 use aws_smithy_eventstream::smithy::parse_response_headers;
 use bytes::BytesMut;
@@ -18,6 +24,7 @@ pub struct BedrockConfig {
     pub name: Option<String>,
     pub access_key_id: Option<String>,
     pub secret_access_key: Option<String>,
+    pub profile: Option<String>,
     pub region: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
@@ -28,6 +35,7 @@ pub struct BedrockConfig {
 impl BedrockClient {
     config_get_fn!(access_key_id, get_access_key_id);
     config_get_fn!(secret_access_key, get_secret_access_key);
+    config_get_fn!(profile, get_profile);
     config_get_fn!(region, get_region);
 
     pub const PROMPTS: [PromptAction<'static>; 3] = [
@@ -36,14 +44,14 @@ impl BedrockClient {
         ("region", "AWS Region", None),
     ];
 
-    fn chat_completions_builder(
+    async fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
         data: ChatCompletionsData,
     ) -> Result<RequestBuilder> {
-        let access_key_id = self.get_access_key_id()?;
-        let secret_access_key = self.get_secret_access_key()?;
-        let region = self.get_region()?;
+        let region = self.determine_region().await?;
+        let credentials = self.determine_credentials(&region).await?;
+
         let host = format!("bedrock-runtime.{region}.amazonaws.com");
 
         let model_name = &self.model.real_name();
@@ -67,8 +75,9 @@ impl BedrockClient {
         let builder = aws_fetch(
             client,
             &AwsCredentials {
-                access_key_id,
-                secret_access_key,
+                access_key_id: credentials.access_key_id().into(),
+                secret_access_key: credentials.secret_access_key().into(),
+                session_token: credentials.session_token().map(|v| v.into()),
                 region,
             },
             AwsRequest {
@@ -85,14 +94,14 @@ impl BedrockClient {
         Ok(builder)
     }
 
-    fn embeddings_builder(
+    async fn embeddings_builder(
         &self,
         client: &ReqwestClient,
         data: &EmbeddingsData,
     ) -> Result<RequestBuilder> {
-        let access_key_id = self.get_access_key_id()?;
-        let secret_access_key = self.get_secret_access_key()?;
-        let region = self.get_region()?;
+        let region = self.determine_region().await?;
+        let credentials = self.determine_credentials(&region).await?;
+
         let host = format!("bedrock-runtime.{region}.amazonaws.com");
 
         let uri = format!("/model/{}/invoke", self.model.real_name());
@@ -118,8 +127,9 @@ impl BedrockClient {
         let builder = aws_fetch(
             client,
             &AwsCredentials {
-                access_key_id,
-                secret_access_key,
+                access_key_id: credentials.access_key_id().into(),
+                secret_access_key: credentials.secret_access_key().into(),
+                session_token: credentials.session_token().map(|v| v.into()),
                 region,
             },
             AwsRequest {
@@ -135,6 +145,60 @@ impl BedrockClient {
 
         Ok(builder)
     }
+
+    async fn determine_region(&self) -> Result<String> {
+        let maybe_region = self.get_region();
+        if maybe_region.is_ok() {
+            return maybe_region;
+        }
+
+        if let Some(maybe_region) = aws_config::defaults(BehaviorVersion::latest())
+            .load()
+            .await
+            .region()
+        {
+            return Ok(maybe_region.to_string());
+        }
+
+        Err(anyhow!("Unable to determine region"))
+    }
+
+    async fn determine_credentials(&self, region: &str) -> Result<Credentials> {
+        if let (Ok(access_key_id), Ok(secret_access_key)) =
+            (self.get_access_key_id(), self.get_secret_access_key())
+        {
+            return Ok(Credentials::new(
+                access_key_id,
+                secret_access_key,
+                None,
+                None,
+                "config",
+            ));
+        }
+
+        let conf =
+            ProviderConfig::without_region().with_region(Some(Region::new(region.to_string())));
+
+        if let Ok(profile_name) = self.get_profile() {
+            return ProfileFileCredentialsProvider::builder()
+                .profile_name(profile_name.clone())
+                .configure(&conf)
+                .build()
+                .provide_credentials()
+                .await
+                .context(format!(
+                    "Unable to find AWS credentials for profile '{profile_name}'"
+                ));
+        }
+
+        DefaultCredentialsChain::builder()
+            .configure(conf)
+            .build()
+            .await
+            .provide_credentials()
+            .await
+            .context("Unable to find AWS credentials")
+    }
 }
 
 #[async_trait::async_trait]
@@ -146,7 +210,7 @@ impl Client for BedrockClient {
         client: &ReqwestClient,
         data: ChatCompletionsData,
     ) -> Result<ChatCompletionsOutput> {
-        let builder = self.chat_completions_builder(client, data)?;
+        let builder = self.chat_completions_builder(client, data).await?;
         chat_completions(builder).await
     }
 
@@ -156,7 +220,7 @@ impl Client for BedrockClient {
         handler: &mut SseHandler,
         data: ChatCompletionsData,
     ) -> Result<()> {
-        let builder = self.chat_completions_builder(client, data)?;
+        let builder = self.chat_completions_builder(client, data).await?;
         chat_completions_streaming(builder, handler).await
     }
 
@@ -165,7 +229,7 @@ impl Client for BedrockClient {
         client: &ReqwestClient,
         data: &EmbeddingsData,
     ) -> Result<EmbeddingsOutput> {
-        let builder = self.embeddings_builder(client, data)?;
+        let builder = self.embeddings_builder(client, data).await?;
         embeddings(builder).await
     }
 }
@@ -526,6 +590,7 @@ fn extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
 struct AwsCredentials {
     access_key_id: String,
     secret_access_key: String,
+    session_token: Option<String>,
     region: String,
 }
 
@@ -613,6 +678,10 @@ fn aws_fetch(
     );
 
     headers.insert("authorization".into(), authorization_header);
+
+    if let Some(session_token) = &credentials.session_token {
+        headers.insert("X-Amz-Security-Token".into(), session_token.to_string());
+    }
 
     debug!("Request {endpoint} {body}");
 
