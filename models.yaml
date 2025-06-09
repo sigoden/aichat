@@ -216,7 +216,7 @@
       output_price: 0
       supports_vision: true
       supports_function_calling: true
-    - name: gemini-2.5-pro-preview-05-06
+    - name: gemini-2.5-pro-preview-06-05
       max_input_tokens: 1048576
       max_output_tokens: 65536
       input_price: 0
@@ -639,7 +639,7 @@
       output_price: 0.6
       supports_vision: true
       supports_function_calling: true
-    - name: gemini-2.5-pro-preview-05-06
+    - name: gemini-2.5-pro-preview-06-05
       max_input_tokens: 1048576
       max_output_tokens: 65536
       input_price: 1.25
@@ -1123,26 +1123,6 @@
       max_input_tokens: 32768
       input_price: 0.14
       output_price: 0.56
-    - name: deepseek-v3
-      max_input_tokens: 131072
-      input_price: 0.112
-      output_price: 0.224
-    - name: deepseek-r1
-      max_input_tokens: 131072
-      input_price: 0.28
-      output_price: 1.12
-    - name: qwen3-235b-a22b
-      max_input_tokens: 131072
-      input_price: 0.56
-      output_price: 1.68
-    - name: qwen3-30b-a3b
-      max_input_tokens: 131072
-      input_price: 0.21
-      output_price: 0.84
-    - name: qwq-32b
-      max_input_tokens: 131072
-      input_price: 0.28
-      output_price: 0.84
     - name: bge-large-zh
       type: embedding
       input_price: 0.07
@@ -1248,25 +1228,25 @@
       output_price: 0.98
       supports_function_calling: true
     - name: deepseek-v3
-      max_input_tokens: 65792
+      max_input_tokens: 65536
       input_price: 0.14
       output_price: 0.56
-    - name: deepseek-r1
-      max_input_tokens: 65792
+    - name: deepseek-r1-0528
+      max_input_tokens: 65536
       input_price: 0.28
       output_price: 1.12
+    - name: text-embedding-v4
+      type: embedding
+      input_price: 0.1
+      max_tokens_per_chunk: 8192
+      default_chunk_size: 2000
+      max_batch_size: 10
     - name: text-embedding-v3
       type: embedding
       input_price: 0.1
       max_tokens_per_chunk: 8192
       default_chunk_size: 2000
-      max_batch_size: 6
-    - name: text-embedding-v2
-      type: embedding
-      input_price: 0.1
-      max_tokens_per_chunk: 2048
-      default_chunk_size: 2000
-      max_batch_size: 25
+      max_batch_size: 10
 
 # links:
 #  - https://cloud.tencent.com/document/product/1729/104753
@@ -1467,15 +1447,6 @@
       input_price: 0.14
       output_price: 1.12
       supports_vision: true
-    - name: abab6.5s-chat
-      max_input_tokens: 245760
-      input_price: 0.14
-      output_price: 0.14
-      supports_vision: true
-    - name: deepseek-r1
-      max_input_tokens: 131072
-      input_price: 0.56
-      output_price: 2.24
 
 # Links:
 #  - https://openrouter.ai/models
@@ -1876,10 +1847,10 @@
       input_price: 0.27
       output_price: 1.1
       supports_function_calling: true
-    - name: deepseek/deepseek-r1
-      max_input_tokens: 163840
-      input_price: 0.55
-      output_price: 2.19
+    - name: deepseek/deepseek-r1-0528
+      max_input_tokens: 128000
+      input_price: 0.50
+      output_price: 2.15
       patch:
         body:
           include_reasoning: true
@@ -2187,7 +2158,7 @@
     - name: ai21-jamba-1.5-mini
       max_input_tokens: 256000
       supports_function_calling: true
-    - name: deepseek-r1
+    - name: deepseek-r1-0528
       max_input_tokens: 163840
     - name: deepseek-v3-0324
       max_input_tokens: 163840
@@ -2269,22 +2240,22 @@
       max_input_tokens: 163840
       input_price: 0.40
       output_price: 0.89
-    - name: deepseek-ai/DeepSeek-R1
-      max_input_tokens: 65536
-      input_price: 0.75
-      output_price: 2.4
+    - name: deepseek-ai/DeepSeek-R1-0528
+      max_input_tokens: 163840
+      input_price: 0.5
+      output_price: 2.15
     - name: google/gemma-3-27b-it
       max_input_tokens: 131072
       input_price: 0.1
       output_price: 0.2
     - name: mistralai/Mistral-Small-24B-Instruct-2501
       max_input_tokens: 32768
-      input_price: 0.07
-      output_price: 0.14
-    - name: mistralai/Mistral-Nemo-Instruct-2407
+      input_price: 0.06
+      output_price: 0.12
+    - name: mistralai/Devstral-Small-2505
       max_input_tokens: 131072
-      input_price: 0.035
-      output_price: 0.08
+      input_price: 0.06
+      output_price: 0.12
     - name: microsoft/phi-4-reasoning-plus
       max_input_tokens: 32768
       input_price: 0.07
