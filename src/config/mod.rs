@@ -429,6 +429,10 @@ impl Config {
         Self::local_path("models-override.yaml")
     }
 
+    pub fn models_merge_file() -> PathBuf {
+        Self::local_path("models-merge.yaml")
+    }
+
     pub fn state(&self) -> StateFlags {
         let mut flags = StateFlags::empty();
         if let Some(session) = &self.session {
@@ -1894,6 +1898,22 @@ impl Config {
             bail!("Incompatible version")
         }
         Ok(models_override.list)
+    }
+
+    pub fn load_models_merge() -> Result<Vec<ProviderModels>> {
+        let models_merge_path = Self::models_merge_file();
+        if !models_merge_path.exists() {
+            return Ok(vec![]);
+        }
+        let err = || {
+            format!(
+                "Failed to load models merge file at '{}'",
+                models_merge_path.display()
+            )
+        };
+        let content = read_to_string(&models_merge_path).with_context(err)?;
+        let models_merge: Vec<ProviderModels> = serde_yaml::from_str(&content).with_context(err)?;
+        Ok(models_merge)
     }
 
     pub fn render_options(&self) -> Result<RenderOptions> {

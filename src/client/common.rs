@@ -23,9 +23,20 @@ use tokio::sync::mpsc::unbounded_channel;
 const MODELS_YAML: &str = include_str!("../../models.yaml");
 
 pub static ALL_PROVIDER_MODELS: LazyLock<Vec<ProviderModels>> = LazyLock::new(|| {
-    Config::loal_models_override()
-        .ok()
-        .unwrap_or_else(|| serde_yaml::from_str(MODELS_YAML).unwrap())
+    // Try loading override first (full replacement)
+    if let Ok(override_models) = Config::loal_models_override() {
+        return override_models;
+    }
+
+    // Load base models from compiled YAML
+    let mut base_models: Vec<ProviderModels> = serde_yaml::from_str(MODELS_YAML).unwrap();
+
+    // Try loading merge models and merge them
+    if let Ok(merge_models) = Config::load_models_merge() {
+        merge_provider_models(&mut base_models, merge_models);
+    }
+
+    base_models
 });
 
 static EMBEDDING_MODEL_RE: LazyLock<Regex> = LazyLock::new(|| {
@@ -673,4 +684,111 @@ fn prompt_input_string(
     }
     let text = text.prompt()?;
     Ok(text)
+}
+
+fn merge_provider_models(base_models: &mut Vec<ProviderModels>, merge_models: Vec<ProviderModels>) {
+    for merge_provider in merge_models {
+        if let Some(base_provider) = base_models
+            .iter_mut()
+            .find(|p| p.provider == merge_provider.provider)
+        {
+            // Provider exists, merge models
+            for merge_model in merge_provider.models {
+                if let Some(base_model) = base_provider
+                    .models
+                    .iter_mut()
+                    .find(|m| m.name == merge_model.name)
+                {
+                    // Model exists, replace it (allowing updates/overrides)
+                    *base_model = merge_model;
+                } else {
+                    // New model, add it
+                    base_provider.models.push(merge_model);
+                }
+            }
+        } else {
+            // New provider, add it entirely
+            base_models.push(merge_provider);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::client::{ModelData, ProviderModels};
+
+    #[test]
+    fn test_merge_provider_models_new_provider() {
+        let mut base_models = vec![ProviderModels {
+            provider: "openai".to_string(),
+            models: vec![ModelData::new("gpt-4")],
+        }];
+
+        let merge_models = vec![ProviderModels {
+            provider: "anthropic".to_string(),
+            models: vec![ModelData::new("claude-3")],
+        }];
+
+        merge_provider_models(&mut base_models, merge_models);
+
+        assert_eq!(base_models.len(), 2);
+        assert_eq!(base_models[1].provider, "anthropic");
+        assert_eq!(base_models[1].models[0].name, "claude-3");
+    }
+
+    #[test]
+    fn test_merge_provider_models_new_model_existing_provider() {
+        let mut base_models = vec![ProviderModels {
+            provider: "openai".to_string(),
+            models: vec![ModelData::new("gpt-4")],
+        }];
+
+        let mut o3_model = ModelData::new("o3-pro");
+        o3_model.max_input_tokens = Some(200000);
+        o3_model.input_price = Some(150.0);
+        o3_model.output_price = Some(600.0);
+        o3_model.supports_vision = true;
+        o3_model.supports_function_calling = true;
+
+        let merge_models = vec![ProviderModels {
+            provider: "openai".to_string(),
+            models: vec![o3_model],
+        }];
+
+        merge_provider_models(&mut base_models, merge_models);
+
+        assert_eq!(base_models.len(), 1);
+        assert_eq!(base_models[0].models.len(), 2);
+        assert_eq!(base_models[0].models[1].name, "o3-pro");
+        assert_eq!(base_models[0].models[1].max_input_tokens, Some(200000));
+    }
+
+    #[test]
+    fn test_merge_provider_models_override_existing_model() {
+        let mut base_gpt4 = ModelData::new("gpt-4");
+        base_gpt4.max_input_tokens = Some(8000);
+
+        let mut base_models = vec![ProviderModels {
+            provider: "openai".to_string(),
+            models: vec![base_gpt4],
+        }];
+
+        let mut merge_gpt4 = ModelData::new("gpt-4");
+        merge_gpt4.max_input_tokens = Some(128000);
+        merge_gpt4.input_price = Some(30.0);
+
+        let merge_models = vec![ProviderModels {
+            provider: "openai".to_string(),
+            models: vec![merge_gpt4],
+        }];
+
+        merge_provider_models(&mut base_models, merge_models);
+
+        assert_eq!(base_models.len(), 1);
+        assert_eq!(base_models[0].models.len(), 1);
+        assert_eq!(base_models[0].models[0].name, "gpt-4");
+        assert_eq!(base_models[0].models[0].max_input_tokens, Some(128000));
+        assert_eq!(base_models[0].models[0].input_price, Some(30.0));
+    }
 }

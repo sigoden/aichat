@@ -1,0 +1,64 @@
+# Example models-merge.yaml
+# This file demonstrates how to add custom models while preserving existing ones.
+# Unlike models-override.yaml which replaces all models, models-merge.yaml extends 
+# the existing model definitions.
+#
+# Usage: Copy this file to models-merge.yaml and customize as needed.
+# Priority: models-override.yaml > models.yaml + models-merge.yaml > models.yaml only
+
+# Example 1: Add a new custom OpenAI-compatible model
+- provider: openai
+  models:
+    - name: my-custom-gpt-4
+      max_input_tokens: 32000
+      max_output_tokens: 4096
+      input_price: 3.0
+      output_price: 6.0
+      supports_vision: false
+      supports_function_calling: true
+
+# Example 2: Add a completely new provider with custom models
+- provider: my-local-provider
+  base_url: http://localhost:8080/v1
+  models:
+    - name: llama-3-70b-local
+      max_input_tokens: 8192 
+      max_output_tokens: 2048
+      input_price: 0
+      output_price: 0
+      supports_vision: false
+      supports_function_calling: true
+    - name: codellama-34b-local
+      max_input_tokens: 16384
+      max_output_tokens: 4096
+      input_price: 0
+      output_price: 0
+      supports_vision: false
+      supports_function_calling: false
+
+# Example 3: Override/update an existing model's parameters
+- provider: claude
+  models:
+    - name: claude-3-5-sonnet-20241022
+      # Override pricing for a specific model
+      input_price: 2.5   # Custom pricing
+      output_price: 7.5  # Custom pricing
+      # All other parameters remain as defined in the base models.yaml
+
+# Example 4: Add models to an existing provider
+- provider: gemini
+  models:
+    - name: gemini-pro-custom
+      max_input_tokens: 1000000
+      max_output_tokens: 8192
+      input_price: 1.25
+      output_price: 5.0
+      supports_vision: true
+      supports_function_calling: true
+
+# Notes:
+# - If a provider already exists, new models are added to that provider
+# - If a model name already exists, it will be replaced/updated
+# - If a provider doesn't exist, it will be added as a new provider
+# - All standard model parameters are supported (see models.yaml for reference)
+# - Pricing is typically in dollars per million tokens

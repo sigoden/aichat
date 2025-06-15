@@ -26,6 +26,8 @@ Download pre-built binaries for macOS, Linux, and Windows from [GitHub Releases]
 
 Integrate seamlessly with over 20 leading LLM providers through a unified interface. Supported providers include OpenAI, Claude, Gemini (Google AI Studio), Ollama, Groq, Azure-OpenAI, VertexAI, Bedrock, Github Models, Mistral, Deepseek, AI21, XAI Grok, Cohere, Perplexity, Cloudflare, OpenRouter, Ernie, Qianwen, Moonshot, ZhipuAI, Lingyiwanwu, MiniMax, Deepinfra, VoyageAI, any OpenAI-Compatible API provider.
 
+Add custom models or override existing ones using `models-merge.yaml` configuration. See [models-merge.example.yaml](models-merge.example.yaml) for examples.
+
 ### CMD Mode
 
 Explore powerful command-line functionalities with AIChat's CMD mode.
