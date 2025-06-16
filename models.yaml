@@ -141,7 +141,7 @@
       output_price: 600
       supports_vision: true
       supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
+      uses_responses_api: true
       patch:
         body:
           max_tokens: null

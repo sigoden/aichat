@@ -199,6 +199,10 @@ impl Model {
         self.data.system_prompt_prefix.as_deref()
     }
 
+    pub fn uses_responses_api(&self) -> bool {
+        self.data.uses_responses_api
+    }
+
     pub fn max_tokens_per_chunk(&self) -> Option<usize> {
         self.data.max_tokens_per_chunk
     }
@@ -324,6 +328,8 @@ pub struct ModelData {
     no_system_message: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     system_prompt_prefix: Option<String>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    uses_responses_api: bool,
 
     // embedding-only properties
     #[serde(skip_serializing_if = "Option::is_none")]

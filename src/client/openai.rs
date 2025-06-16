@@ -1,5 +1,6 @@
 use super::*;
 
+use crate::function::{FunctionDeclaration, ToolCall};
 use crate::utils::strip_think_tag;
 
 use anyhow::{bail, Context, Result};
@@ -48,7 +49,11 @@ fn prepare_chat_completions(
         .get_api_base()
         .unwrap_or_else(|_| API_BASE.to_string());
 
-    let url = format!("{}/chat/completions", api_base.trim_end_matches('/'));
+    let url = if self_.model.uses_responses_api() {
+        format!("{}/responses", api_base.trim_end_matches('/'))
+    } else {
+        format!("{}/chat/completions", api_base.trim_end_matches('/'))
+    };
 
     let body = openai_build_chat_completions_body(data, &self_.model);
 
@@ -100,7 +105,7 @@ pub async fn openai_chat_completions(
 pub async fn openai_chat_completions_streaming(
     builder: RequestBuilder,
     handler: &mut SseHandler,
-    _model: &Model,
+    model: &Model,
 ) -> Result<()> {
     let mut call_id = String::new();
     let mut function_name = String::new();
@@ -126,25 +131,12 @@ pub async fn openai_chat_completions_streaming(
         }
         let data: Value = serde_json::from_str(&message.data)?;
         debug!("stream-data: {data}");
-        if let Some(text) = data["choices"][0]["delta"]["content"]
-            .as_str()
-            .filter(|v| !v.is_empty())
-        {
-            if reasoning_state == 1 {
-                handler.text("\n</think>\n\n")?;
-                reasoning_state = 0;
-            }
-            handler.text(text)?;
-        } else if let Some(text) = data["choices"][0]["delta"]["reasoning_content"]
-            .as_str()
-            .or_else(|| data["choices"][0]["delta"]["reasoning"].as_str())
-            .filter(|v| !v.is_empty())
-        {
-            if reasoning_state == 0 {
-                handler.text("<think>\n")?;
-                reasoning_state = 1;
-            }
-            handler.text(text)?;
+
+        // Handle both API formats
+        if model.uses_responses_api() {
+            handle_responses_api_stream(&data, handler, &mut reasoning_state)?;
+        } else {
+            handle_chat_completions_stream(&data, handler, &mut reasoning_state)?;
         }
         if let (Some(function), index, id) = (
             data["choices"][0]["delta"]["tool_calls"][0]["function"].as_object(),
@@ -231,6 +223,11 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
         functions,
         stream,
     } = data;
+
+    // Check if model uses Responses API
+    if model.uses_responses_api() {
+        return build_responses_api_body(messages, model, stream, temperature, top_p, functions);
+    }
 
     let messages_len = messages.len();
     let messages: Vec<Value> = messages
@@ -351,6 +348,11 @@ pub fn openai_build_embeddings_body(data: &EmbeddingsData, model: &Model) -> Val
 }
 
 pub fn openai_extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
+    // Check if this is a Responses API response (has "output" field instead of "choices")
+    if data.get("output").is_some() {
+        return extract_responses_api_output(data);
+    }
+
     let text = data["choices"][0]["message"]["content"]
         .as_str()
         .unwrap_or_default();
@@ -397,6 +399,220 @@ pub fn openai_extract_chat_completions(data: &Value) -> Result<ChatCompletionsOu
         output_tokens: data["usage"]["completion_tokens"].as_u64(),
     };
     Ok(output)
+}
+
+fn extract_responses_api_output(data: &Value) -> Result<ChatCompletionsOutput> {
+    // Extract text from output array
+    let mut text = String::new();
+    let mut reasoning = String::new();
+    let mut tool_calls = vec![];
+
+    if let Some(output_array) = data["output"].as_array() {
+        for output_item in output_array {
+            if output_item["type"] == "message" {
+                if let Some(content_array) = output_item["content"].as_array() {
+                    for content_item in content_array {
+                        match content_item["type"].as_str() {
+                            Some("output_text") => {
+                                if let Some(output_text) = content_item["text"].as_str() {
+                                    if !text.is_empty() {
+                                        text.push('\n');
+                                    }
+                                    text.push_str(output_text);
+                                }
+                            }
+                            Some("reasoning") => {
+                                if let Some(reasoning_text) = content_item["text"].as_str() {
+                                    reasoning.push_str(reasoning_text);
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            } else if output_item["type"] == "function_call" {
+                // Extract function calls from Responses API format
+                if let (Some(name), Some(arguments), Some(id)) = (
+                    output_item["function"]["name"].as_str(),
+                    output_item["function"]["arguments"].as_str(),
+                    output_item["id"].as_str(),
+                ) {
+                    let arguments: Value = arguments.parse().with_context(|| {
+                        format!("Tool call '{name}' has non-JSON arguments '{arguments}'")
+                    })?;
+                    tool_calls.push(ToolCall::new(
+                        name.to_string(),
+                        arguments,
+                        Some(id.to_string()),
+                    ));
+                }
+            }
+        }
+    }
+
+    if text.is_empty() && tool_calls.is_empty() {
+        bail!("Invalid response data: {data}");
+    }
+
+    let final_text = if !reasoning.is_empty() {
+        format!("<think>\n{reasoning}\n</think>\n\n{text}")
+    } else {
+        text
+    };
+
+    let output = ChatCompletionsOutput {
+        text: final_text,
+        tool_calls,
+        id: data["id"].as_str().map(|v| v.to_string()),
+        input_tokens: data["usage"]["input_tokens"].as_u64(),
+        output_tokens: data["usage"]["output_tokens"].as_u64(),
+    };
+    Ok(output)
+}
+
+fn build_responses_api_body(
+    messages: Vec<Message>,
+    model: &Model,
+    stream: bool,
+    temperature: Option<f64>,
+    top_p: Option<f64>,
+    functions: Option<Vec<FunctionDeclaration>>
+) -> Value {
+    // Transform messages to Responses API input format (simple string)
+    let input = transform_messages_to_simple_string(&messages);
+
+    let mut body = json!({
+        "model": model.real_name(),
+        "input": input,
+    });
+
+    if stream {
+        body["stream"] = true.into();
+    }
+
+    if let Some(v) = temperature {
+        body["temperature"] = v.into();
+    }
+
+    if let Some(v) = top_p {
+        body["top_p"] = v.into();
+    }
+
+    // Use model's max_tokens_param for max_output_tokens
+    if let Some(v) = model.max_tokens_param() {
+        body["max_output_tokens"] = v.into();
+    }
+
+    if let Some(functions) = functions {
+        body["tools"] = functions
+            .iter()
+            .map(|v| {
+                json!({
+                    "type": "function",
+                    "function": v,
+                })
+            })
+            .collect();
+    }
+
+    body
+}
+
+fn transform_messages_to_simple_string(messages: &[Message]) -> String {
+    // Convert messages to simple string input for Responses API
+    messages.iter().map(|message| {
+        match &message.content {
+            MessageContent::Text(text) => text.clone(),
+            MessageContent::Array(parts) => {
+                parts.iter().map(|part| {
+                    match part {
+                        MessageContentPart::Text { text } => text.clone(),
+                        MessageContentPart::ImageUrl { .. } => "[Image]".to_string(),
+                    }
+                }).collect::<Vec<_>>().join(" ")
+            }
+            MessageContent::ToolCalls(tool_calls) => {
+                let mut result = tool_calls.text.clone();
+                for tool_result in &tool_calls.tool_results {
+                    result.push_str(&format!(" [Tool {}: {}]", tool_result.call.name, tool_result.output));
+                }
+                result
+            }
+        }
+    }).collect::<Vec<_>>().join("\n\n")
+}
+
+fn handle_responses_api_stream(
+    data: &Value,
+    handler: &mut SseHandler,
+    reasoning_state: &mut i32
+) -> Result<()> {
+    // Handle Responses API streaming format based on event types
+    match data["type"].as_str() {
+        Some("response.output_text.delta") => {
+            // This contains the actual text chunks
+            if let Some(delta) = data["delta"].as_str().filter(|v| !v.is_empty()) {
+                if *reasoning_state == 1 {
+                    handler.text("\n</think>\n\n")?;
+                    *reasoning_state = 0;
+                }
+                handler.text(delta)?;
+            }
+        }
+        Some("response.reasoning.delta") => {
+            // Handle reasoning content if present
+            if let Some(reasoning) = data["delta"].as_str().filter(|v| !v.is_empty()) {
+                if *reasoning_state == 0 {
+                    handler.text("<think>\n")?;
+                    *reasoning_state = 1;
+                }
+                handler.text(reasoning)?;
+            }
+        }
+        Some("response.function_call_arguments.delta") => {
+            // Handle function call arguments streaming
+            if let Some(delta) = data["delta"].as_str().filter(|v| !v.is_empty()) {
+                if *reasoning_state == 1 {
+                    handler.text("\n</think>\n\n")?;
+                    *reasoning_state = 0;
+                }
+                handler.text(delta)?;
+            }
+        }
+        _ => {
+            // Ignore other event types (response.created, response.in_progress, etc.)
+        }
+    }
+    Ok(())
+}
+
+fn handle_chat_completions_stream(
+    data: &Value,
+    handler: &mut SseHandler,
+    reasoning_state: &mut i32
+) -> Result<()> {
+    // Handle standard chat/completions streaming format
+    if let Some(text) = data["choices"][0]["delta"]["content"]
+        .as_str()
+        .filter(|v| !v.is_empty())
+    {
+        if *reasoning_state == 1 {
+            handler.text("\n</think>\n\n")?;
+            *reasoning_state = 0;
+        }
+        handler.text(text)?;
+    } else if let Some(text) = data["choices"][0]["delta"]["reasoning_content"]
+        .as_str()
+        .or_else(|| data["choices"][0]["delta"]["reasoning"].as_str())
+        .filter(|v| !v.is_empty())
+    {
+        if *reasoning_state == 0 {
+            handler.text("<think>\n")?;
+            *reasoning_state = 1;
+        }
+        handler.text(text)?;
+    }
+    Ok(())
 }
 
 fn normalize_function_id(value: &str) -> Option<String> {
