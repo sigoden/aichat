@@ -474,7 +474,8 @@ impl Config {
             return Ok((log_level, None));
         }
         let log_path = match env::var(get_env_name("log_path")) {
-            Ok(v) => Some(PathBuf::from(v)),
+            Ok(v) if !v.is_empty() => Some(PathBuf::from(v)),
+            Ok(_) => None, // Empty string means stdout
             Err(_) => match is_serve {
                 true => None,
                 false => Some(Config::local_path(&format!(
