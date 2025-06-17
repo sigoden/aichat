@@ -135,18 +135,6 @@
           max_tokens: null
           temperature: null
           top_p: null
-    - name: o1-pro
-      max_input_tokens: 200000
-      input_price: 150
-      output_price: 600
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          max_tokens: null
-          temperature: null
-          top_p: null
     - name: o1
       max_input_tokens: 200000
       input_price: 15
@@ -402,6 +390,14 @@
       input_price: 0.1
       output_price: 0.3
       supports_function_calling: true
+    - name: magistral-medium-latest
+      max_input_tokens: 40960
+      input_price: 2
+      output_price: 5
+    - name: magistral-small-latest
+      max_input_tokens: 40960
+      input_price: 0.5
+      output_price: 1.5
     - name: devstral-small-latest
       max_input_tokens: 256000
       input_price: 0.1
@@ -611,6 +607,10 @@
       input_price: 0
       output_price: 0
       supports_function_calling: true
+    - name: qwen/qwen3-32b
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
 
 # Links:
 #  - https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
@@ -644,20 +644,6 @@
       max_output_tokens: 65536
       input_price: 1.25
       output_price: 10
-      supports_vision: true
-      supports_function_calling: true
-    - name: gemini-1.5-pro-002
-      max_input_tokens: 2097152
-      max_output_tokens: 8192
-      input_price: 1.25
-      output_price: 3.75
-      supports_vision: true
-      supports_function_calling: true
-    - name: gemini-1.5-flash-002
-      max_input_tokens: 1048576
-      max_output_tokens: 8192
-      input_price: 0.019
-      output_price: 0.075
       supports_vision: true
       supports_function_calling: true
     - name: claude-opus-4@20250514
@@ -1447,6 +1433,10 @@
       input_price: 0.14
       output_price: 1.12
       supports_vision: true
+    - name: minimax-m1
+      max_input_tokens: 131072
+      input_price: 0.112
+      output_price: 1.12
 
 # Links:
 #  - https://openrouter.ai/models
@@ -1539,6 +1529,18 @@
       patch:
         body:
           reasoning_effort: high
+          max_tokens: null
+          temperature: null
+          top_p: null
+    - name: openai/o3-pro
+      max_input_tokens: 200000
+      input_price: 20
+      output_price: 80
+      supports_vision: true
+      supports_function_calling: true
+      system_prompt_prefix: Formatting re-enabled
+      patch:
+        body:
           max_tokens: null
           temperature: null
           top_p: null
@@ -1782,6 +1784,18 @@
       max_input_tokens: 131072
       input_price: 0.1
       output_price: 0.3
+    - name: mistralai/magistral-medium-2506
+      max_input_tokens: 40960
+      input_price: 2
+      output_price: 5
+    - name: mistralai/magistral-medium-2506:thinking
+      max_input_tokens: 40960
+      input_price: 2
+      output_price: 5
+    - name: mistralai/magistral-small-2506
+      max_input_tokens: 40960
+      input_price: 0.5
+      output_price: 1.5
     - name: mistralai/devstral-small
       max_input_tokens: 131072
       input_price: 0.07
