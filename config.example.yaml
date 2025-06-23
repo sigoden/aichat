@@ -276,12 +276,6 @@ clients:
     api_base: https://open.bigmodel.cn/api/paas/v4
     api_key: xxx
 
-  # See https://platform.lingyiwanwu.com/docs
-  - type: openai-compatible
-    name: lingyiwanwu
-    api_base: https://api.lingyiwanwu.com/v1
-    api_key: xxx
-
   # See https://platform.minimaxi.com/document/Fast%20access
   - type: openai-compatible
     name: minimax

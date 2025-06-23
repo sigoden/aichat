@@ -1409,21 +1409,6 @@
       input_price: 0.112
 
 # Links:
-#  - https://platform.lingyiwanwu.com/docs#%E6%A8%A1%E5%9E%8B%E4%B8%8E%E8%AE%A1%E8%B4%B9
-#  - https://platform.lingyiwanwu.com/docs/api-reference#create-chat-completion
-- provider: lingyiwanwu
-  models:
-    - name: yi-lightning
-      max_input_tokens: 16384
-      input_price: 0.14
-      output_price: 0.14
-    - name: yi-vision-v2
-      max_input_tokens: 16384
-      input_price: 0.84
-      output_price: 0.84
-      supports_vision: true
-
-# Links:
 # - https://platform.minimaxi.com/document/Price
 # - https://platform.minimaxi.com/document/ChatCompletion%20v2
 - provider: minimax
