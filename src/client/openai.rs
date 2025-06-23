@@ -241,7 +241,7 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
             match content {
                 MessageContent::ToolCalls(MessageContentToolCalls {
                         tool_results,
-                        text,
+                        text: _,
                         sequence,
                     }) => {
                     if !sequence {
@@ -255,9 +255,8 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
                                 },
                             })
                         }).collect();
-                        let text = if text.is_empty() { Value::Null } else { text.into() };
                         let mut messages = vec![
-                            json!({ "role": MessageRole::Assistant, "content": text, "tool_calls": tool_calls })
+                            json!({ "role": MessageRole::Assistant, "tool_calls": tool_calls })
                         ];
                         for tool_result in tool_results {
                             messages.push(
@@ -274,7 +273,6 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
                             vec![
                                 json!({
                                     "role": MessageRole::Assistant,
-                                    "content": "",
                                     "tool_calls": [
                                         {
                                             "id": tool_result.call.id,
