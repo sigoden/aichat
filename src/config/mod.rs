@@ -39,6 +39,7 @@ use std::{
     sync::{Arc, OnceLock},
 };
 use syntect::highlighting::ThemeSet;
+use terminal_colorsaurus::{color_scheme, ColorScheme, QueryOptions};
 
 pub const TEMP_ROLE_NAME: &str = "%%";
 pub const TEMP_RAG_NAME: &str = "temp";
@@ -136,7 +137,7 @@ pub struct Config {
     pub document_loaders: HashMap<String, String>,
 
     pub highlight: bool,
-    pub light_theme: bool,
+    pub theme: Option<String>,
     pub left_prompt: Option<String>,
     pub right_prompt: Option<String>,
 
@@ -211,7 +212,7 @@ impl Default for Config {
             document_loaders: Default::default(),
 
             highlight: true,
-            light_theme: false,
+            theme: None,
             left_prompt: None,
             right_prompt: None,
 
@@ -604,7 +605,7 @@ impl Config {
             ("wrap", wrap),
             ("wrap_code", self.wrap_code.to_string()),
             ("highlight", self.highlight.to_string()),
-            ("light_theme", self.light_theme.to_string()),
+            ("theme", format_option_value(&self.theme)),
             ("config_file", display_path(&Self::config_file())),
             ("env_file", display_path(&Self::env_file())),
             ("roles_dir", display_path(&Self::roles_dir())),
@@ -1229,7 +1230,7 @@ impl Config {
         if !need_compress {
             return;
         }
-        let color = if config.read().light_theme {
+        let color = if config.read().light_theme() {
             nu_ansi_term::Color::LightGray
         } else {
             nu_ansi_term::Color::DarkGray
@@ -1295,7 +1296,7 @@ impl Config {
         if !need_autoname {
             return;
         }
-        let color = if config.read().light_theme {
+        let color = if config.read().light_theme() {
             nu_ansi_term::Color::LightGray
         } else {
             nu_ansi_term::Color::DarkGray
@@ -1897,9 +1898,13 @@ impl Config {
         Ok(models_override.list)
     }
 
+    pub fn light_theme(&self) -> bool {
+        matches!(self.theme.as_deref(), Some("light"))
+    }
+
     pub fn render_options(&self) -> Result<RenderOptions> {
         let theme = if self.highlight {
-            let theme_mode = if self.light_theme { "light" } else { "dark" };
+            let theme_mode = if self.light_theme() { "light" } else { "dark" };
             let theme_filename = format!("{theme_mode}.tmTheme");
             let theme_path = Self::local_path(&theme_filename);
             if theme_path.exists() {
@@ -1907,7 +1912,7 @@ impl Config {
                     .with_context(|| format!("Invalid theme at '{}'", theme_path.display()))?;
                 Some(theme)
             } else {
-                let theme = if self.light_theme {
+                let theme = if self.light_theme() {
                     bincode::deserialize_from(LIGHT_THEME).expect("Invalid builtin light theme")
                 } else {
                     bincode::deserialize_from(DARK_THEME).expect("Invalid builtin dark theme")
@@ -2335,12 +2340,16 @@ impl Config {
         if *NO_COLOR {
             self.highlight = false;
         }
-        if let Some(Some(v)) = read_env_bool(&get_env_name("light_theme")) {
-            self.light_theme = v;
-        } else if !self.light_theme {
-            if let Ok(v) = env::var("COLORFGBG") {
-                if let Some(v) = light_theme_from_colorfgbg(&v) {
-                    self.light_theme = v
+        if self.highlight && self.theme.is_none() {
+            if let Some(v) = read_env_value::<String>(&get_env_name("theme")) {
+                self.theme = v;
+            } else if *IS_STDOUT_TERMINAL {
+                if let Ok(color_scheme) = color_scheme(QueryOptions::default()) {
+                    let theme = match color_scheme {
+                        ColorScheme::Dark => "dark",
+                        ColorScheme::Light => "light",
+                    };
+                    self.theme = Some(theme.into());
                 }
             }
         }

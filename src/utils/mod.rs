@@ -86,24 +86,6 @@ pub fn estimate_token_length(text: &str) -> usize {
     output.ceil() as usize
 }
 
-pub fn light_theme_from_colorfgbg(colorfgbg: &str) -> Option<bool> {
-    let parts: Vec<_> = colorfgbg.split(';').collect();
-    let bg = match parts.len() {
-        2 => &parts[1],
-        3 => &parts[2],
-        _ => {
-            return None;
-        }
-    };
-    let bg = bg.parse::<u8>().ok()?;
-    let (r, g, b) = ansi_colours::rgb_from_ansi256(bg);
-
-    let v = 0.2126 * r as f32 + 0.7152 * g as f32 + 0.0722 * b as f32;
-
-    let light = v > 128.0;
-    Some(light)
-}
-
 pub fn strip_think_tag(text: &str) -> Cow<str> {
     THINK_TAG_RE.replace_all(text, "")
 }
