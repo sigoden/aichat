@@ -523,7 +523,7 @@ impl Config {
     }
 
     pub fn extract_role(&self) -> Role {
-        let mut role = if let Some(session) = self.session.as_ref() {
+        if let Some(session) = self.session.as_ref() {
             session.to_role()
         } else if let Some(agent) = self.agent.as_ref() {
             agent.to_role()
@@ -538,14 +538,7 @@ impl Config {
                 self.use_tools.clone(),
             );
             role
-        };
-        if role.temperature().is_none() && self.temperature.is_some() {
-            role.set_temperature(self.temperature);
         }
-        if role.top_p().is_none() && self.top_p.is_some() {
-            role.set_top_p(self.top_p);
-        }
-        role
     }
 
     pub fn info(&self) -> Result<String> {
@@ -933,7 +926,15 @@ impl Config {
                     role.set_model(current_model);
                 }
             }
-            None => role.set_model(current_model),
+            None => {
+                role.set_model(current_model);
+                if role.temperature().is_none() {
+                    role.set_temperature(self.temperature);
+                }
+                if role.top_p().is_none() {
+                    role.set_top_p(self.top_p);
+                }
+            }
         }
         Ok(role)
     }
