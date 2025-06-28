@@ -131,7 +131,7 @@ pub async fn fetch_with_loaders(
         }
         let image_bytes = res.bytes().await?;
         let image_base64 = base64_encode(&image_bytes);
-        let contents = format!("data:{};base64,{}", content_type, image_base64);
+        let contents = format!("data:{content_type};base64,{image_base64}");
         (contents, extension)
     } else {
         match loaders.get(&extension) {
@@ -316,10 +316,7 @@ async fn crawl_gh_tree(start_url: &Url, exclude: &[String]) -> Result<Vec<String
     let branch = path_segs[4];
     let root_path = path_segs[5..].join("/");
 
-    let url = format!(
-        "https://api.github.com/repos/{}/{}/git/ref/heads/{}",
-        owner, repo, branch
-    );
+    let url = format!("https://api.github.com/repos/{owner}/{repo}/git/ref/heads/{branch}");
 
     let res_body: Value = client
         .get(&url)
@@ -335,10 +332,7 @@ async fn crawl_gh_tree(start_url: &Url, exclude: &[String]) -> Result<Vec<String
         .as_str()
         .ok_or_else(|| anyhow!("Not found branch or tag"))?;
 
-    let url = format!(
-        "https://api.github.com/repos/{}/{}/git/trees/{}?recursive=true",
-        owner, repo, sha
-    );
+    let url = format!("https://api.github.com/repos/{owner}/{repo}/git/trees/{sha}?recursive=true");
 
     let res_body: Value = client
         .get(&url)

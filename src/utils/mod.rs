@@ -162,7 +162,7 @@ pub fn indent_text<T: ToString>(s: T, size: usize) -> String {
     let indent_str = " ".repeat(size);
     s.to_string()
         .split('\n')
-        .map(|line| format!("{}{}", indent_str, line))
+        .map(|line| format!("{indent_str}{line}"))
         .collect::<Vec<String>>()
         .join("\n")
 }

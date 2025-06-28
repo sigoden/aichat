@@ -17,7 +17,7 @@ pub fn hmac_sha256(key: &[u8], msg: &str) -> Vec<u8> {
 pub fn hex_encode(bytes: &[u8]) -> String {
     bytes
         .iter()
-        .fold(String::new(), |acc, b| acc + &format!("{:02x}", b))
+        .fold(String::new(), |acc, b| acc + &format!("{b:02x}"))
 }
 
 pub fn encode_uri(uri: &str) -> String {

@@ -556,7 +556,7 @@ fn aws_fetch(
     } = request;
     let region = &credentials.region;
 
-    let endpoint = format!("https://{}{}", host, uri);
+    let endpoint = format!("https://{host}{uri}");
 
     let now: DateTime<Utc> = Utc::now();
     let amz_date = now.format("%Y%m%dT%H%M%SZ").to_string();
@@ -566,7 +566,7 @@ fn aws_fetch(
 
     let canonical_headers = headers
         .iter()
-        .map(|(key, value)| format!("{}:{}\n", key, value))
+        .map(|(key, value)| format!("{key}:{value}\n"))
         .collect::<Vec<_>>()
         .join("");
 
@@ -589,7 +589,7 @@ fn aws_fetch(
     );
 
     let algorithm = "AWS4-HMAC-SHA256";
-    let credential_scope = format!("{}/{}/{}/aws4_request", date_stamp, region, service);
+    let credential_scope = format!("{date_stamp}/{region}/{service}/aws4_request");
     let string_to_sign = format!(
         "{}\n{}\n{}\n{}",
         algorithm,
@@ -626,7 +626,7 @@ fn aws_fetch(
 }
 
 fn gen_signing_key(key: &str, date_stamp: &str, region: &str, service: &str) -> Vec<u8> {
-    let k_date = hmac_sha256(format!("AWS4{}", key).as_bytes(), date_stamp);
+    let k_date = hmac_sha256(format!("AWS4{key}").as_bytes(), date_stamp);
     let k_region = hmac_sha256(&k_date, region);
     let k_service = hmac_sha256(&k_region, service);
     hmac_sha256(&k_service, "aws4_request")

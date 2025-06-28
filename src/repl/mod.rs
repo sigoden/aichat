@@ -386,24 +386,24 @@ pub async fn run_repl_command(
             ".info" => match args {
                 Some("role") => {
                     let info = config.read().role_info()?;
-                    print!("{}", info);
+                    print!("{info}");
                 }
                 Some("session") => {
                     let info = config.read().session_info()?;
-                    print!("{}", info);
+                    print!("{info}");
                 }
                 Some("rag") => {
                     let info = config.read().rag_info()?;
-                    print!("{}", info);
+                    print!("{info}");
                 }
                 Some("agent") => {
                     let info = config.read().agent_info()?;
-                    print!("{}", info);
+                    print!("{info}");
                 }
                 Some(_) => unknown_command()?,
                 None => {
                     let output = config.read().sysinfo()?;
-                    print!("{}", output);
+                    print!("{output}");
                 }
             },
             ".model" => match args {
@@ -487,7 +487,7 @@ pub async fn run_repl_command(
                     }
                     match text {
                         Some(text) => {
-                            println!("{}", dimmed_text(&format!(">> {}", text)));
+                            println!("{}", dimmed_text(&format!(">> {text}")));
                             let input = Input::from_str(config, &text, None);
                             ask(config, abort_signal.clone(), input, true).await?;
                         }
@@ -570,7 +570,7 @@ pub async fn run_repl_command(
             ".sources" => match args {
                 Some("rag") => {
                     let output = Config::rag_sources(config)?;
-                    println!("{}", output);
+                    println!("{output}");
                 }
                 _ => {
                     println!(r#"Usage: .sources rag"#)

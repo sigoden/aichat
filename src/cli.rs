@@ -113,14 +113,14 @@ impl Cli {
                     if stdin_text.is_empty() {
                         Ok(Some(text))
                     } else {
-                        Ok(Some(format!("{} -- {}", text, stdin_text)))
+                        Ok(Some(format!("{text} -- {stdin_text}")))
                     }
                 } else {
                     let text = self.text.join(" ");
                     if stdin_text.is_empty() {
                         Ok(Some(text))
                     } else {
-                        Ok(Some(format!("{}\n{}", text, stdin_text)))
+                        Ok(Some(format!("{text}\n{stdin_text}")))
                     }
                 }
             }

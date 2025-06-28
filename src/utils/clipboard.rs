@@ -8,7 +8,7 @@ static CLIPBOARD: std::sync::LazyLock<std::sync::Mutex<Option<arboard::Clipboard
 /// Works in many modern terminals, including over SSH.
 fn set_text_osc52(text: &str) -> anyhow::Result<()> {
     let encoded = BASE64.encode(text);
-    let seq = format!("\x1b]52;c;{}\x07", encoded);
+    let seq = format!("\x1b]52;c;{encoded}\x07");
     // Write to stdout:
     if let Err(e) = std::io::Write::write_all(&mut std::io::stdout(), seq.as_bytes()) {
         return Err(anyhow::anyhow!("Failed to send OSC52 sequence").context(e));
@@ -35,7 +35,7 @@ pub fn set_text(text: &str) -> anyhow::Result<()> {
     match set_text_osc52(text) {
         Ok(()) => Ok(()),
         Err(osc_err) => Err(anyhow::anyhow!("No clipboard available")
-            .context(format!("Failed to copy (OSC52 error: {})", osc_err))),
+            .context(format!("Failed to copy (OSC52 error: {osc_err})"))),
     }
 }
 

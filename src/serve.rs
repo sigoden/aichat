@@ -631,7 +631,7 @@ async fn shutdown_signal() {
 
 fn generate_completion_id() -> String {
     let random_id = chrono::Utc::now().nanosecond();
-    format!("chatcmpl-{}", random_id)
+    format!("chatcmpl-{random_id}")
 }
 
 fn set_cors_header(res: &mut AppResponse) {

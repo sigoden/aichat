@@ -175,7 +175,7 @@ pub fn append_to_shell_history(shell: &str, command: &str, exit_code: i32) -> io
             .create(true)
             .append(true)
             .open(&history_file)?;
-        writeln!(file, "{}", history_txt)?;
+        writeln!(file, "{history_txt}")?;
     }
     Ok(())
 }

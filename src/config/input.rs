@@ -537,7 +537,7 @@ fn read_media_to_data_url(image_path: &str) -> Result<String> {
     file.read_to_end(&mut buffer)?;
 
     let encoded_image = base64_encode(buffer);
-    let data_url = format!("data:{};base64,{}", mime_type, encoded_image);
+    let data_url = format!("data:{mime_type};base64,{encoded_image}");
 
     Ok(data_url)
 }

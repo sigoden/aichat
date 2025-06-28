@@ -155,8 +155,7 @@ impl Model {
                     .collect::<Vec<String>>()
                     .join("");
                 format!(
-                    "{:>8} / {:>8}  |  {:>6} / {:>6}  {:>6}",
-                    max_input_tokens, max_output_tokens, input_price, output_price, capabilities
+                    "{max_input_tokens:>8} / {max_output_tokens:>8}  |  {input_price:>6} / {output_price:>6}  {capabilities:>6}"
                 )
             }
             ModelType::Embedding => {

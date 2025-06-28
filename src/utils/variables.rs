@@ -25,7 +25,7 @@ pub fn interpolate_variables(text: &mut String) {
                 "__cwd__" => env::current_dir()
                     .map(|v| v.display().to_string())
                     .unwrap_or_default(),
-                _ => format!("{{{{{}}}}}", key),
+                _ => format!("{{{{{key}}}}}"),
             }
         })
         .to_string();
