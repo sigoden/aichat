@@ -268,7 +268,7 @@ Type ".help" for additional help.
         let cursor_config = CursorConfig {
             vi_insert: Some(SetCursorStyle::BlinkingBar),
             vi_normal: Some(SetCursorStyle::SteadyBlock),
-            emacs: Some(SetCursorStyle::SteadyBlock),
+            emacs: None,
         };
         let mut editor = Reedline::create()
             .with_completer(Box::new(completer))
