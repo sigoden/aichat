@@ -672,7 +672,7 @@ impl Rag {
                 match embedding_client.embeddings(&chunk_data).await {
                     Ok(v) => break v,
                     Err(e) if retry < retry_limit => {
-                        debug!("retry {} failed: {}", retry, e);
+                        debug!("retry {retry} failed: {e}");
                         sleep(Duration::from_secs(2u64.pow(retry - 1))).await;
                         continue;
                     }

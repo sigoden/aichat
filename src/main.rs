@@ -156,7 +156,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     }
     if cli.info {
         let info = config.read().info()?;
-        println!("{}", info);
+        println!("{info}");
         return Ok(());
     }
     if let Some(addr) = cli.serve {
@@ -334,7 +334,7 @@ async fn shell_execute(
             break;
         }
     } else {
-        println!("{}", eval_str);
+        println!("{eval_str}");
     }
     Ok(())
 }

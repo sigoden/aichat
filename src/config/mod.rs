@@ -1270,7 +1270,7 @@ impl Config {
             .clone()
             .unwrap_or_else(|| SUMMARY_PROMPT.into());
         if let Some(session) = config.write().session.as_mut() {
-            session.compress(format!("{}{}", summary_prompt, summary));
+            session.compress(format!("{summary_prompt}{summary}"));
         }
         config.write().discontinuous_last_message();
         Ok(())
@@ -1620,7 +1620,7 @@ impl Config {
             None => return Ok(()),
         };
 
-        let err_msg = || format!("Invalid prelude '{}", prelude);
+        let err_msg = || format!("Invalid prelude '{prelude}");
         match prelude.split_once(':') {
             Some(("role", name)) => {
                 self.use_role(name).with_context(err_msg)?;
@@ -1748,7 +1748,7 @@ impl Config {
                             self.list_autoname_sessions()
                                 .iter()
                                 .rev()
-                                .map(|v| format!("_/{}", v))
+                                .map(|v| format!("_/{v}"))
                                 .collect::<Vec<String>>(),
                         )
                     } else {
@@ -2192,7 +2192,7 @@ impl Config {
         let config: Self = serde_yaml::from_str(&content)
             .map_err(|err| {
                 let err_msg = err.to_string();
-                let err_msg = if err_msg.starts_with(&format!("{}: ", CLIENTS_FIELD)) {
+                let err_msg = if err_msg.starts_with(&format!("{CLIENTS_FIELD}: ")) {
                     // location is incorrect, get rid of it
                     err_msg
                         .split_once(" at line")

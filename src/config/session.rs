@@ -79,7 +79,7 @@ impl Session {
         let content = read_to_string(path)
             .with_context(|| format!("Failed to load session {} at {}", name, path.display()))?;
         let mut session: Self =
-            serde_yaml::from_str(&content).with_context(|| format!("Invalid session {}", name))?;
+            serde_yaml::from_str(&content).with_context(|| format!("Invalid session {name}"))?;
 
         session.model = Model::retrieve_model(config, &session.model_id, ModelType::Chat)?;
 
@@ -158,7 +158,7 @@ impl Session {
             data["max_input_tokens"] = max_input_tokens.into();
         }
         if percent != 0.0 {
-            data["total/max"] = format!("{}%", percent).into();
+            data["total/max"] = format!("{percent}%").into();
         }
         data["messages"] = json!(self.messages);
 

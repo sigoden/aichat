@@ -118,16 +118,16 @@ impl Role {
     pub fn export(&self) -> String {
         let mut metadata = vec![];
         if let Some(model) = self.model_id() {
-            metadata.push(format!("model: {}", model));
+            metadata.push(format!("model: {model}"));
         }
         if let Some(temperature) = self.temperature() {
-            metadata.push(format!("temperature: {}", temperature));
+            metadata.push(format!("temperature: {temperature}"));
         }
         if let Some(top_p) = self.top_p() {
-            metadata.push(format!("top_p: {}", top_p));
+            metadata.push(format!("top_p: {top_p}"));
         }
         if let Some(use_tools) = self.use_tools() {
-            metadata.push(format!("use_tools: {}", use_tools));
+            metadata.push(format!("use_tools: {use_tools}"));
         }
         if metadata.is_empty() {
             format!("{}\n", self.prompt)

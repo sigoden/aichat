@@ -43,7 +43,7 @@ pub async fn raw_stream(
         if let Some(evt) = rx.recv().await {
             match evt {
                 SseEvent::Text(text) => {
-                    print!("{}", text);
+                    print!("{text}");
                     stdout().flush()?;
                 }
                 SseEvent::Done => {
