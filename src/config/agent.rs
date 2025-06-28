@@ -62,7 +62,15 @@ impl Agent {
             let config = config.read();
             match agent_config.model_id.as_ref() {
                 Some(model_id) => Model::retrieve_model(&config, model_id, ModelType::Chat)?,
-                None => config.current_model().clone(),
+                None => {
+                    if agent_config.temperature.is_none() {
+                        agent_config.temperature = config.temperature;
+                    }
+                    if agent_config.top_p.is_none() {
+                        agent_config.top_p = config.top_p;
+                    }
+                    config.current_model().clone()
+                }
             }
         };
 
