@@ -27,7 +27,7 @@ tokio-graceful = "0.2.2"
 tokio-stream = { version = "0.1.15", default-features = false, features = ["sync"] }
 crossterm = "0.28.1"
 chrono = "0.4.23"
-bincode = "1.3.3"
+bincode = { version = "2.0.0", features = ["serde", "std"], default-features = false }
 parking_lot = "0.12.1"
 fancy-regex = "0.14.0"
 base64 = "0.22.0"

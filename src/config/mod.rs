@@ -1913,9 +1913,9 @@ impl Config {
                 Some(theme)
             } else {
                 let theme = if self.light_theme() {
-                    bincode::deserialize_from(LIGHT_THEME).expect("Invalid builtin light theme")
+                    decode_bin(LIGHT_THEME).context("Invalid builtin light theme")?
                 } else {
-                    bincode::deserialize_from(DARK_THEME).expect("Invalid builtin dark theme")
+                    decode_bin(DARK_THEME).context("Invalid builtin dark theme")?
                 };
                 Some(theme)
             }

@@ -853,7 +853,6 @@
       max_input_tokens: 131072
       input_price: 0.112
       output_price: 0.448
-      supports_function_calling: true
     - name: ernie-4.5-turbo-vl-32k
       max_input_tokens: 32768
       input_price: 0.42
@@ -1254,17 +1253,6 @@
         body:
           temperature: null
           top_p: null
-    - name: openai/gpt-4-turbo
-      max_input_tokens: 128000
-      input_price: 10
-      output_price: 30
-      supports_vision: true
-      supports_function_calling: true
-    - name: openai/gpt-3.5-turbo
-      max_input_tokens: 16385
-      input_price: 0.5
-      output_price: 1.5
-      supports_function_calling: true
     - name: google/gemini-2.5-flash
       max_input_tokens: 1048576
       input_price: 0.15
@@ -1370,7 +1358,7 @@
       output_price: 2
       supports_function_calling: true
       supports_vision: true
-    - name: mistralai/mistral-small-3.1-24b-instruct
+    - name: mistralai/mistral-small-3.2-24b-instruct
       max_input_tokens: 131072
       input_price: 0.1
       output_price: 0.3
@@ -1754,7 +1742,7 @@
       max_input_tokens: 131072
       input_price: 0.1
       output_price: 0.2
-    - name: mistralai/Mistral-Small-24B-Instruct-2501
+    - name: mistralai/Mistral-Small-3.2-24B-Instruct-2506
       max_input_tokens: 32768
       input_price: 0.06
       output_price: 0.12
