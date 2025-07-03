@@ -2051,7 +2051,7 @@ impl Config {
         output: &str,
         tool_results: &[ToolResult],
     ) -> Result<()> {
-        if output.is_empty() || !tool_results.is_empty() {
+        if !tool_results.is_empty() {
             return Ok(());
         }
         self.last_message = Some(LastMessage::new(input.clone(), output.to_string()));
