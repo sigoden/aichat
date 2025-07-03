@@ -515,7 +515,13 @@ impl Session {
         if input.continue_output().is_some() {
             return messages;
         } else if input.regenerate() {
-            messages.pop();
+            while let Some(last) = messages.last() {
+                if !last.role.is_user() {
+                    messages.pop();
+                } else {
+                    break;
+                }
+            }
             return messages;
         }
         let mut need_add_msg = true;

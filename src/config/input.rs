@@ -189,6 +189,7 @@ impl Input {
             self.role = role;
         }
         self.regenerate = true;
+        self.tool_calls = None;
     }
 
     pub async fn use_embeddings(&mut self, abort_signal: AbortSignal) -> Result<()> {
