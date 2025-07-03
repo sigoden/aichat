@@ -1,3 +1,5 @@
+use crate::utils::decode_bin;
+
 use ansi_colours::AsRGB;
 use anyhow::{anyhow, Context, Result};
 use crossterm::style::{Color, Stylize};
@@ -30,8 +32,8 @@ pub struct MarkdownRender {
 
 impl MarkdownRender {
     pub fn init(options: RenderOptions) -> Result<Self> {
-        let syntax_set: SyntaxSet = bincode::deserialize_from(SYNTAXES)
-            .with_context(|| "MarkdownRender: invalid syntaxes binary")?;
+        let syntax_set: SyntaxSet =
+            decode_bin(SYNTAXES).with_context(|| "MarkdownRender: invalid syntaxes binary")?;
 
         let code_color = options
             .theme
