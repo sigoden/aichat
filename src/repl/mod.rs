@@ -310,15 +310,18 @@ Type ".help" for additional help.
             KeyCode::Enter,
             ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
         );
+        keybindings.add_binding(
+            KeyModifiers::CONTROL,
+            KeyCode::Char('j'),
+            ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
+        );
     }
 
     fn create_edit_mode(config: &GlobalConfig) -> Box<dyn EditMode> {
         let edit_mode: Box<dyn EditMode> = if config.read().keybindings == "vi" {
-            let mut normal_keybindings = default_vi_normal_keybindings();
             let mut insert_keybindings = default_vi_insert_keybindings();
-            Self::extra_keybindings(&mut normal_keybindings);
             Self::extra_keybindings(&mut insert_keybindings);
-            Box::new(Vi::new(insert_keybindings, normal_keybindings))
+            Box::new(Vi::new(insert_keybindings, default_vi_normal_keybindings()))
         } else {
             let mut keybindings = default_emacs_keybindings();
             Self::extra_keybindings(&mut keybindings);
