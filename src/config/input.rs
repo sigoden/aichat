@@ -94,7 +94,7 @@ impl Input {
         }
         let documents_len = documents.len();
         for (kind, path, contents) in documents {
-            if documents_len == 1 {
+            if documents_len == 1 && raw_text.is_empty() {
                 texts.push(format!("\n{contents}"));
             } else {
                 texts.push(format!(
@@ -457,13 +457,12 @@ async fn load_documents(
     let mut data_urls = HashMap::new();
 
     for cmd in external_cmds {
-        let (success, stdout, stderr) =
-            run_command_with_output(&SHELL.cmd, &[&SHELL.arg, &cmd], None)?;
-        if !success {
-            let err = if !stderr.is_empty() { stderr } else { stdout };
-            bail!("Failed to run `{cmd}`\n{err}");
-        }
-        files.push(("CMD", cmd, stdout));
+        let output = duct::cmd(&SHELL.cmd, &[&SHELL.arg, &cmd])
+            .stderr_to_stdout()
+            .unchecked()
+            .read()
+            .unwrap_or_else(|err| err.to_string());
+        files.push(("CMD", cmd, output));
     }
 
     let local_files = expand_glob_paths(&local_paths, true).await?;
