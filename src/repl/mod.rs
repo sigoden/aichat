@@ -665,7 +665,7 @@ pub async fn run_repl_command(
                     .read()
                     .last_message
                     .as_ref()
-                    .filter(|v| v.continuous && !v.output.is_empty())
+                    .filter(|v| !v.output.is_empty())
                     .map(|v| v.output.clone())
                 {
                     Some(v) => v,
