@@ -95,7 +95,7 @@ const RIGHT_PROMPT: &str = "{color.purple}{?session {?consume_tokens {consume_to
 
 static EDITOR: OnceLock<Option<String>> = OnceLock::new();
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
     #[serde(rename(serialize = "model", deserialize = "model"))]
@@ -145,6 +145,7 @@ pub struct Config {
     pub save_shell_history: bool,
     pub sync_models_url: Option<String>,
 
+    #[serde(skip)]
     pub clients: Vec<ClientConfig>,
 
     #[serde(skip)]
@@ -262,6 +263,9 @@ impl Default for Config {
             session: None,
             rag: None,
             agent: None,
+            
+            terminal_history_rag: Default::default(),
+            terminal_history_indexer: None,
         }
     }
 }

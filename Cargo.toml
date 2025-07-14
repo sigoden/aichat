@@ -97,6 +97,3 @@ lto = true
 strip = true
 opt-level = "z"
 
-[patch.crates-io]
-jsonptr = "=0.4.0"      # Simplest patch attempt for jsonptr
-idna_adapter = "=1.0.0" # Simplest patch attempt for idna_adapter

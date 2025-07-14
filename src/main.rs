@@ -101,11 +101,11 @@ async fn check_terminal_history_consent(config: &GlobalConfig) -> Result<()> {
             // if aichat is used in scripts. The feature simply won't activate.
             return Ok(());
         }
-        println!("{}", yellow_text("Terminal History RAG - Consent Required:"));
+        println!("{}", color_text("Terminal History RAG - Consent Required:", nu_ansi_term::Color::Yellow));
         println!("`aichat` can enhance its contextual understanding by using your terminal command history.");
         println!("This involves reading your shell history file (e.g., ~/.bash_history, ~/.zsh_history),");
         println!("processing commands locally, and potentially including relevant command snippets in prompts to the AI model.");
-        println!("{}", red_text("WARNING: Terminal history can contain sensitive information, including commands, arguments, paths, and even accidentally typed passwords. By enabling this, you acknowledge these risks."));
+        println!("{}", color_text("WARNING: Terminal history can contain sensitive information, including commands, arguments, paths, and even accidentally typed passwords. By enabling this, you acknowledge these risks.", nu_ansi_term::Color::Red));
         
         let ans = inquire::Confirm::new("Allow `aichat` to access and process your terminal command history for this purpose?")
             .with_default(false)
@@ -169,7 +169,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         let arguments = json!({"query": query});
         let tool_call = ToolCall::new("web_search".to_string(), arguments, None);
 
-        match tool_call.eval(&config.read()) {
+        match tool_call.eval(&config) {
             Ok(value) => {
                 if let Ok(pretty_json) = serde_json::to_string_pretty(&value) {
                     println!("{}", pretty_json);
@@ -191,7 +191,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         let arguments = json!({"command": command_string});
         let tool_call = ToolCall::new("execute_shell_command".to_string(), arguments, None);
 
-        match tool_call.eval(&config.read()) {
+        match tool_call.eval(&config) {
             Ok(value) => {
                 if let Ok(pretty_json) = serde_json::to_string_pretty(&value) {
                     println!("{}", pretty_json);

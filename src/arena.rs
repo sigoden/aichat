@@ -1,5 +1,5 @@
 use crate::client::call_chat_completions;
-use crate::config::{Agent, GlobalConfig, Input};
+use crate::config::{Agent, GlobalConfig, Input, RoleLike};
 use crate::utils::AbortSignal;
 use anyhow::{Context, Result};
 
@@ -90,7 +90,7 @@ pub async fn run_arena_mode(
         let input_for_agent =
             Input::from_str(config, &current_input_text, Some(current_agent.to_role()));
         
-        let client = current_agent.create_client().with_context(|| {
+        let client = input_for_agent.create_client().with_context(|| {
             format!(
                 "Failed to create LLM client for agent '{}'",
                 current_agent.name()
