@@ -319,6 +319,11 @@
       max_input_tokens: 40960
       input_price: 0.5
       output_price: 1.5
+    - name: devstral-medium-latest
+      max_input_tokens: 256000
+      input_price: 0.4
+      output_price: 2
+      supports_function_calling: true
     - name: devstral-small-latest
       max_input_tokens: 256000
       input_price: 0.1
@@ -403,24 +408,28 @@
 #  - https://docs.x.ai/docs/api-reference#chat-completions
 - provider: xai
   models:
-    - name: grok-3-latest
+    - name: grok-3
       max_input_tokens: 131072
       input_price: 3
       output_price: 15
       supports_function_calling: true
-    - name: grok-3-fast-latest
+    - name: grok-3-fast
       max_input_tokens: 131072
       input_price: 5
       output_price: 25
       supports_function_calling: true
-    - name: grok-3-mini-latest
+    - name: grok-3-mini
       max_input_tokens: 131072
       input_price: 0.3
       output_price: 0.5
-    - name: grok-3-mini-fast-latest
+    - name: grok-3-mini-fast
       max_input_tokens: 131072
       input_price: 0.6
       output_price: 4
+    - name: grok-4
+      max_input_tokens: 256000
+      input_price: 3
+      output_price: 15
 
 # Links:
 #  - https://docs.perplexity.ai/models/model-cards
@@ -481,6 +490,14 @@
       output_price: 0
       supports_function_calling: true
     - name: qwen/qwen3-32b
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
+    - name: compound-beta
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
+    - name: compound-beta-mini
       max_input_tokens: 131072
       input_price: 0
       output_price: 0
@@ -1033,6 +1050,12 @@
       output_price: 4.2
       supports_vision: true
       supports_function_calling: true
+    - name: kimi-k2-0711-preview
+      max_input_tokens: 131072
+      input_price: 0.56
+      output_price: 2.24
+      supports_vision: true
+      supports_function_calling: true
     - name: kimi-thinking-preview
       max_input_tokens: 131072
       input_price: 28
@@ -1375,10 +1398,15 @@
       max_input_tokens: 40960
       input_price: 0.5
       output_price: 1.5
-    - name: mistralai/devstral-small
+    - name: mistralai/devstral-medium
       max_input_tokens: 131072
-      input_price: 0.07
-      output_price: 0.1
+      input_price: 0.4
+      output_price: 2
+      supports_function_calling: true
+    - name: mistralai/devstral-small-2505
+      max_input_tokens: 131072
+      input_price: 0.06
+      output_price: 0.12
       supports_function_calling: true
     - name: mistralai/codestral-2501
       max_input_tokens: 256000
@@ -1470,6 +1498,16 @@
       max_input_tokens: 32768
       input_price: 0.18
       output_price: 0.18
+    - name: moonshotai/kimi-k2
+      max_input_tokens: 63000
+      input_price: 0.14
+      output_price: 2.49
+      supports_function_calling: true
+    - name: x-ai/grok-4
+      max_input_tokens: 256000
+      input_price: 3
+      output_price: 15
+      supports_function_calling: true
     - name: x-ai/grok-3
       max_input_tokens: 131072
       input_price: 3
@@ -1536,18 +1574,6 @@
       max_input_tokens: 1000192
       input_price: 0.2
       output_price: 1.1
-    - name: thudm/glm-4-32b
-      max_input_tokens: 32000
-      input_price: 0.24
-      output_price: 0.24
-    - name: thudm/glm-z1-32b
-      max_input_tokens: 32000
-      input_price: 0.24
-      output_price: 0.24
-    - name: microsoft/phi-4-reasoning-plus
-      max_input_tokens: 32768
-      input_price: 0.07
-      output_price: 0.35
 
 # Links:
 #  - https://github.com/marketplace?type=models
