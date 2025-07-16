@@ -98,7 +98,11 @@ fn prepare_chat_completions(
     let location = self_.get_location()?;
     let access_token = get_access_token(self_.name())?;
 
-    let base_url = format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers");
+    let base_url = if location == "global" {
+        format!("https://aiplatform.googleapis.com/v1/projects/{project_id}/locations/global/publishers")
+    } else {
+        format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers")
+    };
 
     let model_name = self_.model.real_name();
 
@@ -153,7 +157,11 @@ fn prepare_embeddings(self_: &VertexAIClient, data: &EmbeddingsData) -> Result<R
     let location = self_.get_location()?;
     let access_token = get_access_token(self_.name())?;
 
-    let base_url = format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers");
+    let base_url = if location == "global" {
+        format!("https://aiplatform.googleapis.com/v1/projects/{project_id}/locations/global/publishers")
+    } else {
+        format!("https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers")
+    };
     let url = format!(
         "{base_url}/google/models/{}:predict",
         self_.model.real_name()
