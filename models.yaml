@@ -484,7 +484,7 @@
       input_price: 0
       output_price: 0
       supports_function_calling: true
-    - name: qwen-qwq-32b
+    - name: moonshotai/kimi-k2-instruct
       max_input_tokens: 131072
       input_price: 0
       output_price: 0
@@ -1772,14 +1772,15 @@
       max_input_tokens: 32768
       input_price: 0.06
       output_price: 0.12
-    - name: mistralai/Devstral-Small-2505
+    - name: mistralai/Devstral-Small-2507
       max_input_tokens: 131072
-      input_price: 0.06
-      output_price: 0.12
-    - name: microsoft/phi-4-reasoning-plus
-      max_input_tokens: 32768
       input_price: 0.07
-      output_price: 0.35
+      output_price: 0.28
+    - name: moonshotai/Kimi-K2-Instruct
+      max_input_tokens: 131072
+      input_price: 0.55
+      output_price: 2.2
+      supports_function_calling: true
     - name: BAAI/bge-large-en-v1.5
       type: embedding
       input_price: 0.01
