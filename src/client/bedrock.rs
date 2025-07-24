@@ -26,8 +26,30 @@ pub struct BedrockConfig {
 }
 
 impl BedrockClient {
-    config_get_fn!(access_key_id, get_access_key_id);
-    config_get_fn!(secret_access_key, get_secret_access_key);
+    // Removed macro to allow environment variable priority for access keys
+    // config_get_fn!(access_key_id, get_access_key_id);
+    // config_get_fn!(secret_access_key, get_secret_access_key);
+
+    pub fn get_access_key_id(&self) -> Result<String> {
+        if let Ok(val) = std::env::var("AWS_ACCESS_KEY_ID") {
+            return Ok(val);
+        }
+        if let Some(val) = &self.config.access_key_id {
+            return Ok(val.clone());
+        }
+        bail!("AWS_ACCESS_KEY_ID not set in environment or config");
+    }
+
+    pub fn get_secret_access_key(&self) -> Result<String> {
+        if let Ok(val) = std::env::var("AWS_SECRET_ACCESS_KEY") {
+            return Ok(val);
+        }
+        if let Some(val) = &self.config.secret_access_key {
+            return Ok(val.clone());
+        }
+        bail!("AWS_SECRET_ACCESS_KEY not set in environment or config");
+    }
+
     config_get_fn!(region, get_region);
 
     pub const PROMPTS: [PromptAction<'static>; 3] = [
@@ -385,7 +407,7 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
                     if !text.is_empty() {
                         assistant_parts.push(json!({
                             "text": text,
-                        }))
+                        }));
                     }
                     for tool_result in tool_results {
                         assistant_parts.push(json!({
@@ -437,7 +459,7 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
             {
                 "text": v,
             }
-        ])
+        ]);
     }
 
     if let Some(v) = model.max_tokens_param() {
@@ -466,7 +488,7 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
             .collect();
         body["toolConfig"] = json!({
             "tools": tools,
-        })
+        });
     }
     Ok(body)
 }
@@ -498,14 +520,14 @@ fn extract_chat_completions(data: &Value) -> Result<ChatCompletionsOutput> {
                         name.to_string(),
                         input.clone(),
                         Some(id.to_string()),
-                    ))
+                    ));
                 }
             }
         }
     }
 
     if let Some(reasoning) = reasoning {
-        text = format!("<think>\n{reasoning}\n</think>\n\n{text}")
+        text = format!("<think>\n{reasoning}\n</think>\n\n{text}");
     }
 
     if text.is_empty() && tool_calls.is_empty() {
@@ -563,6 +585,9 @@ fn aws_fetch(
     let date_stamp = amz_date[0..8].to_string();
     headers.insert("host".into(), host.clone());
     headers.insert("x-amz-date".into(), amz_date.clone());
+    if let Ok(token) = std::env::var("AWS_SESSION_TOKEN") {
+        headers.insert("x-amz-security-token".into(), token);
+    }
 
     let canonical_headers = headers
         .iter()
