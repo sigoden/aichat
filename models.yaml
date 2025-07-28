@@ -167,7 +167,7 @@
       output_price: 0
       supports_vision: true
       supports_function_calling: true
-    - name: gemini-2.5-flash-lite-preview-06-17
+    - name: gemini-2.5-flash-lite
       max_input_tokens: 1000000
       max_output_tokens: 64000
       input_price: 0
@@ -522,7 +522,7 @@
       output_price: 10
       supports_vision: true
       supports_function_calling: true
-    - name: gemini-2.5-flash-lite-preview-06-17
+    - name: gemini-2.5-flash-lite
       max_input_tokens: 1048576
       max_output_tokens: 65536
       input_price: 0.1
@@ -933,6 +933,16 @@
       max_output_tokens: 8192
       input_price: 0.224
       output_price: 0.56
+    - name: qwen-coder-plus-latest
+      max_input_tokens: 131072
+      max_output_tokens: 8192
+      input_price: 0.49
+      output_price: 0.98
+    - name: qwen-coder-turbo-latest
+      max_input_tokens: 131072
+      max_output_tokens: 8192
+      input_price: 0.28
+      output_price: 0.84
     - name: qwen-vl-max-latest
       max_input_tokens: 30720
       max_output_tokens: 2048
@@ -945,6 +955,15 @@
       input_price: 0.21
       output_price: 0.63
       supports_vision: true
+    - name: qwen3-235b-a22b-instruct-2507
+      max_input_tokens: 131072
+      input_price: 0.28
+      output_price: 1.12
+      supports_function_calling: true
+    - name: qwen3-235b-a22b-thinking-2507
+      max_input_tokens: 131072
+      input_price: 0.28
+      output_price: 2.8
     - name: qwen3-235b-a22b
       max_input_tokens: 131072
       max_output_tokens: 8192
@@ -1084,41 +1103,55 @@
 #  - https://open.bigmodel.cn/dev/api#glm-4
 - provider: zhipuai
   models:
-    - name: glm-4-plus
+    - name: glm-4.5
       max_input_tokens: 131072
-      input_price: 0.7
-      output_price: 0.7
-      supports_function_calling: true
-    - name: glm-4-air
+      input_price: 0.28
+      output_price: 1.12
+    - name: glm-4.5-x
       max_input_tokens: 131072
-      input_price: 0.07
-      output_price: 0.07
+      input_price: 1.12
+      output_price: 4.48
       supports_function_calling: true
-    - name: glm-4-long
-      max_input_tokens: 1000000
-      max_output_tokens: 4096
-      input_price: 0.14
-      output_price: 0.14
+    - name: glm-4.5-air
+      max_input_tokens: 131072
+      input_price: 0.084
+      output_price: 0.56
+    - name: glm-4.5-airx
+      max_input_tokens: 131072
+      input_price: 0.56
+      output_price: 2.24
       supports_function_calling: true
-    - name: glm-4-flash-250414
+    - name: glm-4.5-flash
       max_input_tokens: 131072
       input_price: 0
       output_price: 0
-      supports_function_calling: true
+    - name: glm-4.1v-thinking-flashx
+      max_input_tokens: 65536
+      input_price: 0.28
+      output_price: 0.28
+      supports_vision: true
+    - name: glm-4.1v-thinking-flash
+      max_input_tokens: 65536
+      input_price: 0
+      output_price: 0
+      supports_vision: true
     - name: glm-4v-plus-0111
       max_input_tokens: 8192
-      input_price: 0.56
-      output_price: 0.56
-      supports_vision: true
-    - name: glm-4v-flash
-      max_input_tokens: 8192
-      input_price: 0
-      output_price: 0
+      input_price: 0.28
+      output_price: 0.28
       supports_vision: true
     - name: glm-z1-air
       max_input_tokens: 131072
+      input_price: 0.07
+      output_price: 0.07
+    - name: glm-z1-airx
+      max_input_tokens: 131072
       input_price: 0.7
       output_price: 0.7
+    - name: glm-z1-flashx
+      max_input_tokens: 131072
+      input_price: 0.014
+      output_price: 0.014
     - name: glm-z1-flash
       max_input_tokens: 131072
       input_price: 0
@@ -1288,7 +1321,7 @@
       output_price: 10
       supports_vision: true
       supports_function_calling: true
-    - name: google/gemini-2.5-flash-lite-preview-06-17
+    - name: google/gemini-2.5-flash-lite
       max_input_tokens: 1048576
       input_price: 0.1
       output_price: 0.4
@@ -1468,6 +1501,20 @@
       input_price: 0.21
       output_price: 0.63
       supports_vision: true
+    - name: qwen/qwen3-235b-a22b-2507
+      max_input_tokens: 262144
+      input_price: 0.12
+      output_price: 0.59
+      supports_function_calling: true
+    - name: qwen/qwen3-235b-a22b-thinking-2507
+      max_input_tokens: 262144
+      input_price: 0.118
+      output_price: 0.118
+    - name: qwen/qwen3-coder
+      max_input_tokens: 262144
+      input_price: 0.3
+      output_price: 1.2
+      supports_function_calling: true
     - name: qwen/qwen3-235b-a22b
       max_input_tokens: 40960
       input_price: 0.15
@@ -1731,6 +1778,20 @@
       max_input_tokens: 131072
       input_price: 0.23
       output_price: 0.40
+    - name: Qwen/Qwen3-235B-A22B-Instruct-2507
+      max_input_tokens: 131072
+      input_price: 0.13
+      output_price: 0.6
+      supports_function_calling: true
+    - name: Qwen/Qwen3-235B-A22B-Thinking-2507
+      max_input_tokens: 131072
+      input_price: 0.13
+      output_price: 0.6
+    - name: Qwen/Qwen3-Coder-480B-A35B-Instruct
+      max_input_tokens: 131072
+      input_price: 0.4
+      output_price: 1.6
+      supports_function_calling: true
     - name: Qwen/Qwen3-235B-A22B
       max_input_tokens: 40960
       input_price: 0.15
