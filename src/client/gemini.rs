@@ -41,7 +41,7 @@ fn prepare_chat_completions(
     self_: &GeminiClient,
     data: ChatCompletionsData,
 ) -> Result<RequestData> {
-    let api_key = self_.get_api_key().ok();
+    let api_key = self_.get_api_key()?;
     let api_base = self_
         .get_api_base()
         .unwrap_or_else(|_| API_BASE.to_string());
@@ -62,9 +62,7 @@ fn prepare_chat_completions(
 
     let mut request_data = RequestData::new(url, body);
 
-    if let Some(api_key) = api_key {
-        request_data.header("x-goog-api-key", api_key);
-    }
+    request_data.header("x-goog-api-key", api_key);
 
     Ok(request_data)
 }
