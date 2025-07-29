@@ -52,16 +52,17 @@ fn prepare_chat_completions(
     };
 
     let url = format!(
-        "{}/models/{}:{}?key={}",
+        "{}/models/{}:{}",
         api_base.trim_end_matches('/'),
         self_.model.real_name(),
-        func,
-        api_key
+        func
     );
 
     let body = gemini_build_chat_completions_body(data, &self_.model)?;
 
-    let request_data = RequestData::new(url, body);
+    let mut request_data = RequestData::new(url, body);
+
+    request_data.header("x-goog-api-key", api_key);
 
     Ok(request_data)
 }
