@@ -240,36 +240,37 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
             let Message { role, content } = message;
             match content {
                 MessageContent::ToolCalls(MessageContentToolCalls {
-                        tool_results,
-                        text: _,
-                        sequence,
-                    }) => {
+                    tool_results,
+                    text: _,
+                    sequence,
+                }) => {
                     if !sequence {
-                        let tool_calls: Vec<_> = tool_results.iter().map(|tool_result| {
-                            json!({
-                                "id": tool_result.call.id,
-                                "type": "function",
-                                "function": {
-                                    "name": tool_result.call.name,
-                                    "arguments": tool_result.call.arguments.to_string(),
-                                },
+                        let tool_calls: Vec<_> = tool_results
+                            .iter()
+                            .map(|tool_result| {
+                                json!({
+                                    "id": tool_result.call.id,
+                                    "type": "function",
+                                    "function": {
+                                        "name": tool_result.call.name,
+                                        "arguments": tool_result.call.arguments.to_string(),
+                                    },
+                                })
                             })
-                        }).collect();
+                            .collect();
                         let mut messages = vec![
-                            json!({ "role": MessageRole::Assistant, "tool_calls": tool_calls })
+                            json!({ "role": MessageRole::Assistant, "tool_calls": tool_calls }),
                         ];
                         for tool_result in tool_results {
-                            messages.push(
-                                json!({
-                                    "role": "tool",
-                                    "content": tool_result.output.to_string(),
-                                    "tool_call_id": tool_result.call.id,
-                                })
-                            );
+                            messages.push(json!({
+                                "role": "tool",
+                                "content": tool_result.output.to_string(),
+                                "tool_call_id": tool_result.call.id,
+                            }));
                         }
                         messages
                     } else {
-                       tool_results.into_iter().flat_map(|tool_result| {
+                        tool_results.into_iter().flat_map(|tool_result| {
                             vec![
                                 json!({
                                     "role": MessageRole::Assistant,
@@ -293,11 +294,12 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
 
                         }).collect()
                     }
-                },
-                MessageContent::Text(text) if role.is_assistant() && i != messages_len - 1 => vec![
-                    json!({ "role": role, "content": strip_think_tag(&text) }
-                )],
-                _ => vec![json!({ "role": role, "content": content })]
+                }
+                MessageContent::Text(text) if role.is_assistant() && i != messages_len - 1 => {
+                    vec![json!({ "role": role, "content": strip_think_tag(&text) }
+                    )]
+                }
+                _ => vec![json!({ "role": role, "content": content })],
             }
         })
         .collect();
