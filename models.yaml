@@ -1384,7 +1384,7 @@
       output_price: 15
       supports_vision: true
       supports_function_calling: true
-    - name: anthropic/claude-3-5-haiku
+    - name: anthropic/claude-3.5-haiku
       max_input_tokens: 200000
       max_output_tokens: 8192
       require_max_tokens: true
