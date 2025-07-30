@@ -233,6 +233,7 @@ clients:
     access_key_id: xxx
     secret_access_key: xxx
     region: xxx
+    session_token: xxx  # Optional, only needed for temporary credentials
 
   # See https://developers.cloudflare.com/workers-ai/
   - type: openai-compatible
