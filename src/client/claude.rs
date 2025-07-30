@@ -42,7 +42,7 @@ fn prepare_chat_completions(
     self_: &ClaudeClient,
     data: ChatCompletionsData,
 ) -> Result<RequestData> {
-    let api_key = self_.get_api_key().ok();
+    let api_key = self_.get_api_key()?;
     let api_base = self_
         .get_api_base()
         .unwrap_or_else(|_| API_BASE.to_string());
@@ -53,9 +53,7 @@ fn prepare_chat_completions(
     let mut request_data = RequestData::new(url, body);
 
     request_data.header("anthropic-version", "2023-06-01");
-    if let Some(api_key) = api_key {
-        request_data.header("x-api-key", api_key)
-    }
+    request_data.header("x-api-key", api_key);
 
     Ok(request_data)
 }
