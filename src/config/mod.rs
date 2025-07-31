@@ -2003,7 +2003,21 @@ impl Config {
                 output.insert("session_autoname", autoname.to_string());
             }
             output.insert("dirty", session.dirty().to_string());
-            let (tokens, percent) = session.tokens_usage();
+            // Skip expensive token calculation during prompt rendering (every keystroke)
+            // Token counts will be updated only when messages actually change
+            let (tokens, percent) = if let Some(cached) = session.token_count_cache() {
+                let max_input_tokens = session.model().max_input_tokens().unwrap_or_default();
+                let percent = if max_input_tokens == 0 {
+                    0.0
+                } else {
+                    let percent = cached as f32 / max_input_tokens as f32 * 100.0;
+                    (percent * 100.0).round() / 100.0
+                };
+                (cached, percent)
+            } else {
+                // No cache available - show placeholder to avoid blocking keystroke
+                (0, 0.0)
+            };
             output.insert("consume_tokens", tokens.to_string());
             output.insert("consume_percent", percent.to_string());
             output.insert("user_messages_len", session.user_messages_len().to_string());
@@ -2072,6 +2086,7 @@ impl Config {
         input.clear_patch();
         if let Some(session) = input.session_mut(&mut self.session) {
             session.add_message(&input, output)?;
+            session.update_token_count_cache();
             return Ok(());
         }
 

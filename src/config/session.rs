@@ -60,6 +60,8 @@ pub struct Session {
     compressing: bool,
     #[serde(skip)]
     autoname: Option<AutoName>,
+    #[serde(skip)]
+    token_count_cache: Option<usize>,
 }
 
 impl Session {
@@ -100,6 +102,9 @@ impl Session {
             }
         }
 
+        // Initialize token cache for loaded session to avoid expensive calculation on first prompt render
+        session.update_token_count_cache();
+
         Ok(session)
     }
 
@@ -124,7 +129,23 @@ impl Session {
     }
 
     pub fn tokens(&self) -> usize {
+        // Use cached token count if available to avoid expensive recalculation on every keystroke
+        if let Some(cached) = self.token_count_cache {
+            return cached;
+        }
         self.model().total_tokens(&self.messages)
+    }
+
+    pub fn invalidate_token_count_cache(&mut self) {
+        self.token_count_cache = None;
+    }
+
+    pub fn update_token_count_cache(&mut self) {
+        self.token_count_cache = Some(self.model().total_tokens(&self.messages));
+    }
+
+    pub fn token_count_cache(&self) -> Option<usize> {
+        self.token_count_cache
     }
 
     pub fn has_user_messages(&self) -> bool {
@@ -345,6 +366,7 @@ impl Session {
             MessageContent::Text(prompt),
         ));
         self.dirty = true;
+        self.invalidate_token_count_cache();
     }
 
     pub fn need_autoname(&self) -> bool {
@@ -494,6 +516,7 @@ impl Session {
             ));
         }
         self.dirty = true;
+        self.invalidate_token_count_cache();
         Ok(())
     }
 
@@ -503,6 +526,7 @@ impl Session {
         self.data_urls.clear();
         self.autoname = None;
         self.dirty = true;
+        self.invalidate_token_count_cache();
     }
 
     pub fn echo_messages(&self, input: &Input) -> String {
