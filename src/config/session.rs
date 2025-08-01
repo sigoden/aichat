@@ -60,6 +60,8 @@ pub struct Session {
     compressing: bool,
     #[serde(skip)]
     autoname: Option<AutoName>,
+    #[serde(skip)]
+    tokens: usize,
 }
 
 impl Session {
@@ -100,6 +102,8 @@ impl Session {
             }
         }
 
+        session.update_tokens();
+
         Ok(session)
     }
 
@@ -124,7 +128,11 @@ impl Session {
     }
 
     pub fn tokens(&self) -> usize {
-        self.model().total_tokens(&self.messages)
+        self.tokens
+    }
+
+    pub fn update_tokens(&mut self) {
+        self.tokens = self.model().total_tokens(&self.messages);
     }
 
     pub fn has_user_messages(&self) -> bool {
@@ -268,6 +276,7 @@ impl Session {
         self.role_name = convert_option_string(role.name());
         self.role_prompt = role.prompt().to_string();
         self.dirty = true;
+        self.update_tokens();
     }
 
     pub fn clear_role(&mut self) {
@@ -345,6 +354,7 @@ impl Session {
             MessageContent::Text(prompt),
         ));
         self.dirty = true;
+        self.update_tokens();
     }
 
     pub fn need_autoname(&self) -> bool {
@@ -494,6 +504,7 @@ impl Session {
             ));
         }
         self.dirty = true;
+        self.update_tokens();
         Ok(())
     }
 
@@ -503,6 +514,7 @@ impl Session {
         self.data_urls.clear();
         self.autoname = None;
         self.dirty = true;
+        self.update_tokens();
     }
 
     pub fn echo_messages(&self, input: &Input) -> String {
@@ -578,6 +590,7 @@ impl RoleLike for Session {
             self.model_id = model.id();
             self.model = model.clone();
             self.dirty = true;
+            self.update_tokens();
         }
     }
 
