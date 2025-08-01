@@ -15,7 +15,7 @@ pub async fn render_stream(
     config: &GlobalConfig,
     abort_signal: AbortSignal,
 ) -> Result<()> {
-    let ret = if *IS_STDOUT_TERMINAL {
+    let ret = if *IS_STDOUT_TERMINAL && config.read().highlight {
         let render_options = config.read().render_options()?;
         let mut render = MarkdownRender::init(render_options)?;
         markdown_stream(rx, &mut render, &abort_signal).await

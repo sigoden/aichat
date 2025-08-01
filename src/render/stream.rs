@@ -36,11 +36,17 @@ pub async fn raw_stream(
     mut rx: UnboundedReceiver<SseEvent>,
     abort_signal: &AbortSignal,
 ) -> Result<()> {
+    let mut spinner = Some(spawn_spinner("Generating"));
+
     loop {
         if abort_signal.aborted() {
-            return Ok(());
+            break;
         }
         if let Some(evt) = rx.recv().await {
+            if let Some(spinner) = spinner.take() {
+                spinner.stop();
+            }
+
             match evt {
                 SseEvent::Text(text) => {
                     print!("{text}");
@@ -51,6 +57,9 @@ pub async fn raw_stream(
                 }
             }
         }
+    }
+    if let Some(spinner) = spinner.take() {
+        spinner.stop();
     }
     Ok(())
 }
@@ -70,7 +79,7 @@ async fn markdown_stream_inner(
 
     'outer: loop {
         if abort_signal.aborted() {
-            return Ok(());
+            break;
         }
         for reply_event in gather_events(&mut rx).await {
             if let Some(spinner) = spinner.take() {
