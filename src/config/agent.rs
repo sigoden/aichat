@@ -336,10 +336,6 @@ impl RoleLike for Agent {
         &self.model
     }
 
-    fn model_mut(&mut self) -> &mut Model {
-        &mut self.model
-    }
-
     fn temperature(&self) -> Option<f64> {
         self.config.temperature
     }
@@ -352,9 +348,9 @@ impl RoleLike for Agent {
         self.config.use_tools.clone()
     }
 
-    fn set_model(&mut self, model: &Model) {
+    fn set_model(&mut self, model: Model) {
         self.config.model_id = Some(model.id());
-        self.model = model.clone();
+        self.model = model;
     }
 
     fn set_temperature(&mut self, value: Option<f64>) {

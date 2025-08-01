@@ -569,10 +569,6 @@ impl RoleLike for Session {
         &self.model
     }
 
-    fn model_mut(&mut self) -> &mut Model {
-        &mut self.model
-    }
-
     fn temperature(&self) -> Option<f64> {
         self.temperature
     }
@@ -585,10 +581,10 @@ impl RoleLike for Session {
         self.use_tools.clone()
     }
 
-    fn set_model(&mut self, model: &Model) {
+    fn set_model(&mut self, model: Model) {
         if self.model().id() != model.id() {
             self.model_id = model.id();
-            self.model = model.clone();
+            self.model = model;
             self.dirty = true;
             self.update_tokens();
         }
