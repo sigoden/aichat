@@ -843,15 +843,21 @@ impl Config {
 
     pub fn set_max_output_tokens(&mut self, value: Option<isize>) {
         match self.role_like_mut() {
-            Some(role_like) => role_like.model_mut().set_max_tokens(value, true),
-            None => self.model.set_max_tokens(value, true),
+            Some(role_like) => {
+                let mut model = role_like.model().clone();
+                model.set_max_tokens(value, true);
+                role_like.set_model(model);
+            }
+            None => {
+                self.model.set_max_tokens(value, true);
+            }
         };
     }
 
     pub fn set_model(&mut self, model_id: &str) -> Result<()> {
         let model = Model::retrieve_model(self, model_id, ModelType::Chat)?;
         match self.role_like_mut() {
-            Some(role_like) => role_like.set_model(&model),
+            Some(role_like) => role_like.set_model(model),
             None => {
                 self.model = model;
             }
@@ -861,7 +867,7 @@ impl Config {
 
     pub fn use_prompt(&mut self, prompt: &str) -> Result<()> {
         let mut role = Role::new(TEMP_ROLE_NAME, prompt);
-        role.set_model(self.current_model());
+        role.set_model(self.current_model().clone());
         self.use_role_obj(role)
     }
 
@@ -917,12 +923,12 @@ impl Config {
         } else {
             Role::builtin(name)?
         };
-        let current_model = self.current_model();
+        let current_model = self.current_model().clone();
         match role.model_id() {
             Some(model_id) => {
                 if current_model.id() != model_id {
                     let model = Model::retrieve_model(self, model_id, ModelType::Chat)?;
-                    role.set_model(&model);
+                    role.set_model(model);
                 } else {
                     role.set_model(current_model);
                 }
