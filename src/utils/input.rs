@@ -45,28 +45,3 @@ pub fn read_single_key(valid_chars: &[char], default: char, prompt: &str) -> Res
 
     result
 }
-
-#[cfg(test)]
-mod tests {
-
-    // Since this function requires terminal interaction, we'll test the logic parts
-    // The actual key reading would need integration tests
-
-    #[test]
-    fn test_valid_chars_contains_options() {
-        let valid_chars = ['e', 'r', 'd', 'c', 'q'];
-        assert!(valid_chars.contains(&'e'));
-        assert!(valid_chars.contains(&'r'));
-        assert!(valid_chars.contains(&'d'));
-        assert!(valid_chars.contains(&'c'));
-        assert!(valid_chars.contains(&'q'));
-        assert!(!valid_chars.contains(&'x'));
-    }
-
-    #[test]
-    fn test_default_char_is_valid() {
-        let valid_chars = ['e', 'r', 'd', 'c', 'q'];
-        let default = 'e';
-        assert!(valid_chars.contains(&default));
-    }
-}
