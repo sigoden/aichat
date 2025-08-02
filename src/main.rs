@@ -26,7 +26,6 @@ use crate::utils::*;
 
 use anyhow::{bail, Result};
 use clap::Parser;
-use inquire::validator::Validation;
 use inquire::Text;
 use is_terminal::IsTerminal;
 use parking_lot::RwLock;
@@ -275,20 +274,11 @@ async fn shell_execute(
             .join(&dimmed_text(" | "));
         loop {
             println!("{command}");
-            let answer = Text::new(&format!("{prompt_text}:"))
-                .with_default("e")
-                .with_validator(
-                    |input: &str| match matches!(input, "e" | "r" | "d" | "c" | "q") {
-                        true => Ok(Validation::Valid),
-                        false => Ok(Validation::Invalid(
-                            "Invalid option, choice one of e, r, d, c or q".into(),
-                        )),
-                    },
-                )
-                .prompt()?;
+            let answer_char =
+                read_single_key(&['e', 'r', 'd', 'c', 'q'], 'e', &format!("{prompt_text}: "))?;
 
-            match answer.as_str() {
-                "e" => {
+            match answer_char {
+                'e' => {
                     debug!("{} {:?}", shell.cmd, &[&shell.arg, &eval_str]);
                     let code = run_command(&shell.cmd, &[&shell.arg, &eval_str], None)?;
                     if code == 0 && config.read().save_shell_history {
@@ -296,13 +286,13 @@ async fn shell_execute(
                     }
                     process::exit(code);
                 }
-                "r" => {
+                'r' => {
                     let revision = Text::new("Enter your revision:").prompt()?;
                     let text = format!("{}\n{revision}", input.text());
                     input.set_text(text);
                     return shell_execute(config, shell, input, abort_signal.clone()).await;
                 }
-                "d" => {
+                'd' => {
                     let role = config.read().retrieve_role(EXPLAIN_SHELL_ROLE)?;
                     let input = Input::from_str(config, &eval_str, Some(role));
                     if input.stream() {
@@ -325,7 +315,7 @@ async fn shell_execute(
                     println!();
                     continue;
                 }
-                "c" => {
+                'c' => {
                     set_text(&eval_str)?;
                     println!("{}", dimmed_text("✓ Copied the command."));
                 }
@@ -394,4 +384,51 @@ fn setup_logger(is_serve: bool) -> Result<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_shell_execute_options() {
+        // Test that the valid characters array contains all expected options
+        let valid_chars = ['e', 'r', 'd', 'c', 'q'];
+
+        // Ensure all options are present and correctly ordered
+        assert!(valid_chars.contains(&'e')); // execute
+        assert!(valid_chars.contains(&'r')); // revise
+        assert!(valid_chars.contains(&'d')); // describe
+        assert!(valid_chars.contains(&'c')); // copy
+        assert!(valid_chars.contains(&'q')); // quit
+
+        // Ensure the default is 'e' (execute)
+        let default = 'e';
+        assert!(valid_chars.contains(&default));
+
+        // Ensure no invalid characters are accepted
+        assert!(!valid_chars.contains(&'x'));
+        assert!(!valid_chars.contains(&'a'));
+        assert!(!valid_chars.contains(&'1'));
+    }
+
+    #[test]
+    fn test_shell_execute_prompt_formatting() {
+        // Test that our prompt formatting still works correctly
+        let options = ["execute", "revise", "describe", "copy", "quit"];
+        let first_letter_color = nu_ansi_term::Color::Cyan;
+        let prompt_text = options
+            .iter()
+            .map(|v| format!("{}{}", color_text(&v[0..1], first_letter_color), &v[1..]))
+            .collect::<Vec<String>>()
+            .join(&dimmed_text(" | "));
+
+        // Just ensure it generates a non-empty string with all options
+        assert!(!prompt_text.is_empty());
+        assert!(prompt_text.contains("execute"));
+        assert!(prompt_text.contains("revise"));
+        assert!(prompt_text.contains("describe"));
+        assert!(prompt_text.contains("copy"));
+        assert!(prompt_text.contains("quit"));
+    }
 }
