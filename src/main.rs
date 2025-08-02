@@ -27,10 +27,9 @@ use crate::utils::*;
 use anyhow::{bail, Result};
 use clap::Parser;
 use inquire::Text;
-use is_terminal::IsTerminal;
 use parking_lot::RwLock;
 use simplelog::{format_description, ConfigBuilder, LevelFilter, SimpleLogger, WriteLogger};
-use std::{env, io::stdin, process, sync::Arc};
+use std::{env, process, sync::Arc};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -261,9 +260,6 @@ async fn shell_execute(
         return Ok(());
     }
     if *IS_STDOUT_TERMINAL {
-        if cfg!(target_os = "macos") && !stdin().is_terminal() {
-            bail!("Unable to read the pipe for shell execution on MacOS")
-        }
         let options = ["execute", "revise", "describe", "copy", "quit"];
         let command = color_text(eval_str.trim(), nu_ansi_term::Color::Rgb(255, 165, 0));
         let first_letter_color = nu_ansi_term::Color::Cyan;
