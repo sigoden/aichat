@@ -88,7 +88,7 @@ pub fn estimate_token_length(text: &str) -> usize {
     output.ceil() as usize
 }
 
-pub fn strip_think_tag(text: &str) -> Cow<str> {
+pub fn strip_think_tag(text: &str) -> Cow<'_, str> {
     THINK_TAG_RE.replace_all(text, "")
 }
 
