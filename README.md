@@ -14,6 +14,7 @@ AIChat is an all-in-one LLM CLI tool featuring Shell Assistant, CMD & REPL Mode,
 - **Homebrew/Linuxbrew Users:** `brew install aichat`
 - **Pacman Users**: `pacman -S aichat`
 - **Windows Scoop Users:** `scoop install aichat`
+- **Windows WinGet Users:** `winget install aichat`
 - **Android Termux Users:** `pkg install aichat`
 
 ### Pre-built Binaries
