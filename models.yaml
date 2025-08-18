@@ -1209,20 +1209,10 @@
       max_input_tokens: 131072
       input_price: 0
       output_price: 0
-    - name: glm-4.1v-thinking-flashx
+    - name: glm-4.5v
       max_input_tokens: 65536
-      input_price: 0.28
-      output_price: 0.28
-      supports_vision: true
-    - name: glm-4.1v-thinking-flash
-      max_input_tokens: 65536
-      input_price: 0
-      output_price: 0
-      supports_vision: true
-    - name: glm-4v-plus-0111
-      max_input_tokens: 8192
-      input_price: 0.28
-      output_price: 0.28
+      input_price: 0.56
+      output_price: 1.68
       supports_vision: true
     - name: glm-z1-air
       max_input_tokens: 131072
@@ -1503,7 +1493,7 @@
       max_input_tokens: 131072
       input_price: 0.12
       output_price: 0.3
-    - name: mistralai/mistral-medium-3
+    - name: mistralai/mistral-medium-3.1
       max_input_tokens: 131072
       input_price: 0.4
       output_price: 2
@@ -1718,6 +1708,11 @@
       max_input_tokens: 131072
       input_price: 0.2
       output_price: 1.1
+    - name: z-ai/glm-4.5v
+      max_input_tokens: 65536
+      input_price: 0.5
+      output_price: 1.7
+      supports_vision: true
 
 # Links:
 #  - https://github.com/marketplace?type=models
@@ -1987,6 +1982,11 @@
       input_price: 0.2
       output_price: 1.1
       supports_function_calling: true
+    - name: zai-org/GLM-4.5V
+      max_input_tokens: 65536
+      input_price: 0.5
+      output_price: 1.7
+      supports_vision: true
     - name: BAAI/bge-large-en-v1.5
       type: embedding
       input_price: 0.01
