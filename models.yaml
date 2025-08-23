@@ -239,7 +239,7 @@
     - name: claude-opus-4-1-20250805:thinking
       real_name: claude-opus-4-1-20250805
       max_input_tokens: 200000
-      max_output_tokens: 8192
+      max_output_tokens: 24000
       require_max_tokens: true
       input_price: 15
       output_price: 75
