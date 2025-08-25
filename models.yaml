@@ -239,7 +239,7 @@
     - name: claude-opus-4-1-20250805:thinking
       real_name: claude-opus-4-1-20250805
       max_input_tokens: 200000
-      max_output_tokens: 8192
+      max_output_tokens: 24000
       require_max_tokens: true
       input_price: 15
       output_price: 75
@@ -409,6 +409,11 @@
       input_price: 2.5
       output_price: 10
       supports_function_calling: true
+    - name: command-a-reasoning-08-2025
+      max_input_tokens: 262144
+      max_output_tokens: 32768
+      input_price: 2.5
+      output_price: 10
     - name: command-a-vision-07-2025
       max_input_tokens: 131072
       max_output_tokens: 8192
@@ -1173,14 +1178,14 @@
     - name: deepseek-chat
       max_input_tokens: 64000
       max_output_tokens: 8192
-      input_price: 0.27
-      output_price: 1.1
+      input_price: 0.56
+      output_price: 1.68
       supports_function_calling: true
     - name: deepseek-reasoner
       max_input_tokens: 64000
-      max_output_tokens: 8192
-      input_price: 0.55
-      output_price: 2.19
+      max_output_tokens: 32768
+      input_price: 0.56
+      output_price: 1.68
 
 # Links:
 #  - https://open.bigmodel.cn/pricing
@@ -1551,6 +1556,10 @@
       max_output_tokens: 4096
       input_price: 0.0375
       output_price: 0.15
+    - name: deepseek/deepseek-chat-v3.1
+      max_input_tokens: 163840
+      input_price: 0.2
+      output_price: 0.8
     - name: deepseek/deepseek-chat-v3-0324
       max_input_tokens: 64000
       input_price: 0.27
@@ -1947,6 +1956,10 @@
       max_input_tokens: 32768
       input_price: 0.07
       output_price: 0.16
+    - name: deepseek-ai/DeepSeek-V3.1
+      max_input_tokens: 163840
+      input_price: 0.3
+      output_price: 1.0
     - name: deepseek-ai/DeepSeek-V3-0324
       max_input_tokens: 163840
       input_price: 0.40
