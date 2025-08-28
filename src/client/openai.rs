@@ -259,7 +259,7 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
                             })
                             .collect();
                         let mut messages = vec![
-                            json!({ "role": MessageRole::Assistant, "tool_calls": tool_calls }),
+                            json!({ "role": MessageRole::Assistant, "tool_calls": tool_calls, "content": "" }),
                         ];
                         for tool_result in tool_results {
                             messages.push(json!({
@@ -289,6 +289,7 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
                                     "role": "tool",
                                     "content": tool_result.output.to_string(),
                                     "tool_call_id": tool_result.call.id,
+                                    "content": "",
                                 })
                             ]
 
