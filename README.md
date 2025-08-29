@@ -6,9 +6,34 @@
 
 AIChat is an all-in-one LLM CLI tool featuring Shell Assistant, CMD & REPL Mode, RAG, AI Tools & Agents, and More. 
 
-## Install
+- [AIChat: All-in-one LLM CLI Tool](#aichat-all-in-one-llm-cli-tool)
+  - [Getting started](#getting-started)
+    - [Using a package manager](#using-a-package-manager)
+    - [Using a pre-built binary](#using-a-pre-built-binary)
+  - [Features](#features)
+    - [Multi-Providers](#multi-providers)
+    - [CMD Mode](#cmd-mode)
+    - [REPL Mode](#repl-mode)
+    - [Shell Assistant](#shell-assistant)
+    - [Multi-Form Input](#multi-form-input)
+    - [Role](#role)
+    - [Session](#session)
+    - [Macro](#macro)
+    - [RAG](#rag)
+    - [Function Calling](#function-calling)
+      - [AI Tools \& MCP](#ai-tools--mcp)
+      - [AI Agents (CLI version of OpenAI GPTs)](#ai-agents-cli-version-of-openai-gpts)
+    - [Local Server Capabilities](#local-server-capabilities)
+      - [Proxy LLM APIs](#proxy-llm-apis)
+      - [LLM Playground](#llm-playground)
+      - [LLM Arena](#llm-arena)
+    - [Custom Themes](#custom-themes)
+  - [More information](#more-information)
+  - [License](#license)
 
-### Package Managers
+## Getting started
+
+### Using a package manager
 
 - **Rust Developers:** `cargo install aichat`
 - **Homebrew/Linuxbrew Users:** `brew install aichat`
@@ -16,7 +41,7 @@ AIChat is an all-in-one LLM CLI tool featuring Shell Assistant, CMD & REPL Mode,
 - **Windows Scoop Users:** `scoop install aichat`
 - **Android Termux Users:** `pkg install aichat`
 
-### Pre-built Binaries
+### Using a pre-built binary
 
 Download pre-built binaries for macOS, Linux, and Windows from [GitHub Releases](https://github.com/sigoden/aichat/releases), extract them, and add the `aichat` binary to your `$PATH`.
 
@@ -144,13 +169,14 @@ A web platform to compare different LLMs side-by-side.
 
 ![aichat-llm-arena](https://github.com/user-attachments/assets/edabba53-a1ef-4817-9153-38542ffbfec6)
 
-## Custom Themes
+### Custom Themes
 
 AIChat supports custom dark and light themes, which highlight response text and code blocks.
 
 ![aichat-themes](https://github.com/sigoden/aichat/assets/4012553/29fa8b79-031e-405d-9caa-70d24fa0acf8)
 
-## Documentation
+
+## More information
 
 - [Chat-REPL Guide](https://github.com/sigoden/aichat/wiki/Chat-REPL-Guide)
 - [Command-Line Guide](https://github.com/sigoden/aichat/wiki/Command-Line-Guide)
