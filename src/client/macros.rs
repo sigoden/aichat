@@ -227,12 +227,23 @@ macro_rules! config_get_fn {
     ($field_name:ident, $fn_name:ident) => {
         fn $fn_name(&self) -> anyhow::Result<String> {
             let env_prefix = Self::name(&self.config);
-            let env_name =
-                format!("{}_{}", env_prefix, stringify!($field_name)).to_ascii_uppercase();
+            let env_name = format!("{}_{}", env_prefix, stringify!($field_name)).to_ascii_uppercase();
+
+            if let Some(config_value) = self.config.$field_name.as_ref() {
+                if config_value.starts_with('$') {
+                    let env_var = config_value.trim_start_matches('$')
+                        .trim_start_matches('{')
+                        .trim_end_matches('}');
+                    return std::env::var(env_var)
+                        .map_err(|_| anyhow::anyhow!("Missing ENV '{}'", env_var));
+                }
+
+                return std::env::var(&env_name)
+                    .or_else(|_| Ok(config_value.clone()));
+            }
+
             std::env::var(&env_name)
-                .ok()
-                .or_else(|| self.config.$field_name.clone())
-                .ok_or_else(|| anyhow::anyhow!("Miss '{}'", stringify!($field_name)))
+                .map_err(|_| anyhow::anyhow!("Miss '{}'", stringify!($field_name)))
         }
     };
 }
