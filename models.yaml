@@ -463,6 +463,16 @@
       input_price: 3
       output_price: 15
       supports_function_calling: true
+    - name: grok-4-fast-non-reasoning
+      max_input_tokens: 2000000
+      input_price: 0.2
+      output_price: 0.5
+      supports_function_calling: true
+    - name: grok-4-fast-reasoning
+      max_input_tokens: 2000000
+      input_price: 0.2
+      output_price: 0.5
+      supports_function_calling: true
     - name: grok-code-fast
       max_input_tokens: 256000
       input_price: 0.2
@@ -473,20 +483,10 @@
       input_price: 3
       output_price: 15
       supports_function_calling: true
-    - name: grok-3-fast
-      max_input_tokens: 131072
-      input_price: 5
-      output_price: 25
-      supports_function_calling: true
     - name: grok-3-mini
       max_input_tokens: 131072
       input_price: 0.3
       output_price: 0.5
-      supports_function_calling: true
-    - name: grok-3-mini-fast
-      max_input_tokens: 131072
-      input_price: 0.6
-      output_price: 4
       supports_function_calling: true
 
 # Links:
@@ -1045,6 +1045,15 @@
       input_price: 1.4
       output_price: 5.6
       supports_function_calling: true
+    - name: qwen3-next-80b-a3b-instruct
+      max_input_tokens: 131072
+      input_price: 0.14
+      output_price: 0.56
+      supports_function_calling: true
+    - name: qwen3-next-80b-a3b-thinking
+      max_input_tokens: 131072
+      input_price: 0.14
+      output_price: 1.4
     - name: qwen3-235b-a22b-instruct-2507
       max_input_tokens: 131072
       input_price: 0.28
@@ -1251,7 +1260,7 @@
       input_price: 0.112
 
 # Links:
-# - https://platform.minimaxi.com/document/Price
+# - https://platform.minimaxi.com/document/pricing
 # - https://platform.minimaxi.com/document/ChatCompletion%20v2
 - provider: minimax
   models:
@@ -1604,6 +1613,15 @@
       input_price: 1.2
       output_price: 6
       supports_function_calling: true
+    - name: qwen/qwen3-next-80b-a3b-instruct
+      max_input_tokens: 262144
+      input_price: 0.1
+      output_price: 0.8
+      supports_function_calling: true
+    - name: qwen/qwen3-next-80b-a3b-thinking
+      max_input_tokens: 262144
+      input_price: 0.1
+      output_price: 0.8
     - name: qwen/qwen3-235b-a22b-2507
       max_input_tokens: 262144
       input_price: 0.12
@@ -1621,10 +1639,15 @@
       max_input_tokens: 262144
       input_price: 0.071
       output_price: 0.285
-    - name: qwen/qwen3-coder
-      max_input_tokens: 262144
+    - name: qwen/qwen3-coder-plus
+      max_input_tokens: 128000
+      input_price: 1
+      output_price: 5
+      supports_function_calling: true
+    - name: qwen/qwen3-coder-flash
+      max_input_tokens: 128000
       input_price: 0.3
-      output_price: 1.2
+      output_price: 1.5
       supports_function_calling: true
     - name: qwen/qwen3-coder-30b-a3b-instruct
       max_input_tokens: 262144
@@ -1660,15 +1683,11 @@
       input_price: 3
       output_price: 15
       supports_function_calling: true
-    - name: x-ai/grok-3
-      max_input_tokens: 131072
-      input_price: 3
-      output_price: 15
+    - name: x-ai/grok-code-fast-1
+      max_input_tokens: 256000
+      input_price: 0.2
+      output_price: 1.5
       supports_function_calling: true
-    - name: x-ai/grok-3-mini
-      max_input_tokens: 131072
-      input_price: 0.3
-      output_price: 0.5
     - name: amazon/nova-pro-v1
       max_input_tokens: 300000
       max_output_tokens: 5120
@@ -1932,6 +1951,15 @@
       max_input_tokens: 131072
       input_price: 0.23
       output_price: 0.40
+    - name: Qwen/Qwen3-Next-80B-A3B-Instruct
+      max_input_tokens: 262144
+      input_price: 0.14
+      output_price: 1.4
+      supports_function_calling: true
+    - name: Qwen/Qwen3-Next-80B-A3B-Thinking
+      max_input_tokens: 262144
+      input_price: 0.14
+      output_price: 1.4
     - name: Qwen/Qwen3-235B-A22B-Instruct-2507
       max_input_tokens: 131072
       input_price: 0.13
@@ -1991,10 +2019,10 @@
       max_input_tokens: 131072
       input_price: 0.07
       output_price: 0.28
-    - name: moonshotai/Kimi-K2-Instruct
-      max_input_tokens: 131072
-      input_price: 0.55
-      output_price: 2.2
+    - name: moonshotai/Kimi-K2-Instruct-0905
+      max_input_tokens: 262144
+      input_price: 0.5
+      output_price: 2.0
       supports_function_calling: true
     - name: zai-org/GLM-4.5
       max_input_tokens: 131072
