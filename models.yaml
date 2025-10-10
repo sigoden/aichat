@@ -31,6 +31,13 @@
       output_price: 0.4
       supports_vision: true
       supports_function_calling: true
+    - name: gpt-5-codex
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      input_price: 1.25
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
     - name: gpt-4.1
       max_input_tokens: 1047576
       max_output_tokens: 32768
@@ -228,6 +235,30 @@
 #  - https://docs.anthropic.com/en/api/messages
 - provider: claude
   models:
+    - name: claude-sonnet-4-5-20250929
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-sonnet-4-5-20250929:thinking
+      real_name: claude-sonnet-4-5-20250929
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
+          thinking:
+            type: enabled
+            budget_tokens: 16000
     - name: claude-opus-4-1-20250805
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -606,6 +637,29 @@
       output_price: 0.3
       supports_vision: true
       supports_function_calling: true
+    - name: claude-sonnet-4-5@20250929
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-sonnet-4-5@20250929:thinking
+      real_name: claude-sonnet-4-5@20250929
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
+          thinking:
+            type: enabled
+            budget_tokens: 16000
     - name: claude-opus-4-1@20250805
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -738,6 +792,31 @@
 #  - https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-call.html
 - provider: bedrock
   models:
+    - name: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+    - name: us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking
+      real_name: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      patch:
+        body:
+          inferenceConfig:
+            temperature: null
+            topP: null
+          additionalModelRequestFields:
+            thinking:
+              type: enabled
+              budget_tokens: 16000
     - name: us.anthropic.claude-opus-4-1-20250805-v1:0
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -1039,6 +1118,16 @@
       input_price: 0.21
       output_price: 0.63
       supports_vision: true
+    - name: qwen3-max
+      max_input_tokens: 262144
+      input_price: 2.1
+      output_price: 8.4
+      supports_function_calling: true
+    - name: qwen3-vl-plus
+      max_input_tokens: 262144
+      input_price: 0.42
+      output_price: 4.2
+      supports_vision: true
     - name: qwen3-max-preview
       max_input_tokens: 262144
       max_output_tokens: 32768
@@ -1206,6 +1295,11 @@
 - provider: zhipuai
   models:
     - name: glm-4.5
+      max_input_tokens: 202752
+      input_price: 0.28
+      output_price: 1.12
+      supports_function_calling: true
+    - name: glm-4.5
       max_input_tokens: 131072
       input_price: 0.28
       output_price: 1.12
@@ -1305,6 +1399,13 @@
       max_output_tokens: 128000
       input_price: 0.05
       output_price: 0.4
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-5-codex
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      input_price: 1.25
+      output_price: 10
       supports_vision: true
       supports_function_calling: true
     - name: openai/gpt-4.1
@@ -1455,6 +1556,14 @@
       max_input_tokens: 131072
       input_price: 0.1
       output_price: 0.2
+    - name: anthropic/claude-sonnet-4.5
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
     - name: anthropic/claude-opus-4.1
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -1569,15 +1678,18 @@
       max_output_tokens: 4096
       input_price: 0.0375
       output_price: 0.15
+    - name: deepseek/deepseek-v3.2-exp
+      max_input_tokens: 163840
+      input_price: 0.27
+      output_price: 0.40
+    - name: deepseek/deepseek-v3.1-terminus
+      max_input_tokens: 163840
+      input_price: 0.23
+      output_price: 0.90
     - name: deepseek/deepseek-chat-v3.1
       max_input_tokens: 163840
       input_price: 0.2
       output_price: 0.8
-    - name: deepseek/deepseek-chat-v3-0324
-      max_input_tokens: 64000
-      input_price: 0.27
-      output_price: 1.1
-      supports_function_calling: true
     - name: deepseek/deepseek-r1-0528
       max_input_tokens: 128000
       input_price: 0.50
@@ -1683,6 +1795,11 @@
       input_price: 3
       output_price: 15
       supports_function_calling: true
+    - name: x-ai/grok-4-fast
+      max_input_tokens: 2000000
+      input_price: 0.2
+      output_price: 0.5
+      supports_function_calling: true
     - name: x-ai/grok-code-fast-1
       max_input_tokens: 256000
       input_price: 0.2
@@ -1738,6 +1855,11 @@
       max_input_tokens: 1000192
       input_price: 0.2
       output_price: 1.1
+    - name: z-ai/glm-4.6
+      max_input_tokens: 202752
+      input_price: 0.5
+      output_price: 1.75
+      supports_function_calling: true
     - name: z-ai/glm-4.5
       max_input_tokens: 131072
       input_price: 0.2
@@ -1974,6 +2096,11 @@
       input_price: 0.4
       output_price: 1.6
       supports_function_calling: true
+    - name: Qwen/Qwen3-Coder-30B-A3B-Instruct
+      max_input_tokens: 262144
+      input_price: 0.07
+      output_price: 0.27
+      supports_function_calling: true
     - name: Qwen/Qwen3-235B-A22B
       max_input_tokens: 40960
       input_price: 0.15
@@ -1995,14 +2122,18 @@
       max_input_tokens: 32768
       input_price: 0.07
       output_price: 0.16
+    - name: deepseek-ai/DeepSeek-V3.2-Exp
+      max_input_tokens: 163840
+      input_price: 0.27
+      output_price: 0.40
+    - name: deepseek-ai/DeepSeek-V3.1-Terminus
+      max_input_tokens: 163840
+      input_price: 0.27
+      output_price: 1.0
     - name: deepseek-ai/DeepSeek-V3.1
       max_input_tokens: 163840
       input_price: 0.3
       output_price: 1.0
-    - name: deepseek-ai/DeepSeek-V3-0324
-      max_input_tokens: 163840
-      input_price: 0.40
-      output_price: 0.89
     - name: deepseek-ai/DeepSeek-R1-0528
       max_input_tokens: 163840
       input_price: 0.5
@@ -2023,6 +2154,11 @@
       max_input_tokens: 262144
       input_price: 0.5
       output_price: 2.0
+      supports_function_calling: true
+    - name: zai-org/GLM-4.6
+      max_input_tokens: 202752
+      input_price: 0.6
+      output_price: 1.9
       supports_function_calling: true
     - name: zai-org/GLM-4.5
       max_input_tokens: 131072
