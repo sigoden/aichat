@@ -1,6 +1,6 @@
 use super::{MarkdownRender, SseEvent};
 
-use crate::utils::{poll_abort_signal, spawn_spinner, AbortSignal};
+use crate::utils::{poll_abort_signal, spawn_spinner, strip_think_tag, AbortSignal};
 
 use anyhow::Result;
 use crossterm::{
@@ -18,11 +18,12 @@ pub async fn markdown_stream(
     rx: UnboundedReceiver<SseEvent>,
     render: &mut MarkdownRender,
     abort_signal: &AbortSignal,
+    hide_thinking: bool,
 ) -> Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
 
-    let ret = markdown_stream_inner(rx, render, abort_signal, &mut stdout).await;
+    let ret = markdown_stream_inner(rx, render, abort_signal, &mut stdout, hide_thinking).await;
 
     disable_raw_mode()?;
 
@@ -35,8 +36,10 @@ pub async fn markdown_stream(
 pub async fn raw_stream(
     mut rx: UnboundedReceiver<SseEvent>,
     abort_signal: &AbortSignal,
+    hide_thinking: bool,
 ) -> Result<()> {
     let mut spinner = Some(spawn_spinner("Generating"));
+    let mut buffer = String::new();
 
     loop {
         if abort_signal.aborted() {
@@ -49,10 +52,21 @@ pub async fn raw_stream(
 
             match evt {
                 SseEvent::Text(text) => {
-                    print!("{text}");
-                    stdout().flush()?;
+                    if hide_thinking {
+                        // Accumulate text to properly handle think tags across chunks
+                        buffer.push_str(&text);
+                    } else {
+                        print!("{text}");
+                        stdout().flush()?;
+                    }
                 }
                 SseEvent::Done => {
+                    if hide_thinking && !buffer.is_empty() {
+                        // Process accumulated text and strip think tags
+                        let filtered = strip_think_tag(&buffer);
+                        print!("{filtered}");
+                        stdout().flush()?;
+                    }
                     break;
                 }
             }
@@ -69,9 +83,11 @@ async fn markdown_stream_inner(
     render: &mut MarkdownRender,
     abort_signal: &AbortSignal,
     writer: &mut Stdout,
+    hide_thinking: bool,
 ) -> Result<()> {
     let mut buffer = String::new();
     let mut buffer_rows = 1;
+    let mut full_buffer = String::new();
 
     let columns = terminal::size()?.0;
 
@@ -88,6 +104,11 @@ async fn markdown_stream_inner(
 
             match reply_event {
                 SseEvent::Text(mut text) => {
+                    if hide_thinking {
+                        // Accumulate all text for filtering at the end
+                        full_buffer.push_str(&text);
+                        continue;
+                    }
                     // tab width hacking
                     text = text.replace('\t', "    ");
 
@@ -146,6 +167,13 @@ async fn markdown_stream_inner(
                     writer.flush()?;
                 }
                 SseEvent::Done => {
+                    if hide_thinking && !full_buffer.is_empty() {
+                        // Filter and render accumulated text
+                        let filtered = strip_think_tag(&full_buffer);
+                        let output = render.render(&filtered);
+                        print!("{output}");
+                        stdout().flush()?;
+                    }
                     break 'outer;
                 }
             }

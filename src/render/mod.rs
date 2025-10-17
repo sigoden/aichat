@@ -15,12 +15,13 @@ pub async fn render_stream(
     config: &GlobalConfig,
     abort_signal: AbortSignal,
 ) -> Result<()> {
+    let hide_thinking = config.read().hide_thinking;
     let ret = if *IS_STDOUT_TERMINAL && config.read().highlight {
         let render_options = config.read().render_options()?;
         let mut render = MarkdownRender::init(render_options)?;
-        markdown_stream(rx, &mut render, &abort_signal).await
+        markdown_stream(rx, &mut render, &abort_signal, hide_thinking).await
     } else {
-        raw_stream(rx, &abort_signal).await
+        raw_stream(rx, &abort_signal, hide_thinking).await
     };
     ret.map_err(|err| err.context("Failed to reader stream"))
 }
