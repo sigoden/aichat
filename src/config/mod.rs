@@ -15,6 +15,7 @@ use crate::client::{
     Model, ModelType, ProviderModels, OPENAI_COMPATIBLE_PROVIDERS,
 };
 use crate::function::{FunctionDeclaration, Functions, ToolResult};
+use crate::mcp::{McpManager, McpServerConfig};
 use crate::rag::Rag;
 use crate::render::{MarkdownRender, RenderOptions};
 use crate::repl::{run_repl_command, split_args_text};
@@ -148,6 +149,9 @@ pub struct Config {
 
     pub clients: Vec<ClientConfig>,
 
+    #[serde(default)]
+    pub mcp_servers: Vec<McpServerConfig>,
+
     #[serde(skip)]
     pub macro_flag: bool,
     #[serde(skip)]
@@ -159,6 +163,8 @@ pub struct Config {
     pub model: Model,
     #[serde(skip)]
     pub functions: Functions,
+    #[serde(skip)]
+    pub mcp_manager: Option<Arc<McpManager>>,
     #[serde(skip)]
     pub working_mode: WorkingMode,
     #[serde(skip)]
@@ -223,12 +229,15 @@ impl Default for Config {
 
             clients: vec![],
 
+            mcp_servers: vec![],
+
             macro_flag: false,
             info_flag: false,
             agent_variables: None,
 
             model: Default::default(),
             functions: Default::default(),
+            mcp_manager: None,
             working_mode: WorkingMode::Cmd,
             last_message: None,
 
@@ -265,21 +274,23 @@ impl Config {
         config.working_mode = working_mode;
         config.info_flag = info_flag;
 
-        let setup = |config: &mut Self| -> Result<()> {
+        let setup = async |config: &mut Self| -> Result<()> {
             config.load_envs();
 
             if let Some(wrap) = config.wrap.clone() {
                 config.set_wrap(&wrap)?;
             }
 
-            config.load_functions()?;
+            config.init_mcp_manager();
+            config.connect_mcp_servers().await?;
+            config.load_functions().await?;
 
             config.setup_model()?;
             config.setup_document_loaders();
             config.setup_user_agent();
             Ok(())
         };
-        let ret = setup(&mut config);
+        let ret = setup(&mut config).await;
         if !info_flag {
             ret?;
         }
@@ -1654,12 +1665,14 @@ impl Config {
         if self.function_calling {
             if let Some(use_tools) = role.use_tools() {
                 let mut tool_names: HashSet<String> = Default::default();
-                let declaration_names: HashSet<String> = self
-                    .functions
-                    .declarations()
+
+                // Get all available function names (local + MCP)
+                let all_declarations = self.functions.declarations();
+                let declaration_names: HashSet<String> = all_declarations
                     .iter()
                     .map(|v| v.name.to_string())
                     .collect();
+
                 if use_tools == "all" {
                     tool_names.extend(declaration_names);
                 } else {
@@ -1677,17 +1690,11 @@ impl Config {
                         }
                     }
                 }
-                functions = self
-                    .functions
-                    .declarations()
-                    .iter()
-                    .filter_map(|v| {
-                        if tool_names.contains(&v.name) {
-                            Some(v.clone())
-                        } else {
-                            None
-                        }
-                    })
+
+                // Include both local and MCP functions
+                functions = all_declarations
+                    .into_iter()
+                    .filter(|v| tool_names.contains(&v.name))
                     .collect();
             }
 
@@ -2380,9 +2387,62 @@ impl Config {
         }
     }
 
-    fn load_functions(&mut self) -> Result<()> {
-        self.functions = Functions::init(&Self::functions_file())?;
+    async fn load_functions(&mut self) -> Result<()> {
+        let mcp_tools = if let Some(manager) = self.mcp_manager.clone() {
+            let tools = manager.get_all_tools().await;
+            Some(tools)
+        } else {
+            None
+        };
+        self.functions = Functions::init(&Self::functions_file(), mcp_tools)?;
         Ok(())
+    }
+
+    fn init_mcp_manager(&mut self) {
+        if self.mcp_servers.is_empty() {
+            return;
+        }
+
+        let manager = McpManager::new();
+        self.mcp_manager = Some(Arc::new(manager));
+    }
+
+    async fn connect_mcp_servers(&mut self) -> Result<(), anyhow::Error> {
+        let mcp_manager = self.mcp_manager.clone();
+        if let Some(manager) = mcp_manager {
+            let servers = self.mcp_servers.clone();
+            manager.initialize(servers).await?;
+
+            // Auto-connect to enabled servers
+            if let Err(e) = manager.connect_all().await {
+                log::warn!("Failed to connect to some MCP servers: {}", e);
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn mcp_list_servers(config: &GlobalConfig) -> Vec<(String, bool, Option<String>)> {
+        let mcp_manager = config.read().mcp_manager.clone();
+        match mcp_manager {
+            Some(manager) => manager.list_servers().await,
+            None => vec![],
+        }
+    }
+
+    pub async fn mcp_connect_server(config: &GlobalConfig, server_name: &str) -> Result<()> {
+        let mcp_manager = config.read().mcp_manager.clone();
+        match mcp_manager {
+            Some(manager) => manager.connect(server_name).await,
+            None => bail!("MCP is not configured"),
+        }
+    }
+
+    pub async fn mcp_disconnect_server(config: &GlobalConfig, server_name: &str) -> Result<()> {
+        let mcp_manager = config.read().mcp_manager.clone();
+        match mcp_manager {
+            Some(manager) => manager.disconnect(server_name).await,
+            None => bail!("MCP is not configured"),
+        }
     }
 
     fn setup_model(&mut self) -> Result<()> {

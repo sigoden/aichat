@@ -50,7 +50,7 @@ impl Agent {
         };
         let mut definition = AgentDefinition::load(&definition_file_path)?;
         let functions = if functions_file_path.exists() {
-            Functions::init(&functions_file_path)?
+            Functions::init(&functions_file_path, None)?
         } else {
             Functions::default()
         };

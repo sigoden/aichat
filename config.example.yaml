@@ -18,6 +18,30 @@ mapping_tools:                   # Alias for a tool or toolset
   fs: 'fs_cat,fs_ls,fs_mkdir,fs_rm,fs_write'
 use_tools: null                  # Which tools to use by default. (e.g. 'fs,web_search')
 
+# ---- mcp servers ----
+# function_calling must be set to true to enable tool calling in MCP servers.
+mcp_servers:
+  # - name: custom
+  #   command: /path/to/custom-mcp-server
+  #   args:
+  #     - "--config"
+  #     - "/path/to/config.json"
+  #   env:
+  #     API_KEY: "your-api-key-here"
+  #     CUSTOM_SETTING: "value"
+  #   enabled: false
+  #   description: "Custom MCP server"
+  # Filesystem server - provides file read/write operations
+  - name: filesystem             # Name of the server
+    command: npx                 # Command that starts the server
+    args:                        # Arguments to pass to the command
+      - "-y"
+      - "@modelcontextprotocol/server-filesystem"
+      - "/tmp"                   # Root directory for filesystem operations
+    enabled: true                # Enable or disable the server
+    description: "File system operations (read, write, list)"
+
+
 # ---- prelude ----
 repl_prelude: null               # Set a default role or session for REPL mode (e.g. role:<name>, session:<name>, <session>:<role>)
 cmd_prelude: null                # Set a default role or session for CMD mode (e.g. role:<name>, session:<name>, <session>:<role>)
