@@ -21,6 +21,10 @@ pub struct McpServerConfig {
     #[serde(default = "default_true")]
     pub enabled: bool,
 
+    /// Whether this server is trusted (bypasses permission checks)
+    #[serde(default)]
+    pub trusted: bool,
+
     /// Optional description of what this server provides
     #[serde(default)]
     pub description: Option<String>,
@@ -39,6 +43,7 @@ impl McpServerConfig {
             args: vec![],
             env: Default::default(),
             enabled: true,
+            trusted: false,
             description: None,
         }
     }
@@ -70,6 +75,12 @@ impl McpServerConfig {
     /// Set whether the server is enabled
     pub fn with_enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
+        self
+    }
+
+    /// Set whether the server is trusted
+    pub fn with_trusted(mut self, trusted: bool) -> Self {
+        self.trusted = trusted;
         self
     }
 }

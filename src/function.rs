@@ -1,5 +1,9 @@
+mod permission;
+
+pub use permission::ToolPermission;
+
 use crate::{
-    config::{Agent, Config, GlobalConfig},
+    config::{Agent, Config, GlobalConfig, ToolPermissions},
     mcp,
     utils::*,
 };
@@ -19,7 +23,12 @@ const PATH_SEP: &str = ";";
 #[cfg(not(windows))]
 const PATH_SEP: &str = ":";
 
-pub fn eval_tool_calls(config: &GlobalConfig, mut calls: Vec<ToolCall>) -> Result<Vec<ToolResult>> {
+pub fn eval_tool_calls(
+    config: &GlobalConfig,
+    mut calls: Vec<ToolCall>,
+    role_tool_call_permission: Option<String>,
+    role_tool_permissions: Option<ToolPermissions>,
+) -> Result<Vec<ToolResult>> {
     let mut output = vec![];
     if calls.is_empty() {
         return Ok(output);
@@ -28,9 +37,27 @@ pub fn eval_tool_calls(config: &GlobalConfig, mut calls: Vec<ToolCall>) -> Resul
     if calls.is_empty() {
         bail!("The request was aborted because an infinite loop of function calls was detected.")
     }
+
+    // Check permissions for each tool call
+    let mut permission_checker =
+        ToolPermission::new_with_role(config, role_tool_call_permission, role_tool_permissions);
     let mut is_all_null = true;
+
     for call in calls {
-        let mut result = call.eval(config)?;
+        // Check if this tool call is permitted
+        let permitted = permission_checker.check_permission(&call)?;
+
+        let mut result = if permitted {
+            call.eval(config)?
+        } else {
+            // Tool call was denied by permission check
+            json!({
+                "error": "Permission denied",
+                "tool": call.name,
+                "message": format!("The tool '{}' was not permitted to execute", call.name)
+            })
+        };
+
         if result.is_null() {
             result = json!("DONE");
         } else {
@@ -38,6 +65,7 @@ pub fn eval_tool_calls(config: &GlobalConfig, mut calls: Vec<ToolCall>) -> Resul
         }
         output.push(ToolResult::new(call, result));
     }
+
     if is_all_null {
         output = vec![];
     }
@@ -84,6 +112,13 @@ impl Functions {
             declarations,
             mcp_declarations: mcp_tools.unwrap_or_default(),
         })
+    }
+
+    pub fn init_from_mcp(mcp_tools: Option<Vec<FunctionDeclaration>>) -> Self {
+        Self {
+            declarations: vec![],
+            mcp_declarations: mcp_tools.unwrap_or_default(),
+        }
     }
 
     pub fn find(&self, name: &str) -> Option<&FunctionDeclaration> {

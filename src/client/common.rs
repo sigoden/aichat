@@ -1,7 +1,7 @@
 use super::*;
 
 use crate::{
-    config::{Config, GlobalConfig, Input},
+    config::{Config, GlobalConfig, Input, RoleLike},
     function::{eval_tool_calls, FunctionDeclaration, ToolCall, ToolResult},
     render::render_stream,
     utils::*,
@@ -432,7 +432,15 @@ pub async fn call_chat_completions(
                     client.global_config().read().print_markdown(&text)?;
                 }
             }
-            Ok((text, eval_tool_calls(client.global_config(), tool_calls)?))
+            Ok((
+                text,
+                eval_tool_calls(
+                    client.global_config(),
+                    tool_calls,
+                    input.role().tool_call_permission(),
+                    input.role().tool_permissions(),
+                )?,
+            ))
         }
         Err(err) => Err(err),
     }
@@ -463,7 +471,15 @@ pub async fn call_chat_completions_streaming(
             if !text.is_empty() && !text.ends_with('\n') {
                 println!();
             }
-            Ok((text, eval_tool_calls(client.global_config(), tool_calls)?))
+            Ok((
+                text,
+                eval_tool_calls(
+                    client.global_config(),
+                    tool_calls,
+                    input.role().tool_call_permission(),
+                    input.role().tool_permissions(),
+                )?,
+            ))
         }
         Err(err) => {
             if !text.is_empty() {

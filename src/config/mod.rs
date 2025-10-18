@@ -46,6 +46,16 @@ pub const TEMP_ROLE_NAME: &str = "%%";
 pub const TEMP_RAG_NAME: &str = "temp";
 pub const TEMP_SESSION_NAME: &str = "temp";
 
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct ToolPermissions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allowed: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub denied: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ask: Option<Vec<String>>,
+}
+
 /// Monokai Extended
 const DARK_THEME: &[u8] = include_bytes!("../../assets/monokai-extended.theme.bin");
 const LIGHT_THEME: &[u8] = include_bytes!("../../assets/monokai-extended-light.theme.bin");
@@ -117,6 +127,11 @@ pub struct Config {
     pub function_calling: bool,
     pub mapping_tools: IndexMap<String, String>,
     pub use_tools: Option<String>,
+    pub tool_call_permission: Option<String>,
+    #[serde(default)]
+    pub tool_permissions: Option<ToolPermissions>,
+    #[serde(default)]
+    pub verbose_tool_calls: bool,
 
     pub repl_prelude: Option<String>,
     pub cmd_prelude: Option<String>,
@@ -198,6 +213,9 @@ impl Default for Config {
             function_calling: true,
             mapping_tools: Default::default(),
             use_tools: None,
+            tool_call_permission: None,
+            tool_permissions: None,
+            verbose_tool_calls: false,
 
             repl_prelude: None,
             cmd_prelude: None,
@@ -610,6 +628,10 @@ impl Config {
             ("rag_top_k", rag_top_k.to_string()),
             ("dry_run", self.dry_run.to_string()),
             ("function_calling", self.function_calling.to_string()),
+            (
+                "tool_call_permission",
+                format_option_value(&self.tool_call_permission),
+            ),
             ("stream", self.stream.to_string()),
             ("save", self.save.to_string()),
             ("keybindings", self.keybindings.clone()),
@@ -687,6 +709,10 @@ impl Config {
                     bail!("Function calling cannot be enabled because no functions are installed.")
                 }
                 config.write().function_calling = value;
+            }
+            "tool_call_permission" => {
+                let value = parse_value(value)?;
+                config.write().tool_call_permission = value;
             }
             "stream" => {
                 let value = value.parse().with_context(|| "Invalid value")?;
@@ -1794,6 +1820,7 @@ impl Config {
                         "max_output_tokens",
                         "dry_run",
                         "function_calling",
+                        "tool_call_permission",
                         "stream",
                         "save",
                         "highlight",
