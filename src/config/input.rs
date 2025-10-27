@@ -177,6 +177,7 @@ impl Input {
 
     pub fn clear_patch(&mut self) {
         self.patched_text = None;
+        self.web_research_enriched = false;
     }
 
     pub fn set_text(&mut self, text: String) {
