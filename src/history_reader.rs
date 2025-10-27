@@ -100,7 +100,8 @@ fn read_bash_history(max_commands: usize) -> Result<Vec<CommandHistoryEntry>> {
     
     // Ensure we only take the last `max_commands`
     if entries.len() > max_commands {
-        entries = entries.into_iter().skip(entries.len() - max_commands).collect();
+        let skip_count = entries.len() - max_commands;
+        entries = entries.into_iter().skip(skip_count).collect();
     }
 
     Ok(entries)
@@ -407,7 +408,8 @@ fn read_zsh_history(max_commands: usize) -> Result<Vec<CommandHistoryEntry>> {
     }
     
     if entries.len() > max_commands {
-        entries = entries.into_iter().skip(entries.len() - max_commands).collect();
+        let skip_count = entries.len() - max_commands;
+        entries = entries.into_iter().skip(skip_count).collect();
     }
 
     Ok(entries)

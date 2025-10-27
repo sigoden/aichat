@@ -80,31 +80,24 @@ install_ollama() {
 
 # --- Build and Install aichat ---
 build_aichat() {
-    info "Cloning aichat repository..."
-    if [ -d "aichat" ]; then
-        info "'aichat' directory already exists. Skipping clone."
-        # Optionally, add logic here to pull latest changes if desired
-        # cd aichat
-        # git pull
-        # cd ..
-    else
-        git clone https://github.com/sigoden/aichat.git
-    fi
-
-    cd aichat
+    info "Building aichat from current directory (forked repository)..."
+    # No git clone needed as we are in the forked repository.
+    # Assuming Cargo.toml is at the root of this repository.
+    
     info "Building aichat (release mode). This may take some time..."
-    cargo build --release
+    # Run cargo build from the current directory (repository root)
+    cargo build --release 
 
     info "Installing aichat binary to $HOME/.local/bin..."
     mkdir -p "$HOME/.local/bin"
+    # Path to target will be ./target/release/aichat if building from root
     cp target/release/aichat "$HOME/.local/bin/"
 
-    # Ensure $HOME/.local/bin is in PATH
+    # Ensure $HOME/.local/bin is in PATH (existing logic is fine)
     if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
         info "Adding $HOME/.local/bin to PATH for the current session and .bashrc/.zshrc."
         export PATH="$HOME/.local/bin:$PATH"
         
-        # Add to shell configuration files
         if [ -f "$HOME/.bashrc" ]; then
             echo '' >> "$HOME/.bashrc"
             echo '# Add .local/bin to PATH for aichat' >> "$HOME/.bashrc"
@@ -117,7 +110,6 @@ build_aichat() {
         fi
         info "Please source your .bashrc/.zshrc or open a new terminal to apply PATH changes permanently."
     fi
-    cd ..
 }
 
 # --- Configure aichat ---
@@ -296,14 +288,72 @@ configure_aichat() {
     info "Run aichat using 'aichat' or 'aichat --model ollama:your-ollama-model-name'."
 }
 
+# --- Setup Bash Completions ---
+setup_bash_completions() {
+    info "Setting up bash completions for aichat..."
+
+    # Install bash-completion package
+    if ! dpkg -s bash-completion &> /dev/null; then
+        info "bash-completion package not found. Installing..."
+        sudo apt-get install -y bash-completion
+    else
+        info "bash-completion package is already installed."
+    fi
+
+    # Create user completions directory if it doesn't exist
+    local user_completions_dir="$HOME/.local/share/bash-completion/completions"
+    info "Ensuring user completions directory exists: $user_completions_dir"
+    mkdir -p "$user_completions_dir"
+
+    # Copy aichat completion script
+    # Assuming setup_popos.sh is run from the root of the aichat repository
+    local aichat_completion_script_source="scripts/completions/aichat.bash"
+    if [ -f "$aichat_completion_script_source" ]; then
+        info "Copying aichat bash completion script to $user_completions_dir/aichat"
+        cp "$aichat_completion_script_source" "$user_completions_dir/aichat"
+    else
+        warn "aichat bash completion script not found at $aichat_completion_script_source. Skipping copy."
+    fi
+
+    # Ensure .bashrc sources bash_completion
+    local bash_completion_source_line_one="# Source global bash completion (if available)"
+    local bash_completion_source_line_two_global="/usr/share/bash-completion/bash_completion" # Common global path
+    local bash_completion_source_line_two_etc="/etc/bash_completion" # Another common global path
+    
+    # Check if .bashrc exists
+    if [ -f "$HOME/.bashrc" ]; then
+        # Check if either global completion script is already sourced
+        if ! grep -qFxP "source $bash_completion_source_line_two_global" "$HOME/.bashrc" && \
+           ! grep -qFxP ". $bash_completion_source_line_two_global" "$HOME/.bashrc" && \
+           ! grep -qFxP "source $bash_completion_source_line_two_etc" "$HOME/.bashrc" && \
+           ! grep -qFxP ". $bash_completion_source_line_two_etc" "$HOME/.bashrc"; then
+            info "Adding bash_completion source to $HOME/.bashrc"
+            echo "" >> "$HOME/.bashrc"
+            echo "$bash_completion_source_line_one" >> "$HOME/.bashrc"
+            # Add a conditional sourcing block
+            echo "if [ -f $bash_completion_source_line_two_global ]; then" >> "$HOME/.bashrc"
+            echo "    . $bash_completion_source_line_two_global" >> "$HOME/.bashrc"
+            echo "elif [ -f $bash_completion_source_line_two_etc ]; then" >> "$HOME/.bashrc"
+            echo "    . $bash_completion_source_line_two_etc" >> "$HOME/.bashrc"
+            echo "fi" >> "$HOME/.bashrc"
+        else
+            info "bash_completion seems to be already sourced in $HOME/.bashrc."
+        fi
+    else
+        warn "$HOME/.bashrc not found. Cannot configure bash_completion sourcing."
+    fi
+    info "Bash completion setup for aichat finished. Please source your .bashrc or open a new terminal."
+}
+
 # --- Main Execution ---
 main() {
     info "Starting aichat setup for Pop!_OS..."
 
     install_dependencies
     install_ollama
-    build_aichat
+    build_aichat # This was modified in the previous step
     configure_aichat
+    setup_bash_completions # Add the call here
 
     info "aichat setup complete!"
     info "Ensure $HOME/.local/bin is in your PATH. You might need to open a new terminal or source your shell configuration file (e.g., source ~/.bashrc)."

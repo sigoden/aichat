@@ -2,13 +2,15 @@ mod arena;
 mod cli;
 mod client;
 mod config;
+mod core; // Added
+mod daemon; // Added
 mod function;
 mod history_reader;
 mod rag;
-mod terminal_rag;
 mod render;
 mod repl;
 mod serve;
+mod terminal_rag;
 #[macro_use]
 mod utils;
 
@@ -40,6 +42,21 @@ use std::{env, io::stdin, process, sync::Arc};
 async fn main() -> Result<()> {
     load_env_file()?;
     let cli = Cli::parse();
+
+    if cli.daemon {
+        // Initialize logger for daemon mode
+        env_logger::init(); // Basic setup, can be configured further
+        info!("Starting aichat in daemon mode.");
+        // Potentially adjust setup_logger or have a daemon-specific logger setup
+        // For now, env_logger::init() will provide some logging.
+        // The existing setup_logger might be too CLI-focused.
+        if let Err(e) = daemon::start_daemon() {
+            eprintln!("Daemon failed to start: {}", e);
+            std::process::exit(1);
+        }
+        return Ok(());
+    }
+
     let text = cli.text()?;
     let working_mode = if cli.serve.is_some() {
         WorkingMode::Serve
@@ -56,7 +73,7 @@ async fn main() -> Result<()> {
         || cli.list_rags
         || cli.list_macros
         || cli.list_sessions;
-    setup_logger(working_mode.is_serve())?;
+    setup_logger(working_mode.is_serve())?; // Existing logger for CLI mode
     let config = Arc::new(RwLock::new(Config::init(working_mode, info_flag).await?));
     if let Err(err) = run(config, cli, text).await {
         render_error(err);
@@ -84,12 +101,18 @@ async fn check_terminal_history_consent(config: &GlobalConfig) -> Result<()> {
             // if aichat is used in scripts. The feature simply won't activate.
             return Ok(());
         }
-        println!("{}", yellow_text("Terminal History RAG - Consent Required:"));
+        println!(
+            "{}",
+            color_text(
+                "Terminal History RAG - Consent Required:",
+                nu_ansi_term::Color::Yellow
+            )
+        );
         println!("`aichat` can enhance its contextual understanding by using your terminal command history.");
         println!("This involves reading your shell history file (e.g., ~/.bash_history, ~/.zsh_history),");
         println!("processing commands locally, and potentially including relevant command snippets in prompts to the AI model.");
-        println!("{}", red_text("WARNING: Terminal history can contain sensitive information, including commands, arguments, paths, and even accidentally typed passwords. By enabling this, you acknowledge these risks."));
-        
+        println!("{}", color_text("WARNING: Terminal history can contain sensitive information, including commands, arguments, paths, and even accidentally typed passwords. By enabling this, you acknowledge these risks.", nu_ansi_term::Color::Red));
+
         let ans = inquire::Confirm::new("Allow `aichat` to access and process your terminal command history for this purpose?")
             .with_default(false)
             .with_help_message("If you choose 'no', this feature will remain disabled. You can grant consent later by editing the configuration file or (if implemented) using a specific command.")
@@ -107,17 +130,16 @@ async fn check_terminal_history_consent(config: &GlobalConfig) -> Result<()> {
             // User explicitly denied consent. We can also set 'enabled = false' to prevent re-prompting
             // until the user manually re-enables it in the config.
             let mut cfg_write = config.write();
-            cfg_write.terminal_history_rag.enabled = false; 
+            cfg_write.terminal_history_rag.enabled = false;
             cfg_write.terminal_history_rag.consent_given = false; // Ensure consent is false
             if let Err(e) = cfg_write.save_config_file() {
-                 warn!("Failed to save configuration after denying consent for terminal history RAG: {}. Feature status might not persist as disabled.", e);
+                warn!("Failed to save configuration after denying consent for terminal history RAG: {}. Feature status might not persist as disabled.", e);
             }
             info!("Terminal history RAG feature will remain disabled as consent was not granted.");
         }
     }
     Ok(())
 }
-
 
 async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()> {
     let abort_signal = create_abort_signal();
@@ -130,7 +152,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         return crate::arena::run_arena_mode(
             &config,
             arena_args.agents.clone(), // run_arena_mode expects Vec<String>
-            arena_args.prompt.clone(),  // run_arena_mode expects String
+            arena_args.prompt.clone(), // run_arena_mode expects String
             arena_args.max_turns as usize, // run_arena_mode expects usize
             abort_signal.clone(),
         )
@@ -138,7 +160,8 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     }
 
     // Prompt for terminal history RAG consent if needed
-    if config.read().working_mode.is_repl() || config.read().working_mode.is_cmd() { // Only prompt in interactive modes
+    if config.read().working_mode.is_repl() || config.read().working_mode.is_cmd() {
+        // Only prompt in interactive modes
         if let Err(e) = check_terminal_history_consent(&config).await {
             warn!("Error during terminal history consent check: {}", e);
             // Decide if this error is critical enough to halt execution. For now, just warn.
@@ -152,7 +175,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         let arguments = json!({"query": query});
         let tool_call = ToolCall::new("web_search".to_string(), arguments, None);
 
-        match tool_call.eval(&config.read()) {
+        match tool_call.eval(&config) {
             Ok(value) => {
                 if let Ok(pretty_json) = serde_json::to_string_pretty(&value) {
                     println!("{}", pretty_json);
@@ -174,7 +197,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         let arguments = json!({"command": command_string});
         let tool_call = ToolCall::new("execute_shell_command".to_string(), arguments, None);
 
-        match tool_call.eval(&config.read()) {
+        match tool_call.eval(&config) {
             Ok(value) => {
                 if let Ok(pretty_json) = serde_json::to_string_pretty(&value) {
                     println!("{}", pretty_json);
@@ -286,76 +309,6 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     if let Some(addr) = cli.serve {
         return serve::run(config, addr).await;
     }
-    // Note: `text` here is Option<String> from `cli.text()?`
-    // `cli.agent` is Option<String> for the agent name.
-
-    // If an agent is specified, and it's a ReAct agent, handle it here before REPL/CMD split.
-    if let Some(agent_name) = &cli.agent {
-        // We need to get the agent instance that was initialized by Config::use_agent or init it here.
-        // Config::use_agent already called Agent::init and set it as current_agent.
-        // We need a mutable reference to it.
-        let mut agent_instance_opt = config.write().current_agent.take(); // Take ownership from config
-
-        if let Some(mut agent) = agent_instance_opt {
-            if agent.definition().is_react_agent() {
-                let query = text.clone().unwrap_or_default(); // Use text from CLI or default to empty
-                if query.is_empty() && agent.conversation_staters().is_empty() {
-                     // For ReAct agent, if no query and no conversation starters, it might be ambiguous what to do.
-                     // However, the ReAct loop expects an initial query.
-                     // If `text` is None, perhaps prompt the user or use a default starter if available.
-                     // For now, if text is empty, we'll let it proceed, ReAct loop might need a query.
-                     // Or, more robustly:
-                    if query.is_empty() {
-                        // This is a command-line execution of a ReAct agent without a direct query.
-                        // This scenario might require prompting or specific handling.
-                        // For now, we'll just print the agent's banner and exit,
-                        // as ReAct loop needs an initial goal/query.
-                        // Or, we can try to run it with an empty query if the agent is designed for it.
-                        // The subtask implies `text` is the query.
-                        // If text is None, it means `aichat --agent react_search_agent` without further input.
-                        // This should probably show help or error.
-                        // For now, let's assume `text` must be provided for a ReAct agent in non-REPL.
-                        if !config.read().working_mode.is_repl() {
-                            // In CMD mode, a query is expected for ReAct.
-                            // If `text` (from `cli.text()?`) is None, it means no direct query was passed.
-                            // We could bail, or use a default conversation starter if any.
-                            // The `run_react_loop` takes `current_user_query` and `initial_goal`.
-                            // These would come from `text`.
-                            if text.is_none() {
-                                bail!("ReAct agent '{}' in command mode requires an initial query.", agent_name);
-                            }
-                        }
-                        // If it's REPL mode, the query will be asked inside the REPL loop.
-                        // So, if text is None AND it's CMD mode, that's an issue.
-                    }
-                }
-
-                // If not in REPL mode, execute the ReAct loop directly.
-                if !config.read().working_mode.is_repl() {
-                    let client = client::LLMClient::from_config(&config, Some(agent.model().clone()))?;
-                    let current_query = text.unwrap_or_default(); // text is already Option<String>
-                    let initial_goal = current_query.clone(); 
-
-                    let result = agent.run_react_loop(current_query, initial_goal, &client, &config, true).await?;
-                    println!("{}", result);
-                    
-                    config.write().current_agent = Some(agent); // Put agent back if needed, or handle session exit
-                    config.write().exit_session()?; // Properly exit session, clears agent.react_scratchpad
-                    return Ok(());
-                } else {
-                    // In REPL mode, the ReAct agent will be handled by the REPL's loop.
-                    // Put the agent back into the config so REPL can use it.
-                    config.write().current_agent = Some(agent);
-                }
-            } else {
-                // Not a ReAct agent, put it back
-                config.write().current_agent = Some(agent);
-            }
-        }
-        // If agent_instance_opt was None, it means Config::use_agent didn't set current_agent,
-        // or it was already taken. This would be an issue with internal logic flow.
-    }
-
     let is_repl = config.read().working_mode.is_repl();
     if cli.rebuild_rag {
         Config::rebuild_rag(&config, abort_signal.clone()).await?;
@@ -378,12 +331,22 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     config.write().apply_prelude()?;
 
     // Terminal History RAG Indexing
-    if config.read().terminal_history_rag.enabled && config.read().terminal_history_rag.consent_given {
+    if config.read().terminal_history_rag.enabled
+        && config.read().terminal_history_rag.consent_given
+    {
         match crate::history_reader::get_terminal_history(&config) {
             Ok(history_entries) => {
                 if !history_entries.is_empty() {
-                    debug!("Read {} terminal history entries. Building index...", history_entries.len());
-                    match crate::terminal_rag::TerminalHistoryIndexer::build_index(history_entries, &config).await {
+                    debug!(
+                        "Read {} terminal history entries. Building index...",
+                        history_entries.len()
+                    );
+                    match crate::terminal_rag::TerminalHistoryIndexer::build_index(
+                        history_entries,
+                        &config,
+                    )
+                    .await
+                    {
                         Ok(indexer) => {
                             config.write().terminal_history_indexer = Some(Arc::new(indexer));
                             debug!("Terminal history RAG index built successfully.");
@@ -401,7 +364,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     match is_repl {
         false => {
             let mut input = create_input(&config, text, &cli.file, abort_signal.clone()).await?;
-            
+
             // Augment with file-based RAG first (if any)
             input.use_embeddings(abort_signal.clone()).await?;
 
@@ -412,13 +375,17 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
                 match indexer.search(&query_for_history_rag, top_k).await {
                     Ok(history_results) => {
                         if !history_results.is_empty() {
-                            let context_str = history_results.iter()
+                            let context_str = history_results
+                                .iter()
                                 .map(|entry| format!("$ {}", entry.command)) // Simple formatting
                                 .collect::<Vec<String>>()
                                 .join("\n");
                             let full_context = format!("--- Relevant Terminal History Snippets ---\n{}\n--- End of History Snippets ---", context_str);
                             input.set_history_rag_context(full_context);
-                            debug!("Augmented input with {} terminal history snippets.", history_results.len());
+                            debug!(
+                                "Augmented input with {} terminal history snippets.",
+                                history_results.len()
+                            );
                         }
                     }
                     Err(e) => warn!("Terminal history RAG search failed: {}", e),
@@ -440,11 +407,14 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
 #[async_recursion::async_recursion]
 async fn start_directive(
     config: &GlobalConfig,
-    input: Input,
+    mut input: Input,
     code_mode: bool,
     abort_signal: AbortSignal,
 ) -> Result<()> {
     let client = input.create_client()?;
+    input
+        .integrate_web_research(client.as_ref(), abort_signal.clone())
+        .await?;
     let extract_code = !*IS_STDOUT_TERMINAL && code_mode;
     config.write().before_chat_completion(&input)?;
     let (output, tool_results) = if !input.stream() || extract_code {
@@ -490,6 +460,9 @@ async fn shell_execute(
     abort_signal: AbortSignal,
 ) -> Result<()> {
     let client = input.create_client()?;
+    input
+        .integrate_web_research(client.as_ref(), abort_signal.clone())
+        .await?;
     config.write().before_chat_completion(&input)?;
     let (eval_str, _) =
         call_chat_completions(&input, false, true, client.as_ref(), abort_signal.clone()).await?;

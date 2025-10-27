@@ -95,7 +95,7 @@ const RIGHT_PROMPT: &str = "{color.purple}{?session {?consume_tokens {consume_to
 
 static EDITOR: OnceLock<Option<String>> = OnceLock::new();
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
     #[serde(rename(serialize = "model", deserialize = "model"))]
@@ -131,7 +131,6 @@ pub struct Config {
     pub rag_chunk_size: Option<usize>,
     pub rag_chunk_overlap: Option<usize>,
     pub rag_template: Option<String>,
-    pub rag_native_pdf_extraction: Option<bool>, // Added for native PDF extraction
 
     #[serde(default)]
     pub document_loaders: HashMap<String, String>,
@@ -146,6 +145,7 @@ pub struct Config {
     pub save_shell_history: bool,
     pub sync_models_url: Option<String>,
 
+    #[serde(skip)]
     pub clients: Vec<ClientConfig>,
 
     #[serde(skip)]
@@ -235,7 +235,6 @@ impl Default for Config {
             rag_chunk_size: None,
             rag_chunk_overlap: None,
             rag_template: None,
-            rag_native_pdf_extraction: Some(true), // Default to true
 
             document_loaders: Default::default(),
 
@@ -264,6 +263,9 @@ impl Default for Config {
             session: None,
             rag: None,
             agent: None,
+            
+            terminal_history_rag: Default::default(),
+            terminal_history_indexer: None,
         }
     }
 }
@@ -2359,9 +2361,6 @@ impl Config {
         }
         if let Some(v) = read_env_value::<String>(&get_env_name("rag_template")) {
             self.rag_template = v;
-        }
-        if let Some(v) = read_env_bool(&get_env_name("rag_native_pdf_extraction")) {
-            self.rag_native_pdf_extraction = v;
         }
 
         if let Ok(v) = env::var(get_env_name("document_loaders")) {

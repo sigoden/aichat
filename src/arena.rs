@@ -1,5 +1,5 @@
 use crate::client::call_chat_completions;
-use crate::config::{Agent, GlobalConfig, Input};
+use crate::config::{Agent, GlobalConfig, Input, RoleLike};
 use crate::utils::AbortSignal;
 use anyhow::{Context, Result};
 
@@ -23,8 +23,7 @@ pub async fn run_arena_mode(
     println!("Max turns: {}", max_turns);
 
     // Store agents in a HashMap for easy lookup by name, and keep a list of active names
-    let mut agents_map: std::collections::HashMap<String, Agent> =
-        std::collections::HashMap::new();
+    let mut agents_map: std::collections::HashMap<String, Agent> = std::collections::HashMap::new();
     let mut active_agent_names: Vec<String> = Vec::new();
 
     for agent_name in &agent_names {
@@ -55,7 +54,10 @@ pub async fn run_arena_mode(
         message: initial_prompt.clone(),
     };
     transcript.push(user_prompt_entry.clone());
-    println!("{}: {}", user_prompt_entry.agent_name, user_prompt_entry.message);
+    println!(
+        "{}: {}",
+        user_prompt_entry.agent_name, user_prompt_entry.message
+    );
 
     let num_active_agents = active_agent_names.len();
     let mut current_input_text = initial_prompt;
@@ -65,7 +67,10 @@ pub async fn run_arena_mode(
     // max_turns is the total number of LLM responses in the arena.
     for turn_index in 0..max_turns {
         if abort_signal.aborted() {
-            println!("\nArena loop aborted by signal after {} turns.", completed_turns);
+            println!(
+                "\nArena loop aborted by signal after {} turns.",
+                completed_turns
+            );
             break;
         }
 
@@ -87,15 +92,19 @@ pub async fn run_arena_mode(
 
         // 3. Agent Processing
         // The input text is the last message in the transcript.
-        let input_for_agent =
+        let mut input_for_agent =
             Input::from_str(config, &current_input_text, Some(current_agent.to_role()));
-        
-        let client = current_agent.create_client().with_context(|| {
+
+        let client = input_for_agent.create_client().with_context(|| {
             format!(
                 "Failed to create LLM client for agent '{}'",
                 current_agent.name()
             )
         })?;
+
+        input_for_agent
+            .integrate_web_research(client.as_ref(), abort_signal.clone())
+            .await?;
 
         match call_chat_completions(
             &input_for_agent,
@@ -131,7 +140,8 @@ pub async fn run_arena_mode(
                 transcript.push(agent_error_entry);
                 // The next agent will receive this error message as its input.
                 // This could be changed to re-use the previous valid message if desired.
-                current_input_text = format!("[Agent {} encountered an error]", current_agent.name());
+                current_input_text =
+                    format!("[Agent {} encountered an error]", current_agent.name());
             }
         }
         completed_turns += 1;
@@ -260,7 +270,7 @@ mod tests {
             .agents
             .insert("agent2".to_string(), create_dummy_agent_config("agent2"));
         // agent3 will not have a config, so its Agent::init should fail
-        
+
         let agent_names = vec![
             "agent1".to_string(),
             "agent2".to_string(),
@@ -288,7 +298,6 @@ mod tests {
         // For now, successfully running through the turns with internal errors is the main check.
     }
 
-
     #[tokio::test]
     async fn test_turn_orchestration_and_max_turns_with_llm_errors() {
         let mut test_config = Config::default();
@@ -307,18 +316,24 @@ mod tests {
             },
         );
         let global_config = Arc::new(RwLock::new(test_config));
-        
+
         // Configure two agents that will successfully initialize but whose LLM calls will fail
         let agent1_name = "ErrorAgent1";
         let agent2_name = "ErrorAgent2";
 
         let mut agent1_config = create_dummy_agent_config(agent1_name);
         agent1_config.definition.model = Some("dummy-model-for-llm-error-test".to_string());
-        global_config.write().agents.insert(agent1_name.to_string(), agent1_config);
+        global_config
+            .write()
+            .agents
+            .insert(agent1_name.to_string(), agent1_config);
 
         let mut agent2_config = create_dummy_agent_config(agent2_name);
         agent2_config.definition.model = Some("dummy-model-for-llm-error-test".to_string());
-        global_config.write().agents.insert(agent2_name.to_string(), agent2_config);
+        global_config
+            .write()
+            .agents
+            .insert(agent2_name.to_string(), agent2_config);
 
         let agent_names = vec![agent1_name.to_string(), agent2_name.to_string()];
         let initial_prompt = "Hello LLM Error Test".to_string();
@@ -347,14 +362,14 @@ mod tests {
         // then "--- Turn 2 (Agent: ErrorAgent2) ---", then error, etc.
         // This test ensures the loop runs `max_turns` times and handles errors correctly.
     }
-    
+
     // Test for abort signal. This is tricky as it requires timing.
     // A simplified version might just check that an aborted signal before start prevents any turns.
     #[tokio::test]
     async fn test_abort_signal_prevents_turns() {
         let mut test_config = Config::default();
         test_config.working_mode = WorkingMode::Cmd;
-         test_config.models.insert(
+        test_config.models.insert(
             "dummy-model-for-abort-test".to_string(),
             crate::client::Model {
                 id: "dummy-model-for-abort-test".to_string(),
@@ -374,11 +389,17 @@ mod tests {
 
         let mut agent1_config_abort = create_dummy_agent_config(agent1_name);
         agent1_config_abort.definition.model = Some("dummy-model-for-abort-test".to_string());
-        global_config.write().agents.insert(agent1_name.to_string(), agent1_config_abort);
-        
+        global_config
+            .write()
+            .agents
+            .insert(agent1_name.to_string(), agent1_config_abort);
+
         let mut agent2_config_abort = create_dummy_agent_config(agent2_name);
         agent2_config_abort.definition.model = Some("dummy-model-for-abort-test".to_string());
-        global_config.write().agents.insert(agent2_name.to_string(), agent2_config_abort);
+        global_config
+            .write()
+            .agents
+            .insert(agent2_name.to_string(), agent2_config_abort);
 
         let agent_names = vec![agent1_name.to_string(), agent2_name.to_string()];
         let initial_prompt = "Abort Test".to_string();
@@ -394,7 +415,7 @@ mod tests {
             abort_signal,
         )
         .await;
-        
+
         assert!(result.is_ok());
         // Since the loop checks for abort at the very beginning,
         // `completed_turns` should be 0. This is indirectly tested as no panic occurs

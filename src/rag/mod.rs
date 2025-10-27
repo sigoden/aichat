@@ -407,8 +407,7 @@ impl Rag {
         for local_path in local_paths {
             index += 1;
             println!("Load {local_path} [{index}/{total}]");
-            // Pass the global config to load_file by accessing it from self.config
-            match load_file(&self.config, &loaders, &local_path).await {
+            match load_file(&loaders, &local_path).await {
                 Ok(v) => loaded_documents.push(v),
                 Err(err) => handle_error(err, &mut has_error),
             }
@@ -937,12 +936,6 @@ fn add_documents() -> Result<Vec<String>> {
     Ok(paths)
 }
 
-// New function for native PDF text extraction
-fn extract_text_from_pdf_native(file_path: &Path) -> Result<String> {
-    pdf_extract::extract_text(file_path)
-        .map_err(|e| anyhow!("Native PDF extraction failed for '{}': {}", file_path.display(), e))
-}
-
 async fn resolve_paths<T: AsRef<str>>(
     loaders: &HashMap<String, String>,
     paths: &[T],
@@ -988,71 +981,6 @@ async fn resolve_paths<T: AsRef<str>>(
     ))
 }
 
-// Modified load_file function signature
-async fn load_file(
-    global_config: &GlobalConfig, // Added global_config
-    loaders: &HashMap<String, String>,
-    path_str: &str,
-) -> Result<LoadedDocument> {
-    let path = Path::new(path_str);
-    let extension = path
-        .extension()
-        .and_then(|v| v.to_str())
-        .unwrap_or_default()
-        .to_lowercase();
-
-    let mut contents = String::new();
-    let mut metadata = IndexMap::new();
-    metadata.insert(EXTENSION_METADATA.into(), extension.clone());
-
-    // Check if it's a PDF and if native extraction is enabled
-    if extension == "pdf" {
-        // Default to true if not set, or if reading global_config fails (though it shouldn't here)
-        let use_native_extraction = global_config.read().rag_native_pdf_extraction.unwrap_or(true); 
-
-        if use_native_extraction {
-            debug!("Attempting native PDF extraction for: {}", path.display());
-            match extract_text_from_pdf_native(path) {
-                Ok(text) => {
-                    contents = text;
-                    debug!("Native PDF extraction successful for: {}", path.display());
-                }
-                Err(native_err) => {
-                    warn!("Native PDF extraction failed for '{}': {}. Checking for fallback loader.", path.display(), native_err);
-                    if let Some(loader_cmd) = loaders.get(&extension) {
-                        debug!("Falling back to command-line loader for PDF: {}", path.display());
-                        contents = run_loader(loader_cmd, path_str, &mut metadata)?;
-                    } else {
-                        // Native failed and no fallback defined
-                        return Err(native_err.context(format!("Native PDF extraction failed and no fallback loader configured for PDF file '{}'", path.display())));
-                    }
-                }
-            }
-        } else if let Some(loader_cmd) = loaders.get(&extension) { // Native extraction explicitly disabled
-             debug!("Native PDF extraction disabled, using command-line loader for: {}", path.display());
-            contents = run_loader(loader_cmd, path_str, &mut metadata)?;
-        } else {
-            // Native disabled and no loader defined for PDF
-            warn!("Native PDF extraction disabled and no loader for PDF files. Cannot process '{}'.", path.display());
-            // Return an error or attempt plain text read? Task implies error if no fallback.
-            return Err(anyhow!("Native PDF extraction disabled and no fallback loader configured for PDF file '{}'", path.display()));
-        }
-    } else if let Some(loader_cmd) = loaders.get(&extension) { // Not a PDF, but has a loader
-        debug!("Using command-line loader for: {}", path.display());
-        contents = run_loader(loader_cmd, path_str, &mut metadata)?;
-    } else { // Not a PDF and no specific loader, read as plain text
-        debug!("No specific loader for '.{}', reading as plain text: {}", extension, path.display());
-        contents = fs::read_to_string(path)
-            .with_context(|| format!("Failed to read file '{}'", path.display()))?;
-    }
-
-    Ok(LoadedDocument {
-        path: path_str.to_string(),
-        contents,
-        metadata,
-    })
-}
-
 fn progress(spinner: &Option<Spinner>, message: String) {
     if let Some(spinner) = spinner {
         let _ = spinner.set_message(message);
@@ -1082,87 +1010,4 @@ fn reciprocal_rank_fusion(
         .take(top_k)
         .map(|(v, _)| v)
         .collect()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::path::PathBuf;
-
-    // Helper function to get the path to the test_data directory
-    fn get_test_data_path(file_name: &str) -> PathBuf {
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("test_data");
-        path.push("rag");
-        path.push(file_name);
-        path
-    }
-
-    #[test]
-    fn test_native_pdf_extraction_success() {
-        // This test requires a `sample.pdf` file in `test_data/rag/`
-        // containing the text "AICHAT_PDF_TEST_STRING_12345".
-        // If the file is not present, this test will fail.
-        let pdf_path = get_test_data_path("sample.pdf");
-
-        // Create the directory if it doesn't exist - useful for local test runs
-        // In a CI environment, the file should be checked in.
-        if !pdf_path.parent().unwrap().exists() {
-            std::fs::create_dir_all(pdf_path.parent().unwrap()).expect("Failed to create test_data/rag directory");
-        }
-        // NOTE: The actual PDF file creation with specific content cannot be done by the agent.
-        // This test assumes 'sample.pdf' with "AICHAT_PDF_TEST_STRING_12345" exists at the path.
-        // If it doesn't, the extract_text call might fail or return empty/unexpected content.
-        
-        if !pdf_path.exists() {
-            // Skip the test or assert a specific behavior if the file is missing.
-            // For now, we'll let it proceed, and `extract_text_from_pdf_native` should ideally error.
-            // However, the spirit of this test is to check successful extraction.
-            // So, if the file doesn't exist, it's more of a test setup issue.
-            // For robustness in CI, we might `panic!` or `assert!(false, ...)` here if file must exist.
-            // Or, a more advanced setup might try to create a dummy PDF if possible.
-            // Given current tools, we assume the file is present.
-            // If `pdf_extract::extract_text` itself returns an error for a non-existent file,
-            // this test would catch that if the file isn't there.
-            // Let's assume for the "success" test, the file must exist.
-            // If running this in an environment where the file isn't pre-placed, this test will fail.
-            // This is acceptable as it indicates a missing test dependency.
-        }
-
-        match extract_text_from_pdf_native(&pdf_path) {
-            Ok(extracted_text) => {
-                assert!(
-                    extracted_text.contains("AICHAT_PDF_TEST_STRING_12345"),
-                    "Extracted text should contain the test string. Actual text: '{}'",
-                    extracted_text
-                );
-            }
-            Err(e) => {
-                // If the file doesn't exist, pdf-extract will likely error out.
-                // This branch will catch that if sample.pdf is missing.
-                panic!("Native PDF extraction failed when it should have succeeded (or sample.pdf is missing): {:?}. Path: {}", e, pdf_path.display());
-            }
-        }
-    }
-
-    #[test]
-    fn test_native_pdf_extraction_file_not_found() {
-        let non_existent_pdf_path = get_test_data_path("non_existent_sample.pdf");
-        let result = extract_text_from_pdf_native(&non_existent_pdf_path);
-        assert!(result.is_err(), "Expected an error for a non-existent file, but got Ok: {:?}", result.ok());
-        // Optionally, check for a specific error kind if the library provides it,
-        // or if the anyhow error message is predictable.
-        // For instance, the error from pdf_extract crate for a non-existent file is typically an io::Error.
-        if let Err(e) = result {
-            // pdf_extract::extract_text itself returns a custom error type that wraps underlying issues.
-            // The error message from pdf_extract for a non-existent file is often like:
-            // "Failed to open file `path/to/file`: No such file or directory (os error 2)"
-            // Our wrapper adds "Native PDF extraction failed for 'path/to/file': ..."
-            let error_string = e.to_string();
-            assert!(error_string.contains("Native PDF extraction failed"), "Error message should indicate native extraction failure. Got: {}", error_string);
-            // This part depends on the exact error message from `pdf_extract` for file not found.
-            // It might be an `io::Error` of kind `NotFound`.
-            // For now, checking that it's an error is sufficient.
-        }
-    }
 }

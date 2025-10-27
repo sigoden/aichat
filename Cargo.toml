@@ -1,3 +1,4 @@
+workspace = { members = ["aichat-frontend"] }
 [package]
 name = "aichat"
 version = "0.29.0"
@@ -11,6 +12,7 @@ categories = ["command-line-utilities"]
 keywords = ["chatgpt", "llm", "cli", "ai", "repl"]
 
 [dependencies]
+env_logger = "0.10" # Or your preferred version
 anyhow = "1.0.69"
 bytes = "1.4.0"
 clap = { version = "4.4.8", features = ["derive"] }
@@ -66,7 +68,6 @@ os_info = { version = "3.8.2", default-features = false }
 bm25 = { version = "2.0.1", features = ["parallelism"] }
 which = "7.0.1"
 fuzzy-matcher = "0.3.7"
-pdf-extract = "0.7.0" # Added for native PDF text extraction
 
 [dependencies.reqwest]
 version = "0.12.0"
@@ -95,3 +96,4 @@ rand = "0.9.0"
 lto = true
 strip = true
 opt-level = "z"
+
