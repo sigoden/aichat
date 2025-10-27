@@ -7,10 +7,10 @@ mod daemon; // Added
 mod function;
 mod history_reader;
 mod rag;
-mod terminal_rag;
 mod render;
 mod repl;
 mod serve;
+mod terminal_rag;
 #[macro_use]
 mod utils;
 
@@ -101,12 +101,18 @@ async fn check_terminal_history_consent(config: &GlobalConfig) -> Result<()> {
             // if aichat is used in scripts. The feature simply won't activate.
             return Ok(());
         }
-        println!("{}", color_text("Terminal History RAG - Consent Required:", nu_ansi_term::Color::Yellow));
+        println!(
+            "{}",
+            color_text(
+                "Terminal History RAG - Consent Required:",
+                nu_ansi_term::Color::Yellow
+            )
+        );
         println!("`aichat` can enhance its contextual understanding by using your terminal command history.");
         println!("This involves reading your shell history file (e.g., ~/.bash_history, ~/.zsh_history),");
         println!("processing commands locally, and potentially including relevant command snippets in prompts to the AI model.");
         println!("{}", color_text("WARNING: Terminal history can contain sensitive information, including commands, arguments, paths, and even accidentally typed passwords. By enabling this, you acknowledge these risks.", nu_ansi_term::Color::Red));
-        
+
         let ans = inquire::Confirm::new("Allow `aichat` to access and process your terminal command history for this purpose?")
             .with_default(false)
             .with_help_message("If you choose 'no', this feature will remain disabled. You can grant consent later by editing the configuration file or (if implemented) using a specific command.")
@@ -124,17 +130,16 @@ async fn check_terminal_history_consent(config: &GlobalConfig) -> Result<()> {
             // User explicitly denied consent. We can also set 'enabled = false' to prevent re-prompting
             // until the user manually re-enables it in the config.
             let mut cfg_write = config.write();
-            cfg_write.terminal_history_rag.enabled = false; 
+            cfg_write.terminal_history_rag.enabled = false;
             cfg_write.terminal_history_rag.consent_given = false; // Ensure consent is false
             if let Err(e) = cfg_write.save_config_file() {
-                 warn!("Failed to save configuration after denying consent for terminal history RAG: {}. Feature status might not persist as disabled.", e);
+                warn!("Failed to save configuration after denying consent for terminal history RAG: {}. Feature status might not persist as disabled.", e);
             }
             info!("Terminal history RAG feature will remain disabled as consent was not granted.");
         }
     }
     Ok(())
 }
-
 
 async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()> {
     let abort_signal = create_abort_signal();
@@ -147,7 +152,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         return crate::arena::run_arena_mode(
             &config,
             arena_args.agents.clone(), // run_arena_mode expects Vec<String>
-            arena_args.prompt.clone(),  // run_arena_mode expects String
+            arena_args.prompt.clone(), // run_arena_mode expects String
             arena_args.max_turns as usize, // run_arena_mode expects usize
             abort_signal.clone(),
         )
@@ -155,7 +160,8 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     }
 
     // Prompt for terminal history RAG consent if needed
-    if config.read().working_mode.is_repl() || config.read().working_mode.is_cmd() { // Only prompt in interactive modes
+    if config.read().working_mode.is_repl() || config.read().working_mode.is_cmd() {
+        // Only prompt in interactive modes
         if let Err(e) = check_terminal_history_consent(&config).await {
             warn!("Error during terminal history consent check: {}", e);
             // Decide if this error is critical enough to halt execution. For now, just warn.
@@ -325,12 +331,22 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     config.write().apply_prelude()?;
 
     // Terminal History RAG Indexing
-    if config.read().terminal_history_rag.enabled && config.read().terminal_history_rag.consent_given {
+    if config.read().terminal_history_rag.enabled
+        && config.read().terminal_history_rag.consent_given
+    {
         match crate::history_reader::get_terminal_history(&config) {
             Ok(history_entries) => {
                 if !history_entries.is_empty() {
-                    debug!("Read {} terminal history entries. Building index...", history_entries.len());
-                    match crate::terminal_rag::TerminalHistoryIndexer::build_index(history_entries, &config).await {
+                    debug!(
+                        "Read {} terminal history entries. Building index...",
+                        history_entries.len()
+                    );
+                    match crate::terminal_rag::TerminalHistoryIndexer::build_index(
+                        history_entries,
+                        &config,
+                    )
+                    .await
+                    {
                         Ok(indexer) => {
                             config.write().terminal_history_indexer = Some(Arc::new(indexer));
                             debug!("Terminal history RAG index built successfully.");
@@ -348,7 +364,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     match is_repl {
         false => {
             let mut input = create_input(&config, text, &cli.file, abort_signal.clone()).await?;
-            
+
             // Augment with file-based RAG first (if any)
             input.use_embeddings(abort_signal.clone()).await?;
 
@@ -359,13 +375,17 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
                 match indexer.search(&query_for_history_rag, top_k).await {
                     Ok(history_results) => {
                         if !history_results.is_empty() {
-                            let context_str = history_results.iter()
+                            let context_str = history_results
+                                .iter()
                                 .map(|entry| format!("$ {}", entry.command)) // Simple formatting
                                 .collect::<Vec<String>>()
                                 .join("\n");
                             let full_context = format!("--- Relevant Terminal History Snippets ---\n{}\n--- End of History Snippets ---", context_str);
                             input.set_history_rag_context(full_context);
-                            debug!("Augmented input with {} terminal history snippets.", history_results.len());
+                            debug!(
+                                "Augmented input with {} terminal history snippets.",
+                                history_results.len()
+                            );
                         }
                     }
                     Err(e) => warn!("Terminal history RAG search failed: {}", e),
@@ -387,11 +407,14 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
 #[async_recursion::async_recursion]
 async fn start_directive(
     config: &GlobalConfig,
-    input: Input,
+    mut input: Input,
     code_mode: bool,
     abort_signal: AbortSignal,
 ) -> Result<()> {
     let client = input.create_client()?;
+    input
+        .integrate_web_research(client.as_ref(), abort_signal.clone())
+        .await?;
     let extract_code = !*IS_STDOUT_TERMINAL && code_mode;
     config.write().before_chat_completion(&input)?;
     let (output, tool_results) = if !input.stream() || extract_code {
@@ -437,6 +460,9 @@ async fn shell_execute(
     abort_signal: AbortSignal,
 ) -> Result<()> {
     let client = input.create_client()?;
+    input
+        .integrate_web_research(client.as_ref(), abort_signal.clone())
+        .await?;
     config.write().before_chat_completion(&input)?;
     let (eval_str, _) =
         call_chat_completions(&input, false, true, client.as_ref(), abort_signal.clone()).await?;

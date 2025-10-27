@@ -731,6 +731,9 @@ async fn ask(
     }
 
     let client = input.create_client()?;
+    input
+        .integrate_web_research(client.as_ref(), abort_signal.clone())
+        .await?;
     config.write().before_chat_completion(&input)?;
     let (output, tool_results) = if input.stream() {
         call_chat_completions_streaming(&input, client.as_ref(), abort_signal.clone()).await?

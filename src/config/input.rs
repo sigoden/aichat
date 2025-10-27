@@ -4,16 +4,30 @@ use crate::client::{
     init_client, patch_messages, ChatCompletionsData, Client, ImageUrl, Message, MessageContent,
     MessageContentPart, MessageContentToolCalls, MessageRole, Model,
 };
-use crate::function::ToolResult;
-use crate::utils::{base64_encode, is_loader_protocol, sha256, AbortSignal};
+use crate::function::{ToolCall, ToolResult};
+use crate::utils::{
+    abortable_run_with_spinner, base64_encode, is_loader_protocol, sha256, strip_think_tag,
+    AbortSignal,
+};
 
 use anyhow::{bail, Context, Result};
 use indexmap::IndexSet;
-use std::{collections::HashMap, fs::File, io::Read};
+use log::warn;
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
+use serde_json::{json, Value};
+use std::{
+    collections::{HashMap, HashSet},
+    fs::File,
+    io::Read,
+};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 const IMAGE_EXTS: [&str; 5] = ["png", "jpeg", "jpg", "webp", "gif"];
 const SUMMARY_MAX_WIDTH: usize = 80;
+const MAX_RESEARCH_CYCLES: usize = 3;
+const MAX_RESULT_PREVIEW_CHARS: usize = 2000;
+const MAX_COMBINED_SUMMARY_CHARS: usize = 4000;
 
 #[derive(Debug, Clone)]
 pub struct Input {
@@ -32,6 +46,7 @@ pub struct Input {
     with_session: bool,
     with_agent: bool,
     history_rag_context: Option<String>,
+    web_research_enriched: bool,
 }
 
 impl Input {
@@ -53,6 +68,7 @@ impl Input {
             with_session,
             with_agent,
             history_rag_context: None,
+            web_research_enriched: false,
         }
     }
 
@@ -121,6 +137,7 @@ impl Input {
             with_session,
             with_agent,
             history_rag_context: None,
+            web_research_enriched: false,
         })
     }
 
@@ -243,6 +260,417 @@ impl Input {
         Ok(text)
     }
 
+    pub async fn integrate_web_research(
+        &mut self,
+        client: &dyn Client,
+        abort_signal: AbortSignal,
+    ) -> Result<()> {
+        if self.web_research_enriched {
+            return Ok(());
+        }
+
+        let request_text = self.text();
+        if request_text.trim().is_empty() {
+            self.web_research_enriched = true;
+            return Ok(());
+        }
+
+        let (plan, raw_plan_text) = self
+            .research_planning_stage(client, &request_text, abort_signal.clone())
+            .await
+            .unwrap_or_else(|err| {
+                warn!("web research planning failed: {err}");
+                (
+                    ResearchPlanData {
+                        should_search: false,
+                        queries: vec![],
+                        rationale: format!("planning failed: {err}"),
+                        stopping_condition: Some(
+                            "fall back to internal knowledge because planning was unavailable"
+                                .to_string(),
+                        ),
+                    },
+                    String::new(),
+                )
+            });
+
+        let mut dossier_sections = vec![format!("planning notes: {}", plan.rationale)];
+        let mut executed_query_labels = vec![];
+        let mut summary_sections: Vec<String> = vec![];
+        let mut final_evaluation: Option<ResearchEvaluationData> = None;
+        let mut evaluation_raw = String::new();
+
+        let initial_queries = normalize_queries(plan.queries.clone());
+        if plan.should_search && !initial_queries.is_empty() {
+            let mut executed_queries: HashSet<String> = HashSet::new();
+            let mut next_queries = initial_queries.clone();
+
+            for cycle in 0..MAX_RESEARCH_CYCLES {
+                let iteration_index = cycle + 1;
+                let current_queries: Vec<String> = next_queries
+                    .into_iter()
+                    .filter_map(|q| {
+                        let trimmed = q.trim().to_string();
+                        if trimmed.is_empty() {
+                            None
+                        } else if executed_queries.insert(trimmed.clone()) {
+                            Some(trimmed)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                if current_queries.is_empty() {
+                    break;
+                }
+
+                let batch_results = self
+                    .collect_search_results(&current_queries, iteration_index, abort_signal.clone())
+                    .await;
+
+                if batch_results.is_empty() {
+                    dossier_sections.push(format!(
+                        "iteration {} search attempts produced no usable results.",
+                        iteration_index
+                    ));
+                    break;
+                }
+
+                executed_query_labels.extend(
+                    batch_results
+                        .iter()
+                        .map(|bundle| format!("{}: {}", bundle.label, bundle.query.clone())),
+                );
+
+                let compression = match self
+                    .research_compression_stage(
+                        client,
+                        &request_text,
+                        iteration_index,
+                        &batch_results,
+                        abort_signal.clone(),
+                    )
+                    .await
+                {
+                    Ok(summary) => summary,
+                    Err(err) => {
+                        warn!("web research compression failed: {err}");
+                        dossier_sections.push(format!(
+                            "iteration {} compression failed: {}",
+                            iteration_index, err
+                        ));
+                        break;
+                    }
+                };
+
+                summary_sections.push(compression.clone());
+                dossier_sections.push(format!(
+                    "iteration {} summary:\n{}",
+                    iteration_index, compression
+                ));
+
+                let combined_summary =
+                    clamp_text(&summary_sections.join("\n\n"), MAX_COMBINED_SUMMARY_CHARS);
+
+                match self
+                    .research_evaluation_stage(
+                        client,
+                        &request_text,
+                        &plan,
+                        &combined_summary,
+                        iteration_index,
+                        abort_signal.clone(),
+                    )
+                    .await
+                {
+                    Ok((evaluation, raw)) => {
+                        evaluation_raw = raw;
+                        dossier_sections.push(format!(
+                            "iteration {} evaluation: {} (confidence: {})",
+                            iteration_index, evaluation.justification, evaluation.confidence
+                        ));
+                        let search_needed = !evaluation.sufficient
+                            && evaluation
+                                .additional_queries
+                                .iter()
+                                .any(|q| !executed_queries.contains(q.trim()));
+                        next_queries = normalize_queries(evaluation.additional_queries.clone());
+                        final_evaluation = Some(evaluation);
+                        if !search_needed {
+                            break;
+                        }
+                    }
+                    Err(err) => {
+                        warn!("web research evaluation failed: {err}");
+                        dossier_sections.push(format!(
+                            "iteration {} evaluation failed: {}",
+                            iteration_index, err
+                        ));
+                        break;
+                    }
+                }
+            }
+        } else {
+            if plan.should_search {
+                dossier_sections.push(
+                    "planning recommended research but produced no actionable queries.".to_string(),
+                );
+            } else {
+                dossier_sections.push(
+                    "planning determined that existing knowledge is sufficient without web search."
+                        .to_string(),
+                );
+            }
+        }
+
+        if executed_query_labels.is_empty() {
+            dossier_sections.push("executed searches: none".to_string());
+        } else {
+            dossier_sections.push(format!(
+                "executed searches: {}",
+                executed_query_labels.join("; ")
+            ));
+        }
+
+        if summary_sections.is_empty() {
+            dossier_sections.push("combined evidence summary: none".to_string());
+        } else {
+            let combined = clamp_text(&summary_sections.join("\n\n"), MAX_COMBINED_SUMMARY_CHARS);
+            dossier_sections.push(format!("combined evidence summary:\n{}", combined));
+        }
+
+        let final_evaluation = final_evaluation.unwrap_or_else(|| ResearchEvaluationData {
+            sufficient: !plan.should_search || initial_queries.is_empty(),
+            justification: if plan.should_search && initial_queries.is_empty() {
+                "proceeding without web data due to lack of actionable queries.".to_string()
+            } else {
+                "ready to respond with available context.".to_string()
+            },
+            confidence: if plan.should_search && initial_queries.is_empty() {
+                "medium".to_string()
+            } else {
+                "high".to_string()
+            },
+            additional_queries: vec![],
+        });
+
+        dossier_sections.push(format!(
+            "final research readiness: {} (confidence: {}).",
+            final_evaluation.justification, final_evaluation.confidence
+        ));
+
+        if !final_evaluation.additional_queries.is_empty() {
+            dossier_sections.push(format!(
+                "remaining research ideas: {}",
+                final_evaluation.additional_queries.join("; ")
+            ));
+        }
+
+        if !evaluation_raw.is_empty() {
+            dossier_sections.push(format!("evaluation details: {}", evaluation_raw));
+        }
+
+        let plan_stop = plan
+            .stopping_condition
+            .clone()
+            .unwrap_or_else(|| "no explicit stopping condition provided.".to_string());
+
+        let initial_query_line = if initial_queries.is_empty() {
+            "initial queries: none".to_string()
+        } else {
+            format!("initial queries: {}", initial_queries.join("; "))
+        };
+
+        let mut research_block = format!(
+            "[integrated web research]\nplan rationale: {}\n{}\nstopping condition: {}",
+            plan.rationale, initial_query_line, plan_stop
+        );
+
+        if !raw_plan_text.is_empty() {
+            research_block.push_str(&format!("\nplanner output: {}", raw_plan_text));
+        }
+
+        research_block.push('\n');
+        research_block.push_str(&dossier_sections.join("\n"));
+
+        let base_text = self.text();
+        let enriched_text = format!("{}\n\n{}", research_block, base_text);
+        self.patched_text = Some(enriched_text);
+        self.web_research_enriched = true;
+        Ok(())
+    }
+
+    async fn research_planning_stage(
+        &self,
+        client: &dyn Client,
+        request_text: &str,
+        abort_signal: AbortSignal,
+    ) -> Result<(ResearchPlanData, String)> {
+        let mut planner_role = Role::new(
+            "%integrated-web-research-plan%",
+            "you are Lee Daghlar Ostadi's research planner. decide if web search is required before answering. always return strict JSON with fields should_search, queries, rationale, stopping_condition. limit queries to at most three targeted strings.",
+        );
+        planner_role.set_model(self.role().model());
+        planner_role.set_temperature(Some(0.2));
+
+        let planner_prompt = format!(
+            "Original request:\n{request_text}\n\nReturn JSON as specified without extra commentary.",
+        );
+        let planner_input = Input::from_str(&self.config, &planner_prompt, Some(planner_role));
+        let output = abortable_run_with_spinner(
+            client.chat_completions(planner_input),
+            "Planning web research",
+            abort_signal,
+        )
+        .await?;
+        let cleaned = strip_think_tag(&output.text).trim().to_string();
+        let mut plan = parse_json_object::<ResearchPlanData>(&cleaned).unwrap_or_else(|| ResearchPlanData {
+            should_search: false,
+            queries: vec![],
+            rationale: cleaned.clone(),
+            stopping_condition: Some(
+                "planner returned unstructured text; rely on existing knowledge unless more context is requested.".to_string(),
+            ),
+        });
+        if plan.rationale.trim().is_empty() {
+            plan.rationale = "planner did not provide a rationale.".to_string();
+        }
+        if plan.stopping_condition.is_none() {
+            plan.stopping_condition =
+                Some("planner did not define a stopping condition.".to_string());
+        }
+        Ok((plan, cleaned))
+    }
+
+    async fn collect_search_results(
+        &self,
+        queries: &[String],
+        iteration_index: usize,
+        abort_signal: AbortSignal,
+    ) -> Vec<SearchResultBundle> {
+        let mut results = vec![];
+        for (idx, query) in queries.iter().enumerate() {
+            let label = format!("Q{}-{}", iteration_index, idx + 1);
+            let cloned_query = query.clone();
+            let config = self.config.clone();
+            let tool_call = ToolCall::new(
+                "web_search".to_string(),
+                json!({ "query": cloned_query }),
+                None,
+            );
+            let spinner_label = format!("Searching web: {}", query);
+            match abortable_run_with_spinner(
+                async move {
+                    let value = tool_call.eval(&config)?;
+                    Ok::<Value, anyhow::Error>(value)
+                },
+                &spinner_label,
+                abort_signal.clone(),
+            )
+            .await
+            {
+                Ok(value) => results.push(SearchResultBundle {
+                    label,
+                    query: query.clone(),
+                    payload: value,
+                }),
+                Err(err) => {
+                    warn!("web search for '{query}' failed: {err}");
+                    results.push(SearchResultBundle {
+                        label,
+                        query: query.clone(),
+                        payload: json!({
+                            "error": err.to_string(),
+                        }),
+                    });
+                }
+            }
+        }
+        results
+    }
+
+    async fn research_compression_stage(
+        &self,
+        client: &dyn Client,
+        request_text: &str,
+        iteration_index: usize,
+        results: &[SearchResultBundle],
+        abort_signal: AbortSignal,
+    ) -> Result<String> {
+        let mut compression_role = Role::new(
+            "%integrated-web-research-compress%",
+            "you are Lee Daghlar Ostadi's research compression specialist. distill the gathered evidence into a compact digest. cite query labels like [Q1-1]. keep the summary under 250 words.",
+        );
+        compression_role.set_model(self.role().model());
+        compression_role.set_temperature(Some(0.4));
+
+        let evidence = format_search_evidence(results);
+        let compression_prompt = format!(
+            "Research target:\n{request_text}\n\nEvidence batch {iteration_index}:\n{evidence}\n\nProduce a concise digest that references the query labels and highlights reliable findings, conflicts, and gaps.",
+        );
+        let compression_input =
+            Input::from_str(&self.config, &compression_prompt, Some(compression_role));
+        let output = abortable_run_with_spinner(
+            client.chat_completions(compression_input),
+            "Compressing research evidence",
+            abort_signal,
+        )
+        .await?;
+        Ok(strip_think_tag(&output.text).trim().to_string())
+    }
+
+    async fn research_evaluation_stage(
+        &self,
+        client: &dyn Client,
+        request_text: &str,
+        plan: &ResearchPlanData,
+        combined_summary: &str,
+        iteration_index: usize,
+        abort_signal: AbortSignal,
+    ) -> Result<(ResearchEvaluationData, String)> {
+        let mut evaluator_role = Role::new(
+            "%integrated-web-research-eval%",
+            "you are Lee Daghlar Ostadi's evidence reviewer. decide if the gathered research is sufficient to answer with confidence. respond with JSON containing sufficient, justification, confidence, additional_queries. suggest at most two additional_queries when more work is needed.",
+        );
+        evaluator_role.set_model(self.role().model());
+        evaluator_role.set_temperature(Some(0.2));
+
+        let stop_clause = plan
+            .stopping_condition
+            .clone()
+            .unwrap_or_else(|| "no stopping condition provided.".to_string());
+
+        let evaluation_prompt = format!(
+            "Research target:\n{request_text}\n\nDeclared stopping condition: {stop_clause}\n\nEvidence digest after iteration {iteration_index}:\n{combined_summary}\n\nReturn strict JSON with the required fields and no commentary.",
+        );
+        let evaluation_input =
+            Input::from_str(&self.config, &evaluation_prompt, Some(evaluator_role));
+        let output = abortable_run_with_spinner(
+            client.chat_completions(evaluation_input),
+            "Evaluating research coverage",
+            abort_signal,
+        )
+        .await?;
+        let cleaned = strip_think_tag(&output.text).trim().to_string();
+        let mut evaluation =
+            parse_json_object::<ResearchEvaluationData>(&cleaned).unwrap_or_else(|| {
+                ResearchEvaluationData {
+                    sufficient: false,
+                    justification: cleaned.clone(),
+                    confidence: "low".to_string(),
+                    additional_queries: vec![],
+                }
+            });
+        if evaluation.justification.trim().is_empty() {
+            evaluation.justification = "the evaluator returned no justification.".to_string();
+        }
+        if evaluation.confidence.trim().is_empty() {
+            evaluation.confidence = "low".to_string();
+        }
+        Ok((evaluation, cleaned))
+    }
+
     pub fn prepare_completion_data(
         &self,
         model: &Model,
@@ -265,7 +693,7 @@ impl Input {
     pub fn build_messages(&self) -> Result<Vec<Message>> {
         // Create a temporary Input that might have text augmented with history_rag_context
         let mut temp_input_for_messages = self.clone();
-        
+
         let original_text = self.text(); // Uses patched_text if available, else self.text
         if let Some(ctx) = &self.history_rag_context {
             // Important: We need to decide how file RAG (patched_text) and history RAG interact.
@@ -301,7 +729,7 @@ impl Input {
         let original_text_for_echo = self.text(); // Similar logic to build_messages
         if let Some(ctx) = &self.history_rag_context {
             temp_input_for_echo.text = format!("{}\n\n{}", ctx, original_text_for_echo);
-            temp_input_for_echo.patched_text = None; 
+            temp_input_for_echo.patched_text = None;
         }
 
         if let Some(session) = self.session(&self.config.read().session) {
@@ -411,6 +839,89 @@ impl Input {
             MessageContent::Array(list)
         }
     }
+}
+
+#[derive(Debug, Default, Deserialize, Clone)]
+struct ResearchPlanData {
+    #[serde(default)]
+    should_search: bool,
+    #[serde(default)]
+    queries: Vec<String>,
+    #[serde(default)]
+    rationale: String,
+    #[serde(default)]
+    stopping_condition: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize, Clone)]
+struct ResearchEvaluationData {
+    #[serde(default)]
+    sufficient: bool,
+    #[serde(default)]
+    justification: String,
+    #[serde(default)]
+    confidence: String,
+    #[serde(default)]
+    additional_queries: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+struct SearchResultBundle {
+    label: String,
+    query: String,
+    payload: Value,
+}
+
+fn normalize_queries(queries: Vec<String>) -> Vec<String> {
+    let mut seen = HashSet::new();
+    let mut normalized = vec![];
+    for query in queries {
+        let trimmed = query.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        let canonical = trimmed.to_string();
+        if seen.insert(canonical.clone()) {
+            normalized.push(canonical);
+        }
+    }
+    normalized
+}
+
+fn clamp_text(text: &str, max_len: usize) -> String {
+    if text.len() <= max_len {
+        return text.to_string();
+    }
+    let safe_len = max_len.saturating_sub(3);
+    let mut truncated = text.chars().take(safe_len).collect::<String>();
+    truncated.push_str("...");
+    truncated
+}
+
+fn format_search_evidence(results: &[SearchResultBundle]) -> String {
+    let mut sections = vec![];
+    for result in results {
+        let mut payload_text = serde_json::to_string_pretty(&result.payload)
+            .unwrap_or_else(|_| result.payload.to_string());
+        payload_text = clamp_text(&payload_text, MAX_RESULT_PREVIEW_CHARS);
+        sections.push(format!(
+            "{} :: query: {}\n{}",
+            result.label, result.query, payload_text
+        ));
+    }
+    sections.join("\n\n")
+}
+
+fn parse_json_object<T>(text: &str) -> Option<T>
+where
+    T: DeserializeOwned,
+{
+    if let Ok(value) = serde_json::from_str(text) {
+        return Some(value);
+    }
+    let start = text.find('{')?;
+    let end = text.rfind('}')?;
+    serde_json::from_str(&text[start..=end]).ok()
 }
 
 fn resolve_role(config: &Config, role: Option<Role>) -> (Role, bool, bool) {
@@ -582,8 +1093,10 @@ fn read_media_to_data_url(image_path: &str) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{Config, GlobalConfig, Role, WorkingMode, RIGOROUS_INTELLECTUAL_PRECISION_ROLE_NAME};
-    use crate::client::{MessageContent, MessageRole, Model, ModelType, ClientConfig};
+    use crate::client::{ClientConfig, MessageContent, MessageRole, Model, ModelType};
+    use crate::config::{
+        Config, GlobalConfig, Role, WorkingMode, RIGOROUS_INTELLECTUAL_PRECISION_ROLE_NAME,
+    };
     use parking_lot::RwLock;
     use std::fs;
     use std::sync::Arc;
@@ -591,9 +1104,15 @@ mod tests {
     fn create_test_config_for_input_tests() -> GlobalConfig {
         let mut config = Config::default();
         // Ensure the rigorous role is set as default for prelude
-        config.repl_prelude = Some(format!("role:{}", RIGOROUS_INTELLECTUAL_PRECISION_ROLE_NAME));
-        config.cmd_prelude = Some(format!("role:{}", RIGOROUS_INTELLECTUAL_PRECISION_ROLE_NAME));
-        
+        config.repl_prelude = Some(format!(
+            "role:{}",
+            RIGOROUS_INTELLECTUAL_PRECISION_ROLE_NAME
+        ));
+        config.cmd_prelude = Some(format!(
+            "role:{}",
+            RIGOROUS_INTELLECTUAL_PRECISION_ROLE_NAME
+        ));
+
         // Manually load the functions because Config::init() is not fully called here.
         // This is important if roles/functions might interact or if model setup depends on it.
         // For this specific test, only role loading matters.
@@ -604,10 +1123,9 @@ mod tests {
             eprintln!("Warning: Could not load functions for input test config.");
         }
 
-
         Arc::new(RwLock::new(config))
     }
-    
+
     fn create_dummy_chat_model() -> Model {
         Model::new(
             "test_client",
@@ -616,18 +1134,18 @@ mod tests {
             None,
             ClientConfig::default(),
             Some(4096), // max_input_tokens
-            None, // max_output_tokens
-            None, // max_texts
-            false, // no_stream
-            None, // default_chunk_size
-            None, // max_batch_size
+            None,       // max_output_tokens
+            None,       // max_texts
+            false,      // no_stream
+            None,       // default_chunk_size
+            None,       // max_batch_size
         )
     }
 
     #[tokio::test]
     async fn test_default_system_prompt_application() -> Result<()> {
         let global_config = create_test_config_for_input_tests();
-        
+
         // Apply prelude to load the default role
         global_config.write().apply_prelude()?;
 
@@ -640,36 +1158,49 @@ mod tests {
         let completion_data = input.prepare_completion_data(&dummy_model, false)?;
 
         // Assertions
-        assert!(!completion_data.messages.is_empty(), "Messages list should not be empty");
-        
+        assert!(
+            !completion_data.messages.is_empty(),
+            "Messages list should not be empty"
+        );
+
         let first_message = &completion_data.messages[0];
-        assert_eq!(first_message.role, MessageRole::System, "First message should be a System message");
+        assert_eq!(
+            first_message.role,
+            MessageRole::System,
+            "First message should be a System message"
+        );
 
         // Load the expected system prompt from the file
         // Note: This assumes the test runner is in the project root.
         let expected_prompt_content = fs::read_to_string(format!("assets/roles/{}.md", RIGOROUS_INTELLECTUAL_PRECISION_ROLE_NAME))
             .with_context(|| format!("Failed to read the rigorous precision role file for test comparison. Current dir: {:?}", std::env::current_dir().unwrap_or_default()))?;
-        
+
         // Role::new normalizes prompt by trimming.
         // Role::build_messages via parse_structure_prompt also trims the system part.
         let expected_system_prompt = expected_prompt_content.trim();
 
-
         match &first_message.content {
             MessageContent::Text(text_content) => {
-                assert_eq!(text_content.trim(), expected_system_prompt, "System prompt content does not match the rigorous precision role file.");
+                assert_eq!(
+                    text_content.trim(),
+                    expected_system_prompt,
+                    "System prompt content does not match the rigorous precision role file."
+                );
             }
             _ => panic!("First message content should be Text."),
         }
 
         // Also check that the user message is present
-        let user_message = completion_data.messages.iter().find(|m| m.role == MessageRole::User);
+        let user_message = completion_data
+            .messages
+            .iter()
+            .find(|m| m.role == MessageRole::User);
         assert!(user_message.is_some(), "User message should be present");
         match &user_message.unwrap().content {
             MessageContent::Text(text_content) => {
-                 // If history_rag_context was empty, original text is input_text.
-                 // If Input::build_messages prepends context, this would be different.
-                 // For this test, history_rag_context is None.
+                // If history_rag_context was empty, original text is input_text.
+                // If Input::build_messages prepends context, this would be different.
+                // For this test, history_rag_context is None.
                 assert_eq!(text_content, input_text);
             }
             _ => panic!("User message content should be Text."),
