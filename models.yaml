@@ -31,13 +31,6 @@
       output_price: 0.4
       supports_vision: true
       supports_function_calling: true
-    - name: gpt-5-codex
-      max_input_tokens: 400000
-      max_output_tokens: 128000
-      input_price: 1.25
-      output_price: 10
-      supports_vision: true
-      supports_function_calling: true
     - name: gpt-4.1
       max_input_tokens: 1047576
       max_output_tokens: 32768
@@ -250,6 +243,30 @@
       require_max_tokens: true
       input_price: 3
       output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
+          thinking:
+            type: enabled
+            budget_tokens: 16000
+    - name: claude-haiku-4-5-20251001
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-haiku-4-5-20251001:thinking
+      real_name: claude-haiku-4-5-20251001
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
       supports_vision: true
       supports_function_calling: true
       patch:
@@ -660,6 +677,29 @@
           thinking:
             type: enabled
             budget_tokens: 16000
+    - name: claude-haiku-4-5@20251001
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-haiku-4-5@20251001:thinking
+      real_name: claude-haiku-4-5@20251001
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
+      supports_vision: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
+          thinking:
+            type: enabled
+            budget_tokens: 16000
     - name: claude-opus-4-1@20250805
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -807,6 +847,31 @@
       require_max_tokens: true
       input_price: 3
       output_price: 15
+      supports_vision: true
+      patch:
+        body:
+          inferenceConfig:
+            temperature: null
+            topP: null
+          additionalModelRequestFields:
+            thinking:
+              type: enabled
+              budget_tokens: 16000
+    - name: us.anthropic.claude-haiku-4-5-20251001-v1:0
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
+      supports_vision: true
+      supports_function_calling: true
+    - name: us.anthropic.claude-haiku-4-5-20251001-v1:0:thinking
+      real_name: us.anthropic.claude-haiku-4-5-20251001-v1:0
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
       supports_vision: true
       patch:
         body:
@@ -1070,70 +1135,25 @@
 #  - https://help.aliyun.com/zh/model-studio/developer-reference/use-qwen-by-calling-api
 - provider: qianwen
   models:
-    - name: qwen-max-latest
-      max_input_tokens: 32678
-      max_output_tokens: 8192
-      input_price: 1.6
-      output_price: 6.4
-      supports_function_calling: true
-    - name: qwen-plus-latest
-      max_input_tokens: 131072
-      max_output_tokens: 8192
-      input_price: 0.112
-      output_price: 0.28
-      supports_function_calling: true
-    - name: qwen-turbo-latest
-      max_input_tokens: 1000000
-      max_output_tokens: 8192
-      input_price: 0.042
-      output_price: 0.084
-      supports_function_calling: true
-    - name: qwen-long
-      max_input_tokens: 1000000
-      input_price: 0.07
-      output_price: 0.28
-    - name: qwen-omni-turbo-latest
-      max_input_tokens: 32768
-      max_output_tokens: 2048
-      supports_vision: true
-    - name: qwen-coder-plus-latest
-      max_input_tokens: 131072
-      max_output_tokens: 8192
-      input_price: 0.49
-      output_price: 0.98
-    - name: qwen-coder-turbo-latest
-      max_input_tokens: 131072
-      max_output_tokens: 8192
-      input_price: 0.28
-      output_price: 0.84
-    - name: qwen-vl-max-latest
-      max_input_tokens: 30720
-      max_output_tokens: 2048
-      input_price: 0.42
-      output_price: 1.26
-      supports_vision: true
-    - name: qwen-vl-plus-latest
-      max_input_tokens: 30000
-      max_output_tokens: 2048
-      input_price: 0.21
-      output_price: 0.63
-      supports_vision: true
     - name: qwen3-max
       max_input_tokens: 262144
-      input_price: 2.1
-      output_price: 8.4
+      supports_function_calling: true
+    - name: qwen-plus
+      max_input_tokens: 131072
+      supports_function_calling: true
+    - name: qwen-flash
+      max_input_tokens: 1000000
       supports_function_calling: true
     - name: qwen3-vl-plus
       max_input_tokens: 262144
-      input_price: 0.42
-      output_price: 4.2
       supports_vision: true
-    - name: qwen3-max-preview
+    - name: qwen3-vl-flash
       max_input_tokens: 262144
-      max_output_tokens: 32768
-      input_price: 1.4
-      output_price: 5.6
-      supports_function_calling: true
+      supports_vision: true
+    - name: qwen-coder-plus
+      max_input_tokens: 1000000
+    - name: qwen-coder-flash
+      max_input_tokens: 1000000
     - name: qwen3-next-80b-a3b-instruct
       max_input_tokens: 131072
       input_price: 0.14
@@ -1161,6 +1181,16 @@
       max_input_tokens: 131072
       input_price: 0.105
       output_price: 1.05 
+    - name: qwen3-vl-32b-instruct
+      max_input_tokens: 131072
+      input_price: 0.28
+      output_price: 1.12
+      supports_vision: true
+    - name: qwen3-vl-8b-instruct
+      max_input_tokens: 131072
+      input_price: 0.07
+      output_price: 0.28
+      supports_vision: true
     - name: qwen3-coder-480b-a35b-instruct
       max_input_tokens: 262144
       input_price: 1.26
@@ -1169,32 +1199,10 @@
       max_input_tokens: 262144
       input_price: 0.315
       output_price: 1.26
-    - name: qwen2.5-72b-instruct
-      max_input_tokens: 129024
-      max_output_tokens: 8192
-      input_price: 0.56
-      output_price: 1.68
-      supports_function_calling: true
-    - name: qwen2.5-vl-72b-instruct
-      max_input_tokens: 129024
-      max_output_tokens: 8192
-      input_price: 2.24
-      output_price: 6.72
-      supports_vision: true
-    - name: qwen2.5-coder-32b-instruct
-      max_input_tokens: 129024
-      max_output_tokens: 8192
-      input_price: 0.49
-      output_price: 0.98
-      supports_function_calling: true
-    - name: deepseek-v3.1
+    - name: deepseek-v3.2-exp
       max_input_tokens: 131072
       input_price: 0.28
-      output_price: 1.12
-    - name: deepseek-r1-0528
-      max_input_tokens: 65536
-      input_price: 0.28
-      output_price: 1.12
+      output_price: 0.42
     - name: text-embedding-v4
       type: embedding
       input_price: 0.1
@@ -1294,7 +1302,7 @@
 #  - https://open.bigmodel.cn/dev/api#glm-4
 - provider: zhipuai
   models:
-    - name: glm-4.5
+    - name: glm-4.6
       max_input_tokens: 202752
       input_price: 0.28
       output_price: 1.12
@@ -1354,19 +1362,15 @@
       input_price: 0.112
 
 # Links:
-# - https://platform.minimaxi.com/document/pricing
+# - https://platform.minimaxi.com/docs/guides/pricing
 # - https://platform.minimaxi.com/document/ChatCompletion%20v2
 - provider: minimax
   models:
-    - name: minimax-text-01
-      max_input_tokens: 1000192
-      input_price: 0.14
-      output_price: 1.12
-      supports_vision: true
-    - name: minimax-m1
-      max_input_tokens: 131072
-      input_price: 0.112
-      output_price: 1.12
+    - name: minimax-m2
+      max_input_tokens: 204800
+      input_price: 0.294
+      output_price: 1.176
+      supports_function_calling: true
 
 # Links:
 #  - https://openrouter.ai/models
@@ -1399,13 +1403,6 @@
       max_output_tokens: 128000
       input_price: 0.05
       output_price: 0.4
-      supports_vision: true
-      supports_function_calling: true
-    - name: openai/gpt-5-codex
-      max_input_tokens: 400000
-      max_output_tokens: 128000
-      input_price: 1.25
-      output_price: 10
       supports_vision: true
       supports_function_calling: true
     - name: openai/gpt-4.1
@@ -1564,6 +1561,14 @@
       output_price: 15
       supports_vision: true
       supports_function_calling: true
+    - name: anthropic/claude-haiku-4.5
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
+      supports_vision: true
+      supports_function_calling: true
     - name: anthropic/claude-opus-4.1
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -1697,33 +1702,16 @@
       patch:
         body:
           include_reasoning: true
-    - name: qwen/qwen-max
-      max_input_tokens: 32768
-      max_output_tokens: 8192
-      input_price: 1.6
-      output_price: 6.4
+    - name: qwen/qwen3-max
+      max_input_tokens: 262144
+      input_price: 1.2
+      output_price: 6
       supports_function_calling: true
     - name: qwen/qwen-plus
       max_input_tokens: 131072
       max_output_tokens: 8192
       input_price: 0.4
       output_price: 1.2
-      supports_function_calling: true
-    - name: qwen/qwen-turbo
-      max_input_tokens: 1000000
-      max_output_tokens: 8192
-      input_price: 0.05
-      output_price: 0.2
-      supports_function_calling: true
-    - name: qwen/qwen-vl-plus
-      max_input_tokens: 7500
-      input_price: 0.21
-      output_price: 0.63
-      supports_vision: true
-    - name: qwen/qwen3-max
-      max_input_tokens: 262144
-      input_price: 1.2
-      output_price: 6
       supports_function_calling: true
     - name: qwen/qwen3-next-80b-a3b-instruct
       max_input_tokens: 262144
@@ -1734,7 +1722,7 @@
       max_input_tokens: 262144
       input_price: 0.1
       output_price: 0.8
-    - name: qwen/qwen3-235b-a22b-2507
+    - name: qwen/qwen5-235b-a22b-2507 # Qwen3 235B A22B Instruct 2507
       max_input_tokens: 262144
       input_price: 0.12
       output_price: 0.59
@@ -1751,6 +1739,16 @@
       max_input_tokens: 262144
       input_price: 0.071
       output_price: 0.285
+    - name: qwen/qwen3-vl-32b-instruct
+      max_input_tokens: 262144
+      input_price: 0.35
+      output_price: 1.1
+      supports_vision: true
+    - name: qwen/qwen3-vl-8b-instruct
+      max_input_tokens: 262144
+      input_price: 0.08
+      output_price: 0.50
+      supports_vision: true
     - name: qwen/qwen3-coder-plus
       max_input_tokens: 128000
       input_price: 1
@@ -1761,25 +1759,16 @@
       input_price: 0.3
       output_price: 1.5
       supports_function_calling: true
+    - name: qwen/qwen3-coder  # Qwen3 Coder 480B A35B
+      max_input_tokens: 262144
+      input_price: 0.22
+      output_price: 0.95
+      supports_function_calling: true
     - name: qwen/qwen3-coder-30b-a3b-instruct
       max_input_tokens: 262144
       input_price: 0.052
       output_price: 0.207
       supports_function_calling: true
-    - name: qwen/qwen-2.5-72b-instruct
-      max_input_tokens: 131072
-      input_price: 0.35
-      output_price: 0.4
-      supports_function_calling: true
-    - name: qwen/qwen2.5-vl-72b-instruct
-      max_input_tokens: 32000
-      input_price: 0.7
-      output_price: 0.7
-      supports_vision: true
-    - name: qwen/qwen-2.5-coder-32b-instruct
-      max_input_tokens: 32768
-      input_price: 0.18
-      output_price: 0.18
     - name: moonshotai/kimi-k2-0905
       max_input_tokens: 262144
       input_price: 0.296
@@ -1805,6 +1794,11 @@
       input_price: 0.2
       output_price: 1.5
       supports_function_calling: true
+    - name: amazon/nova-premier-v1
+      max_input_tokens: 1000000
+      input_price: 2.5
+      output_price: 12.5
+      supports_vision: true
     - name: amazon/nova-pro-v1
       max_input_tokens: 300000
       max_output_tokens: 5120
@@ -1851,29 +1845,15 @@
       patch:
         body:
           include_reasoning: true
-    - name: minimax/minimax-01
-      max_input_tokens: 1000192
-      input_price: 0.2
-      output_price: 1.1
+    - name: minimax/minimax-m2
+      max_input_tokens: 196608
+      input_price: 0.15
+      output_price: 0.45
     - name: z-ai/glm-4.6
       max_input_tokens: 202752
       input_price: 0.5
       output_price: 1.75
       supports_function_calling: true
-    - name: z-ai/glm-4.5
-      max_input_tokens: 131072
-      input_price: 0.2
-      output_price: 0.2
-      supports_function_calling: true
-    - name: z-ai/glm-4.5-air
-      max_input_tokens: 131072
-      input_price: 0.2
-      output_price: 1.1
-    - name: z-ai/glm-4.5v
-      max_input_tokens: 65536
-      input_price: 0.5
-      output_price: 1.7
-      supports_vision: true
 
 # Links:
 #  - https://github.com/marketplace?type=models
@@ -2069,10 +2049,6 @@
       input_price: 0.08
       output_price: 0.3
       supports_vision: true
-    - name: meta-llama/Llama-3.3-70B-Instruct
-      max_input_tokens: 131072
-      input_price: 0.23
-      output_price: 0.40
     - name: Qwen/Qwen3-Next-80B-A3B-Instruct
       max_input_tokens: 262144
       input_price: 0.14
@@ -2101,27 +2077,15 @@
       input_price: 0.07
       output_price: 0.27
       supports_function_calling: true
-    - name: Qwen/Qwen3-235B-A22B
-      max_input_tokens: 40960
-      input_price: 0.15
-      output_price: 0.6
     - name: Qwen/Qwen3-30B-A3B
       max_input_tokens: 40960
       input_price: 0.1
       output_price: 0.3
-    - name: Qwen/Qwen3-32B
-      max_input_tokens: 40960
-      input_price: 0.1
-      output_price: 0.3
-    - name: Qwen/Qwen2.5-72B-Instruct
-      max_input_tokens: 32768
-      input_price: 0.23
-      output_price: 0.40
-      supports_function_calling: true
-    - name: Qwen/Qwen2.5-Coder-32B-Instruct
-      max_input_tokens: 32768
-      input_price: 0.07
-      output_price: 0.16
+    - name: Qwen/Qwen3-VL-8B-Instruct
+      max_input_tokens: 262144
+      input_price: 0.18
+      output_price: 0.69
+      supports_vision: true
     - name: deepseek-ai/DeepSeek-V3.2-Exp
       max_input_tokens: 163840
       input_price: 0.27
@@ -2160,21 +2124,6 @@
       input_price: 0.6
       output_price: 1.9
       supports_function_calling: true
-    - name: zai-org/GLM-4.5
-      max_input_tokens: 131072
-      input_price: 0.55
-      output_price: 2.0
-      supports_function_calling: true
-    - name: zai-org/GLM-4.5-Air
-      max_input_tokens: 131072
-      input_price: 0.2
-      output_price: 1.1
-      supports_function_calling: true
-    - name: zai-org/GLM-4.5V
-      max_input_tokens: 65536
-      input_price: 0.5
-      output_price: 1.7
-      supports_vision: true
     - name: BAAI/bge-large-en-v1.5
       type: embedding
       input_price: 0.01
