@@ -17,7 +17,7 @@ mod utils;
 #[macro_use]
 extern crate log;
 
-use crate::cli::Cli;
+use crate::cli::{Cli, Command};
 use crate::client::{
     call_chat_completions, call_chat_completions_streaming, list_models, ModelType,
 };
@@ -145,8 +145,8 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     let abort_signal = create_abort_signal();
 
     // Arena mode check should be early
-    if let Some(arena_args) = &cli.arena {
-        // The presence of `arena_args` (due to `clap(flatten)`) means arena mode is intended.
+    if let Some(Command::Arena(arena_args)) = &cli.command {
+        // the arena subcommand explicitly signals arena mode
         // `agents` (min 2) and `prompt` are required by clap for ArenaArgs.
         // `max_turns` has a default.
         return crate::arena::run_arena_mode(

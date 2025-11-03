@@ -1,13 +1,13 @@
 use anyhow::{Context, Result};
-use clap::Parser;
+use clap::{Args, Parser, Subcommand};
 use is_terminal::IsTerminal;
 use std::io::{stdin, Read};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
-    #[clap(flatten)]
-    pub arena: Option<ArenaArgs>,
+    #[command(subcommand)]
+    pub command: Option<Command>,
     /// Select a LLM model
     #[clap(short, long)]
     pub model: Option<String>,
@@ -97,7 +97,13 @@ pub struct Cli {
     text: Vec<String>,
 }
 
-#[derive(Parser, Debug, Clone)]
+#[derive(Subcommand, Debug, Clone)]
+pub enum Command {
+    /// Run the multi-agent arena
+    Arena(ArenaArgs),
+}
+
+#[derive(Args, Debug, Clone)]
 pub struct ArenaArgs {
     /// Agent names for the arena
     #[clap(long = "agent", required = true, num_args = 2.., value_delimiter = ',')]
