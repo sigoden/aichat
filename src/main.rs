@@ -18,7 +18,7 @@ use crate::client::{
 };
 use crate::config::{
     ensure_parent_exists, list_agents, load_env_file, macro_execute, Config, GlobalConfig, Input,
-    WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE, TEMP_SESSION_NAME,
+    WorkingMode, CODE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE, TEMP_SESSION_NAME, DEFAULT_ROLE
 };
 use crate::render::render_error;
 use crate::repl::Repl;
@@ -125,6 +125,10 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
             config.write().use_role(SHELL_ROLE)?;
         } else if cli.code {
             config.write().use_role(CODE_ROLE)?;
+        } else if cli.role.is_none() {
+            if Config::has_role(DEFAULT_ROLE) {
+                config.write().use_role(DEFAULT_ROLE)?;
+            }
         }
         if let Some(session) = &cli.session {
             config
