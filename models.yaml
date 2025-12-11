@@ -520,6 +520,16 @@
 #  - https://docs.x.ai/docs/api-reference#chat-completions
 - provider: xai
   models:
+    - name: grok-4-1-fast-non-reasoning
+      max_input_tokens: 2000000
+      input_price: 0.2
+      output_price: 0.5
+      supports_function_calling: true
+    - name: grok-4-1-fast-reasoning
+      max_input_tokens: 2000000
+      input_price: 0.2
+      output_price: 0.5
+      supports_function_calling: true
     - name: grok-4
       max_input_tokens: 256000
       input_price: 3
@@ -1820,6 +1830,11 @@
       max_input_tokens: 131072
       input_price: 0.29
       output_price: 1.15
+      supports_function_calling: true
+    - name: x-ai/grok-4-1-fast
+      max_input_tokens: 2000000
+      input_price: 0.2
+      output_price: 0.5
       supports_function_calling: true
     - name: x-ai/grok-4
       max_input_tokens: 256000
