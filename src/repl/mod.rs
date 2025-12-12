@@ -179,7 +179,7 @@ static REPL_COMMANDS: LazyLock<[ReplCommand; 37]> = LazyLock::new(|| {
         ReplCommand::new(".copy", "Copy last response", AssertState::pass()),
         ReplCommand::new(
             ".format",
-            "Format last response with external tool (e.g. glow)",
+            "Format last response with external glow CLI tool",
             AssertState::pass(),
         ),
         ReplCommand::new(".set", "Modify runtime settings", AssertState::pass()),
