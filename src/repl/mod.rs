@@ -31,7 +31,7 @@ use std::{env, process};
 
 const MENU_NAME: &str = "completion_menu";
 
-static REPL_COMMANDS: LazyLock<[ReplCommand; 36]> = LazyLock::new(|| {
+static REPL_COMMANDS: LazyLock<[ReplCommand; 37]> = LazyLock::new(|| {
     [
         ReplCommand::new(".help", "Show this help guide", AssertState::pass()),
         ReplCommand::new(".info", "Show system info", AssertState::pass()),
@@ -177,6 +177,11 @@ static REPL_COMMANDS: LazyLock<[ReplCommand; 36]> = LazyLock::new(|| {
             AssertState::pass(),
         ),
         ReplCommand::new(".copy", "Copy last response", AssertState::pass()),
+        ReplCommand::new(
+            ".format",
+            "Format last response with external tool (e.g. glow)",
+            AssertState::pass(),
+        ),
         ReplCommand::new(".set", "Modify runtime settings", AssertState::pass()),
         ReplCommand::new(
             ".delete",
@@ -672,6 +677,29 @@ pub async fn run_repl_command(
                     None => bail!("No chat response to copy"),
                 };
                 set_text(&output).context("Failed to copy the last chat response")?;
+            }
+            ".format" => {
+                let output = match config
+                    .read()
+                    .last_message
+                    .as_ref()
+                    .filter(|v| !v.output.is_empty())
+                    .map(|v| v.output.clone())
+                {
+                    Some(v) => v,
+                    None => bail!("No chat response to format"),
+                };
+                let mut child = process::Command::new("glow")
+                    .stdin(process::Stdio::piped())
+                    .spawn()
+                    .context("Failed to run glow - is it installed?")?;
+                use std::io::Write;
+                child
+                    .stdin
+                    .take()
+                    .unwrap()
+                    .write_all(output.as_bytes())?;
+                child.wait()?;
             }
             ".exit" => match args {
                 Some("role") => {
