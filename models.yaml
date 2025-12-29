@@ -3,6 +3,20 @@
 #  - https://platform.openai.com/docs/api-reference/chat
 - provider: openai
   models:
+    - name: gpt-5.2
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      input_price: 1.75
+      output_price: 14
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-5.2-pro
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      input_price: 21
+      output_price: 168
+      supports_vision: true
+      supports_function_calling: true
     - name: gpt-5.1
       max_input_tokens: 400000
       max_output_tokens: 128000
@@ -1400,6 +1414,20 @@
 #  - https://openrouter.ai/docs/api-reference/chat-completion
 - provider: openrouter
   models:
+    - name: openai/gpt-5.2
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      input_price: 1.75
+      output_price: 14
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-5.2-pro
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      input_price: 21
+      output_price: 168
+      supports_vision: true
+      supports_function_calling: true
     - name: openai/gpt-5.1
       max_input_tokens: 400000
       max_output_tokens: 128000
