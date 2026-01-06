@@ -3,28 +3,14 @@
 #  - https://platform.openai.com/docs/api-reference/chat
 - provider: openai
   models:
-    - name: gpt-5.1
+    - name: gpt-5.2
       max_input_tokens: 400000
       max_output_tokens: 128000
-      input_price: 1.25
-      output_price: 10
-      supports_vision: true
-      supports_function_calling: true
-    - name: gpt-5.1-chat-latest
-      max_input_tokens: 400000
-      max_output_tokens: 128000
-      input_price: 1.25
-      output_price: 10
+      input_price: 1.75
+      output_price: 14
       supports_vision: true
       supports_function_calling: true
     - name: gpt-5
-      max_input_tokens: 400000
-      max_output_tokens: 128000
-      input_price: 1.25
-      output_price: 10
-      supports_vision: true
-      supports_function_calling: true
-    - name: gpt-5-chat-latest
       max_input_tokens: 400000
       max_output_tokens: 128000
       input_price: 1.25
@@ -52,20 +38,6 @@
       output_price: 8
       supports_vision: true
       supports_function_calling: true
-    - name: gpt-4.1-mini
-      max_input_tokens: 1047576
-      max_output_tokens: 32768
-      input_price: 0.4
-      output_price: 1.6
-      supports_vision: true
-      supports_function_calling: true
-    - name: gpt-4.1-nano
-      max_input_tokens: 1047576
-      max_output_tokens: 32768
-      input_price: 0.1
-      output_price: 0.4
-      supports_vision: true
-      supports_function_calling: true
     - name: gpt-4o
       max_input_tokens: 128000
       max_output_tokens: 16384
@@ -73,91 +45,6 @@
       output_price: 10
       supports_vision: true
       supports_function_calling: true
-    - name: gpt-4o-mini
-      max_input_tokens: 128000
-      max_output_tokens: 16384
-      input_price: 0.15
-      output_price: 0.6
-      supports_vision: true
-      supports_function_calling: true
-    - name: o4-mini
-      max_input_tokens: 200000
-      input_price: 1.1
-      output_price: 4.4
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          max_tokens: null
-          temperature: null
-          top_p: null
-    - name: o4-mini-high
-      real_name: o4-mini
-      max_input_tokens: 200000
-      input_price: 1.1
-      output_price: 4.4
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          reasoning_effort: high
-          max_tokens: null
-          temperature: null
-          top_p: null
-    - name: o3
-      max_input_tokens: 200000
-      input_price: 2
-      output_price: 8
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          max_tokens: null
-          temperature: null
-          top_p: null
-    - name: o3-high
-      real_name: o3
-      max_input_tokens: 200000
-      input_price: 2
-      output_price: 8
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          reasoning_effort: high
-          max_tokens: null
-          temperature: null
-          top_p: null
-    - name: o3-mini
-      max_input_tokens: 200000
-      input_price: 1.1
-      output_price: 4.4
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          max_tokens: null
-          temperature: null
-          top_p: null
-    - name: o3-mini-high
-      real_name: o3-mini
-      max_input_tokens: 200000
-      input_price: 1.1
-      output_price: 4.4
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          reasoning_effort: high
-          max_tokens: null
-          temperature: null
-          top_p: null
     - name: gpt-4-turbo
       max_input_tokens: 128000
       max_output_tokens: 4096
@@ -209,6 +96,14 @@
       max_output_tokens: 64000
       input_price: 0
       output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-3-pro-preview
+      max_input_tokens: 1048576
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-3-flash-preview
+      max_input_tokens: 1048576
       supports_vision: true
       supports_function_calling: true
     - name: gemini-2.0-flash
@@ -400,6 +295,12 @@
 #  - https://docs.mistral.ai/api/
 - provider: mistral
   models:
+    - name: mistral-large-latest
+      max_output_tokens: 262144
+      input_price: 0.5
+      output_price: 1.5
+      supports_function_calling: true
+      supports_vision: true
     - name: mistral-medium-latest
       max_input_tokens: 131072
       input_price: 0.4
@@ -413,27 +314,32 @@
       supports_function_calling: true
       supports_vision: true
     - name: magistral-medium-latest
-      max_input_tokens: 40960
+      max_input_tokens: 131072
       input_price: 2
       output_price: 5
     - name: magistral-small-latest
-      max_input_tokens: 40960
+      max_input_tokens: 131072
       input_price: 0.5
       output_price: 1.5
     - name: devstral-medium-latest
-      max_input_tokens: 256000
+      max_input_tokens: 262144
       input_price: 0.4
       output_price: 2
       supports_function_calling: true
     - name: devstral-small-latest
-      max_input_tokens: 256000
+      max_input_tokens: 262144
       input_price: 0.1
       output_price: 0.3
       supports_function_calling: true
     - name: codestral-latest
-      max_input_tokens: 256000
+      max_input_tokens: 262144
       input_price: 0.3
       output_price: 0.9
+      supports_function_calling: true
+    - name: ministral-14b-latest
+      max_input_tokens: 262144
+      input_price: 0.2
+      output_price: 0.2
       supports_function_calling: true
     - name: mistral-embed
       type: embedding
@@ -520,35 +426,20 @@
 #  - https://docs.x.ai/docs/api-reference#chat-completions
 - provider: xai
   models:
-    - name: grok-4
-      max_input_tokens: 256000
-      input_price: 3
-      output_price: 15
-      supports_function_calling: true
-    - name: grok-4-fast-non-reasoning
+    - name: grok-4-1-fast-non-reasoning
       max_input_tokens: 2000000
       input_price: 0.2
       output_price: 0.5
       supports_function_calling: true
-    - name: grok-4-fast-reasoning
+    - name: grok-4-1-fast-reasoning
       max_input_tokens: 2000000
       input_price: 0.2
       output_price: 0.5
       supports_function_calling: true
-    - name: grok-code-fast
+    - name: grok-code-fast-1
       max_input_tokens: 256000
       input_price: 0.2
       output_price: 1.5
-      supports_function_calling: true
-    - name: grok-3
-      max_input_tokens: 131072
-      input_price: 3
-      output_price: 15
-      supports_function_calling: true
-    - name: grok-3-mini
-      max_input_tokens: 131072
-      input_price: 0.3
-      output_price: 0.5
       supports_function_calling: true
 
 # Links:
@@ -568,10 +459,6 @@
       max_input_tokens: 128000
       input_price: 2
       output_price: 8
-    - name: sonar-reasoning
-      max_input_tokens: 128000
-      input_price: 1
-      output_price: 5
     - name: sonar-deep-research
       max_input_tokens: 128000
       input_price: 2
@@ -652,6 +539,14 @@
       max_output_tokens: 65536
       input_price: 0.3
       output_price: 0.4
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-3-pro-preview
+      max_input_tokens: 1048576
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-3-flash-preview
+      max_input_tokens: 1048576
       supports_vision: true
       supports_function_calling: true
     - name: gemini-2.0-flash-001
@@ -813,16 +708,6 @@
       input_price: 0.8
       output_price: 4
       supports_vision: true
-      supports_function_calling: true
-    - name: mistral-small-2503
-      max_input_tokens: 32000
-      input_price: 0.1
-      output_price: 0.3
-      supports_function_calling: true
-    - name: codestral-2501
-      max_input_tokens: 256000
-      input_price: 0.3
-      output_price: 0.9
       supports_function_calling: true
     - name: text-embedding-005
       type: embedding
@@ -1246,27 +1131,20 @@
 #  - https://cloud.tencent.com/document/product/1729/111007
 - provider: hunyuan
   models:
-    - name: hunyuan-turbos-latest
-      max_input_tokens: 28000
+    - name: hunyuan-2.0-instruct-20251111
+      max_input_tokens: 131072
       input_price: 0.112
       output_price: 0.28
       supports_function_calling: true
-    - name: hunyuan-t1-latest
-      max_input_tokens: 28000
+    - name: hunyuan-2.0-thinking-20251109
+      max_input_tokens: 131072
       input_price: 0.14
       output_price: 0.56
-    - name: hunyuan-lite
-      max_input_tokens: 250000
-      input_price: 0
-      output_price: 0
       supports_function_calling: true
-    - name: hunyuan-turbos-vision
-      max_input_tokens: 6144
+    - name: hunyuan-vision-1.5-instruct
+      max_input_tokens: 24576
       input_price: 0.42
-      output_price: 0.84
-      supports_vision: true
-    - name: hunyuan-t1-vision
-      max_input_tokens: 24000
+      output_price: 1.26
       supports_vision: true
     - name: hunyuan-embedding
       type: embedding
@@ -1325,54 +1203,27 @@
 #  - https://open.bigmodel.cn/dev/api#glm-4
 - provider: zhipuai
   models:
-    - name: glm-4.6
+    - name: glm-4.7
       max_input_tokens: 202752
-      input_price: 0.28
-      output_price: 1.12
-      supports_function_calling: true
-    - name: glm-4.5
-      max_input_tokens: 131072
-      input_price: 0.28
-      output_price: 1.12
-    - name: glm-4.5-x
-      max_input_tokens: 131072
-      input_price: 1.12
-      output_price: 4.48
-      supports_function_calling: true
-    - name: glm-4.5-air
-      max_input_tokens: 131072
-      input_price: 0.084
-      output_price: 0.56
-    - name: glm-4.5-airx
-      max_input_tokens: 131072
       input_price: 0.56
       output_price: 2.24
       supports_function_calling: true
-    - name: glm-4.5-flash
-      max_input_tokens: 131072
-      input_price: 0
-      output_price: 0
-    - name: glm-4.5v
-      max_input_tokens: 65536
+
+    - name: glm-4.7:instruct
+      real_name: glm-4.7
+      max_input_tokens: 202752
       input_price: 0.56
-      output_price: 1.68
+      output_price: 2.24
+      supports_function_calling: true
+      patch:
+        body:
+          thinking:
+            type: disabled
+    - name: glm-4.6v
+      max_input_tokens: 65536
+      input_price: 0.28
+      output_price: 0.84
       supports_vision: true
-    - name: glm-z1-air
-      max_input_tokens: 131072
-      input_price: 0.07
-      output_price: 0.07
-    - name: glm-z1-airx
-      max_input_tokens: 131072
-      input_price: 0.7
-      output_price: 0.7
-    - name: glm-z1-flashx
-      max_input_tokens: 131072
-      input_price: 0.014
-      output_price: 0.014
-    - name: glm-z1-flash
-      max_input_tokens: 131072
-      input_price: 0
-      output_price: 0
     - name: embedding-3
       type: embedding
       max_input_tokens: 8192
@@ -1389,10 +1240,15 @@
 # - https://platform.minimaxi.com/document/ChatCompletion%20v2
 - provider: minimax
   models:
-    - name: minimax-m2
+    - name: minimax-m2.1
       max_input_tokens: 204800
       input_price: 0.294
       output_price: 1.176
+      supports_function_calling: true
+    - name: minimax-m2.1-lightning
+      max_input_tokens: 204800
+      input_price: 0.294
+      output_price: 2.352
       supports_function_calling: true
 
 # Links:
@@ -1400,28 +1256,14 @@
 #  - https://openrouter.ai/docs/api-reference/chat-completion
 - provider: openrouter
   models:
-    - name: openai/gpt-5.1
+    - name: openai/gpt-5.2
       max_input_tokens: 400000
       max_output_tokens: 128000
-      input_price: 1.25
-      output_price: 10
-      supports_vision: true
-      supports_function_calling: true
-    - name: openai/gpt-5.1-chat
-      max_input_tokens: 400000
-      max_output_tokens: 128000
-      input_price: 1.25
-      output_price: 10
+      input_price: 1.75
+      output_price: 14
       supports_vision: true
       supports_function_calling: true
     - name: openai/gpt-5
-      max_input_tokens: 400000
-      max_output_tokens: 128000
-      input_price: 1.25
-      output_price: 10
-      supports_vision: true
-      supports_function_calling: true
-    - name: openai/gpt-5-chat
       max_input_tokens: 400000
       max_output_tokens: 128000
       input_price: 1.25
@@ -1449,104 +1291,12 @@
       output_price: 8
       supports_vision: true
       supports_function_calling: true
-    - name: openai/gpt-4.1-mini
-      max_input_tokens: 1047576
-      max_output_tokens: 32768
-      input_price: 0.4
-      output_price: 1.6
-      supports_vision: true
-      supports_function_calling: true
-    - name: openai/gpt-4.1-nano
-      max_input_tokens: 1047576
-      max_output_tokens: 32768
-      input_price: 0.1
-      output_price: 0.4
-      supports_vision: true
-      supports_function_calling: true
     - name: openai/gpt-4o
       max_input_tokens: 128000
       input_price: 2.5
       output_price: 10
       supports_vision: true
       supports_function_calling: true
-    - name: openai/gpt-4o-mini
-      max_input_tokens: 128000
-      input_price: 0.15
-      output_price: 0.6
-      supports_vision: true
-      supports_function_calling: true
-    - name: openai/o4-mini
-      max_input_tokens: 200000
-      input_price: 1.1
-      output_price: 4.4
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          max_tokens: null
-          temperature: null
-          top_p: null
-    - name: openai/o4-mini-high
-      max_input_tokens: 200000
-      input_price: 1.1
-      output_price: 4.4
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          reasoning_effort: high
-          max_tokens: null
-          temperature: null
-          top_p: null
-    - name: openai/o3
-      max_input_tokens: 200000
-      input_price: 2
-      output_price: 8
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          max_tokens: null
-          temperature: null
-          top_p: null
-    - name: openai/o3-high
-      real_name: openai/o3
-      max_input_tokens: 200000
-      input_price: 2
-      output_price: 8
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          reasoning_effort: high
-          temperature: null
-          top_p: null
-    - name: openai/o3-mini
-      max_input_tokens: 200000
-      input_price: 1.1
-      output_price: 4.4
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          temperature: null
-          top_p: null
-    - name: openai/o3-mini-high
-      max_input_tokens: 200000
-      input_price: 1.1
-      output_price: 4.4
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          temperature: null
-          top_p: null
     - name: openai/gpt-oss-120b
       max_input_tokens: 131072
       input_price: 0.09
@@ -1662,6 +1412,11 @@
       max_input_tokens: 131072
       input_price: 0.12
       output_price: 0.3
+    - name: mistralai/mistral-large-2512
+      max_input_tokens: 262144
+      input_price: 0.5
+      output_price: 1.5
+      supports_function_calling: true
     - name: mistralai/mistral-medium-3.1
       max_input_tokens: 131072
       input_price: 0.4
@@ -1673,22 +1428,10 @@
       input_price: 0.1
       output_price: 0.3
       supports_vision: true
-    - name: mistralai/magistral-medium-2506
-      max_input_tokens: 40960
-      input_price: 2
-      output_price: 5
-    - name: mistralai/magistral-medium-2506:thinking
-      max_input_tokens: 40960
-      input_price: 2
-      output_price: 5
-    - name: mistralai/magistral-small-2506
-      max_input_tokens: 40960
+    - name: mistralai/devstral-2512
+      max_input_tokens: 262144
       input_price: 0.5
-      output_price: 1.5
-    - name: mistralai/devstral-medium
-      max_input_tokens: 131072
-      input_price: 0.4
-      output_price: 2
+      output_price: 0.22
       supports_function_calling: true
     - name: mistralai/devstral-small
       max_input_tokens: 131072
@@ -1699,6 +1442,11 @@
       max_input_tokens: 256000
       input_price: 0.3
       output_price: 0.9
+      supports_function_calling: true
+    - name: mistralai/ministral-14b-2512
+      max_input_tokens: 262144
+      input_price: 0.2
+      output_price: 0.2
       supports_function_calling: true
     - name: ai21/jamba-large-1.7
       max_input_tokens: 256000
@@ -1720,25 +1468,10 @@
       max_output_tokens: 4096
       input_price: 0.0375
       output_price: 0.15
-    - name: deepseek/deepseek-v3.2-exp
+    - name: deepseek/deepseek-v3.2
       max_input_tokens: 163840
-      input_price: 0.27
-      output_price: 0.40
-    - name: deepseek/deepseek-v3.1-terminus
-      max_input_tokens: 163840
-      input_price: 0.23
-      output_price: 0.90
-    - name: deepseek/deepseek-chat-v3.1
-      max_input_tokens: 163840
-      input_price: 0.2
-      output_price: 0.8
-    - name: deepseek/deepseek-r1-0528
-      max_input_tokens: 128000
-      input_price: 0.50
-      output_price: 2.15
-      patch:
-        body:
-          include_reasoning: true
+      input_price: 0.25
+      output_price: 0.38
     - name: qwen/qwen3-max
       max_input_tokens: 262144
       input_price: 1.2
@@ -1821,12 +1554,7 @@
       input_price: 0.29
       output_price: 1.15
       supports_function_calling: true
-    - name: x-ai/grok-4
-      max_input_tokens: 256000
-      input_price: 3
-      output_price: 15
-      supports_function_calling: true
-    - name: x-ai/grok-4-fast
+    - name: x-ai/grok-4.1-fast
       max_input_tokens: 2000000
       input_price: 0.2
       output_price: 0.5
@@ -1873,13 +1601,6 @@
       patch:
         body:
           include_reasoning: true
-    - name: perplexity/sonar-reasoning
-      max_input_tokens: 127000
-      input_price: 1
-      output_price: 5
-      patch:
-        body:
-          include_reasoning: true
     - name: perplexity/sonar-deep-research
       max_input_tokens: 200000
       input_price: 2
@@ -1887,26 +1608,27 @@
       patch:
         body:
           include_reasoning: true
-    - name: minimax/minimax-m2
+    - name: minimax/minimax-m2.1
       max_input_tokens: 196608
-      input_price: 0.15
-      output_price: 0.45
-    - name: z-ai/glm-4.6
-      max_input_tokens: 202752
-      input_price: 0.5
-      output_price: 1.75
+      input_price: 0.12
+      output_price: 0.48
       supports_function_calling: true
+    - name: z-ai/glm-4.7
+      max_input_tokens: 202752
+      input_price: 0.16
+      output_price: 0.80
+      supports_function_calling: true
+    - name: z-ai/glm-4.6v
+      max_input_tokens: 131072
+      input_price: 0.3
+      output_price: 0.9
+      supports_vision: true
 
 # Links:
 #  - https://github.com/marketplace?type=models
 - provider: github
   models:
     - name: gpt-5
-      max_input_tokens: 400000
-      max_output_tokens: 128000
-      supports_vision: true
-      supports_function_calling: true
-    - name: gpt-5-chat
       max_input_tokens: 400000
       max_output_tokens: 128000
       supports_vision: true
@@ -1926,90 +1648,10 @@
       max_output_tokens: 32768
       supports_vision: true
       supports_function_calling: true
-    - name: gpt-4.1-mini
-      max_input_tokens: 1047576
-      max_output_tokens: 32768
-      supports_vision: true
-      supports_function_calling: true
-    - name: gpt-4.1-nano
-      max_input_tokens: 1047576
-      max_output_tokens: 32768
-      supports_vision: true
-      supports_function_calling: true
     - name: gpt-4o
       max_input_tokens: 128000
       max_output_tokens: 16384
       supports_function_calling: true
-    - name: gpt-4o-mini
-      max_input_tokens: 128000
-      max_output_tokens: 16384
-      supports_function_calling: true
-    - name: o4-mini
-      max_input_tokens: 200000
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          max_tokens: null
-          temperature: null
-          top_p: null
-    - name: o4-mini-high
-      real_name: o4-mini
-      max_input_tokens: 200000
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          reasoning_effort: high
-          max_tokens: null
-          temperature: null
-          top_p: null
-    - name: o3
-      max_input_tokens: 200000
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          max_tokens: null
-          temperature: null
-          top_p: null
-    - name: o3-high
-      real_name: o3
-      max_input_tokens: 200000
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          reasoning_effort: high
-          max_tokens: null
-          temperature: null
-          top_p: null
-    - name: o3-mini
-      max_input_tokens: 200000
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          max_tokens: null
-          temperature: null
-          top_p: null
-    - name: o3-mini-high
-      real_name: o3-mini
-      max_input_tokens: 200000
-      supports_vision: true
-      supports_function_calling: true
-      system_prompt_prefix: Formatting re-enabled
-      patch:
-        body:
-          reasoning_effort: high
-          max_tokens: null
-          temperature: null
-          top_p: null
     - name: text-embedding-3-large
       type: embedding
       max_tokens_per_chunk: 8191
@@ -2128,22 +1770,11 @@
       input_price: 0.18
       output_price: 0.69
       supports_vision: true
-    - name: deepseek-ai/DeepSeek-V3.2-Exp
+    - name: deepseek-ai/DeepSeek-V3.2
       max_input_tokens: 163840
-      input_price: 0.27
-      output_price: 0.40
-    - name: deepseek-ai/DeepSeek-V3.1-Terminus
-      max_input_tokens: 163840
-      input_price: 0.27
-      output_price: 1.0
-    - name: deepseek-ai/DeepSeek-V3.1
-      max_input_tokens: 163840
-      input_price: 0.3
-      output_price: 1.0
-    - name: deepseek-ai/DeepSeek-R1-0528
-      max_input_tokens: 163840
-      input_price: 0.5
-      output_price: 2.15
+      input_price: 0.26
+      output_price: 0.39
+      supports_function_calling: true
     - name: google/gemma-3-27b-it
       max_input_tokens: 131072
       input_price: 0.1
@@ -2162,11 +1793,21 @@
       input_price: 0.55
       output_price: 2.5
       supports_function_calling: true
-    - name: zai-org/GLM-4.6
-      max_input_tokens: 202752
-      input_price: 0.6
-      output_price: 1.9
+    - name: MiniMaxAI/MiniMax-M2.1
+      max_input_tokens: 262144
+      input_price: 0.28
+      output_price: 1.2
       supports_function_calling: true
+    - name: zai-org/GLM-4.7
+      max_input_tokens: 202752
+      input_price: 0.43
+      output_price: 1.75
+      supports_function_calling: true
+    - name: zai-org/GLM-4.6V
+      max_input_tokens: 131072
+      input_price: 0.3
+      output_price: 0.9
+      supports_vision: true
     - name: BAAI/bge-large-en-v1.5
       type: embedding
       input_price: 0.01
