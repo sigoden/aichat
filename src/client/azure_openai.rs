@@ -9,6 +9,7 @@ pub struct AzureOpenAIConfig {
     pub name: Option<String>,
     pub api_base: Option<String>,
     pub api_key: Option<String>,
+    pub api_key_helper: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
     pub patch: Option<RequestPatch>,
@@ -17,7 +18,7 @@ pub struct AzureOpenAIConfig {
 
 impl AzureOpenAIClient {
     config_get_fn!(api_base, get_api_base);
-    config_get_fn!(api_key, get_api_key);
+    config_get_fn_with_helper!(api_key, get_api_key);
 
     pub const PROMPTS: [PromptAction<'static>; 2] = [
         (

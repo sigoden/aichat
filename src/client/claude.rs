@@ -13,6 +13,7 @@ const API_BASE: &str = "https://api.anthropic.com/v1";
 pub struct ClaudeConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
+    pub api_key_helper: Option<String>,
     pub api_base: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
@@ -21,7 +22,7 @@ pub struct ClaudeConfig {
 }
 
 impl ClaudeClient {
-    config_get_fn!(api_key, get_api_key);
+    config_get_fn_with_helper!(api_key, get_api_key);
     config_get_fn!(api_base, get_api_base);
 
     pub const PROMPTS: [PromptAction<'static>; 1] = [("api_key", "API Key", None)];

@@ -16,8 +16,10 @@ use inquire::{
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::sync::LazyLock;
-use std::time::Duration;
+use std::collections::HashMap;
+use std::process::Command;
+use std::sync::{LazyLock, Mutex, OnceLock};
+use std::time::{Duration, SystemTime};
 use tokio::sync::mpsc::unbounded_channel;
 
 const MODELS_YAML: &str = include_str!("../../models.yaml");
@@ -33,6 +35,88 @@ static EMBEDDING_MODEL_RE: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 static ESCAPE_SLASH_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?<!\\)/").unwrap());
+
+// API Key Helper Support
+const DEFAULT_KEY_REFRESH_INTERVAL: Duration = Duration::from_secs(300); // 5 minutes
+
+#[derive(Debug, Clone)]
+struct ApiKeyCache {
+    key: String,
+    fetched_at: SystemTime,
+}
+
+// Global cache for API keys from helpers
+// Key: helper command, Value: cached API key with timestamp
+static API_KEY_CACHE: OnceLock<Mutex<HashMap<String, ApiKeyCache>>> = OnceLock::new();
+
+pub fn execute_api_key_helper(helper: &str, force_refresh: bool) -> Result<String> {
+    let cache = API_KEY_CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+
+    // Check cache first (unless force_refresh is true)
+    if !force_refresh {
+        if let Ok(cache_guard) = cache.lock() {
+            if let Some(cached) = cache_guard.get(helper) {
+                // Check if cache is still valid (less than 5 minutes old)
+                if let Ok(elapsed) = SystemTime::now().duration_since(cached.fetched_at) {
+                    if elapsed < DEFAULT_KEY_REFRESH_INTERVAL {
+                        debug!("Using cached API key from helper (age: {:?})", elapsed);
+                        return Ok(cached.key.clone());
+                    } else {
+                        debug!("Cached API key expired (age: {:?}), fetching new one", elapsed);
+                    }
+                }
+            }
+        }
+    }
+
+    // Execute the helper script/command
+    debug!("Executing api_key_helper: {}", helper);
+    let output = Command::new("sh")
+        .arg("-c")
+        .arg(helper)
+        .output()
+        .with_context(|| format!("Failed to execute api_key_helper: {}", helper))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        bail!(
+            "api_key_helper command failed with exit code {:?}: {}",
+            output.status.code(),
+            stderr.trim()
+        );
+    }
+
+    let key = String::from_utf8(output.stdout)
+        .with_context(|| "api_key_helper output is not valid UTF-8")?
+        .trim()
+        .to_string();
+
+    if key.is_empty() {
+        bail!("api_key_helper returned an empty key");
+    }
+
+    // Update cache
+    if let Ok(mut cache_guard) = cache.lock() {
+        cache_guard.insert(
+            helper.to_string(),
+            ApiKeyCache {
+                key: key.clone(),
+                fetched_at: SystemTime::now(),
+            },
+        );
+    }
+
+    Ok(key)
+}
+
+pub fn clear_api_key_cache() {
+    if let Some(cache) = API_KEY_CACHE.get() {
+        if let Ok(mut cache_guard) = cache.lock() {
+            debug!("Clearing API key cache due to 401 Unauthorized response");
+            cache_guard.clear();
+        }
+    }
+}
 
 #[async_trait::async_trait]
 pub trait Client: Sync + Send {
@@ -494,6 +578,12 @@ pub fn catch_error(data: &Value, status: u16) -> Result<()> {
     if (200..300).contains(&status) {
         return Ok(());
     }
+
+    // Clear API key cache on 401 Unauthorized to force refresh on next request
+    if status == 401 {
+        clear_api_key_cache();
+    }
+
     debug!("Invalid response, status: {status}, data: {data}");
     if let Some(error) = data["error"].as_object() {
         if let (Some(typ), Some(message)) = (

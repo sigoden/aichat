@@ -90,6 +90,11 @@ clients:
   # All clients have the following configuration:
   # - type: xxxx
   #   name: xxxx                                      # Only use it to distinguish clients with the same client type. Optional
+  #   api_key: xxx                                    # Option 1: Static API key
+  #   api_key_helper: /path/to/script                 # Option 2: Script/command that outputs API key to stdout
+  #                                                   # The helper is executed periodically (every 5 minutes by default)
+  #                                                   # and on HTTP 401 responses to fetch fresh credentials
+  #                                                   # Use either api_key OR api_key_helper, not both
   #   models:
   #     - name: xxxx                                  # Chat model
   #       max_input_tokens: 100000
@@ -116,7 +121,8 @@ clients:
   # See https://platform.openai.com/docs/quickstart
   - type: openai
     api_base: https://api.openai.com/v1               # Optional
-    api_key: xxx
+    api_key: xxx                                      # Option 1: Static API key
+    # api_key_helper: /path/to/get-openai-key.sh      # Option 2: Dynamic key from script
     organization_id: org-xxx                          # Optional
 
   # For any platform compatible with OpenAI's API
@@ -141,7 +147,7 @@ clients:
   # See https://ai.google.dev/docs
   - type: gemini
     api_base: https://generativelanguage.googleapis.com/v1beta
-    api_key: xxx
+    api_key: xxx                                      # Can also use api_key_helper
     patch:
       chat_completions:
         '.*':
@@ -159,7 +165,7 @@ clients:
   # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
   - type: claude
     api_base: https://api.anthropic.com/v1            # Optional
-    api_key: xxx
+    api_key: xxx                                      # Can also use api_key_helper
 
   # See https://docs.mistral.ai/
   - type: openai-compatible
