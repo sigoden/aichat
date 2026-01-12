@@ -427,7 +427,13 @@ pub struct RerankResult {
     pub relevance_score: f64,
 }
 
-pub type PromptAction<'a> = (&'a str, &'a str, Option<&'a str>);
+pub struct PromptAction<'a> {
+    pub key: &'a str,
+    pub description: &'a str,
+    pub help_message: Option<&'a str>,
+    pub required: bool,
+    pub default: Option<&'a str>,
+}
 
 pub async fn create_config(
     prompts: &[PromptAction<'static>],
@@ -436,12 +442,18 @@ pub async fn create_config(
     let mut config = json!({
         "type": client,
     });
-    for (key, desc, help_message) in prompts {
-        let env_name = format!("{client}_{key}").to_ascii_uppercase();
-        let required = std::env::var(&env_name).is_err();
-        let value = prompt_input_string(desc, required, *help_message)?;
-        if !value.is_empty() {
-            config[key] = value.into();
+    for prompt in prompts {
+        let env_name = format!("{client}_{}", prompt.key).to_ascii_uppercase();
+        let has_env = std::env::var(&env_name).is_ok();
+        let required = prompt.required && !has_env;
+        let value = prompt_input_string(prompt.description, required, prompt.help_message)?;
+        let final_value = if value.is_empty() {
+            prompt.default.unwrap_or("").to_string()
+        } else {
+            value
+        };
+        if !final_value.is_empty() {
+            config[prompt.key] = final_value.into();
         }
     }
     let model = set_client_models_config(&mut config, client).await?;
