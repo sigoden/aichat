@@ -192,11 +192,14 @@ impl ToolCall {
 
         cmd_args.push(json_data.to_string());
 
-        let output = match run_llm_function(cmd_name, cmd_args, envs)? {
-            Some(contents) => serde_json::from_str(&contents)
+        let output = match run_llm_function(cmd_name, cmd_args, envs) {
+            Ok(Some(contents)) => serde_json::from_str(&contents)
                 .ok()
                 .unwrap_or_else(|| json!({"output": contents})),
-            None => Value::Null,
+            Ok(None) => Value::Null,
+            Err(e) => serde_json::from_str(&e.to_string())
+                .ok()
+                .unwrap_or_else(|| json!({"output": e.to_string()}))
         };
 
         Ok(output)
@@ -279,7 +282,11 @@ pub fn run_llm_function(
     let exit_code = run_command(&cmd_name, &cmd_args, Some(envs))
         .map_err(|err| anyhow!("Unable to run {cmd_name}, {err}"))?;
     if exit_code != 0 {
-        println!("⚠️ Tool call exit with {exit_code}");
+        let tool_error_message = format!(
+            "{{\"tool_call_error\":\"⚠️ Tool call '{cmd_name}' threw exit code {exit_code} ⚠️ \"}}"
+        );
+        println!("{}", warning_text(&tool_error_message));
+        return Ok(Some(tool_error_message));
     }
     let mut output = None;
     if temp_file.exists() {
