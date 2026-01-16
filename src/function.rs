@@ -279,7 +279,7 @@ pub fn run_llm_function(
     let exit_code = run_command(&cmd_name, &cmd_args, Some(envs))
         .map_err(|err| anyhow!("Unable to run {cmd_name}, {err}"))?;
     if exit_code != 0 {
-        bail!("Tool call exit with {exit_code}");
+        println!("⚠️ Tool call exit with {exit_code}");
     }
     let mut output = None;
     if temp_file.exists() {

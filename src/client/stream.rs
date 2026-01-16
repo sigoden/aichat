@@ -13,6 +13,9 @@ pub struct SseHandler {
     abort_signal: AbortSignal,
     buffer: String,
     tool_calls: Vec<ToolCall>,
+    last_tool_calls: Vec<ToolCall>, // Ring buffer for last tool calls
+    max_call_repeats: usize,        // Maximum number of times a call can repeat
+    call_repeat_chain_len: usize,   // Length of call chain to check for repetition
 }
 
 impl SseHandler {
@@ -22,6 +25,9 @@ impl SseHandler {
             abort_signal,
             buffer: String::new(),
             tool_calls: Vec::new(),
+            last_tool_calls: Vec::new(),
+            max_call_repeats: 2,
+            call_repeat_chain_len: 3,
         }
     }
 
@@ -57,8 +63,101 @@ impl SseHandler {
 
     pub fn tool_call(&mut self, call: ToolCall) -> Result<()> {
         // debug!("HandleCall: {:?}", call);
+
+        // Check for call loops
+        if self.is_call_loop(&call) {
+            // Return message to LLM about the loop
+            let loop_message = self.create_loop_detection_message(&call);
+            return Err(anyhow!(loop_message));
+        }
+
+        // Maintain ring buffer for last tool calls
+        if self.last_tool_calls.len() == self.call_repeat_chain_len * self.max_call_repeats {
+            self.last_tool_calls.remove(0);
+        }
+        self.last_tool_calls.push(call.clone());
+
         self.tool_calls.push(call);
+
         Ok(())
+    }
+
+    fn is_call_loop(&self, new_call: &ToolCall) -> bool {
+        // Check if the new call would create a loop
+        if self.last_tool_calls.len() < self.call_repeat_chain_len {
+            return false;
+        }
+
+        // Check if the new call is the same as the last call
+        if let Some(last_call) = self.last_tool_calls.last() {
+            if self.calls_match(last_call, new_call) {
+                // Check if this is part of a repeating pattern
+                let mut repeat_count = 1;
+                for i in (0..self.last_tool_calls.len()).rev() {
+                    if i == 0 {
+                        break;
+                    }
+                    if self.calls_match(&self.last_tool_calls[i-1], &self.last_tool_calls[i]) {
+                        repeat_count += 1;
+                        if repeat_count >= self.max_call_repeats {
+                            return true;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Check for repeating chains
+        let chain_start = self.last_tool_calls.len().saturating_sub(self.call_repeat_chain_len);
+        let chain = &self.last_tool_calls[chain_start..];
+
+        // Check if the new call would complete a repeating chain
+        if chain.len() == self.call_repeat_chain_len {
+            let mut is_repeating = true;
+            for i in 0..chain.len() - 1 {
+                if !self.calls_match(&chain[i], &chain[i + 1]) {
+                    is_repeating = false;
+                    break;
+                }
+            }
+            if is_repeating && self.calls_match(&chain[chain.len() - 1], new_call) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    fn calls_match(&self, call1: &ToolCall, call2: &ToolCall) -> bool {
+        // Compare tool calls by name and arguments
+        call1.name == call2.name && call1.arguments == call2.arguments
+    }
+
+    fn create_loop_detection_message(&self, new_call: &ToolCall) -> String {
+        let mut message = String::from("⚠️ Call loop detected! ⚠️");
+
+        // Add information about the repeating call
+        message.push_str(&format!("The call '{}' with arguments '{}' is repeating.\n",
+            new_call.name, new_call.arguments));
+
+        // Add information about the chain of calls
+        if self.last_tool_calls.len() >= self.call_repeat_chain_len {
+            let chain_start = self.last_tool_calls.len().saturating_sub(self.call_repeat_chain_len);
+            let chain = &self.last_tool_calls[chain_start..];
+
+            message.push_str("The following sequence of calls is repeating:\n");
+            for (i, call) in chain.iter().enumerate() {
+                message.push_str(&format!("  {}. {} with arguments {}\n",
+                    i + 1, call.name, call.arguments));
+            }
+        }
+
+        message.push_str("\nPlease move on to the next task in your sequence using the last output you got from the call or chain you are trying to re-execute. ");
+        message.push_str("Consider using different parameters or a different approach to avoid this loop.");
+
+        message
     }
 
     pub fn abort(&self) -> AbortSignal {
@@ -67,6 +166,10 @@ impl SseHandler {
 
     pub fn tool_calls(&self) -> &[ToolCall] {
         &self.tool_calls
+    }
+
+    pub fn last_tool_calls(&self) -> &[ToolCall] {
+        &self.last_tool_calls
     }
 
     pub fn take(self) -> (String, Vec<ToolCall>) {
@@ -240,6 +343,69 @@ impl JsonStreamParser {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_last_tool_calls_ring_buffer() {
+        use crate::function::ToolCall;
+        use serde_json::json;
+
+        let (sender, _) = tokio::sync::mpsc::unbounded_channel();
+        let abort_signal = crate::utils::create_abort_signal(); // Use create_abort_signal function
+        let mut handler = SseHandler::new(sender, abort_signal);
+
+        // Add 15 tool calls
+        for i in 0..15 {
+            let call = ToolCall::new(
+                format!("test_function_{}", i),
+                json!({"param": i}),
+                None
+            );
+            // Clone the call before passing it to tool_call to avoid move issues
+            handler.tool_call(call.clone()).unwrap();
+        }
+        let lt_len = handler.call_repeat_chain_len * handler.max_call_repeats;
+        // Verify we have exactly 10 last tool calls (the most recent 10)
+        assert_eq!(handler.last_tool_calls().len(), lt_len);
+
+        // Verify the last tool call is the 14th one (0-indexed, so the 15th call)
+        assert_eq!(handler.last_tool_calls()[lt_len - 1].name, "test_function_14");
+
+        // Verify the first tool call in the ring buffer
+        assert_eq!(handler.last_tool_calls()[0].name, format!("test_function_{}", 14 - lt_len + 1));
+    }
+
+    #[test]
+    fn test_call_loop_detection() {
+        use crate::function::ToolCall;
+        use serde_json::json;
+
+        let (sender, _) = tokio::sync::mpsc::unbounded_channel();
+        let abort_signal = crate::utils::create_abort_signal(); // Use create_abort_signal function
+        let mut handler = SseHandler::new(sender, abort_signal);
+
+        // Set parameters for testing
+        handler.max_call_repeats = 2;
+        handler.call_repeat_chain_len = 3;
+
+        // Create a tool call that will trigger the loop detection
+        let call = ToolCall::new(
+            "test_function_loop".to_string(),
+            json!({"param": 1}),
+            None
+        );
+
+        // Add the call multiple times to trigger the loop detection
+        for _ in 0..3 {
+            handler.tool_call(call.clone()).unwrap();
+        }
+
+        // Try to add the call again - this should trigger the loop detection
+        let result = handler.tool_call(call.clone());
+        assert!(result.is_err());
+        let error_message = result.unwrap_err().to_string();
+        assert!(error_message.contains("Call loop detected!"));
+        assert!(error_message.contains("test_function_loop"));
+    }
 
     use bytes::Bytes;
     use futures_util::stream;
