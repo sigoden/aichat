@@ -9,16 +9,18 @@ use self::prompt::ReplPrompt;
 use crate::client::{call_chat_completions, call_chat_completions_streaming};
 use crate::config::{
     macro_execute, AgentVariables, AssertState, Config, GlobalConfig, Input, LastMessage,
-    StateFlags,
+    StateFlags, EXPLAIN_SHELL_ROLE, SHELL_ROLE,
 };
 use crate::render::render_error;
 use crate::utils::{
-    abortable_run_with_spinner, create_abort_signal, dimmed_text, set_text, temp_file, AbortSignal,
+    abortable_run_with_spinner, append_to_shell_history, color_text, create_abort_signal,
+    dimmed_text, read_single_key, run_command, set_text, temp_file, AbortSignal, SHELL,
 };
 
 use anyhow::{bail, Context, Result};
 use crossterm::cursor::SetCursorStyle;
 use fancy_regex::Regex;
+use inquire::Text;
 use reedline::CursorConfig;
 use reedline::{
     default_emacs_keybindings, default_vi_insert_keybindings, default_vi_normal_keybindings,
@@ -31,10 +33,15 @@ use std::{env, process};
 
 const MENU_NAME: &str = "completion_menu";
 
-static REPL_COMMANDS: LazyLock<[ReplCommand; 36]> = LazyLock::new(|| {
+static REPL_COMMANDS: LazyLock<[ReplCommand; 37]> = LazyLock::new(|| {
     [
         ReplCommand::new(".help", "Show this help guide", AssertState::pass()),
         ReplCommand::new(".info", "Show system info", AssertState::pass()),
+        ReplCommand::new(
+            ".execute",
+            "Execute a natural language command",
+            AssertState::pass(),
+        ),
         ReplCommand::new(
             ".edit config",
             "Modify configuration file",
@@ -386,6 +393,15 @@ pub async fn run_repl_command(
             ".help" => {
                 dump_repl_help();
             }
+            ".execute" => match args {
+                Some(text) => {
+                    config.write().use_role(SHELL_ROLE)?;
+                    let input = Input::from_str(config, text, None);
+                    shell_execute(config, input, abort_signal.clone()).await?;
+                    config.write().exit_role()?;
+                }
+                None => println!("Usage: .execute <text>..."),
+            },
             ".info" => match args {
                 Some("role") => {
                     let info = config.read().role_info()?;
@@ -756,6 +772,79 @@ async fn ask(
         Config::maybe_compress_session(config.clone());
         Ok(())
     }
+}
+
+#[async_recursion::async_recursion]
+async fn shell_execute(
+    config: &GlobalConfig,
+    mut input: Input,
+    abort_signal: AbortSignal,
+) -> Result<()> {
+    let client = input.create_client()?;
+    config.write().before_chat_completion(&input)?;
+    let (eval_str, _) =
+        call_chat_completions(&input, false, true, client.as_ref(), abort_signal.clone()).await?;
+
+    config
+        .write()
+        .after_chat_completion(&input, &eval_str, &[])?;
+    if eval_str.is_empty() {
+        bail!("No command generated");
+    }
+    if config.read().dry_run {
+        config.read().print_markdown(&eval_str)?;
+        return Ok(());
+    }
+    let options = ["execute", "revise", "describe", "copy", "quit"];
+    let command = color_text(eval_str.trim(), nu_ansi_term::Color::Rgb(255, 165, 0));
+    let first_letter_color = nu_ansi_term::Color::Cyan;
+    let prompt_text = options
+        .iter()
+        .map(|v| format!("{}{}", color_text(&v[0..1], first_letter_color), &v[1..]))
+        .collect::<Vec<String>>()
+        .join(&dimmed_text(" | "));
+    loop {
+        println!("{command}");
+        let answer_char =
+            read_single_key(&['e', 'r', 'd', 'c', 'q'], 'e', &format!("{prompt_text}: "))?;
+
+        match answer_char {
+            'e' => {
+                debug!("{} {:?}", SHELL.cmd, &[&SHELL.arg, &eval_str]);
+                let code = run_command(&SHELL.cmd, &[&SHELL.arg, &eval_str], None)?;
+                if code == 0 && config.read().save_shell_history {
+                    let _ = append_to_shell_history(&SHELL.name, &eval_str, code);
+                }
+                return Ok(());
+            }
+            'r' => {
+                let revision = Text::new("Enter your revision:").prompt()?;
+                let text = format!("{}\n{revision}", input.text());
+                input.set_text(text);
+                return shell_execute(config, input, abort_signal.clone()).await;
+            }
+            'd' => {
+                let role = config.read().retrieve_role(EXPLAIN_SHELL_ROLE)?;
+                let input = Input::from_str(config, &eval_str, Some(role));
+                if input.stream() {
+                    call_chat_completions_streaming(&input, client.as_ref(), abort_signal.clone())
+                        .await?;
+                } else {
+                    call_chat_completions(&input, true, false, client.as_ref(), abort_signal.clone())
+                        .await?;
+                }
+                println!();
+                continue;
+            }
+            'c' => {
+                set_text(&eval_str)?;
+                println!("{}", dimmed_text("✓ Copied the command."));
+            }
+            _ => {}
+        }
+        break;
+    }
+    Ok(())
 }
 
 fn unknown_command() -> Result<()> {
