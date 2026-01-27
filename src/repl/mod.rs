@@ -395,10 +395,9 @@ pub async fn run_repl_command(
             }
             ".execute" => match args {
                 Some(text) => {
-                    config.write().use_role(SHELL_ROLE)?;
-                    let input = Input::from_str(config, text, None);
+                    let role = config.read().retrieve_role(SHELL_ROLE)?;
+                    let input = Input::from_str(config, text, Some(role));
                     shell_execute(config, input, abort_signal.clone()).await?;
-                    config.write().exit_role()?;
                 }
                 None => println!("Usage: .execute <text>..."),
             },
