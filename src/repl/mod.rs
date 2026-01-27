@@ -14,7 +14,7 @@ use crate::config::{
 use crate::render::render_error;
 use crate::utils::{
     abortable_run_with_spinner, append_to_shell_history, color_text, create_abort_signal,
-    dimmed_text, read_single_key, run_command, set_text, temp_file, AbortSignal, SHELL,
+    dimmed_text, read_single_key, run_command_with_output, set_text, temp_file, AbortSignal, SHELL,
 };
 
 use anyhow::{bail, Context, Result};
@@ -810,9 +810,20 @@ async fn shell_execute(
         match answer_char {
             'e' => {
                 debug!("{} {:?}", SHELL.cmd, &[&SHELL.arg, &eval_str]);
-                let code = run_command(&SHELL.cmd, &[&SHELL.arg, &eval_str], None)?;
-                if code == 0 && config.read().save_shell_history {
+                let (success, stdout, stderr) =
+                    run_command_with_output(&SHELL.cmd, &[&SHELL.arg, &eval_str], None)?;
+                if !stdout.is_empty() {
+                    print!("{stdout}");
+                }
+                if !stderr.is_empty() {
+                    eprint!("{stderr}");
+                }
+                let code = if success { 0 } else { 1 };
+                if success && config.read().save_shell_history {
                     let _ = append_to_shell_history(&SHELL.name, &eval_str, code);
+                }
+                if let Some(session) = config.write().session.as_mut() {
+                    session.add_execution_output(&eval_str, &stdout, &stderr);
                 }
                 return Ok(());
             }
