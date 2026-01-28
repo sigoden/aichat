@@ -33,13 +33,18 @@ use std::{env, process};
 
 const MENU_NAME: &str = "completion_menu";
 
-static REPL_COMMANDS: LazyLock<[ReplCommand; 37]> = LazyLock::new(|| {
+static REPL_COMMANDS: LazyLock<[ReplCommand; 38]> = LazyLock::new(|| {
     [
         ReplCommand::new(".help", "Show this help guide", AssertState::pass()),
         ReplCommand::new(".info", "Show system info", AssertState::pass()),
         ReplCommand::new(
             ".execute",
             "Execute a natural language command",
+            AssertState::pass(),
+        ),
+        ReplCommand::new(
+            ".run",
+            "Run a shell command directly",
             AssertState::pass(),
         ),
         ReplCommand::new(
@@ -400,6 +405,28 @@ pub async fn run_repl_command(
                     shell_execute(config, input, abort_signal.clone()).await?;
                 }
                 None => println!("Usage: .execute <text>..."),
+            },
+            ".run" => match args {
+                Some(args) => {
+                    let cmd = args.trim();
+                    debug!("{} {:?}", SHELL.cmd, &[&SHELL.arg, cmd]);
+                    let (success, stdout, stderr) =
+                        run_command_with_output(&SHELL.cmd, &[SHELL.arg.as_str(), cmd], None)?;
+                    if !stdout.is_empty() {
+                        print!("{stdout}");
+                    }
+                    if !stderr.is_empty() {
+                        eprint!("{stderr}");
+                    }
+                    let code = if success { 0 } else { 1 };
+                    if success && config.read().save_shell_history {
+                        let _ = append_to_shell_history(&SHELL.name, cmd, code);
+                    }
+                    if let Some(session) = config.write().session.as_mut() {
+                        session.add_execution_output(cmd, &stdout, &stderr);
+                    }
+                }
+                None => println!("Usage: .run <command>..."),
             },
             ".info" => match args {
                 Some("role") => {
