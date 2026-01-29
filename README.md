@@ -97,6 +97,8 @@ We have created a new repository [https://github.com/sigoden/llm-functions](http
 
 Integrate external tools to automate tasks, retrieve information, and perform actions directly within your workflow.
 
+[Model Context Protocol (MCP)](https://modelcontextprotocol.io) servers are natively supported. See [MCP.md](MCP.md) for detailed documentation.
+
 ![aichat-tool](https://github.com/user-attachments/assets/7459a111-7258-4ef0-a2dd-624d0f1b4f92)
 
 #### AI Agents (CLI version of OpenAI GPTs)

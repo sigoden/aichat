@@ -673,6 +673,64 @@ pub async fn run_repl_command(
                 };
                 set_text(&output).context("Failed to copy the last chat response")?;
             }
+            ".mcp" => match split_first_arg(args) {
+                Some(("list", None)) => {
+                    let servers = Config::mcp_list_servers(config).await;
+                    if servers.is_empty() {
+                        println!("No MCP servers configured");
+                    } else {
+                        println!("MCP Servers:");
+                        for (name, connected, description) in servers {
+                            let status = if connected {
+                                "connected"
+                            } else {
+                                "disconnected"
+                            };
+                            let desc = description.map(|d| format!(" - {}", d)).unwrap_or_default();
+                            println!("  {} [{}]{}", name, status, desc);
+                        }
+                    }
+                }
+                Some(("connect", Some(server_name))) => {
+                    Config::mcp_connect_server(config, server_name).await?;
+                    println!("✓ Connected to MCP server '{}'", server_name);
+                }
+                Some(("disconnect", Some(server_name))) => {
+                    Config::mcp_disconnect_server(config, server_name).await?;
+                    println!("✓ Disconnected from MCP server '{}'", server_name);
+                }
+                Some(("tools", server_name)) => {
+                    let mcp_manager = config.read().mcp_manager.clone();
+                    if let Some(manager) = mcp_manager {
+                        let tools = if let Some(name) = server_name {
+                            manager.get_server_tools(name).await?
+                        } else {
+                            manager.get_all_tools().await
+                        };
+                        if tools.is_empty() {
+                            println!("No tools available");
+                        } else {
+                            println!("Available MCP Tools:");
+                            for tool in tools {
+                                println!("  {} - {}", tool.name, tool.description);
+                            }
+                        }
+                    } else {
+                        println!("MCP is not configured");
+                    }
+                }
+                _ => {
+                    println!(
+                        r#"Usage: .mcp <command>
+
+Commands:
+  .mcp list                  - List all configured MCP servers
+  .mcp connect <server>      - Connect to an MCP server
+  .mcp disconnect <server>   - Disconnect from an MCP server
+  .mcp tools [server]        - List available tools (all or from specific server)"#
+                    );
+                }
+            },
             ".exit" => match args {
                 Some("role") => {
                     config.write().exit_role()?;

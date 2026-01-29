@@ -9,7 +9,7 @@ use fancy_regex::Regex;
 use inquire::{validator::Validation, Confirm, Text};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::{read_to_string, write};
 use std::path::Path;
 use std::sync::LazyLock;
@@ -26,6 +26,10 @@ pub struct Session {
     top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     use_tools: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tool_call_permission: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    tool_permissions: Option<ToolPermissions>,
     #[serde(skip_serializing_if = "Option::is_none")]
     save_session: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -62,6 +66,8 @@ pub struct Session {
     autoname: Option<AutoName>,
     #[serde(skip)]
     tokens: usize,
+    #[serde(skip)]
+    session_tool_permissions: HashSet<String>,
 }
 
 impl Session {
@@ -272,6 +278,8 @@ impl Session {
         self.temperature = role.temperature();
         self.top_p = role.top_p();
         self.use_tools = role.use_tools();
+        self.tool_call_permission = role.tool_call_permission();
+        self.tool_permissions = role.tool_permissions();
         self.model = role.model().clone();
         self.role_name = convert_option_string(role.name());
         self.role_prompt = role.prompt().to_string();
@@ -384,6 +392,9 @@ impl Session {
     }
 
     pub fn exit(&mut self, session_dir: &Path, is_repl: bool) -> Result<()> {
+        // Clear session-level tool permissions on exit
+        self.clear_session_tool_permissions();
+
         let mut save_session = self.save_session();
         if self.save_session_this_time {
             save_session = Some(true);
@@ -555,6 +566,18 @@ impl Session {
         }
         messages
     }
+
+    pub fn get_session_tool_permissions(&self) -> &HashSet<String> {
+        &self.session_tool_permissions
+    }
+
+    pub fn add_session_tool_permission(&mut self, tool_name: String) {
+        self.session_tool_permissions.insert(tool_name);
+    }
+
+    pub fn clear_session_tool_permissions(&mut self) {
+        self.session_tool_permissions.clear();
+    }
 }
 
 impl RoleLike for Session {
@@ -579,6 +602,14 @@ impl RoleLike for Session {
 
     fn use_tools(&self) -> Option<String> {
         self.use_tools.clone()
+    }
+
+    fn tool_call_permission(&self) -> Option<String> {
+        self.tool_call_permission.clone()
+    }
+
+    fn tool_permissions(&self) -> Option<ToolPermissions> {
+        self.tool_permissions.clone()
     }
 
     fn set_model(&mut self, model: Model) {
@@ -607,6 +638,20 @@ impl RoleLike for Session {
     fn set_use_tools(&mut self, value: Option<String>) {
         if self.use_tools != value {
             self.use_tools = value;
+            self.dirty = true;
+        }
+    }
+
+    fn set_tool_call_permission(&mut self, value: Option<String>) {
+        if self.tool_call_permission != value {
+            self.tool_call_permission = value;
+            self.dirty = true;
+        }
+    }
+
+    fn set_tool_permissions(&mut self, value: Option<ToolPermissions>) {
+        if self.tool_permissions != value {
+            self.tool_permissions = value;
             self.dirty = true;
         }
     }
