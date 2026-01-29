@@ -137,6 +137,32 @@
 #  - https://docs.anthropic.com/en/api/messages
 - provider: claude
   models:
+    - name: claude-opus-4-5-20251101
+    type: chat
+    max_input_tokens: 200000
+    input_price: 15.0
+    output_price: 75.0
+    max_output_tokens: 8192
+    require_max_tokens: true
+    supports_vision: true
+    supports_function_calling: true
+    - name: claude-opus-4-5-20251101:thinking
+    type: chat
+    real_name: claude-opus-4-5-20251101
+    max_input_tokens: 200000
+    input_price: 15.0
+    output_price: 75.0
+    patch:
+      body:
+        temperature: null
+        top_p: null
+        thinking:
+          type: enabled
+          budget_tokens: 16000
+    max_output_tokens: 24000
+    require_max_tokens: true
+    supports_vision: true
+    supports_function_calling: true
     - name: claude-sonnet-4-5-20250929
       max_input_tokens: 200000
       max_output_tokens: 8192
