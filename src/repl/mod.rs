@@ -48,7 +48,7 @@ static REPL_COMMANDS: LazyLock<[ReplCommand; 36]> = LazyLock::new(|| {
         ),
         ReplCommand::new(
             ".role",
-            "Create or switch to a role",
+            "Create or switch to a role ('default' role loaded automatically on startup)",
             AssertState::False(StateFlags::SESSION | StateFlags::AGENT),
         ),
         ReplCommand::new(
