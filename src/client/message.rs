@@ -1,4 +1,4 @@
-use super::Model;
+use super::Client;
 
 use crate::{function::ToolResult, multiline_text, utils::dimmed_text};
 
@@ -201,11 +201,12 @@ impl MessageContentToolCalls {
     }
 }
 
-pub fn patch_messages(messages: &mut Vec<Message>, model: &Model) {
+pub fn patch_messages<C: Client + ?Sized>(messages: &mut Vec<Message>, client: &C) {
     if messages.is_empty() {
         return;
     }
-    if let Some(prefix) = model.system_prompt_prefix() {
+
+    if let Some(prefix) = client.model().system_prompt_prefix() {
         if messages[0].role.is_system() {
             messages[0].merge_system(MessageContent::Text(prefix.to_string()));
         } else {
@@ -218,7 +219,22 @@ pub fn patch_messages(messages: &mut Vec<Message>, model: &Model) {
             );
         }
     }
-    if model.no_system_message() && messages[0].role.is_system() {
+
+    if let Some(prefix) = &client.global_config().read().system_prompt_prefix {
+        if messages[0].role.is_system() {
+            messages[0].merge_system(MessageContent::Text(prefix.to_string()));
+        } else {
+            messages.insert(
+                0,
+                Message {
+                    role: MessageRole::System,
+                    content: MessageContent::Text(prefix.to_string()),
+                },
+            );
+        }
+    }
+
+    if client.model().no_system_message() && messages[0].role.is_system() {
         let system_message = messages.remove(0);
         if let (Some(message), system) = (messages.get_mut(0), system_message.content) {
             message.merge_system(system);

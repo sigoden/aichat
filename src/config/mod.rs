@@ -3,22 +3,24 @@ mod input;
 mod role;
 mod session;
 
-pub use self::agent::{complete_agent_variables, list_agents, Agent, AgentVariables};
-pub use self::input::Input;
-pub use self::role::{
-    Role, RoleLike, CODE_ROLE, CREATE_TITLE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE,
-};
 use self::session::Session;
-
-use crate::client::{
-    create_client_config, list_client_types, list_models, ClientConfig, MessageContentToolCalls,
-    Model, ModelType, ProviderModels, OPENAI_COMPATIBLE_PROVIDERS,
+pub use self::{
+    agent::{complete_agent_variables, list_agents, Agent, AgentVariables},
+    input::Input,
+    role::{Role, RoleLike, CODE_ROLE, CREATE_TITLE_ROLE, EXPLAIN_SHELL_ROLE, SHELL_ROLE},
 };
-use crate::function::{FunctionDeclaration, Functions, ToolResult};
-use crate::rag::Rag;
-use crate::render::{MarkdownRender, RenderOptions};
-use crate::repl::{run_repl_command, split_args_text};
-use crate::utils::*;
+
+use crate::{
+    client::{
+        create_client_config, list_client_types, list_models, ClientConfig,
+        MessageContentToolCalls, Model, ModelType, ProviderModels, OPENAI_COMPATIBLE_PROVIDERS,
+    },
+    function::{FunctionDeclaration, Functions, ToolResult},
+    rag::Rag,
+    render::{MarkdownRender, RenderOptions},
+    repl::{run_repl_command, split_args_text},
+    utils::*,
+};
 
 use anyhow::{anyhow, bail, Context, Result};
 use indexmap::IndexMap;
@@ -27,8 +29,8 @@ use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use simplelog::LevelFilter;
-use std::collections::{HashMap, HashSet};
 use std::{
+    collections::{HashMap, HashSet},
     env,
     fs::{
         create_dir_all, read_dir, read_to_string, remove_dir_all, remove_file, File, OpenOptions,
@@ -125,6 +127,7 @@ pub struct Config {
     pub compress_threshold: usize,
     pub summarize_prompt: Option<String>,
     pub summary_prompt: Option<String>,
+    pub system_prompt_prefix: Option<String>,
 
     pub rag_embedding_model: Option<String>,
     pub rag_reranker_model: Option<String>,
@@ -201,6 +204,7 @@ impl Default for Config {
             compress_threshold: 4000,
             summarize_prompt: None,
             summary_prompt: None,
+            system_prompt_prefix: None,
 
             rag_embedding_model: None,
             rag_reranker_model: None,

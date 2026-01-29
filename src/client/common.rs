@@ -16,8 +16,7 @@ use inquire::{
 use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::sync::LazyLock;
-use std::time::Duration;
+use std::{sync::LazyLock, time::Duration};
 use tokio::sync::mpsc::unbounded_channel;
 
 const MODELS_YAML: &str = include_str!("../../models.yaml");
@@ -71,7 +70,7 @@ pub trait Client: Sync + Send {
             return Ok(ChatCompletionsOutput::new(&content));
         }
         let client = self.build_client()?;
-        let data = input.prepare_completion_data(self.model(), false)?;
+        let data = input.prepare_completion_data(self, false)?;
         self.chat_completions_inner(&client, data)
             .await
             .with_context(|| "Failed to call chat-completions api")
@@ -92,7 +91,7 @@ pub trait Client: Sync + Send {
                     return Ok(());
                 }
                 let client = self.build_client()?;
-                let data = input.prepare_completion_data(self.model(), true)?;
+                let data = input.prepare_completion_data(self, true)?;
                 self.chat_completions_streaming_inner(&client, handler, data).await
             } => {
                 handler.done();

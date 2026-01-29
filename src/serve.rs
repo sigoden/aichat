@@ -310,7 +310,7 @@ impl Server {
         let completion_id = generate_completion_id();
         let created = Utc::now().timestamp();
 
-        patch_messages(&mut messages, client.model());
+        patch_messages(&mut messages, &*client);
 
         let data: ChatCompletionsData = ChatCompletionsData {
             messages,
