@@ -57,6 +57,9 @@ pub struct Cli {
     /// Display the message without sending it
     #[clap(long)]
     pub dry_run: bool,
+    /// Hide thinking content from output
+    #[clap(long)]
+    pub hide_thinking: bool,
     /// Display information
     #[clap(long)]
     pub info: bool,
