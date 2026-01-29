@@ -33,13 +33,18 @@ use std::{env, process};
 
 const MENU_NAME: &str = "completion_menu";
 
-static REPL_COMMANDS: LazyLock<[ReplCommand; 38]> = LazyLock::new(|| {
+static REPL_COMMANDS: LazyLock<[ReplCommand; 39]> = LazyLock::new(|| {
     [
         ReplCommand::new(".help", "Show this help guide", AssertState::pass()),
         ReplCommand::new(".info", "Show system info", AssertState::pass()),
         ReplCommand::new(
             ".execute",
             "Execute a natural language command",
+            AssertState::pass(),
+        ),
+        ReplCommand::new(
+            ".ex",
+            "Shortcut for .execute",
             AssertState::pass(),
         ),
         ReplCommand::new(
@@ -398,7 +403,7 @@ pub async fn run_repl_command(
             ".help" => {
                 dump_repl_help();
             }
-            ".execute" => match args {
+            ".execute" | ".ex" => match args {
                 Some(text) => {
                     let role = config.read().retrieve_role(SHELL_ROLE)?;
                     let input = Input::from_str(config, text, Some(role));
