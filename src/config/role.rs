@@ -3,11 +3,9 @@ use super::*;
 use crate::client::{Message, MessageContent, MessageRole, Model};
 
 use anyhow::Result;
-use fancy_regex::Regex;
 use rust_embed::Embed;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::sync::LazyLock;
 
 pub const SHELL_ROLE: &str = "%shell%";
 pub const EXPLAIN_SHELL_ROLE: &str = "%explain-shell%";
@@ -19,9 +17,6 @@ pub const INPUT_PLACEHOLDER: &str = "__INPUT__";
 #[derive(Embed)]
 #[folder = "assets/roles/"]
 struct RolesAsset;
-
-static RE_METADATA: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?s)-{3,}\s*(.*?)\s*-{3,}\s*(.*)").unwrap());
 
 pub trait RoleLike {
     fn to_role(&self) -> Role;
@@ -58,14 +53,9 @@ pub struct Role {
 
 impl Role {
     pub fn new(name: &str, content: &str) -> Self {
-        let mut metadata = "";
-        let mut prompt = content.trim();
-        if let Ok(Some(caps)) = RE_METADATA.captures(content) {
-            if let (Some(metadata_value), Some(prompt_value)) = (caps.get(1), caps.get(2)) {
-                metadata = metadata_value.as_str().trim();
-                prompt = prompt_value.as_str().trim();
-            }
-        }
+        let content = content.replace("\r\n", "\n");
+        let (metadata, prompt) = Self::split_metadata(&content);
+
         let mut prompt = prompt.to_string();
         interpolate_variables(&mut prompt);
         let mut role = Self {
@@ -73,8 +63,9 @@ impl Role {
             prompt,
             ..Default::default()
         };
-        if !metadata.is_empty() {
-            if let Ok(value) = serde_yaml::from_str::<Value>(metadata) {
+
+        if let Some(metadata) = metadata {
+            if let Ok(value) = serde_yaml::from_str::<Value>(&metadata) {
                 if let Some(value) = value.as_object() {
                     for (key, value) in value {
                         match key.as_str() {
@@ -91,6 +82,83 @@ impl Role {
         role
     }
 
+    fn is_delimiter_line(s: &str) -> bool {
+        let mut chars = s.chars();
+        match (chars.next(), chars.next(), chars.next()) {
+            (Some('-'), Some('-'), Some('-')) => {
+                // The rest should be whitespace until newline
+                chars.all(|c| c.is_whitespace())
+            }
+            _ => false,
+        }
+    }
+
+    /// Splits a string into optional metadata and content using `---` fences.
+    ///
+    /// Format must be:
+    /// ```
+    /// ---
+    /// metadata (YAML)
+    /// ---
+    /// content
+    /// ```
+    ///
+    /// Returns:
+    /// - `None` if format invalid or metadata empty
+    /// - Trimmed content starting after second `---`
+    ///
+    /// Whitespace and comments around `---` are rejected.
+    fn split_metadata(input: &str) -> (Option<String>, &str) {
+        let mut lines = input.split_inclusive('\n');
+
+        let first_line = match lines.next() {
+            Some(l) => l,
+            None => return (None, input),
+        };
+
+        if !Self::is_delimiter_line(first_line) {
+            return (None, input);
+        }
+
+        let mut pos = first_line.len();
+        let mut second_delimiter_pos = None;
+
+        for line in lines {
+            if Self::is_delimiter_line(line) {
+                second_delimiter_pos = Some(pos);
+                break;
+            }
+            pos += line.len();
+        }
+
+        let meta_end = match second_delimiter_pos {
+            Some(p) => p,
+            None => return (None, input),
+        };
+
+        let metadata_start = first_line.len();
+        let content_start = meta_end + {
+            let rest = &input[meta_end..];
+            match rest.find('\n') {
+                Some(i) => i + 1,
+                None => 0, // no newline? then start immediately
+            }
+        };
+
+        let metadata = input.get(metadata_start..meta_end)
+        .and_then(|s| {
+            let trimmed = s.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_owned())
+            }
+        });
+
+        let content = input.get(content_start..).map(str::trim_start).unwrap_or_default();
+
+        (metadata, content)
+    }
     pub fn builtin(name: &str) -> Result<Self> {
         let content = RolesAsset::get(&format!("{name}.md"))
             .ok_or_else(|| anyhow!("Unknown role `{name}`"))?;
@@ -389,5 +457,53 @@ System message
 Input 1
 "#;
         assert_eq!(parse_structure_prompt(prompt), (prompt, vec![]));
+    }
+    #[test]
+    fn test_simple_metadata() {
+        let input = r#"---
+title: hello
+---
+Hello world!"#;
+        let (meta, content) = Role::split_metadata(input);
+        assert_eq!(meta.as_deref(), Some("title: hello"));
+        assert_eq!(content, "Hello world!");
+    }
+
+    #[test]
+    fn test_no_closing() {
+        let input = "---\ntitle: missing end";
+        let (meta, content) = Role::split_metadata(input);
+        assert!(meta.is_none());
+        assert_eq!(content, input);
+    }
+
+    #[test]
+    fn test_trailing_comment_rejected() {
+        let input = "--- # start\nvalue: ok\n--- # end\ncontent";
+        let (meta, _) = Role::split_metadata(input);
+        assert!(meta.is_none()); // because `--- # end` → trim_end != "---"
+    }
+
+    #[test]
+    fn test_multibyte_unicode_safe() {
+        let input = "---\n表情: 🐱\n---\n内容 starts here";
+        let (meta, content) = Role::split_metadata(input);
+        assert_eq!(meta.as_deref(), Some("表情: 🐱"));
+        assert_eq!(content, "内容 starts here");
+    }
+    #[test]
+    fn test_empty_metadata() {
+        let input = "---\n---\nHello";
+        let (meta, content) = Role::split_metadata(input);
+        assert!(meta.is_none());
+        assert_eq!(content, "Hello");
+    }
+
+    #[test]
+    fn test_whitespace_delimiters() {
+        let input = "---  \nkey: val\n---  \ncontent";
+        let (meta, content) = Role::split_metadata(input);
+        assert_eq!(meta.as_deref(), Some("key: val"));
+        assert_eq!(content, "content");
     }
 }
