@@ -432,7 +432,11 @@ pub async fn call_chat_completions(
                     client.global_config().read().print_markdown(&text)?;
                 }
             }
-            Ok((text, eval_tool_calls(client.global_config(), tool_calls)?))
+            let tool_results = eval_tool_calls(client.global_config(), tool_calls)?;
+            if let Some(tracker) = client.global_config().write().tool_call_tracker.as_mut() {
+                tool_results.iter().for_each(|res| tracker.record_call(res.call.clone()));
+            }
+            Ok((text, tool_results))
         }
         Err(err) => Err(err),
     }
@@ -463,7 +467,11 @@ pub async fn call_chat_completions_streaming(
             if !text.is_empty() && !text.ends_with('\n') {
                 println!();
             }
-            Ok((text, eval_tool_calls(client.global_config(), tool_calls)?))
+            let tool_results = eval_tool_calls(client.global_config(), tool_calls)?;
+            if let Some(tracker) = client.global_config().write().tool_call_tracker.as_mut() {
+                tool_results.iter().for_each(|res| tracker.record_call(res.call.clone()));
+            }
+            Ok((text, tool_results))
         }
         Err(err) => {
             if !text.is_empty() {
