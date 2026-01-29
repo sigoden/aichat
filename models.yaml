@@ -185,21 +185,21 @@
           thinking:
             type: enabled
             budget_tokens: 16000
-    - name: claude-opus-4-1-20250805
+    - name: claude-opus-4-5-20251101
       max_input_tokens: 200000
       max_output_tokens: 8192
       require_max_tokens: true
-      input_price: 15
-      output_price: 75
+      input_price: 5
+      output_price: 25
       supports_vision: true
       supports_function_calling: true
-    - name: claude-opus-4-1-20250805:thinking
-      real_name: claude-opus-4-1-20250805
+    - name: claude-opus-4-5-20251101:thinking
+      real_name: claude-opus-4-5-20251101
       max_input_tokens: 200000
       max_output_tokens: 24000
       require_max_tokens: true
-      input_price: 15
-      output_price: 75
+      input_price: 5
+      output_price: 25
       supports_vision: true
       supports_function_calling: true
       patch:
@@ -209,85 +209,6 @@
           thinking:
             type: enabled
             budget_tokens: 16000
-    - name: claude-opus-4-20250514
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 15
-      output_price: 75
-      supports_vision: true
-      supports_function_calling: true
-    - name: claude-opus-4-20250514:thinking
-      real_name: claude-opus-4-20250514
-      max_input_tokens: 200000
-      max_output_tokens: 24000
-      require_max_tokens: true
-      input_price: 15
-      output_price: 75
-      supports_vision: true
-      supports_function_calling: true
-      patch:
-        body:
-          temperature: null
-          top_p: null
-          thinking:
-            type: enabled
-            budget_tokens: 16000
-    - name: claude-sonnet-4-20250514
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 3
-      output_price: 15
-      supports_vision: true
-      supports_function_calling: true
-    - name: claude-sonnet-4-20250514:thinking
-      real_name: claude-sonnet-4-20250514
-      max_input_tokens: 200000
-      max_output_tokens: 24000
-      require_max_tokens: true
-      input_price: 3
-      output_price: 15
-      supports_vision: true
-      supports_function_calling: true
-      patch:
-        body:
-          temperature: null
-          top_p: null
-          thinking:
-            type: enabled
-            budget_tokens: 16000
-    - name: claude-3-7-sonnet-20250219
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 3
-      output_price: 15
-      supports_vision: true
-      supports_function_calling: true
-    - name: claude-3-7-sonnet-20250219:thinking
-      real_name: claude-3-7-sonnet-20250219
-      max_input_tokens: 200000
-      max_output_tokens: 24000
-      require_max_tokens: true
-      input_price: 3
-      output_price: 15
-      supports_vision: true
-      patch:
-        body:
-          temperature: null
-          top_p: null
-          thinking:
-            type: enabled
-            budget_tokens: 16000
-    - name: claude-3-5-haiku-20241022
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 0.8
-      output_price: 4
-      supports_vision: true
-      supports_function_calling: true
 
 # Links:
 #  - https://docs.mistral.ai/getting-started/models/models_overview/
@@ -609,21 +530,21 @@
           thinking:
             type: enabled
             budget_tokens: 16000
-    - name: claude-opus-4-1@20250805
+    - name: claude-opus-4-5@20251101
       max_input_tokens: 200000
       max_output_tokens: 8192
       require_max_tokens: true
-      input_price: 15
-      output_price: 75
+      input_price: 5
+      output_price: 25
       supports_vision: true
       supports_function_calling: true
-    - name: claude-opus-4-1@20250805:thinking
-      real_name: claude-opus-4-1@20250805
+    - name: claude-opus-4-5@20251101:thinking
+      real_name: claude-opus-4-5@20251101
       max_input_tokens: 200000
       max_output_tokens: 24000
       require_max_tokens: true
-      input_price: 15
-      output_price: 75
+      input_price: 5
+      output_price: 25
       supports_vision: true
       patch:
         body:
@@ -632,83 +553,6 @@
           thinking:
             type: enabled
             budget_tokens: 16000
-    - name: claude-opus-4@20250514
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 15
-      output_price: 75
-      supports_vision: true
-      supports_function_calling: true
-    - name: claude-opus-4@20250514:thinking
-      real_name: claude-opus-4@20250514
-      max_input_tokens: 200000
-      max_output_tokens: 24000
-      require_max_tokens: true
-      input_price: 15
-      output_price: 75
-      supports_vision: true
-      patch:
-        body:
-          temperature: null
-          top_p: null
-          thinking:
-            type: enabled
-            budget_tokens: 16000
-    - name: claude-sonnet-4@20250514
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 3
-      output_price: 15
-      supports_vision: true
-      supports_function_calling: true
-    - name: claude-sonnet-4@20250514:thinking
-      real_name: claude-sonnet-4@20250514
-      max_input_tokens: 200000
-      max_output_tokens: 24000
-      require_max_tokens: true
-      input_price: 3
-      output_price: 15
-      supports_vision: true
-      patch:
-        body:
-          temperature: null
-          top_p: null
-          thinking:
-            type: enabled
-            budget_tokens: 16000
-    - name: claude-3-7-sonnet@20250219
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 3
-      output_price: 15
-      supports_vision: true
-      supports_function_calling: true
-    - name: claude-3-7-sonnet@20250219:thinking
-      real_name: claude-3-7-sonnet@20250219
-      max_input_tokens: 200000
-      max_output_tokens: 24000
-      require_max_tokens: true
-      input_price: 3
-      output_price: 15
-      supports_vision: true
-      patch:
-        body:
-          temperature: null
-          top_p: null
-          thinking:
-            type: enabled
-            budget_tokens: 16000
-    - name: claude-3-5-haiku@20241022
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 0.8
-      output_price: 4
-      supports_vision: true
-      supports_function_calling: true
     - name: text-embedding-005
       type: embedding
       max_input_tokens: 20000
@@ -781,21 +625,21 @@
             thinking:
               type: enabled
               budget_tokens: 16000
-    - name: us.anthropic.claude-opus-4-1-20250805-v1:0
+    - name: us.anthropic.claude-opus-4-5-20251101-v1:0
       max_input_tokens: 200000
       max_output_tokens: 8192
       require_max_tokens: true
-      input_price: 15
-      output_price: 75
+      input_price: 5
+      output_price: 25
       supports_vision: true
       supports_function_calling: true
-    - name: us.anthropic.claude-opus-4-1-20250805-v1:0:thinking
-      real_name: us.anthropic.claude-opus-4-1-20250805-v1:0
+    - name: us.anthropic.claude-opus-4-5-20251101-v1:0:thinking
+      real_name: us.anthropic.claude-opus-4-5-20251101-v1:0
       max_input_tokens: 200000
       max_output_tokens: 24000
       require_max_tokens: true
-      input_price: 15
-      output_price: 75
+      input_price: 5
+      output_price: 25
       supports_vision: true
       patch:
         body:
@@ -806,89 +650,6 @@
             thinking:
               type: enabled
               budget_tokens: 16000
-    - name: us.anthropic.claude-opus-4-20250514-v1:0
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 15
-      output_price: 75
-      supports_vision: true
-      supports_function_calling: true
-    - name: us.anthropic.claude-opus-4-20250514-v1:0:thinking
-      real_name: us.anthropic.claude-opus-4-20250514-v1:0
-      max_input_tokens: 200000
-      max_output_tokens: 24000
-      require_max_tokens: true
-      input_price: 15
-      output_price: 75
-      supports_vision: true
-      patch:
-        body:
-          inferenceConfig:
-            temperature: null
-            topP: null
-          additionalModelRequestFields:
-            thinking:
-              type: enabled
-              budget_tokens: 16000
-    - name: us.anthropic.claude-sonnet-4-20250514-v1:0
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 3
-      output_price: 15
-      supports_vision: true
-      supports_function_calling: true
-    - name: us.anthropic.claude-sonnet-4-20250514-v1:0:thinking
-      real_name: us.anthropic.claude-sonnet-4-20250514-v1:0
-      max_input_tokens: 200000
-      max_output_tokens: 24000
-      require_max_tokens: true
-      input_price: 3
-      output_price: 15
-      supports_vision: true
-      patch:
-        body:
-          inferenceConfig:
-            temperature: null
-            topP: null
-          additionalModelRequestFields:
-            thinking:
-              type: enabled
-              budget_tokens: 16000
-    - name: us.anthropic.claude-3-7-sonnet-20250219-v1:0
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 3
-      output_price: 15
-      supports_vision: true
-      supports_function_calling: true
-    - name: us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking
-      real_name: us.anthropic.claude-3-7-sonnet-20250219-v1:0
-      max_input_tokens: 200000
-      max_output_tokens: 24000
-      require_max_tokens: true
-      input_price: 3
-      output_price: 15
-      supports_vision: true
-      patch:
-        body:
-          inferenceConfig:
-            temperature: null
-            topP: null
-          additionalModelRequestFields:
-            thinking:
-              type: enabled
-              budget_tokens: 16000
-    - name: anthropic.claude-3-5-haiku-20241022-v1:0
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 0.8
-      output_price: 4
-      supports_vision: true
-      supports_function_calling: true
     - name: us.meta.llama4-maverick-17b-instruct-v1:0
       max_input_tokens: 131072
       max_output_tokens: 8192
@@ -1158,6 +919,12 @@
 #  - https://platform.moonshot.cn/docs/api/chat#%E5%85%AC%E5%BC%80%E7%9A%84%E6%9C%8D%E5%8A%A1%E5%9C%B0%E5%9D%80
 - provider: moonshot
   models:
+    - name: kimi-k2.5
+      max_input_tokens: 262144
+      input_price: 0.56
+      output_price: 2.94
+      supports_vision: true
+      supports_function_calling: true
     - name: kimi-k2-turbo-preview
       max_input_tokens: 262144
       input_price: 1.12
@@ -1208,7 +975,6 @@
       input_price: 0.56
       output_price: 2.24
       supports_function_calling: true
-
     - name: glm-4.7:instruct
       real_name: glm-4.7
       max_input_tokens: 202752
@@ -1219,10 +985,20 @@
         body:
           thinking:
             type: disabled
+    - name: glm-4.7-flash
+      max_input_tokens: 202752
+      input_price: 0
+      output_price: 0
+      supports_function_calling: true
     - name: glm-4.6v
       max_input_tokens: 65536
       input_price: 0.28
       output_price: 0.84
+      supports_vision: true
+    - name: glm-4.6v-flash
+      max_input_tokens: 65536
+      input_price: 0
+      output_price: 0
       supports_vision: true
     - name: embedding-3
       type: embedding
@@ -1236,7 +1012,7 @@
       input_price: 0.112
 
 # Links:
-# - https://platform.minimaxi.com/docs/guides/pricing
+# - https://platform.minimaxi.com/docs/guides/pricing-payg
 # - https://platform.minimaxi.com/document/ChatCompletion%20v2
 - provider: minimax
   models:
@@ -1356,44 +1132,12 @@
       output_price: 5
       supports_vision: true
       supports_function_calling: true
-    - name: anthropic/claude-opus-4.1
+    - name: anthropic/claude-opus-4.5
       max_input_tokens: 200000
       max_output_tokens: 8192
       require_max_tokens: true
-      input_price: 15
-      output_price: 75
-      supports_vision: true
-      supports_function_calling: true
-    - name: anthropic/claude-opus-4
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 15
-      output_price: 75
-      supports_vision: true
-      supports_function_calling: true
-    - name: anthropic/claude-sonnet-4
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 3
-      output_price: 15
-      supports_vision: true
-      supports_function_calling: true
-    - name: anthropic/claude-3.7-sonnet
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 3
-      output_price: 15
-      supports_vision: true
-      supports_function_calling: true
-    - name: anthropic/claude-3.5-haiku
-      max_input_tokens: 200000
-      max_output_tokens: 8192
-      require_max_tokens: true
-      input_price: 0.8
-      output_price: 4
+      input_price: 5
+      output_price: 25
       supports_vision: true
       supports_function_calling: true
     - name: meta-llama/llama-4-maverick
@@ -1539,10 +1283,17 @@
       input_price: 0.052
       output_price: 0.207
       supports_function_calling: true
+    - name: moonshotai/kimi-k2.5
+      max_input_tokens: 262144
+      input_price: 0.57
+      output_price: 2.85
+      supports_vision: true
+      supports_function_calling: true
     - name: moonshotai/kimi-k2-0905
       max_input_tokens: 262144
       input_price: 0.296
       output_price: 1.185
+      supports_vision: true
       supports_function_calling: true
     - name: moonshotai/kimi-k2-thinking
       max_input_tokens: 262144
@@ -1617,6 +1368,11 @@
       max_input_tokens: 202752
       input_price: 0.16
       output_price: 0.80
+      supports_function_calling: true
+    - name: z-ai/glm-4.7-flash
+      max_input_tokens: 202752
+      input_price: 0.07
+      output_price: 0.40
       supports_function_calling: true
     - name: z-ai/glm-4.6v
       max_input_tokens: 131072
@@ -1783,6 +1539,11 @@
       max_input_tokens: 32768
       input_price: 0.06
       output_price: 0.12
+    - name: moonshotai/Kimi-K2.5
+      max_input_tokens: 262144
+      input_price: 0.5
+      output_price: 2.8
+      supports_function_calling: true
     - name: moonshotai/Kimi-K2-Instruct-0905
       max_input_tokens: 262144
       input_price: 0.5
