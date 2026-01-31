@@ -466,6 +466,24 @@ impl Session {
         Ok(())
     }
 
+    pub fn add_execution_output(&mut self, command: &str, stdout: &str, stderr: &str) {
+        let mut output_parts = vec![];
+        output_parts.push(format!("$ {command}"));
+        if !stdout.is_empty() {
+            output_parts.push(format!("<stdout>\n{stdout}</stdout>"));
+        }
+        if !stderr.is_empty() {
+            output_parts.push(format!("<stderr>\n{stderr}</stderr>"));
+        }
+        let output = output_parts.join("\n");
+        self.messages.push(Message::new(
+            MessageRole::Assistant,
+            MessageContent::Text(output),
+        ));
+        self.dirty = true;
+        self.update_tokens();
+    }
+
     pub fn add_message(&mut self, input: &Input, output: &str) -> Result<()> {
         if input.continue_output().is_some() {
             if let Some(message) = self.messages.last_mut() {

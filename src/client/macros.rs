@@ -229,10 +229,46 @@ macro_rules! config_get_fn {
             let env_prefix = Self::name(&self.config);
             let env_name =
                 format!("{}_{}", env_prefix, stringify!($field_name)).to_ascii_uppercase();
-            std::env::var(&env_name)
-                .ok()
-                .or_else(|| self.config.$field_name.clone())
-                .ok_or_else(|| anyhow::anyhow!("Miss '{}'", stringify!($field_name)))
+
+            // Priority 1: Environment variable
+            if let Ok(value) = std::env::var(&env_name) {
+                return Ok(value);
+            }
+
+            // Priority 2: config field value
+            if let Some(value) = &self.config.$field_name {
+                return Ok(value.clone());
+            }
+
+            anyhow::bail!("Miss '{}'", stringify!($field_name))
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! config_get_fn_with_helper {
+    ($field_name:ident, $fn_name:ident) => {
+        fn $fn_name(&self) -> anyhow::Result<String> {
+            let env_prefix = Self::name(&self.config);
+            let env_name =
+                format!("{}_{}", env_prefix, stringify!($field_name)).to_ascii_uppercase();
+
+            // Priority 1: Environment variable
+            if let Ok(value) = std::env::var(&env_name) {
+                return Ok(value);
+            }
+
+            // Priority 2: api_key_helper (for configs that support it)
+            if let Some(helper) = &self.config.api_key_helper {
+                return $crate::client::execute_api_key_helper(helper, false);
+            }
+
+            // Priority 3: config field value
+            if let Some(value) = &self.config.$field_name {
+                return Ok(value.clone());
+            }
+
+            anyhow::bail!("Miss '{}' or 'api_key_helper'", stringify!($field_name))
         }
     };
 }
