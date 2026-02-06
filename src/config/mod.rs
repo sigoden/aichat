@@ -1541,7 +1541,7 @@ impl Config {
         if !agent_config_path.exists() {
             std::fs::write(
                 &agent_config_path,
-                "# see https://github.com/sigoden/aichat/blob/main/config.agent.example.yaml\n",
+                "# see https://github.com/NorthProt-Inc/axel-chat/blob/main/config.agent.example.yaml\n",
             )
             .with_context(|| format!("Failed to write to '{}'", agent_config_path.display()))?;
         }
@@ -2638,7 +2638,7 @@ async fn create_config_file(config_path: &Path) -> Result<()> {
 
     let config_data = serde_yaml::to_string(&config).with_context(|| "Failed to create config")?;
     let config_data = format!(
-        "# see https://github.com/sigoden/aichat/blob/main/config.example.yaml\n\n{config_data}"
+        "# see https://github.com/NorthProt-Inc/axel-chat/blob/main/config.example.yaml\n\n{config_data}"
     );
 
     ensure_parent_exists(config_path)?;

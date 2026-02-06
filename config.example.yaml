@@ -1,5 +1,5 @@
 # ---- llm ----
-model: openai:gpt-4o             # Specify the LLM to use
+model: axel:axel  # Default: Axel AI backend
 temperature: null                # Set default temperature parameter (0, 1)
 top_p: null                      # Set default top-p parameter, with a range of (0, 1) or (0, 2) depending on the model
 
@@ -87,6 +87,17 @@ sync_models_url: https://raw.githubusercontent.com/sigoden/aichat/refs/heads/mai
 
 # ---- clients ----
 clients:
+  # Axel AI backend (default)
+  - type: openai-compatible
+    name: axel
+    api_base: http://localhost:8000/v1
+    api_key: sk-axel-local
+    models:
+      - name: axel
+        max_input_tokens: 2000000
+        supports_vision: true
+        supports_function_calling: false
+
   # All clients have the following configuration:
   # - type: xxxx
   #   name: xxxx                                      # Only use it to distinguish clients with the same client type. Optional

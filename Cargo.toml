@@ -1,12 +1,12 @@
 [package]
-name = "aichat"
+name = "axel-chat"
 version = "0.30.0"
 edition = "2021"
-authors = ["sigoden <sigoden@gmail.com>"]
-description = "All-in-one LLM CLI Tool"
+authors = ["sigoden <sigoden@gmail.com>", "NorthProt-Inc"]
+description = "Axel CLI Chat - Terminal interface for the Axel AI assistant"
 license = "MIT OR Apache-2.0"
-homepage = "https://github.com/sigoden/aichat"
-repository = "https://github.com/sigoden/aichat"
+homepage = "https://github.com/NorthProt-Inc/axel-chat"
+repository = "https://github.com/NorthProt-Inc/axel-chat"
 categories = ["command-line-utilities"]
 keywords = ["chatgpt", "llm", "cli", "ai", "repl"]
 
