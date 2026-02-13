@@ -46,11 +46,13 @@ impl StreamdownRenderer {
         {
             let mut renderer = Renderer::with_style(&mut output, self.width, self.style.clone());
 
-            // Set syntax highlighting theme if available
+            // Pass the actual theme object for syntax highlighting
             if let Some(theme) = &self.options.theme {
-                let theme_name = extract_theme_name(theme);
-                renderer.set_theme(&theme_name);
+                renderer.set_custom_theme(theme.clone());
             }
+
+            // Strip token backgrounds so code_bg controls the background uniformly
+            renderer.set_highlight_background(parse_hex_rgb(&self.style.code_bg));
 
             // Parse and render line by line
             for line in text.lines() {
@@ -75,11 +77,13 @@ impl StreamdownRenderer {
         {
             let mut renderer = Renderer::with_style(&mut output, self.width, self.style.clone());
 
-            // Set syntax highlighting theme if available
+            // Pass the actual theme object for syntax highlighting
             if let Some(theme) = &self.options.theme {
-                let theme_name = extract_theme_name(theme);
-                renderer.set_theme(&theme_name);
+                renderer.set_custom_theme(theme.clone());
             }
+
+            // Strip token backgrounds so code_bg controls the background uniformly
+            renderer.set_highlight_background(parse_hex_rgb(&self.style.code_bg));
 
             // Parse and render the line
             for event in self.parser.parse_line(line) {
@@ -169,15 +173,16 @@ fn extract_colors_from_theme(theme: &Theme, _truecolor: bool) -> RenderStyle {
         h5: find_scope_color("markup.heading.5"),
         h6: find_scope_color("markup.heading.6"),
 
-        // Code blocks - use a distinct background color (30% lighter for clear contrast)
-        code_bg: lighten_color(&bg_color, 0.3),
+        // Code blocks - subtle background shift to distinguish from terminal bg
+        // Keep close to original theme bg to preserve syntax highlight contrast
+        code_bg: adjust_bg_contrast(&bg_color, 0.12),
         code_label: find_scope_color("entity.name.function"),
 
         // Lists
         bullet: find_scope_color("punctuation"),
 
         // Tables
-        table_header_bg: lighten_color(&bg_color, 0.2),
+        table_header_bg: adjust_bg_contrast(&bg_color, 0.1),
         table_border: find_scope_color("comment"),
 
         // Borders and decorations
@@ -192,38 +197,47 @@ fn extract_colors_from_theme(theme: &Theme, _truecolor: bool) -> RenderStyle {
     }
 }
 
-/// Lighten a hex color by a factor (0.0 to 1.0).
-fn lighten_color(hex: &str, factor: f32) -> String {
-    // Parse hex color
-    let hex = hex.trim_start_matches('#');
+/// Adjust a background color for contrast based on theme brightness.
+///
+/// For dark themes: lightens towards white.
+/// For light themes: darkens towards black.
+fn adjust_bg_contrast(bg_hex: &str, factor: f32) -> String {
+    let factor = factor.clamp(0.0, 1.0);
+    let hex = bg_hex.trim_start_matches('#');
     if hex.len() != 6 {
-        return hex.to_string();
+        return bg_hex.to_string();
     }
 
     let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0);
     let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0);
     let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(0);
 
-    // Lighten by moving towards white
-    let lighten = |c: u8| -> u8 {
+    // Perceived luminance (ITU-R BT.601)
+    let luma = 0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32;
+    let is_dark = luma < 128.0;
+
+    let adjust = |c: u8| -> u8 {
         let c = c as f32;
-        let lightened = c + (255.0 - c) * factor;
-        lightened.min(255.0) as u8
+        if is_dark {
+            (c + (255.0 - c) * factor).min(255.0) as u8
+        } else {
+            (c * (1.0 - factor)).max(0.0) as u8
+        }
     };
 
-    format!("#{:02x}{:02x}{:02x}", lighten(r), lighten(g), lighten(b))
+    format!("#{:02x}{:02x}{:02x}", adjust(r), adjust(g), adjust(b))
 }
 
-/// Extract theme name from syntect Theme.
-///
-/// Streamdown uses theme names like "base16-ocean.dark", while syntect
-/// uses Theme objects. This function attempts to extract a compatible
-/// theme name.
-fn extract_theme_name(theme: &Theme) -> String {
-    // Try to extract theme name from theme.name if available
-    // For now, use a default theme name
-    // TODO: Implement proper theme name extraction or mapping
-    theme.name.clone().unwrap_or_else(|| "base16-ocean.dark".to_string())
+/// Parse a hex color string to RGB tuple.
+fn parse_hex_rgb(hex: &str) -> Option<(u8, u8, u8)> {
+    let hex = hex.trim_start_matches('#');
+    if hex.len() != 6 {
+        return None;
+    }
+    let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
+    let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
+    let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
+    Some((r, g, b))
 }
 
 #[cfg(test)]
@@ -476,10 +490,14 @@ mod tests {
     }
 
     #[test]
-    fn test_lighten_color() {
-        // Test lighten_color function
-        assert_eq!(lighten_color("#000000", 0.3), "#4c4c4c");
-        assert_eq!(lighten_color("#ffffff", 0.3), "#ffffff");
-        assert_eq!(lighten_color("#808080", 0.5), "#bfbfbf");
+    fn test_adjust_bg_contrast() {
+        // Dark background → lightens
+        assert_eq!(adjust_bg_contrast("#000000", 0.3), "#4c4c4c");
+        // Light background → darkens
+        assert_eq!(adjust_bg_contrast("#ffffff", 0.3), "#b2b2b2");
+        // Monokai dark bg → lightens
+        assert_eq!(adjust_bg_contrast("#272822", 0.3), "#676864");
+        // Mid-light → darkens
+        assert_eq!(adjust_bg_contrast("#fafafa", 0.3), "#afafaf");
     }
 }
