@@ -2,3 +2,8 @@
 /tmp
 /.env
 *.log
+.mcp.json
+.claude
+CLAUDE.md
+/docs
+/streamdown-rs

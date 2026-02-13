@@ -1,4 +1,4 @@
-use super::{MarkdownRender, SseEvent};
+use super::{StreamdownRenderer, SseEvent};
 
 use crate::utils::{poll_abort_signal, spawn_spinner, AbortSignal};
 
@@ -16,7 +16,7 @@ use tokio::sync::mpsc::UnboundedReceiver;
 
 pub async fn markdown_stream(
     rx: UnboundedReceiver<SseEvent>,
-    render: &mut MarkdownRender,
+    render: &mut StreamdownRenderer,
     abort_signal: &AbortSignal,
 ) -> Result<()> {
     enable_raw_mode()?;
@@ -66,7 +66,7 @@ pub async fn raw_stream(
 
 async fn markdown_stream_inner(
     mut rx: UnboundedReceiver<SseEvent>,
-    render: &mut MarkdownRender,
+    render: &mut StreamdownRenderer,
     abort_signal: &AbortSignal,
     writer: &mut Stdout,
 ) -> Result<()> {
@@ -122,14 +122,14 @@ async fn markdown_stream_inner(
                     if text.contains('\n') {
                         let text = format!("{buffer}{text}");
                         let (head, tail) = split_line_tail(&text);
-                        let output = render.render(head);
+                        let output = render.render(head)?;
                         print_block(writer, &output, columns)?;
                         buffer = tail.to_string();
                     } else {
                         buffer = format!("{buffer}{text}");
                     }
 
-                    let output = render.render_line(&buffer);
+                    let output = render.render_line(&buffer)?;
                     if output.contains('\n') {
                         let (head, tail) = split_line_tail(&output);
                         buffer_rows = print_block(writer, head, columns)?;
@@ -191,6 +191,7 @@ async fn gather_events(rx: &mut UnboundedReceiver<SseEvent>) -> Vec<SseEvent> {
 
 fn print_block(writer: &mut Stdout, text: &str, columns: u16) -> Result<u16> {
     let mut num = 0;
+    let text = text.trim_end_matches('\n');  // ← 去掉末尾换行
     for line in text.split('\n') {
         queue!(
             writer,

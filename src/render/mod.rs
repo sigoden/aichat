@@ -1,7 +1,9 @@
 mod markdown;
 mod stream;
+mod streamdown_adapter;
 
 pub use self::markdown::{MarkdownRender, RenderOptions};
+pub use self::streamdown_adapter::StreamdownRenderer;
 use self::stream::{markdown_stream, raw_stream};
 
 use crate::utils::{error_text, pretty_error, AbortSignal, IS_STDOUT_TERMINAL};
@@ -17,7 +19,7 @@ pub async fn render_stream(
 ) -> Result<()> {
     let ret = if *IS_STDOUT_TERMINAL && config.read().highlight {
         let render_options = config.read().render_options()?;
-        let mut render = MarkdownRender::init(render_options)?;
+        let mut render = StreamdownRenderer::new(render_options)?;
         markdown_stream(rx, &mut render, &abort_signal).await
     } else {
         raw_stream(rx, &abort_signal).await

@@ -2,7 +2,7 @@ use super::input::*;
 use super::*;
 
 use crate::client::{Message, MessageContent, MessageRole};
-use crate::render::MarkdownRender;
+use crate::render::StreamdownRenderer;
 
 use anyhow::{bail, Context, Result};
 use fancy_regex::Regex;
@@ -177,7 +177,7 @@ impl Session {
 
     pub fn render(
         &self,
-        render: &mut MarkdownRender,
+        render: &mut StreamdownRenderer,
         agent_info: &Option<(String, Vec<String>)>,
     ) -> Result<String> {
         let mut items = vec![];
@@ -230,12 +230,12 @@ impl Session {
                     MessageRole::System => {
                         lines.push(
                             render
-                                .render(&message.content.render_input(resolve_url_fn, agent_info)),
+                                .render(&message.content.render_input(resolve_url_fn, agent_info))?,
                         );
                     }
                     MessageRole::Assistant => {
                         if let MessageContent::Text(text) = &message.content {
-                            lines.push(render.render(text));
+                            lines.push(render.render(text)?);
                         }
                         lines.push("".into());
                     }

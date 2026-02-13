@@ -16,7 +16,7 @@ use crate::client::{
 };
 use crate::function::{FunctionDeclaration, Functions, ToolResult};
 use crate::rag::Rag;
-use crate::render::{MarkdownRender, RenderOptions};
+use crate::render::{RenderOptions, StreamdownRenderer};
 use crate::repl::{run_repl_command, split_args_text};
 use crate::utils::*;
 
@@ -1129,7 +1129,7 @@ impl Config {
     pub fn session_info(&self) -> Result<String> {
         if let Some(session) = &self.session {
             let render_options = self.render_options()?;
-            let mut markdown_render = MarkdownRender::init(render_options)?;
+            let mut markdown_render = StreamdownRenderer::new(render_options)?;
             let agent_info: Option<(String, Vec<String>)> = self.agent.as_ref().map(|agent| {
                 let functions = agent
                     .functions()
@@ -1955,8 +1955,8 @@ impl Config {
     pub fn print_markdown(&self, text: &str) -> Result<()> {
         if *IS_STDOUT_TERMINAL {
             let render_options = self.render_options()?;
-            let mut markdown_render = MarkdownRender::init(render_options)?;
-            println!("{}", markdown_render.render(text));
+            let mut markdown_render = StreamdownRenderer::new(render_options)?;
+            println!("{}", markdown_render.render(text)?);
         } else {
             println!("{text}");
         }

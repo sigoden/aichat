@@ -69,13 +69,6 @@ fuzzy-matcher = "0.3.7"
 terminal-colorsaurus = "0.4.8"
 duct = "1.0.0"
 
-# Streamdown markdown renderer
-streamdown-parser = { path = "streamdown-rs/crates/streamdown-parser" }
-streamdown-render = { path = "streamdown-rs/crates/streamdown-render" }
-streamdown-syntax = { path = "streamdown-rs/crates/streamdown-syntax" }
-streamdown-core = { path = "streamdown-rs/crates/streamdown-core" }
-streamdown-ansi = { path = "streamdown-rs/crates/streamdown-ansi" }
-
 [dependencies.reqwest]
 version = "0.12.0"
 features = ["json", "multipart", "socks", "rustls-tls", "rustls-tls-native-roots"]
