@@ -129,18 +129,20 @@ async fn markdown_stream_inner(
                         buffer = format!("{buffer}{text}");
                     }
 
-                    let output = render.render_line(&buffer)?;
-                    if output.contains('\n') {
-                        let (head, tail) = split_line_tail(&output);
-                        buffer_rows = print_block(writer, head, columns)?;
-                        queue!(writer, style::Print(&tail),)?;
+                    if !buffer.is_empty() {
+                        let output = render.render_line(&buffer)?;
+                        if output.contains('\n') {
+                            let (head, tail) = split_line_tail(&output);
+                            buffer_rows = print_block(writer, head, columns)?;
+                            queue!(writer, style::Print(&tail),)?;
 
-                        // No guarantee the buffer width of the buffer will not exceed the number of columns.
-                        // So we calculate the number of rows needed, rather than setting it directly to 1.
-                        buffer_rows += need_rows(tail, columns);
-                    } else {
-                        queue!(writer, style::Print(&output))?;
-                        buffer_rows = need_rows(&output, columns);
+                            // No guarantee the buffer width of the buffer will not exceed the number of columns.
+                            // So we calculate the number of rows needed, rather than setting it directly to 1.
+                            buffer_rows += need_rows(tail, columns);
+                        } else {
+                            queue!(writer, style::Print(&output))?;
+                            buffer_rows = need_rows(&output, columns);
+                        }
                     }
 
                     writer.flush()?;

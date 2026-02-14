@@ -74,12 +74,15 @@ impl StreamdownRenderer {
         String::from_utf8(output).with_context(|| "Invalid UTF-8 in rendered output")
     }
 
-    /// Render a single line (streaming rendering).
+    /// Render a single line (streaming preview rendering).
     ///
-    /// This method is designed for streaming scenarios where markdown
-    /// arrives line by line. The parser maintains internal state across
-    /// calls to handle multi-line structures correctly.
+    /// This is a side-effect-free preview: parser state is saved before
+    /// and restored after, so the preview doesn't corrupt multi-line
+    /// constructs like tables, code blocks, or lists.
     pub fn render_line(&mut self, line: &str) -> Result<String> {
+        // Snapshot parser state so preview rendering has no side effects
+        let parser_snapshot = self.parser.clone();
+
         let mut output = Vec::new();
 
         {
@@ -102,9 +105,11 @@ impl StreamdownRenderer {
                     .with_context(|| "Failed to render event")?;
             }
 
-            // Save state for next call
-            self.render_state = renderer.save_state();
+            // Don't save render_state — preview should not persist
         }
+
+        // Restore parser to pre-preview state
+        self.parser = parser_snapshot;
 
         String::from_utf8(output).with_context(|| "Invalid UTF-8 in rendered output")
     }
@@ -488,5 +493,60 @@ mod tests {
         assert_eq!(adjust_bg_contrast("#272822", 0.3), "#676864");
         // Mid-light → darkens
         assert_eq!(adjust_bg_contrast("#fafafa", 0.3), "#afafaf");
+    }
+
+    #[test]
+    fn test_streaming_table_no_double_parse() {
+        // Simulates streaming: render_line previews buffer, then render finalizes.
+        // Before fix: render_line mutated parser state, causing double-parse
+        // and table corruption when render() re-parsed the same content.
+        let options = RenderOptions::default();
+        let mut renderer = StreamdownRenderer::new(options).unwrap();
+
+        // Step 1: Preview incomplete line (no newline yet)
+        let preview = renderer.render_line("| Name | Age |").unwrap();
+        assert!(preview.contains("Name"));
+
+        // Step 2: Newline arrives — render the complete line
+        let output = renderer.render("| Name | Age |").unwrap();
+        assert!(output.contains("Name"));
+
+        // Step 3: Preview separator
+        let _ = renderer.render_line("|------|-----|");
+
+        // Step 4: Finalize separator
+        let sep = renderer.render("|------|-----|").unwrap();
+        assert!(sep.contains("─")); // Should be a separator line, not data
+
+        // Step 5: Preview data row
+        let _ = renderer.render_line("| Alice | 30 |");
+
+        // Step 6: Finalize data row
+        let row = renderer.render("| Alice | 30 |").unwrap();
+        assert!(row.contains("Alice"));
+        assert!(row.contains("30"));
+    }
+
+    #[test]
+    fn test_streaming_table_empty_buffer_no_kill() {
+        // Before fix: render_line("") after a complete line would trigger
+        // handle_empty_line() and destroy table state with TableEnd.
+        let options = RenderOptions::default();
+        let mut renderer = StreamdownRenderer::new(options).unwrap();
+
+        // Render complete header line
+        let _ = renderer.render("| Name | Age |").unwrap();
+
+        // Empty buffer preview — should NOT kill table state
+        let empty_output = renderer.render_line("").unwrap();
+        assert!(empty_output.is_empty() || !empty_output.contains("─"));
+
+        // Separator should still work as separator (not new table header)
+        let sep = renderer.render("|------|-----|").unwrap();
+        assert!(sep.contains("─"));
+
+        // Data row should render as body row
+        let row = renderer.render("| Alice | 30 |").unwrap();
+        assert!(row.contains("Alice"));
     }
 }
