@@ -70,13 +70,13 @@ terminal-colorsaurus = "0.4.8"
 duct = "1.0.0"
 
 # Streamdown markdown renderer
-streamdown-parser = { path = "streamdown-rs/crates/streamdown-parser" }
-streamdown-render = { path = "streamdown-rs/crates/streamdown-render" }
-streamdown-syntax = { path = "streamdown-rs/crates/streamdown-syntax" }
-streamdown-core = { path = "streamdown-rs/crates/streamdown-core" }
-streamdown-ansi = { path = "streamdown-rs/crates/streamdown-ansi" }
-streamdown-plugin = { path = "streamdown-rs/crates/streamdown-plugin" }
-streamdown-config = { path = "streamdown-rs/crates/streamdown-config" }
+streamdown-parser = { git = "https://github.com/NanoBoom/streamdown-rs.git" }
+streamdown-render = { git = "https://github.com/NanoBoom/streamdown-rs.git" }
+streamdown-syntax = { git = "https://github.com/NanoBoom/streamdown-rs.git" }
+streamdown-core = { git = "https://github.com/NanoBoom/streamdown-rs.git" }
+streamdown-ansi = { git = "https://github.com/NanoBoom/streamdown-rs.git" }
+streamdown-plugin = { git = "https://github.com/NanoBoom/streamdown-rs.git" }
+streamdown-config = { git = "https://github.com/NanoBoom/streamdown-rs.git" }
 
 [dependencies.reqwest]
 version = "0.12.0"

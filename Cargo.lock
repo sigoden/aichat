@@ -3219,6 +3219,7 @@ dependencies = [
 [[package]]
 name = "streamdown-ansi"
 version = "0.1.4"
+source = "git+https://github.com/NanoBoom/streamdown-rs.git#c3a87a29aa414dd2e19fd0979ba3081931023cb8"
 dependencies = [
  "crossterm 0.28.1",
  "regex",
@@ -3228,6 +3229,7 @@ dependencies = [
 [[package]]
 name = "streamdown-config"
 version = "0.1.4"
+source = "git+https://github.com/NanoBoom/streamdown-rs.git#c3a87a29aa414dd2e19fd0979ba3081931023cb8"
 dependencies = [
  "crossterm 0.28.1",
  "directories",
@@ -3240,6 +3242,7 @@ dependencies = [
 [[package]]
 name = "streamdown-core"
 version = "0.1.4"
+source = "git+https://github.com/NanoBoom/streamdown-rs.git#c3a87a29aa414dd2e19fd0979ba3081931023cb8"
 dependencies = [
  "regex",
  "serde",
@@ -3249,6 +3252,7 @@ dependencies = [
 [[package]]
 name = "streamdown-parser"
 version = "0.1.4"
+source = "git+https://github.com/NanoBoom/streamdown-rs.git#c3a87a29aa414dd2e19fd0979ba3081931023cb8"
 dependencies = [
  "regex",
  "streamdown-ansi",
@@ -3259,6 +3263,7 @@ dependencies = [
 [[package]]
 name = "streamdown-plugin"
 version = "0.1.4"
+source = "git+https://github.com/NanoBoom/streamdown-rs.git#c3a87a29aa414dd2e19fd0979ba3081931023cb8"
 dependencies = [
  "regex",
  "streamdown-config",
@@ -3268,6 +3273,7 @@ dependencies = [
 [[package]]
 name = "streamdown-render"
 version = "0.1.4"
+source = "git+https://github.com/NanoBoom/streamdown-rs.git#c3a87a29aa414dd2e19fd0979ba3081931023cb8"
 dependencies = [
  "base64",
  "crossterm 0.28.1",
@@ -3283,6 +3289,7 @@ dependencies = [
 [[package]]
 name = "streamdown-syntax"
 version = "0.1.4"
+source = "git+https://github.com/NanoBoom/streamdown-rs.git#c3a87a29aa414dd2e19fd0979ba3081931023cb8"
 dependencies = [
  "streamdown-core",
  "syntect",
