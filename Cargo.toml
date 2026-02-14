@@ -75,6 +75,8 @@ streamdown-render = { path = "streamdown-rs/crates/streamdown-render" }
 streamdown-syntax = { path = "streamdown-rs/crates/streamdown-syntax" }
 streamdown-core = { path = "streamdown-rs/crates/streamdown-core" }
 streamdown-ansi = { path = "streamdown-rs/crates/streamdown-ansi" }
+streamdown-plugin = { path = "streamdown-rs/crates/streamdown-plugin" }
+streamdown-config = { path = "streamdown-rs/crates/streamdown-config" }
 
 [dependencies.reqwest]
 version = "0.12.0"

@@ -92,8 +92,10 @@ dependencies = [
  "shell-words",
  "simplelog",
  "streamdown-ansi",
+ "streamdown-config",
  "streamdown-core",
  "streamdown-parser",
+ "streamdown-plugin",
  "streamdown-render",
  "streamdown-syntax",
  "syntect",
@@ -3252,6 +3254,15 @@ dependencies = [
  "streamdown-ansi",
  "streamdown-core",
  "unicode-width 0.2.1",
+]
+
+[[package]]
+name = "streamdown-plugin"
+version = "0.1.4"
+dependencies = [
+ "regex",
+ "streamdown-config",
+ "streamdown-core",
 ]
 
 [[package]]

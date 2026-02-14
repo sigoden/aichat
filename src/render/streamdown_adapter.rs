@@ -1,7 +1,9 @@
 use crate::render::RenderOptions;
 
 use anyhow::{Context, Result};
+use streamdown_config::ComputedStyle;
 use streamdown_parser::Parser;
+use streamdown_plugin::{PluginAction, PluginManager};
 use streamdown_render::{RenderState, RenderStyle, Renderer};
 use syntect::highlighting::Theme;
 
@@ -12,6 +14,7 @@ use syntect::highlighting::Theme;
 /// lists, headings, and more.
 pub struct StreamdownRenderer {
     parser: Parser,
+    plugin_manager: PluginManager,
     width: usize,
     style: RenderStyle,
     options: RenderOptions,
@@ -22,6 +25,7 @@ impl StreamdownRenderer {
     /// Create a new StreamdownRenderer from RenderOptions.
     pub fn new(options: RenderOptions) -> Result<Self> {
         let parser = Parser::new();
+        let plugin_manager = PluginManager::with_builtins();
 
         // Determine terminal width
         let width = determine_width(&options)?;
@@ -31,6 +35,7 @@ impl StreamdownRenderer {
 
         Ok(Self {
             parser,
+            plugin_manager,
             width,
             style,
             options,
@@ -59,11 +64,30 @@ impl StreamdownRenderer {
             // Restore state from previous call
             renderer.restore_state(self.render_state.clone());
 
-            // Parse and render line by line
+            // Parse and render line by line, with plugin preprocessing
+            let computed_style = ComputedStyle::default();
             for line in text.lines() {
-                for event in self.parser.parse_line(line) {
-                    renderer.render_event(&event)
-                        .with_context(|| "Failed to render event")?;
+                match self.plugin_manager.process_line(line, self.parser.state(), &computed_style) {
+                    Some(PluginAction::Output(lines)) => {
+                        for l in &lines {
+                            for event in self.parser.parse_line(l) {
+                                renderer.render_event(&event)
+                                    .with_context(|| "Failed to render event")?;
+                            }
+                        }
+                    }
+                    Some(PluginAction::Rewrite(rewritten)) => {
+                        for event in self.parser.parse_line(&rewritten) {
+                            renderer.render_event(&event)
+                                .with_context(|| "Failed to render event")?;
+                        }
+                    }
+                    None => {
+                        for event in self.parser.parse_line(line) {
+                            renderer.render_event(&event)
+                                .with_context(|| "Failed to render event")?;
+                        }
+                    }
                 }
             }
 
@@ -99,8 +123,14 @@ impl StreamdownRenderer {
             // Restore state from previous call
             renderer.restore_state(self.render_state.clone());
 
-            // Parse and render the line
-            for event in self.parser.parse_line(line) {
+            // Parse and render the line with plugin preprocessing
+            let computed_style = ComputedStyle::default();
+            let mut preview_plugins = PluginManager::with_builtins();
+            let line_to_parse = match preview_plugins.process_line(line, self.parser.state(), &computed_style) {
+                Some(PluginAction::Rewrite(rewritten)) => rewritten,
+                _ => line.to_string(),
+            };
+            for event in self.parser.parse_line(&line_to_parse) {
                 renderer.render_event(&event)
                     .with_context(|| "Failed to render event")?;
             }
@@ -548,5 +578,25 @@ mod tests {
         // Data row should render as body row
         let row = renderer.render("| Alice | 30 |").unwrap();
         assert!(row.contains("Alice"));
+    }
+
+    #[test]
+    fn test_render_inline_latex_math() {
+        let options = RenderOptions::default();
+        let mut renderer = StreamdownRenderer::new(options).unwrap();
+
+        let output = renderer.render("The complexity is $O(n)$ for this algorithm.").unwrap();
+        // After LaTeX plugin, $O(n)$ should be converted — dollar signs removed
+        assert!(!output.contains('$'), "Dollar signs should be removed by LaTeX plugin");
+        assert!(output.contains("O(n)"), "Math content should be preserved");
+    }
+
+    #[test]
+    fn test_render_line_inline_latex_math() {
+        let options = RenderOptions::default();
+        let mut renderer = StreamdownRenderer::new(options).unwrap();
+
+        let output = renderer.render_line("$O(n)$ complexity").unwrap();
+        assert!(!output.contains('$'), "Dollar signs should be removed in preview");
     }
 }
