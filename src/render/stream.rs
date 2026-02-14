@@ -201,7 +201,7 @@ fn print_block(writer: &mut Stdout, text: &str, columns: u16) -> Result<u16> {
             style::Print("\n"),
             cursor::MoveLeft(columns),
         )?;
-        num += 1;
+        num += need_rows(line, columns);
     }
     Ok(num)
 }
