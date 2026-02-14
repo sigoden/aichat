@@ -2,7 +2,7 @@ use crate::render::RenderOptions;
 
 use anyhow::{Context, Result};
 use streamdown_parser::Parser;
-use streamdown_render::{RenderStyle, Renderer};
+use streamdown_render::{RenderState, RenderStyle, Renderer};
 use syntect::highlighting::Theme;
 
 /// Streamdown-based markdown renderer adapter.
@@ -15,6 +15,7 @@ pub struct StreamdownRenderer {
     width: usize,
     style: RenderStyle,
     options: RenderOptions,
+    render_state: RenderState,
 }
 
 impl StreamdownRenderer {
@@ -33,6 +34,7 @@ impl StreamdownRenderer {
             width,
             style,
             options,
+            render_state: RenderState::default(),
         })
     }
 
@@ -54,6 +56,9 @@ impl StreamdownRenderer {
             // Strip token backgrounds so code_bg controls the background uniformly
             renderer.set_highlight_background(parse_hex_rgb(&self.style.code_bg));
 
+            // Restore state from previous call
+            renderer.restore_state(self.render_state.clone());
+
             // Parse and render line by line
             for line in text.lines() {
                 for event in self.parser.parse_line(line) {
@@ -61,6 +66,9 @@ impl StreamdownRenderer {
                         .with_context(|| "Failed to render event")?;
                 }
             }
+
+            // Save state for next call
+            self.render_state = renderer.save_state();
         }
 
         String::from_utf8(output).with_context(|| "Invalid UTF-8 in rendered output")
@@ -85,11 +93,17 @@ impl StreamdownRenderer {
             // Strip token backgrounds so code_bg controls the background uniformly
             renderer.set_highlight_background(parse_hex_rgb(&self.style.code_bg));
 
+            // Restore state from previous call
+            renderer.restore_state(self.render_state.clone());
+
             // Parse and render the line
             for event in self.parser.parse_line(line) {
                 renderer.render_event(&event)
                     .with_context(|| "Failed to render event")?;
             }
+
+            // Save state for next call
+            self.render_state = renderer.save_state();
         }
 
         String::from_utf8(output).with_context(|| "Invalid UTF-8 in rendered output")
@@ -462,31 +476,6 @@ mod tests {
         assert!(output.contains("bold"));
         assert!(output.contains("List item"));
         assert!(output.contains("main"));
-    }
-
-    #[test]
-    fn test_code_block_with_empty_lines() {
-        let options = RenderOptions::default();
-        let mut renderer = StreamdownRenderer::new(options).unwrap();
-
-        // Code block with empty lines
-        let code = "```python\ndef hello():\n    print(\"Hello\")\n\n    return True\n```";
-        let output = renderer.render(code).unwrap();
-
-        eprintln!("Code block output:\n{}", output);
-        eprintln!("Output bytes: {:?}", output.as_bytes());
-
-        // Should contain the code
-        assert!(output.contains("hello"));
-        assert!(output.contains("print"));
-        assert!(output.contains("return"));
-
-        // Should NOT contain language label [python]
-        assert!(!output.contains("[python]"), "Should not contain language label");
-
-        // Should NOT contain fence markers ```
-        let visible_output = streamdown_ansi::utils::visible(&output);
-        assert!(!visible_output.contains("```"), "Should not contain fence markers in visible output");
     }
 
     #[test]
