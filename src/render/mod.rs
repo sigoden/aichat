@@ -2,7 +2,7 @@ mod markdown;
 mod stream;
 mod streamdown_adapter;
 
-pub use self::markdown::{MarkdownRender, RenderOptions};
+pub use self::markdown::RenderOptions;
 pub use self::streamdown_adapter::StreamdownRenderer;
 use self::stream::{markdown_stream, raw_stream};
 
