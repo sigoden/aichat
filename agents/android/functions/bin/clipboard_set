@@ -1,0 +1,4 @@
+#!/bin/bash
+TEXT=$(echo "$1" | jq -r .text)
+termux-clipboard-set "$TEXT"
+echo "Clipboard set"
