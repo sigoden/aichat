@@ -121,6 +121,9 @@ pub struct Config {
     pub cmd_prelude: Option<String>,
     pub agent_prelude: Option<String>,
 
+    pub pre_command: Option<String>,
+    pub post_command: Option<String>,
+
     pub save_session: Option<bool>,
     pub compress_threshold: usize,
     pub summarize_prompt: Option<String>,
@@ -196,6 +199,9 @@ impl Default for Config {
             repl_prelude: None,
             cmd_prelude: None,
             agent_prelude: None,
+
+            pre_command: None,
+            post_command: None,
 
             save_session: None,
             compress_threshold: 4000,
@@ -2047,6 +2053,11 @@ impl Config {
     }
 
     pub fn before_chat_completion(&mut self, input: &Input) -> Result<()> {
+        if let Some(command) = &self.pre_command {
+            let mut envs = HashMap::new();
+            envs.insert("AICHAT_INPUT", input.raw());
+            run_hook(command, &envs)?;
+        }
         self.last_message = Some(LastMessage::new(input.clone(), String::new()));
         Ok(())
     }
@@ -2059,6 +2070,12 @@ impl Config {
     ) -> Result<()> {
         if !tool_results.is_empty() {
             return Ok(());
+        }
+        if let Some(command) = &self.post_command {
+            let mut envs = HashMap::new();
+            envs.insert("AICHAT_INPUT", input.raw());
+            envs.insert("AICHAT_OUTPUT", output.to_string());
+            run_hook(command, &envs)?;
         }
         self.last_message = Some(LastMessage::new(input.clone(), output.to_string()));
         if !self.dry_run {
@@ -2300,6 +2317,13 @@ impl Config {
         }
         if let Some(v) = read_env_value::<String>(&get_env_name("agent_prelude")) {
             self.agent_prelude = v;
+        }
+
+        if let Some(v) = read_env_value::<String>(&get_env_name("pre_command")) {
+            self.pre_command = v;
+        }
+        if let Some(v) = read_env_value::<String>(&get_env_name("post_command")) {
+            self.post_command = v;
         }
 
         if let Some(v) = read_env_bool(&get_env_name("save_session")) {
@@ -2741,4 +2765,17 @@ where
         Some(value) => value.to_string(),
         None => "null".to_string(),
     }
+}
+
+fn run_hook(command: &str, envs: &HashMap<&str, String>) -> Result<()> {
+    let mut parts = command.split_whitespace();
+    let cmd = parts.next().ok_or_else(|| anyhow!("Invalid hook command"))?;
+    let args: Vec<&str> = parts.collect();
+    let mut child = process::Command::new(cmd)
+        .args(args)
+        .envs(envs)
+        .spawn()
+        .with_context(|| format!("Failed to run hook '{command}'"))?;
+    child.wait()?;
+    Ok(())
 }

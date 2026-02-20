@@ -1,0 +1,137 @@
+[
+  {
+    "name": "battery_status",
+    "description": "Get the battery status of the device.",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "sms_send",
+    "description": "Send an SMS message.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "string",
+          "description": "The phone number to send the SMS to."
+        },
+        "message": {
+          "type": "string",
+          "description": "The content of the SMS."
+        }
+      },
+      "required": ["number", "message"]
+    }
+  },
+  {
+    "name": "location",
+    "description": "Get the current location of the device.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "description": "The location provider (gps, network, passive). Default is gps.",
+          "enum": ["gps", "network", "passive"],
+          "default": "gps"
+        },
+        "request": {
+            "type": "string",
+            "description": "Kind of request (once, last, updates). Default is once.",
+            "enum": ["once", "last", "updates"],
+            "default": "once"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "camera_photo",
+    "description": "Take a photo using the device camera.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "camera": {
+          "type": "string",
+          "description": "The camera ID to use (0 for back, 1 for front). Default is 0.",
+          "default": "0"
+        },
+        "filename": {
+            "type": "string",
+            "description": "The filename to save the photo as (e.g. photo.jpg)."
+        }
+      },
+      "required": ["filename"]
+    }
+  },
+  {
+    "name": "clipboard_get",
+    "description": "Get the content of the clipboard.",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "clipboard_set",
+    "description": "Set the content of the clipboard.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The text to set in the clipboard."
+        }
+      },
+      "required": ["text"]
+    }
+  },
+  {
+    "name": "notification",
+    "description": "Show a notification on the device.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "The content of the notification."
+        },
+        "title": {
+            "type": "string",
+            "description": "The title of the notification."
+        }
+      },
+      "required": ["content"]
+    }
+  },
+  {
+    "name": "create_tool",
+    "description": "Create a new tool dynamically. Use this to add new capabilities to the agent. Requires a valid JSON schema for parameters and a shell script for implementation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the new tool (snake_case)."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of what the tool does."
+        },
+        "parameters": {
+          "type": "string",
+          "description": "The JSON schema for the tool parameters (as a JSON string)."
+        },
+        "script": {
+          "type": "string",
+          "description": "The shell script content that implements the tool. It receives arguments as $1 (JSON string)."
+        }
+      },
+      "required": ["name", "description", "parameters", "script"]
+    }
+  }
+]
