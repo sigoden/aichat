@@ -1,6 +1,6 @@
 use super::{ReplCommand, REPL_COMMANDS};
 
-use crate::config::GlobalConfig;
+use crate::{config::GlobalConfig, utils::fuzzy_filter};
 
 use reedline::{Completer, Span, Suggestion};
 use std::collections::HashMap;
@@ -27,34 +27,37 @@ impl Completer for ReplCompleter {
             return suggestions;
         }
 
-        let state = self.config.read().get_state();
+        let state = self.config.read().state();
 
+        let command_filter = parts
+            .iter()
+            .take(2)
+            .map(|(v, _)| *v)
+            .collect::<Vec<&str>>()
+            .join(" ");
         let commands: Vec<_> = self
             .commands
             .iter()
             .filter(|cmd| {
-                if cmd.unavailable(&state) {
-                    return false;
-                }
-                let line = parts
-                    .iter()
-                    .take(2)
-                    .map(|(v, _)| *v)
-                    .collect::<Vec<&str>>()
-                    .join(" ");
-                cmd.name.starts_with(&line)
+                cmd.is_valid(state)
+                    && (command_filter.len() == 1 || cmd.name.starts_with(&command_filter[..2]))
             })
             .collect();
+        let commands = fuzzy_filter(commands, |v| v.name, &command_filter);
 
         if parts_len > 1 {
             let span = Span::new(parts[parts_len - 1].1, pos);
+            let args_line = &line[parts[1].1..];
             let args: Vec<&str> = parts.iter().skip(1).map(|(v, _)| *v).collect();
             suggestions.extend(
                 self.config
                     .read()
-                    .repl_complete(cmd, &args)
+                    .repl_complete(cmd, &args, args_line)
                     .iter()
-                    .map(|name| create_suggestion(name.clone(), None, span)),
+                    .map(|(value, description)| {
+                        let description = description.as_deref().unwrap_or_default();
+                        create_suggestion(value, description, span)
+                    }),
             )
         }
 
@@ -69,7 +72,7 @@ impl Completer for ReplCompleter {
                 } else {
                     format!("{name} ")
                 };
-                create_suggestion(name, Some(description.to_string()), span)
+                create_suggestion(&name, description, span)
             }))
         }
         suggestions
@@ -105,10 +108,16 @@ impl ReplCompleter {
     }
 }
 
-fn create_suggestion(value: String, description: Option<String>, span: Span) -> Suggestion {
+fn create_suggestion(value: &str, description: &str, span: Span) -> Suggestion {
+    let description = if description.is_empty() {
+        None
+    } else {
+        Some(description.to_string())
+    };
     Suggestion {
-        value,
+        value: value.to_string(),
         description,
+        style: None,
         extra: None,
         span,
         append_whitespace: false,

@@ -1,243 +1,136 @@
-use super::{
-    message::*, patch_system_message, Client, ExtraConfig, GeminiClient, Model, PromptType,
-    SendData, TokensCountFactors,
-};
+use super::vertexai::*;
+use super::*;
 
-use crate::{render::ReplyHandler, utils::PromptKind};
-
-use anyhow::{anyhow, bail, Result};
-use async_trait::async_trait;
-use futures_util::StreamExt;
-use reqwest::{Client as ReqwestClient, RequestBuilder};
+use anyhow::{Context, Result};
+use reqwest::RequestBuilder;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta/models/";
-
-const MODELS: [(&str, usize, &str); 3] = [
-    ("gemini-pro", 32768, "text"),
-    ("gemini-pro-vision", 16384, "vision"),
-    ("gemini-ultra", 32768, "text"),
-];
-
-const TOKENS_COUNT_FACTORS: TokensCountFactors = (5, 2);
+const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta";
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct GeminiConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
+    pub api_base: Option<String>,
+    #[serde(default)]
+    pub models: Vec<ModelData>,
+    pub patch: Option<RequestPatch>,
     pub extra: Option<ExtraConfig>,
-}
-
-#[async_trait]
-impl Client for GeminiClient {
-    client_common_fns!();
-
-    async fn send_message_inner(&self, client: &ReqwestClient, data: SendData) -> Result<String> {
-        let builder = self.request_builder(client, data)?;
-        send_message(builder).await
-    }
-
-    async fn send_message_streaming_inner(
-        &self,
-        client: &ReqwestClient,
-        handler: &mut ReplyHandler,
-        data: SendData,
-    ) -> Result<()> {
-        let builder = self.request_builder(client, data)?;
-        send_message_streaming(builder, handler).await
-    }
 }
 
 impl GeminiClient {
     config_get_fn!(api_key, get_api_key);
+    config_get_fn!(api_base, get_api_base);
 
-    pub const PROMPTS: [PromptType<'static>; 1] =
-        [("api_key", "API Key:", true, PromptKind::String)];
+    pub const PROMPTS: [PromptAction<'static>; 1] = [("api_key", "API Key", None)];
+}
 
-    pub fn list_models(local_config: &GeminiConfig) -> Vec<Model> {
-        let client_name = Self::name(local_config);
-        MODELS
-            .into_iter()
-            .map(|(name, max_tokens, capabilities)| {
-                Model::new(client_name, name)
-                    .set_capabilities(capabilities.into())
-                    .set_max_tokens(Some(max_tokens))
-                    .set_tokens_count_factors(TOKENS_COUNT_FACTORS)
+impl_client_trait!(
+    GeminiClient,
+    (
+        prepare_chat_completions,
+        gemini_chat_completions,
+        gemini_chat_completions_streaming
+    ),
+    (prepare_embeddings, embeddings),
+    (noop_prepare_rerank, noop_rerank),
+);
+
+fn prepare_chat_completions(
+    self_: &GeminiClient,
+    data: ChatCompletionsData,
+) -> Result<RequestData> {
+    let api_key = self_.get_api_key()?;
+    let api_base = self_
+        .get_api_base()
+        .unwrap_or_else(|_| API_BASE.to_string());
+
+    let func = match data.stream {
+        true => "streamGenerateContent",
+        false => "generateContent",
+    };
+
+    let url = format!(
+        "{}/models/{}:{}",
+        api_base.trim_end_matches('/'),
+        self_.model.real_name(),
+        func
+    );
+
+    let body = gemini_build_chat_completions_body(data, &self_.model)?;
+
+    let mut request_data = RequestData::new(url, body);
+
+    request_data.header("x-goog-api-key", api_key);
+
+    Ok(request_data)
+}
+
+fn prepare_embeddings(self_: &GeminiClient, data: &EmbeddingsData) -> Result<RequestData> {
+    let api_key = self_.get_api_key()?;
+    let api_base = self_
+        .get_api_base()
+        .unwrap_or_else(|_| API_BASE.to_string());
+
+    let url = format!(
+        "{}/models/{}:batchEmbedContents?key={}",
+        api_base.trim_end_matches('/'),
+        self_.model.real_name(),
+        api_key
+    );
+
+    let model_id = format!("models/{}", self_.model.real_name());
+
+    let requests: Vec<_> = data
+        .texts
+        .iter()
+        .map(|text| {
+            json!({
+                "model": model_id,
+                "content": {
+                    "parts": [
+                        {
+                            "text": text
+                        }
+                    ]
+                },
             })
-            .collect()
-    }
-
-    fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
-        let api_key = self.get_api_key()?;
-
-        let func = match data.stream {
-            true => "streamGenerateContent",
-            false => "generateContent",
-        };
-
-        let body = build_body(data, self.model.name.clone())?;
-
-        let model = self.model.name.clone();
-
-        let url = format!("{API_BASE}{}:{}?key={}", model, func, api_key);
-
-        debug!("Gemini Request: {url} {body}");
-
-        let builder = client.post(url).json(&body);
-
-        Ok(builder)
-    }
-}
-
-async fn send_message(builder: RequestBuilder) -> Result<String> {
-    let res = builder.send().await?;
-    let status = res.status();
-    let data: Value = res.json().await?;
-    if status != 200 {
-        check_error(&data)?;
-    }
-    let output = data["candidates"][0]["content"]["parts"][0]["text"]
-        .as_str()
-        .ok_or_else(|| anyhow!("Invalid response data: {data}"))?;
-    Ok(output.to_string())
-}
-
-async fn send_message_streaming(builder: RequestBuilder, handler: &mut ReplyHandler) -> Result<()> {
-    let res = builder.send().await?;
-    if res.status() != 200 {
-        let data: Value = res.json().await?;
-        check_error(&data)?;
-    } else {
-        let mut buffer = vec![];
-        let mut cursor = 0;
-        let mut start = 0;
-        let mut balances = vec![];
-        let mut quoting = false;
-        let mut stream = res.bytes_stream();
-        while let Some(chunk) = stream.next().await {
-            let chunk = chunk?;
-            let chunk = std::str::from_utf8(&chunk)?;
-            buffer.extend(chunk.chars());
-            for i in cursor..buffer.len() {
-                let ch = buffer[i];
-                if quoting {
-                    if ch == '"' && buffer[i - 1] != '\\' {
-                        quoting = false;
-                    }
-                    continue;
-                }
-                match ch {
-                    '"' => quoting = true,
-                    '{' => {
-                        if balances.is_empty() {
-                            start = i;
-                        }
-                        balances.push(ch);
-                    }
-                    '[' => {
-                        if start != 0 {
-                            balances.push(ch);
-                        }
-                    }
-                    '}' => {
-                        balances.pop();
-                        if balances.is_empty() {
-                            let value: String = buffer[start..=i].iter().collect();
-                            let value: Value = serde_json::from_str(&value)?;
-                            if let Some(text) =
-                                value["candidates"][0]["content"]["parts"][0]["text"].as_str()
-                            {
-                                handler.text(text)?;
-                            } else {
-                                bail!("Invalid response data: {value}")
-                            }
-                        }
-                    }
-                    ']' => {
-                        balances.pop();
-                    }
-                    _ => {}
-                }
-            }
-            cursor = buffer.len();
-        }
-    }
-    Ok(())
-}
-
-fn check_error(data: &Value) -> Result<()> {
-    if let Some((Some(status), Some(message))) = data[0]["error"].as_object().map(|v| {
-        (
-            v.get("status").and_then(|v| v.as_str()),
-            v.get("message").and_then(|v| v.as_str()),
-        )
-    }) {
-        bail!("{status}: {message}")
-    } else {
-        bail!("Error {}", data);
-    }
-}
-
-fn build_body(data: SendData, _model: String) -> Result<Value> {
-    let SendData {
-        mut messages,
-        temperature,
-        ..
-    } = data;
-
-    patch_system_message(&mut messages);
-
-    let mut network_image_urls = vec![];
-    let contents: Vec<Value> = messages
-        .into_iter()
-        .map(|message| {
-            let role = match message.role {
-                MessageRole::User => "user",
-                _ => "model",
-            };
-            match message.content {
-                MessageContent::Text(text) => json!({
-                    "role": role,
-                    "parts": [{ "text": text }]
-                }),
-                MessageContent::Array(list) => {
-                    let list: Vec<Value> = list
-                        .into_iter()
-                        .map(|item| match item {
-                            MessageContentPart::Text { text } => json!({"text": text}),
-                            MessageContentPart::ImageUrl { image_url: ImageUrl { url } } => {
-                                if let Some((mime_type, data)) = url.strip_prefix("data:").and_then(|v| v.split_once(";base64,")) {
-                                    json!({ "inline_data": { "mime_type": mime_type, "data": data } })
-                                } else {
-                                    network_image_urls.push(url.clone());
-                                    json!({ "url": url })
-                                }
-                            },
-                        })
-                        .collect();
-                    json!({ "role": role, "parts": list })
-                }
-            }
         })
         .collect();
 
-    if !network_image_urls.is_empty() {
-        bail!(
-            "The model does not support network images: {:?}",
-            network_image_urls
-        );
-    }
-
-    let mut body = json!({
-        "contents": contents,
+    let body = json!({
+        "requests": requests,
     });
 
-    if let Some(temperature) = temperature {
-        body["generationConfig"] = json!({
-            "temperature": temperature,
-        });
-    }
+    let request_data = RequestData::new(url, body);
 
-    Ok(body)
+    Ok(request_data)
+}
+
+async fn embeddings(builder: RequestBuilder, _model: &Model) -> Result<EmbeddingsOutput> {
+    let res = builder.send().await?;
+    let status = res.status();
+    let data: Value = res.json().await?;
+    if !status.is_success() {
+        catch_error(&data, status.as_u16())?;
+    }
+    let res_body: EmbeddingsResBody =
+        serde_json::from_value(data).context("Invalid embeddings data")?;
+    let output = res_body
+        .embeddings
+        .into_iter()
+        .map(|embedding| embedding.values)
+        .collect();
+    Ok(output)
+}
+
+#[derive(Deserialize)]
+struct EmbeddingsResBody {
+    embeddings: Vec<EmbeddingsResBodyEmbedding>,
+}
+
+#[derive(Deserialize)]
+struct EmbeddingsResBodyEmbedding {
+    values: Vec<f32>,
 }

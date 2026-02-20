@@ -1,0 +1,11 @@
+# Agent-specific configuration
+# Location `<aichat-config-dir>/agents/<agent-name>/config.yaml`
+
+model: openai:gpt-4o             # Specify the LLM to use
+temperature: null                # Set default temperature parameter, range (0, 1)
+top_p: null                      # Set default top-p parameter, with a range of (0, 1) or (0, 2) depending on the model
+use_tools: null                  # Which additional tools to use by agent. (e.g. 'fs,web_search')
+agent_prelude: null              # Set a session to use when starting the agent. (e.g. temp, default)
+instructions: null               # Override the instructions for the agent, have no effect for dynamic instructions
+variables:                       # Custom default values for the agent variables
+  <key>: <value>

@@ -1,69 +1,317 @@
-model: openai:gpt-3.5-turbo      # LLM model
-temperature: 1.0                 # GPT temperature, between 0 and 2
-save: true                       # Whether to save the message
-highlight: true                  # Set false to turn highlight
-light_theme: false               # Whether to use a light theme
-wrap: no                         # Specify the text-wrapping mode (no, auto, <max-width>)
-wrap_code: false                 # Whether wrap code block
-auto_copy: false                 # Automatically copy the last output to the clipboard
-keybindings: emacs               # REPL keybindings. (emacs, vi)
-prelude: ''                      # Set a default role or session (role:<name>, session:<name>)
+# ---- llm ----
+model: openai:gpt-4o             # Specify the LLM to use
+temperature: null                # Set default temperature parameter (0, 1)
+top_p: null                      # Set default top-p parameter, with a range of (0, 1) or (0, 2) depending on the model
 
-# Custom REPL prompt, see https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt
-left_prompt: '{color.green}{?session {session}{?role /}}{role}{color.cyan}{?session )}{!session >}{color.reset} '
-right_prompt: '{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}'
+# ---- behavior ----
+stream: true                     # Controls whether to use the stream-style API.
+save: true                       # Indicates whether to persist the message
+keybindings: emacs               # Choose keybinding style (emacs, vi)
+editor: null                     # Specifies the command used to edit input buffer or session. (e.g. vim, emacs, nano).
+wrap: no                         # Controls text wrapping (no, auto, <max-width>)
+wrap_code: false                 # Enables or disables wrapping of code blocks
 
+# ---- function-calling ----
+# Visit https://github.com/sigoden/llm-functions for setup instructions
+function_calling: true           # Enables or disables function calling (Globally).
+mapping_tools:                   # Alias for a tool or toolset
+  fs: 'fs_cat,fs_ls,fs_mkdir,fs_rm,fs_write'
+use_tools: null                  # Which tools to use by default. (e.g. 'fs,web_search')
+
+# ---- prelude ----
+repl_prelude: null               # Set a default role or session for REPL mode (e.g. role:<name>, session:<name>, <session>:<role>)
+cmd_prelude: null                # Set a default role or session for CMD mode (e.g. role:<name>, session:<name>, <session>:<role>)
+agent_prelude: null              # Set a session to use when starting a agent (e.g. temp, default)
+
+# ---- session ----
+# Controls the persistence of the session. if true, auto save; if false, not save; if null, asking the user
+save_session: null
+# Compress session when token count reaches or exceeds this threshold
+compress_threshold: 4000
+# Text prompt used for creating a concise summary of session message
+summarize_prompt: 'Summarize the discussion briefly in 200 words or less to use as a prompt for future context.'
+# Text prompt used for including the summary of the entire session
+summary_prompt: 'This is a summary of the chat history as a recap: '
+
+# ---- RAG ----
+# See [RAG-Guide](https://github.com/sigoden/aichat/wiki/RAG-Guide) for more details.
+rag_embedding_model: null        # Specifies the embedding model used for context retrieval
+rag_reranker_model: null         # Specifies the reranker model used for sorting retrieved documents
+rag_top_k: 5                     # Specifies the number of documents to retrieve for answering queries
+rag_chunk_size: null             # Defines the size of chunks for document processing in characters
+rag_chunk_overlap: null          # Defines the overlap between chunks
+# Defines the query structure using variables like __CONTEXT__ and __INPUT__ to tailor searches to specific needs
+rag_template: |
+  Answer the query based on the context while respecting the rules. (user query, some textual context and rules, all inside xml tags)
+
+  <context>
+  __CONTEXT__
+  </context>
+
+  <rules>
+  - If you don't know, just say so.
+  - If you are not sure, ask for clarification.
+  - Answer in the same language as the user query.
+  - If the context appears unreadable or of poor quality, tell the user then answer as best as you can.
+  - If the answer is not in the context but you think you know the answer, explain that to the user then answer with your own knowledge.
+  - Answer directly and without using xml tags.
+  </rules>
+
+  <user_query>
+  __INPUT__
+  </user_query>
+
+# Define document loaders to control how RAG and `.file`/`--file` load files of specific formats.
+document_loaders:
+  # You can add custom loaders using the following syntax:
+  #   <file-extension>: <command-to-load-the-file>
+  # Note: Use `$1` for input file and `$2` for output file. If `$2` is omitted, use stdout as output.
+  pdf: 'pdftotext $1 -'                         # Load .pdf file, see https://poppler.freedesktop.org to set up pdftotext
+  docx: 'pandoc --to plain $1'                  # Load .docx file, see https://pandoc.org to set up pandoc
+
+# ---- apperence ----
+highlight: true                  # Controls syntax highlighting
+light_theme: false               # Activates a light color theme when true. env: AICHAT_LIGHT_THEME
+# Custom REPL left/right prompts, see https://github.com/sigoden/aichat/wiki/Custom-REPL-Prompt for more details
+left_prompt:
+  '{color.green}{?session {?agent {agent}>}{session}{?role /}}{!session {?agent {agent}>}}{role}{?rag @{rag}}{color.cyan}{?session )}{!session >}{color.reset} '
+right_prompt:
+  '{color.purple}{?session {?consume_tokens {consume_tokens}({consume_percent}%)}{!consume_tokens {consume_tokens}}}{color.reset}'
+
+# ---- misc ----
+serve_addr: 127.0.0.1:8000                  # Server listening address 
+user_agent: null                            # Set User-Agent HTTP header, use `auto` for aichat/<current-version>
+save_shell_history: true                    # Whether to save shell execution command to the history file
+# URL to sync model changes from, e.g., https://cdn.jsdelivr.net/gh/sigoden/aichat@main/models.yaml
+sync_models_url: https://raw.githubusercontent.com/sigoden/aichat/refs/heads/main/models.yaml
+
+# ---- clients ----
 clients:
   # All clients have the following configuration:
   # - type: xxxx
-  #   name: nova                                      # Only use it to distinguish clients with the same client type. Optional
+  #   name: xxxx                                      # Only use it to distinguish clients with the same client type. Optional
+  #   models:
+  #     - name: xxxx                                  # Chat model
+  #       max_input_tokens: 100000
+  #       supports_vision: true
+  #       supports_function_calling: true
+  #     - name: xxxx                                  # Embedding model
+  #       type: embedding
+  #       default_chunk_size: 1500                        
+  #       max_batch_size: 100
+  #     - name: xxxx                                  # Reranker model
+  #       type: reranker 
+  #   patch:                                          # Patch api
+  #     chat_completions:                             # Api type, possible values: chat_completions, embeddings, and rerank
+  #       <regex>:                                    # The regex to match model names, e.g. '.*' 'gpt-4o' 'gpt-4o|gpt-4-.*'
+  #         url: ''                                   # Patch request url
+  #         body:                                     # Patch request body
+  #           <json>
+  #         headers:                                  # Patch request headers
+  #           <key>: <value>
   #   extra:
-  #     proxy: socks5://127.0.0.1:1080                # Specify https/socks5 proxy server. Note HTTPS_PROXY/ALL_PROXY also works.
-  #     connect_timeout: 10                           # Set a timeout in seconds for connect to server
+  #     proxy: socks5://127.0.0.1:1080                # Set proxy
+  #     connect_timeout: 10                           # Set timeout in seconds for connect to api
 
   # See https://platform.openai.com/docs/quickstart
   - type: openai
-    api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    organization_id:
+    api_base: https://api.openai.com/v1               # Optional
+    api_key: xxx
+    organization_id: org-xxx                          # Optional
+
+  # For any platform compatible with OpenAI's API
+  - type: openai-compatible
+    name: ollama
+    api_base: http://localhost:11434/v1
+    api_key: xxx                                      # Optional
+    models:
+      - name: deepseek-r1
+        max_input_tokens: 131072
+      - name: llama3.1
+        max_input_tokens: 128000
+        supports_function_calling: true
+      - name: llama3.2-vision
+        max_input_tokens: 131072
+        supports_vision: true
+      - name: nomic-embed-text
+        type: embedding
+        default_chunk_size: 1000
+        max_batch_size: 50
 
   # See https://ai.google.dev/docs
   - type: gemini
-    api_key: AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-  # See https://github.com/go-skynet/LocalAI
-  - type: localai
-    api_base: http://localhost:8080/v1
+    api_base: https://generativelanguage.googleapis.com/v1beta
     api_key: xxx
-    chat_endpoint: /chat/completions                  # Optional field
-    models:
-      - name: mistral
-        max_tokens: 8192
-      - name: llava
-        max_tokens: 8192
-        capabilities: text,vision                     # Optional field, possible values: text, vision
+    patch:
+      chat_completions:
+        '.*':
+          body:
+            safetySettings:
+              - category: HARM_CATEGORY_HARASSMENT
+                threshold: BLOCK_NONE
+              - category: HARM_CATEGORY_HATE_SPEECH
+                threshold: BLOCK_NONE
+              - category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+                threshold: BLOCK_NONE
+              - category: HARM_CATEGORY_DANGEROUS_CONTENT
+                threshold: BLOCK_NONE
 
-  # See https://github.com/jmorganca/ollama
-  - type: ollama
-    api_base: http://localhost:11434
-    api_key: Basic xxx                                # Set authorization header
-    chat_endpoint: /chat                              # Optional field
-    models:
-      - name: mistral
-        max_tokens: 8192
+  # See https://docs.anthropic.com/claude/reference/getting-started-with-the-api
+  - type: claude
+    api_base: https://api.anthropic.com/v1            # Optional
+    api_key: xxx
+
+  # See https://docs.mistral.ai/
+  - type: openai-compatible
+    name: mistral
+    api_base: https://api.mistral.ai/v1
+    api_key: xxx
+
+  # See https://docs.x.ai/docs
+  - type: openai-compatible
+    name: xai
+    api_base: https://api.x.ai/v1
+    api_key: xxx
+
+  # See https://docs.ai21.com/docs/quickstart
+  - type: openai-compatible
+    name: ai12
+    api_base: https://api.ai21.com/studio/v1
+    api_key: xxx
+
+  # See https://docs.cohere.com/docs/the-cohere-platform
+  - type: cohere
+    api_base: https://api.cohere.ai/v2                # Optional
+    api_key: xxx
+
+  # See https://docs.perplexity.ai/docs/getting-started
+  - type: openai-compatible
+    name: perplexity
+    api_base: https://api.perplexity.ai
+    api_key: xxx
+
+  # See https://console.groq.com/docs/quickstart
+  - type: openai-compatible
+    name: groq
+    api_base: https://api.groq.com/openai/v1
+    api_key: xxx
 
   # See https://learn.microsoft.com/en-us/azure/ai-services/openai/chatgpt-quickstart
   - type: azure-openai
-    api_base: https://RESOURCE.openai.azure.com
+    api_base: https://{RESOURCE}.openai.azure.com
     api_key: xxx
     models:
-      - name: MyGPT4                                  # Model deployment name
-        max_tokens: 8192
+      - name: gpt-4o                                  # Model deployment name
+        max_input_tokens: 128000
+        supports_vision: true
+        supports_function_calling: true
+
+  # See https://cloud.google.com/vertex-ai
+  - type: vertexai
+    project_id: xxx
+    location: xxx
+    # Specifies a application-default-credentials (adc) file
+    # Run `gcloud auth application-default login` to init the adc file
+    # see https://cloud.google.com/docs/authentication/external/set-up-adc
+    adc_file: <gcloud-config-dir>/application_default_credentials.json>  # Optional field
+    patch:
+      chat_completions:
+        'gemini-.*':
+          body:
+            safetySettings:
+              - category: HARM_CATEGORY_HARASSMENT
+                threshold: BLOCK_ONLY_HIGH
+              - category: HARM_CATEGORY_HATE_SPEECH
+                threshold: BLOCK_ONLY_HIGH
+              - category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+                threshold: BLOCK_ONLY_HIGH
+              - category: HARM_CATEGORY_DANGEROUS_CONTENT
+                threshold: BLOCK_ONLY_HIGH
+
+  # See https://docs.aws.amazon.com/bedrock/latest/userguide/
+  - type: bedrock
+    access_key_id: xxx
+    secret_access_key: xxx
+    region: xxx
+    session_token: xxx  # Optional, only needed for temporary credentials
+
+  # See https://developers.cloudflare.com/workers-ai/
+  - type: openai-compatible
+    name: cloudflare
+    api_base: https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/ai/v1
+    api_key: xxx
 
   # See https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html
-  - type: ernie
-    api_key: xxxxxxxxxxxxxxxxxxxxxxxx
-    secret_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  - type: openai-compatible
+    name: ernie
+    api_base: https://qianfan.baidubce.com/v2
+    api_key: xxx
 
-  # See https://help.aliyun.com/zh/dashscope/
-  - type: qianwen
-    api_key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  # See https://dashscope.aliyun.com/
+  - type: openai-compatible
+    name: qianwen
+    api_base: https://dashscope.aliyuncs.com/compatible-mode/v1
+    api_key: xxx
+
+  # See https://cloud.tencent.com/product/hunyuan
+  - type: openai-compatible
+    name: hunyuan
+    api_base: https://api.hunyuan.cloud.tencent.com/v1
+    api_key: xxx
+
+  # See https://platform.moonshot.cn/docs/intro
+  - type: openai-compatible
+    name: moonshot
+    api_base: https://api.moonshot.cn/v1
+    api_key: xxx
+
+  # See https://platform.deepseek.com/api-docs/
+  - type: openai-compatible
+    name: deepseek
+    api_base: https://api.deepseek.com
+    api_key: xxx
+
+  # See https://open.bigmodel.cn/dev/howuse/introduction
+  - type: openai-compatible
+    name: zhipuai
+    api_base: https://open.bigmodel.cn/api/paas/v4
+    api_key: xxx
+
+  # See https://platform.minimaxi.com/document/Fast%20access
+  - type: openai-compatible
+    name: minimax
+    api_base: https://api.minimax.chat/v1
+    api_key: xxx
+
+  # See https://openrouter.ai/docs#quick-start
+  - type: openai-compatible
+    name: openrouter
+    api_base: https://openrouter.ai/api/v1
+    api_key: xxx
+
+  # See https://github.com/marketplace/models
+  - type: openai-compatible
+    name: github
+    api_base: https://models.inference.ai.azure.com
+    api_key: xxx
+
+  # See https://deepinfra.com/docs
+  - type: openai-compatible
+    name: deepinfra
+    api_base: https://api.deepinfra.com/v1/openai
+    api_key: xxx
+
+
+  # ----- RAG dedicated -----
+
+  # See https://jina.ai
+  - type: openai-compatible
+    name: jina
+    api_base: https://api.jina.ai/v1
+    api_key: xxx
+
+  # See https://docs.voyageai.com/docs/introduction
+  - type: openai-compatible
+    name: voyageai
+    api_base: https://api.voyageai.com/v1
+    api_key: xxx

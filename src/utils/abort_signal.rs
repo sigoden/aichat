@@ -1,6 +1,11 @@
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
+use anyhow::Result;
+use crossterm::event::{self, Event, KeyCode, KeyModifiers};
+use std::{
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    time::Duration,
 };
 
 pub type AbortSignal = Arc<AbortSignalInner>;
@@ -52,4 +57,32 @@ impl AbortSignalInner {
     pub fn set_ctrld(&self) {
         self.ctrld.store(true, Ordering::SeqCst);
     }
+}
+
+pub async fn wait_abort_signal(abort_signal: &AbortSignal) {
+    loop {
+        if abort_signal.aborted() {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+    }
+}
+
+pub fn poll_abort_signal(abort_signal: &AbortSignal) -> Result<bool> {
+    if crossterm::event::poll(Duration::from_millis(25))? {
+        if let Event::Key(key) = event::read()? {
+            match key.code {
+                KeyCode::Char('c') if key.modifiers == KeyModifiers::CONTROL => {
+                    abort_signal.set_ctrlc();
+                    return Ok(true);
+                }
+                KeyCode::Char('d') if key.modifiers == KeyModifiers::CONTROL => {
+                    abort_signal.set_ctrld();
+                    return Ok(true);
+                }
+                _ => {}
+            }
+        }
+    }
+    Ok(false)
 }

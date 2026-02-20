@@ -1,19 +1,24 @@
-use super::message::{Message, MessageContent};
+use super::{
+    list_all_models, list_client_names,
+    message::{Message, MessageContent, MessageContentPart},
+    ApiPatch, MessageContentToolCalls, RequestPatch,
+};
 
-use crate::utils::count_tokens;
+use crate::config::Config;
+use crate::utils::{estimate_token_length, strip_think_tag};
 
 use anyhow::{bail, Result};
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::fmt::Display;
 
-pub type TokensCountFactors = (usize, usize); // (per-messages, bias)
+const PER_MESSAGES_TOKENS: usize = 5;
+const BASIS_TOKENS: usize = 2;
 
 #[derive(Debug, Clone)]
 pub struct Model {
-    pub client_name: String,
-    pub name: String,
-    pub max_tokens: Option<usize>,
-    pub tokens_count_factors: TokensCountFactors,
-    pub capabilities: ModelCapabilities,
+    client_name: String,
+    data: ModelData,
 }
 
 impl Default for Model {
@@ -26,16 +31,23 @@ impl Model {
     pub fn new(client_name: &str, name: &str) -> Self {
         Self {
             client_name: client_name.into(),
-            name: name.into(),
-            max_tokens: None,
-            tokens_count_factors: Default::default(),
-            capabilities: ModelCapabilities::Text,
+            data: ModelData::new(name),
         }
     }
 
-    pub fn find(models: &[Self], value: &str) -> Option<Self> {
-        let mut model = None;
-        let (client_name, model_name) = match value.split_once(':') {
+    pub fn from_config(client_name: &str, models: &[ModelData]) -> Vec<Self> {
+        models
+            .iter()
+            .map(|v| Model {
+                client_name: client_name.to_string(),
+                data: v.clone(),
+            })
+            .collect()
+    }
+
+    pub fn retrieve_model(config: &Config, model_id: &str, model_type: ModelType) -> Result<Self> {
+        let models = list_all_models(config);
+        let (client_name, model_name) = match model_id.split_once(':') {
             Some((client_name, model_name)) => {
                 if model_name.is_empty() {
                     (client_name, None)
@@ -43,56 +55,214 @@ impl Model {
                     (client_name, Some(model_name))
                 }
             }
-            None => (value, None),
+            None => (model_id, None),
         };
         match model_name {
             Some(model_name) => {
-                if let Some(found) = models.iter().find(|v| v.id() == value) {
-                    model = Some(found.clone());
-                } else if let Some(found) = models.iter().find(|v| v.client_name == client_name) {
-                    let mut found = found.clone();
-                    found.name = model_name.to_string();
-                    model = Some(found)
+                if let Some(model) = models.iter().find(|v| v.id() == model_id) {
+                    if model.model_type() == model_type {
+                        return Ok((*model).clone());
+                    } else {
+                        bail!("Model '{model_id}' is not a {model_type} model")
+                    }
+                }
+                if list_client_names(config)
+                    .into_iter()
+                    .any(|v| *v == client_name)
+                    && model_type.can_create_from_name()
+                {
+                    let mut new_model = Self::new(client_name, model_name);
+                    new_model.data.model_type = model_type.to_string();
+                    return Ok(new_model);
                 }
             }
             None => {
-                if let Some(found) = models.iter().find(|v| v.client_name == client_name) {
-                    model = Some(found.clone());
+                if let Some(found) = models
+                    .iter()
+                    .find(|v| v.client_name == client_name && v.model_type() == model_type)
+                {
+                    return Ok((*found).clone());
                 }
             }
-        }
-        model
+        };
+        bail!("Unknown {model_type} model '{model_id}'")
     }
 
     pub fn id(&self) -> String {
-        format!("{}:{}", self.client_name, self.name)
-    }
-
-    pub fn set_capabilities(mut self, capabilities: ModelCapabilities) -> Self {
-        self.capabilities = capabilities;
-        self
-    }
-
-    pub fn set_max_tokens(mut self, max_tokens: Option<usize>) -> Self {
-        match max_tokens {
-            None | Some(0) => self.max_tokens = None,
-            _ => self.max_tokens = max_tokens,
+        if self.data.name.is_empty() {
+            self.client_name.to_string()
+        } else {
+            format!("{}:{}", self.client_name, self.data.name)
         }
-        self
     }
 
-    pub fn set_tokens_count_factors(mut self, tokens_count_factors: TokensCountFactors) -> Self {
-        self.tokens_count_factors = tokens_count_factors;
+    pub fn client_name(&self) -> &str {
+        &self.client_name
+    }
+
+    pub fn name(&self) -> &str {
+        &self.data.name
+    }
+
+    pub fn real_name(&self) -> &str {
+        self.data.real_name.as_deref().unwrap_or(&self.data.name)
+    }
+
+    pub fn model_type(&self) -> ModelType {
+        if self.data.model_type.starts_with("embed") {
+            ModelType::Embedding
+        } else if self.data.model_type.starts_with("rerank") {
+            ModelType::Reranker
+        } else {
+            ModelType::Chat
+        }
+    }
+
+    pub fn data(&self) -> &ModelData {
+        &self.data
+    }
+
+    pub fn data_mut(&mut self) -> &mut ModelData {
+        &mut self.data
+    }
+
+    pub fn description(&self) -> String {
+        match self.model_type() {
+            ModelType::Chat => {
+                let ModelData {
+                    max_input_tokens,
+                    max_output_tokens,
+                    input_price,
+                    output_price,
+                    supports_vision,
+                    supports_function_calling,
+                    ..
+                } = &self.data;
+                let max_input_tokens = stringify_option_value(max_input_tokens);
+                let max_output_tokens = stringify_option_value(max_output_tokens);
+                let input_price = stringify_option_value(input_price);
+                let output_price = stringify_option_value(output_price);
+                let mut capabilities = vec![];
+                if *supports_vision {
+                    capabilities.push('👁');
+                };
+                if *supports_function_calling {
+                    capabilities.push('⚒');
+                };
+                let capabilities: String = capabilities
+                    .into_iter()
+                    .map(|v| format!("{v} "))
+                    .collect::<Vec<String>>()
+                    .join("");
+                format!(
+                    "{max_input_tokens:>8} / {max_output_tokens:>8}  |  {input_price:>6} / {output_price:>6}  {capabilities:>6}"
+                )
+            }
+            ModelType::Embedding => {
+                let ModelData {
+                    input_price,
+                    max_tokens_per_chunk,
+                    max_batch_size,
+                    ..
+                } = &self.data;
+                let max_tokens = stringify_option_value(max_tokens_per_chunk);
+                let max_batch = stringify_option_value(max_batch_size);
+                let price = stringify_option_value(input_price);
+                format!("max-tokens:{max_tokens};max-batch:{max_batch};price:{price}")
+            }
+            ModelType::Reranker => String::new(),
+        }
+    }
+
+    pub fn patch(&self) -> Option<&Value> {
+        self.data.patch.as_ref()
+    }
+
+    pub fn max_input_tokens(&self) -> Option<usize> {
+        self.data.max_input_tokens
+    }
+
+    pub fn max_output_tokens(&self) -> Option<isize> {
+        self.data.max_output_tokens
+    }
+
+    pub fn no_stream(&self) -> bool {
+        self.data.no_stream
+    }
+
+    pub fn no_system_message(&self) -> bool {
+        self.data.no_system_message
+    }
+
+    pub fn system_prompt_prefix(&self) -> Option<&str> {
+        self.data.system_prompt_prefix.as_deref()
+    }
+
+    pub fn max_tokens_per_chunk(&self) -> Option<usize> {
+        self.data.max_tokens_per_chunk
+    }
+
+    pub fn default_chunk_size(&self) -> usize {
+        self.data.default_chunk_size.unwrap_or(1000)
+    }
+
+    pub fn max_batch_size(&self) -> Option<usize> {
+        self.data.max_batch_size
+    }
+
+    pub fn max_tokens_param(&self) -> Option<isize> {
+        if self.data.require_max_tokens {
+            self.data.max_output_tokens
+        } else {
+            None
+        }
+    }
+
+    pub fn set_max_tokens(
+        &mut self,
+        max_output_tokens: Option<isize>,
+        require_max_tokens: bool,
+    ) -> &mut Self {
+        match max_output_tokens {
+            None | Some(0) => self.data.max_output_tokens = None,
+            _ => self.data.max_output_tokens = max_output_tokens,
+        }
+        self.data.require_max_tokens = require_max_tokens;
         self
     }
 
     pub fn messages_tokens(&self, messages: &[Message]) -> usize {
+        let messages_len = messages.len();
         messages
             .iter()
-            .map(|v| {
-                match &v.content {
-                    MessageContent::Text(text) => count_tokens(text),
-                    MessageContent::Array(_) => 0, // TODO
+            .enumerate()
+            .map(|(i, v)| match &v.content {
+                MessageContent::Text(text) => {
+                    if v.role.is_assistant() && i != messages_len - 1 {
+                        estimate_token_length(&strip_think_tag(text))
+                    } else {
+                        estimate_token_length(text)
+                    }
+                }
+                MessageContent::Array(list) => list
+                    .iter()
+                    .map(|v| match v {
+                        MessageContentPart::Text { text } => estimate_token_length(text),
+                        MessageContentPart::ImageUrl { .. } => 0,
+                    })
+                    .sum(),
+                MessageContent::ToolCalls(MessageContentToolCalls {
+                    tool_results, text, ..
+                }) => {
+                    estimate_token_length(text)
+                        + tool_results
+                            .iter()
+                            .map(|v| {
+                                serde_json::to_string(v)
+                                    .map(|v| estimate_token_length(&v))
+                                    .unwrap_or_default()
+                            })
+                            .sum::<usize>()
                 }
             })
             .sum()
@@ -104,65 +274,134 @@ impl Model {
         }
         let num_messages = messages.len();
         let message_tokens = self.messages_tokens(messages);
-        let (per_messages, _) = self.tokens_count_factors;
         if messages[num_messages - 1].role.is_user() {
-            num_messages * per_messages + message_tokens
+            num_messages * PER_MESSAGES_TOKENS + message_tokens
         } else {
-            (num_messages - 1) * per_messages + message_tokens
+            (num_messages - 1) * PER_MESSAGES_TOKENS + message_tokens
         }
     }
 
-    pub fn max_tokens_limit(&self, messages: &[Message]) -> Result<()> {
-        let (_, bias) = self.tokens_count_factors;
-        let total_tokens = self.total_tokens(messages) + bias;
-        if let Some(max_tokens) = self.max_tokens {
-            if total_tokens >= max_tokens {
-                bail!("Exceed max tokens limit")
+    pub fn guard_max_input_tokens(&self, messages: &[Message]) -> Result<()> {
+        let total_tokens = self.total_tokens(messages) + BASIS_TOKENS;
+        if let Some(max_input_tokens) = self.data.max_input_tokens {
+            if total_tokens >= max_input_tokens {
+                bail!("Exceed max_input_tokens limit")
             }
         }
         Ok(())
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct ModelConfig {
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ModelData {
     pub name: String,
-    pub max_tokens: Option<usize>,
-    #[serde(deserialize_with = "deserialize_capabilities")]
-    #[serde(default = "default_capabilities")]
-    pub capabilities: ModelCapabilities,
+    #[serde(default = "default_model_type", rename = "type")]
+    pub model_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub real_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_input_tokens: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input_price: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output_price: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub patch: Option<Value>,
+
+    // chat-only properties
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_output_tokens: Option<isize>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub require_max_tokens: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub supports_vision: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub supports_function_calling: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    no_stream: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    no_system_message: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    system_prompt_prefix: Option<String>,
+
+    // embedding-only properties
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_tokens_per_chunk: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_chunk_size: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_batch_size: Option<usize>,
 }
 
-bitflags::bitflags! {
-    #[derive(Debug, Clone, Copy, PartialEq)]
-    pub struct ModelCapabilities: u32 {
-        const Text = 0b00000001;
-        const Vision = 0b00000010;
+impl ModelData {
+    pub fn new(name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            model_type: default_model_type(),
+            ..Default::default()
+        }
     }
 }
 
-impl From<&str> for ModelCapabilities {
-    fn from(value: &str) -> Self {
-        let value = if value.is_empty() { "text" } else { value };
-        let mut output = ModelCapabilities::empty();
-        if value.contains("text") {
-            output |= ModelCapabilities::Text;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProviderModels {
+    pub provider: String,
+    pub models: Vec<ModelData>,
+}
+
+fn default_model_type() -> String {
+    "chat".into()
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ModelType {
+    Chat,
+    Embedding,
+    Reranker,
+}
+
+impl Display for ModelType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ModelType::Chat => write!(f, "chat"),
+            ModelType::Embedding => write!(f, "embedding"),
+            ModelType::Reranker => write!(f, "reranker"),
         }
-        if value.contains("vision") {
-            output |= ModelCapabilities::Vision;
-        }
-        output
     }
 }
 
-fn deserialize_capabilities<'de, D>(deserializer: D) -> Result<ModelCapabilities, D::Error>
+impl ModelType {
+    pub fn can_create_from_name(self) -> bool {
+        match self {
+            ModelType::Chat => true,
+            ModelType::Embedding => false,
+            ModelType::Reranker => true,
+        }
+    }
+
+    pub fn api_name(self) -> &'static str {
+        match self {
+            ModelType::Chat => "chat_completions",
+            ModelType::Embedding => "embeddings",
+            ModelType::Reranker => "rerank",
+        }
+    }
+
+    pub fn extract_patch(self, patch: &RequestPatch) -> Option<&ApiPatch> {
+        match self {
+            ModelType::Chat => patch.chat_completions.as_ref(),
+            ModelType::Embedding => patch.embeddings.as_ref(),
+            ModelType::Reranker => patch.rerank.as_ref(),
+        }
+    }
+}
+
+fn stringify_option_value<T>(value: &Option<T>) -> String
 where
-    D: Deserializer<'de>,
+    T: std::fmt::Display,
 {
-    let value: String = Deserialize::deserialize(deserializer)?;
-    Ok(value.as_str().into())
-}
-
-fn default_capabilities() -> ModelCapabilities {
-    ModelCapabilities::Text
+    match value {
+        Some(value) => value.to_string(),
+        None => "-".to_string(),
+    }
 }

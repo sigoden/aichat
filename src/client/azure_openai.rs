@@ -1,11 +1,7 @@
-use super::openai::{openai_build_body, OPENAI_TOKENS_COUNT_FACTORS};
-use super::{AzureOpenAIClient, ExtraConfig, Model, ModelConfig, PromptType, SendData};
-
-use crate::utils::PromptKind;
+use super::openai::*;
+use super::*;
 
 use anyhow::Result;
-use async_trait::async_trait;
-use reqwest::{Client as ReqwestClient, RequestBuilder};
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -13,58 +9,74 @@ pub struct AzureOpenAIConfig {
     pub name: Option<String>,
     pub api_base: Option<String>,
     pub api_key: Option<String>,
-    pub models: Vec<ModelConfig>,
+    #[serde(default)]
+    pub models: Vec<ModelData>,
+    pub patch: Option<RequestPatch>,
     pub extra: Option<ExtraConfig>,
 }
-
-openai_compatible_client!(AzureOpenAIClient);
 
 impl AzureOpenAIClient {
     config_get_fn!(api_base, get_api_base);
     config_get_fn!(api_key, get_api_key);
 
-    pub const PROMPTS: [PromptType<'static>; 4] = [
-        ("api_base", "API Base:", true, PromptKind::String),
-        ("api_key", "API Key:", true, PromptKind::String),
-        ("models[].name", "Model Name:", true, PromptKind::String),
+    pub const PROMPTS: [PromptAction<'static>; 2] = [
         (
-            "models[].max_tokens",
-            "Max Tokens:",
-            true,
-            PromptKind::Integer,
+            "api_base",
+            "API Base",
+            Some("e.g. https://{RESOURCE}.openai.azure.com"),
         ),
+        ("api_key", "API Key", None),
     ];
+}
 
-    pub fn list_models(local_config: &AzureOpenAIConfig) -> Vec<Model> {
-        let client_name = Self::name(local_config);
+impl_client_trait!(
+    AzureOpenAIClient,
+    (
+        prepare_chat_completions,
+        openai_chat_completions,
+        openai_chat_completions_streaming
+    ),
+    (prepare_embeddings, openai_embeddings),
+    (noop_prepare_rerank, noop_rerank),
+);
 
-        local_config
-            .models
-            .iter()
-            .map(|v| {
-                Model::new(client_name, &v.name)
-                    .set_max_tokens(v.max_tokens)
-                    .set_capabilities(v.capabilities)
-                    .set_tokens_count_factors(OPENAI_TOKENS_COUNT_FACTORS)
-            })
-            .collect()
-    }
+fn prepare_chat_completions(
+    self_: &AzureOpenAIClient,
+    data: ChatCompletionsData,
+) -> Result<RequestData> {
+    let api_base = self_.get_api_base()?;
+    let api_key = self_.get_api_key()?;
 
-    fn request_builder(&self, client: &ReqwestClient, data: SendData) -> Result<RequestBuilder> {
-        let api_base = self.get_api_base()?;
-        let api_key = self.get_api_key()?;
+    let url = format!(
+        "{}/openai/deployments/{}/chat/completions?api-version=2024-12-01-preview",
+        &api_base,
+        self_.model.real_name()
+    );
 
-        let body = openai_build_body(data, self.model.name.clone());
+    let body = openai_build_chat_completions_body(data, &self_.model);
 
-        let url = format!(
-            "{}/openai/deployments/{}/chat/completions?api-version=2023-05-15",
-            &api_base, self.model.name
-        );
+    let mut request_data = RequestData::new(url, body);
 
-        debug!("AzureOpenAI Request: {url} {body}");
+    request_data.header("api-key", api_key);
 
-        let builder = client.post(url).header("api-key", api_key).json(&body);
+    Ok(request_data)
+}
 
-        Ok(builder)
-    }
+fn prepare_embeddings(self_: &AzureOpenAIClient, data: &EmbeddingsData) -> Result<RequestData> {
+    let api_base = self_.get_api_base()?;
+    let api_key = self_.get_api_key()?;
+
+    let url = format!(
+        "{}/openai/deployments/{}/embeddings?api-version=2024-10-21",
+        &api_base,
+        self_.model.real_name()
+    );
+
+    let body = openai_build_embeddings_body(data, &self_.model);
+
+    let mut request_data = RequestData::new(url, body);
+
+    request_data.header("api-key", api_key);
+
+    Ok(request_data)
 }

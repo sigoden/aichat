@@ -1,0 +1,1669 @@
+# Links:
+#  - https://platform.openai.com/docs/models
+#  - https://platform.openai.com/docs/api-reference/chat
+- provider: openai
+  models:
+    - name: gpt-5.2
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      input_price: 1.75
+      output_price: 14
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-5
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      input_price: 1.25
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-5-mini
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      input_price: 0.25
+      output_price: 2
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-5-nano
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      input_price: 0.05
+      output_price: 0.4
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-4.1
+      max_input_tokens: 1047576
+      max_output_tokens: 32768
+      input_price: 2
+      output_price: 8
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-4o
+      max_input_tokens: 128000
+      max_output_tokens: 16384
+      input_price: 2.5
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-4-turbo
+      max_input_tokens: 128000
+      max_output_tokens: 4096
+      input_price: 10
+      output_price: 30
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-3.5-turbo
+      max_input_tokens: 16385
+      max_output_tokens: 4096
+      input_price: 0.5
+      output_price: 1.5
+      supports_function_calling: true
+    - name: text-embedding-3-large
+      type: embedding
+      input_price: 0.13
+      max_tokens_per_chunk: 8191
+      default_chunk_size: 2000
+      max_batch_size: 100
+    - name: text-embedding-3-small
+      type: embedding
+      input_price: 0.02
+      max_tokens_per_chunk: 8191
+      default_chunk_size: 2000
+      max_batch_size: 100
+
+# Links:
+#  - https://ai.google.dev/models/gemini
+#  - https://ai.google.dev/pricing
+#  - https://ai.google.dev/api/rest/v1beta/models/streamGenerateContent
+- provider: gemini
+  models:
+    - name: gemini-2.5-flash
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-2.5-pro
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-2.5-flash-lite
+      max_input_tokens: 1000000
+      max_output_tokens: 64000
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-3-pro-preview
+      max_input_tokens: 1048576
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-3-flash-preview
+      max_input_tokens: 1048576
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-2.0-flash
+      max_input_tokens: 1048576
+      max_output_tokens: 8192
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-2.0-flash-lite
+      max_input_tokens: 1048576
+      max_output_tokens: 8192
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemma-3-27b-it
+      max_input_tokens: 131072
+      max_output_tokens: 8192
+      input_price: 0
+      output_price: 0
+    - name: text-embedding-004
+      type: embedding
+      input_price: 0
+      max_tokens_per_chunk: 2048
+      default_chunk_size: 1500
+      max_batch_size: 100
+
+# Links:
+#  - https://docs.anthropic.com/en/docs/about-claude/models/all-models
+#  - https://docs.anthropic.com/en/api/messages
+- provider: claude
+  models:
+    - name: claude-sonnet-4-5-20250929
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-sonnet-4-5-20250929:thinking
+      real_name: claude-sonnet-4-5-20250929
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
+          thinking:
+            type: enabled
+            budget_tokens: 16000
+    - name: claude-haiku-4-5-20251001
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-haiku-4-5-20251001:thinking
+      real_name: claude-haiku-4-5-20251001
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
+      supports_vision: true
+      supports_function_calling: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
+          thinking:
+            type: enabled
+            budget_tokens: 16000
+    - name: claude-opus-4-5-20251101
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 5
+      output_price: 25
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-opus-4-5-20251101:thinking
+      real_name: claude-opus-4-5-20251101
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 5
+      output_price: 25
+      supports_vision: true
+      supports_function_calling: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
+          thinking:
+            type: enabled
+            budget_tokens: 16000
+
+# Links:
+#  - https://docs.mistral.ai/getting-started/models/models_overview/
+#  - https://mistral.ai/pricing#api-pricing
+#  - https://docs.mistral.ai/api/
+- provider: mistral
+  models:
+    - name: mistral-large-latest
+      max_output_tokens: 262144
+      input_price: 0.5
+      output_price: 1.5
+      supports_function_calling: true
+      supports_vision: true
+    - name: mistral-medium-latest
+      max_input_tokens: 131072
+      input_price: 0.4
+      output_price: 2
+      supports_function_calling: true
+      supports_vision: true
+    - name: mistral-small-latest
+      max_input_tokens: 32768
+      input_price: 0.1
+      output_price: 0.3
+      supports_function_calling: true
+      supports_vision: true
+    - name: magistral-medium-latest
+      max_input_tokens: 131072
+      input_price: 2
+      output_price: 5
+    - name: magistral-small-latest
+      max_input_tokens: 131072
+      input_price: 0.5
+      output_price: 1.5
+    - name: devstral-medium-latest
+      max_input_tokens: 262144
+      input_price: 0.4
+      output_price: 2
+      supports_function_calling: true
+    - name: devstral-small-latest
+      max_input_tokens: 262144
+      input_price: 0.1
+      output_price: 0.3
+      supports_function_calling: true
+    - name: codestral-latest
+      max_input_tokens: 262144
+      input_price: 0.3
+      output_price: 0.9
+      supports_function_calling: true
+    - name: ministral-14b-latest
+      max_input_tokens: 262144
+      input_price: 0.2
+      output_price: 0.2
+      supports_function_calling: true
+    - name: mistral-embed
+      type: embedding
+      max_input_tokens: 8092
+      input_price: 0.1
+      max_tokens_per_chunk: 8092
+      default_chunk_size: 2000
+
+# Links:
+#  - https://docs.ai21.com/docs/jamba-foundation-models
+#  - https://www.ai21.com/pricing
+#  - https://docs.ai21.com/reference/jamba-1-6-api-ref
+- provider: ai21
+  models:
+    - name: jamba-large
+      max_input_tokens: 256000
+      input_price: 2
+      output_price: 8
+      supports_function_calling: true
+    - name: jamba-mini
+      max_input_tokens: 256000
+      input_price: 0.2
+      output_price: 0.4
+      supports_function_calling: true
+
+# Links:
+#  - https://docs.cohere.com/docs/models
+#  - https://cohere.com/pricing
+#  - https://docs.cohere.com/reference/chat
+- provider: cohere
+  models:
+    - name: command-a-03-2025
+      max_input_tokens: 262144
+      max_output_tokens: 8192
+      input_price: 2.5
+      output_price: 10
+      supports_function_calling: true
+    - name: command-a-reasoning-08-2025
+      max_input_tokens: 262144
+      max_output_tokens: 32768
+      input_price: 2.5
+      output_price: 10
+    - name: command-a-vision-07-2025
+      max_input_tokens: 131072
+      max_output_tokens: 8192
+      input_price: 2.5
+      output_price: 10
+      supports_vision: true
+    - name: command-r7b-12-2024
+      max_input_tokens: 131072
+      max_output_tokens: 4096
+      input_price: 0.0375
+      output_price: 0.15
+    - name: embed-v4.0
+      type: embedding
+      input_price: 0.12
+      max_tokens_per_chunk: 2048
+      default_chunk_size: 2000
+      max_batch_size: 96
+    - name: embed-english-v3.0
+      type: embedding
+      input_price: 0.1
+      max_tokens_per_chunk: 512
+      default_chunk_size: 1000
+      max_batch_size: 96
+    - name: embed-multilingual-v3.0
+      type: embedding
+      input_price: 0.1
+      max_tokens_per_chunk: 512
+      default_chunk_size: 1000
+      max_batch_size: 96
+    - name: rerank-v3.5
+      type: reranker
+      max_input_tokens: 4096
+    - name: rerank-english-v3.0
+      type: reranker
+      max_input_tokens: 4096
+    - name: rerank-multilingual-v3.0
+      type: reranker
+      max_input_tokens: 4096
+
+# Links:
+#  - https://docs.x.ai/docs/models
+#  - https://docs.x.ai/docs/api-reference#chat-completions
+- provider: xai
+  models:
+    - name: grok-4-1-fast-non-reasoning
+      max_input_tokens: 2000000
+      input_price: 0.2
+      output_price: 0.5
+      supports_function_calling: true
+    - name: grok-4-1-fast-reasoning
+      max_input_tokens: 2000000
+      input_price: 0.2
+      output_price: 0.5
+      supports_function_calling: true
+    - name: grok-code-fast-1
+      max_input_tokens: 256000
+      input_price: 0.2
+      output_price: 1.5
+      supports_function_calling: true
+
+# Links:
+#  - https://docs.perplexity.ai/getting-started/models
+#  - https://docs.perplexity.ai/api-reference/chat-completions
+- provider: perplexity
+  models:
+    - name: sonar-pro
+      max_input_tokens: 200000
+      input_price: 3
+      output_price: 15
+    - name: sonar
+      max_input_tokens: 128000
+      input_price: 1
+      output_price: 1
+    - name: sonar-reasoning-pro
+      max_input_tokens: 128000
+      input_price: 2
+      output_price: 8
+    - name: sonar-deep-research
+      max_input_tokens: 128000
+      input_price: 2
+      output_price: 8
+
+# Links:
+#  - https://console.groq.com/docs/models
+#  - https://console.groq.com/docs/api-reference#chat
+- provider: groq
+  models:
+    - name: openai/gpt-oss-120b
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
+      supports_function_calling: true
+    - name: openai/gpt-oss-20b
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
+      supports_function_calling: true
+    - name: meta-llama/llama-4-maverick-17b-128e-instruct
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: meta-llama/llama-4-scout-17b-16e-instruct
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: llama-3.3-70b-versatile
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
+      supports_function_calling: true
+    - name: moonshotai/kimi-k2-instruct-0905
+      max_input_tokens: 262144
+      input_price: 0
+      output_price: 0
+      supports_function_calling: true
+    - name: qwen/qwen3-32b
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
+    - name: groq/compound
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
+    - name: groq/compound-mini
+      max_input_tokens: 131072
+      input_price: 0
+      output_price: 0
+
+# Links:
+#  - https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
+#  - https://cloud.google.com/vertex-ai/generative-ai/pricing
+#  - https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/gemini
+- provider: vertexai
+  models:
+    - name: gemini-2.5-flash
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 0.3
+      output_price: 2.5
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-2.5-pro
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 1.25
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-2.5-flash-lite
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 0.3
+      output_price: 0.4
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-3-pro-preview
+      max_input_tokens: 1048576
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-3-flash-preview
+      max_input_tokens: 1048576
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-2.0-flash-001
+      max_input_tokens: 1048576
+      max_output_tokens: 8192
+      input_price: 0.15
+      output_price: 0.6
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-2.0-flash-lite-001
+      max_input_tokens: 1048576
+      max_output_tokens: 8192
+      input_price: 0.075
+      output_price: 0.3
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-sonnet-4-5@20250929
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-sonnet-4-5@20250929:thinking
+      real_name: claude-sonnet-4-5@20250929
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
+          thinking:
+            type: enabled
+            budget_tokens: 16000
+    - name: claude-haiku-4-5@20251001
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-haiku-4-5@20251001:thinking
+      real_name: claude-haiku-4-5@20251001
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
+      supports_vision: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
+          thinking:
+            type: enabled
+            budget_tokens: 16000
+    - name: claude-opus-4-5@20251101
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 5
+      output_price: 25
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-opus-4-5@20251101:thinking
+      real_name: claude-opus-4-5@20251101
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 5
+      output_price: 25
+      supports_vision: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
+          thinking:
+            type: enabled
+            budget_tokens: 16000
+    - name: text-embedding-005
+      type: embedding
+      max_input_tokens: 20000
+      input_price: 0.025
+      max_tokens_per_chunk: 2048
+      default_chunk_size: 1500
+      max_batch_size: 5
+    - name: text-multilingual-embedding-002
+      type: embedding
+      max_input_tokens: 20000
+      input_price: 0.2
+      max_tokens_per_chunk: 2048
+      default_chunk_size: 1500
+      max_batch_size: 5
+
+# Links:
+#  - https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html#model-ids-arns
+#  - https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html
+#  - https://aws.amazon.com/bedrock/pricing/
+#  - https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-call.html
+- provider: bedrock
+  models:
+    - name: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+    - name: us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking
+      real_name: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      patch:
+        body:
+          inferenceConfig:
+            temperature: null
+            topP: null
+          additionalModelRequestFields:
+            thinking:
+              type: enabled
+              budget_tokens: 16000
+    - name: us.anthropic.claude-haiku-4-5-20251001-v1:0
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
+      supports_vision: true
+      supports_function_calling: true
+    - name: us.anthropic.claude-haiku-4-5-20251001-v1:0:thinking
+      real_name: us.anthropic.claude-haiku-4-5-20251001-v1:0
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
+      supports_vision: true
+      patch:
+        body:
+          inferenceConfig:
+            temperature: null
+            topP: null
+          additionalModelRequestFields:
+            thinking:
+              type: enabled
+              budget_tokens: 16000
+    - name: us.anthropic.claude-opus-4-5-20251101-v1:0
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 5
+      output_price: 25
+      supports_vision: true
+      supports_function_calling: true
+    - name: us.anthropic.claude-opus-4-5-20251101-v1:0:thinking
+      real_name: us.anthropic.claude-opus-4-5-20251101-v1:0
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 5
+      output_price: 25
+      supports_vision: true
+      patch:
+        body:
+          inferenceConfig:
+            temperature: null
+            topP: null
+          additionalModelRequestFields:
+            thinking:
+              type: enabled
+              budget_tokens: 16000
+    - name: us.meta.llama4-maverick-17b-instruct-v1:0
+      max_input_tokens: 131072
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 0.24
+      output_price: 0.97
+      supports_function_calling: true
+      supports_vision: true
+    - name: us.meta.llama4-scout-17b-instruct-v1:0
+      max_input_tokens: 131072
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 0.17
+      output_price: 0.66
+      supports_function_calling: true
+      supports_vision: true
+    - name: us.meta.llama3-3-70b-instruct-v1:0
+      max_input_tokens: 131072
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 0.72
+      output_price: 0.72
+      supports_function_calling: true
+    - name: us.amazon.nova-premier-v1:0
+      max_input_tokens: 300000
+      max_output_tokens: 5120
+      input_price: 2.5
+      output_price: 12.5
+    - name: us.amazon.nova-pro-v1:0
+      max_input_tokens: 300000
+      max_output_tokens: 5120
+      input_price: 0.8
+      output_price: 3.2
+      supports_vision: true
+    - name: us.amazon.nova-lite-v1:0
+      max_input_tokens: 300000
+      max_output_tokens: 5120
+      input_price: 0.06
+      output_price: 0.24
+      supports_vision: true
+    - name: us.amazon.nova-micro-v1:0
+      max_input_tokens: 128000
+      max_output_tokens: 5120
+      input_price: 0.035
+      output_price: 0.14
+    - name: cohere.embed-english-v3
+      type: embedding
+      input_price: 0.1
+      max_tokens_per_chunk: 512
+      default_chunk_size: 1000
+      max_batch_size: 96
+    - name: cohere.embed-multilingual-v3
+      type: embedding
+      input_price: 0.1
+      max_tokens_per_chunk: 512
+      default_chunk_size: 1000
+      max_batch_size: 96
+    - name: us.deepseek.r1-v1:0
+      max_input_tokens: 128000
+      input_price: 1.35
+      output_price: 5.4
+
+# Links:
+#  - https://developers.cloudflare.com/workers-ai/models/
+#  - https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/
+- provider: cloudflare
+  models:
+    - name: '@cf/meta/llama-4-scout-17b-16e-instruct'
+      max_input_tokens: 131072
+      max_output_tokens: 2048
+      require_max_tokens: true
+      input_price: 0
+      output_price: 0
+    - name: '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
+      max_input_tokens: 131072
+      max_output_tokens: 2048
+      require_max_tokens: true
+      input_price: 0
+      output_price: 0
+    - name: '@cf/qwen/qwen3-30b-a3b-fp8'
+      max_input_tokens: 131072
+      max_output_tokens: 2048
+      require_max_tokens: true
+      input_price: 0
+      output_price: 0
+    - name: '@cf/qwen/qwen2.5-coder-32b-instruct'
+      max_input_tokens: 131072
+      max_output_tokens: 2048
+      require_max_tokens: true
+      input_price: 0
+      output_price: 0
+    - name: '@cf/google/gemma-3-12b-it'
+      max_input_tokens: 131072
+      max_output_tokens: 2048
+      require_max_tokens: true
+      input_price: 0
+      output_price: 0
+    - name: '@cf/mistralai/mistral-small-3.1-24b-instruct'
+      max_input_tokens: 131072
+      max_output_tokens: 2048
+      require_max_tokens: true
+      input_price: 0
+      output_price: 0
+    - name: '@cf/baai/bge-large-en-v1.5'
+      type: embedding
+      input_price: 0
+      max_tokens_per_chunk: 512
+      default_chunk_size: 1000
+      max_batch_size: 100
+
+# Links:
+#  - https://cloud.baidu.com/doc/qianfan/s/rmh4stp0j
+#  - https://cloud.baidu.com/doc/qianfan/s/wmh4sv6ya
+- provider: ernie
+  models:
+    - name: ernie-4.5-turbo-128k
+      max_input_tokens: 131072
+      input_price: 0.112
+      output_price: 0.448
+    - name: ernie-4.5-turbo-vl-32k
+      max_input_tokens: 32768
+      input_price: 0.42
+      output_price: 1.26
+      supports_vision: true
+    - name: ernie-5.0-thinking-preview
+      max_input_tokens: 131072
+      input_price: 1.4
+      output_price: 5.6
+    - name: ernie-x1.1-preview
+      max_input_tokens: 65536
+      input_price: 0.14
+      output_price: 0.56
+    - name: bge-large-zh
+      type: embedding
+      input_price: 0.07
+      max_tokens_per_chunk: 512
+      default_chunk_size: 1000
+      max_batch_size: 16
+    - name: bge-large-en
+      type: embedding
+      input_price: 0.07
+      max_tokens_per_chunk: 512
+      default_chunk_size: 1000
+      max_batch_size: 16
+    - name: bce-reranker-base
+      type: reranker
+      max_input_tokens: 1024
+      input_price: 0.07
+
+
+# Links:
+#  - https://help.aliyun.com/zh/model-studio/getting-started/models
+#  - https://help.aliyun.com/zh/model-studio/developer-reference/use-qwen-by-calling-api
+- provider: qianwen
+  models:
+    - name: qwen3-max
+      max_input_tokens: 262144
+      supports_function_calling: true
+    - name: qwen-plus
+      max_input_tokens: 131072
+      supports_function_calling: true
+    - name: qwen-flash
+      max_input_tokens: 1000000
+      supports_function_calling: true
+    - name: qwen3-vl-plus
+      max_input_tokens: 262144
+      supports_vision: true
+    - name: qwen3-vl-flash
+      max_input_tokens: 262144
+      supports_vision: true
+    - name: qwen-coder-plus
+      max_input_tokens: 1000000
+    - name: qwen-coder-flash
+      max_input_tokens: 1000000
+    - name: qwen3-next-80b-a3b-instruct
+      max_input_tokens: 131072
+      input_price: 0.14
+      output_price: 0.56
+      supports_function_calling: true
+    - name: qwen3-next-80b-a3b-thinking
+      max_input_tokens: 131072
+      input_price: 0.14
+      output_price: 1.4
+    - name: qwen3-235b-a22b-instruct-2507
+      max_input_tokens: 131072
+      input_price: 0.28
+      output_price: 1.12
+      supports_function_calling: true
+    - name: qwen3-235b-a22b-thinking-2507
+      max_input_tokens: 131072
+      input_price: 0.28
+      output_price: 2.8
+    - name: qwen3-30b-a3b-instruct-2507
+      max_input_tokens: 131072
+      input_price: 0.105
+      output_price: 0.42
+      supports_function_calling: true
+    - name: qwen3-30b-a3b-thinking-2507
+      max_input_tokens: 131072
+      input_price: 0.105
+      output_price: 1.05 
+    - name: qwen3-vl-32b-instruct
+      max_input_tokens: 131072
+      input_price: 0.28
+      output_price: 1.12
+      supports_vision: true
+    - name: qwen3-vl-8b-instruct
+      max_input_tokens: 131072
+      input_price: 0.07
+      output_price: 0.28
+      supports_vision: true
+    - name: qwen3-coder-480b-a35b-instruct
+      max_input_tokens: 262144
+      input_price: 1.26
+      output_price: 5.04
+    - name: qwen3-coder-30b-a3b-instruct
+      max_input_tokens: 262144
+      input_price: 0.315
+      output_price: 1.26
+    - name: deepseek-v3.2-exp
+      max_input_tokens: 131072
+      input_price: 0.28
+      output_price: 0.42
+    - name: text-embedding-v4
+      type: embedding
+      input_price: 0.1
+      max_tokens_per_chunk: 8192
+      default_chunk_size: 2000
+      max_batch_size: 10
+    - name: text-embedding-v3
+      type: embedding
+      input_price: 0.1
+      max_tokens_per_chunk: 8192
+      default_chunk_size: 2000
+      max_batch_size: 10
+
+# links:
+#  - https://cloud.tencent.com/document/product/1729/104753
+#  - https://cloud.tencent.com/document/product/1729/97731
+#  - https://cloud.tencent.com/document/product/1729/111007
+- provider: hunyuan
+  models:
+    - name: hunyuan-2.0-instruct-20251111
+      max_input_tokens: 131072
+      input_price: 0.112
+      output_price: 0.28
+      supports_function_calling: true
+    - name: hunyuan-2.0-thinking-20251109
+      max_input_tokens: 131072
+      input_price: 0.14
+      output_price: 0.56
+      supports_function_calling: true
+    - name: hunyuan-vision-1.5-instruct
+      max_input_tokens: 24576
+      input_price: 0.42
+      output_price: 1.26
+      supports_vision: true
+    - name: hunyuan-embedding
+      type: embedding
+      input_price: 0.01
+      max_tokens_per_chunk: 1024
+      default_chunk_size: 1000
+      max_batch_size: 100
+
+# Links:
+#  - https://platform.moonshot.cn/docs/pricing/chat#%E8%AE%A1%E8%B4%B9%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5
+#  - https://platform.moonshot.cn/docs/api/chat#%E5%85%AC%E5%BC%80%E7%9A%84%E6%9C%8D%E5%8A%A1%E5%9C%B0%E5%9D%80
+- provider: moonshot
+  models:
+    - name: kimi-k2.5
+      max_input_tokens: 262144
+      input_price: 0.56
+      output_price: 2.94
+      supports_vision: true
+      supports_function_calling: true
+    - name: kimi-k2-turbo-preview
+      max_input_tokens: 262144
+      input_price: 1.12
+      output_price: 8.12
+      supports_vision: true
+      supports_function_calling: true
+    - name: kimi-k2-0905-preview
+      max_input_tokens: 262144
+      input_price: 0.56
+      output_price: 2.24
+      supports_vision: true
+      supports_function_calling: true
+    - name: kimi-k2-thinking-turbo
+      max_input_tokens: 262144
+      input_price: 1.12
+      output_price: 8.12
+      supports_vision: true
+    - name: kimi-k2-thinking
+      max_input_tokens: 262144
+      input_price: 0.56
+      output_price: 2.24
+      supports_vision: true
+
+# Links:
+#  - https://api-docs.deepseek.com/quick_start/pricing
+#  - https://platform.deepseek.com/api-docs/api/create-chat-completion
+- provider: deepseek
+  models:
+    - name: deepseek-chat
+      max_input_tokens: 64000
+      max_output_tokens: 8192
+      input_price: 0.56
+      output_price: 1.68
+      supports_function_calling: true
+    - name: deepseek-reasoner
+      max_input_tokens: 64000
+      max_output_tokens: 32768
+      input_price: 0.56
+      output_price: 1.68
+
+# Links:
+#  - https://open.bigmodel.cn/pricing
+#  - https://open.bigmodel.cn/dev/api#glm-4
+- provider: zhipuai
+  models:
+    - name: glm-4.7
+      max_input_tokens: 202752
+      input_price: 0.56
+      output_price: 2.24
+      supports_function_calling: true
+    - name: glm-4.7:instruct
+      real_name: glm-4.7
+      max_input_tokens: 202752
+      input_price: 0.56
+      output_price: 2.24
+      supports_function_calling: true
+      patch:
+        body:
+          thinking:
+            type: disabled
+    - name: glm-4.7-flash
+      max_input_tokens: 202752
+      input_price: 0
+      output_price: 0
+      supports_function_calling: true
+    - name: glm-4.6v
+      max_input_tokens: 65536
+      input_price: 0.28
+      output_price: 0.84
+      supports_vision: true
+    - name: glm-4.6v-flash
+      max_input_tokens: 65536
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+    - name: embedding-3
+      type: embedding
+      max_input_tokens: 8192
+      input_price: 0.07
+      max_tokens_per_chunk: 8192
+      default_chunk_size: 2000
+    - name: rerank
+      type: reranker
+      max_input_tokens: 4096
+      input_price: 0.112
+
+# Links:
+# - https://platform.minimaxi.com/docs/guides/pricing-payg
+# - https://platform.minimaxi.com/document/ChatCompletion%20v2
+- provider: minimax
+  models:
+    - name: minimax-m2.1
+      max_input_tokens: 204800
+      input_price: 0.294
+      output_price: 1.176
+      supports_function_calling: true
+    - name: minimax-m2.1-lightning
+      max_input_tokens: 204800
+      input_price: 0.294
+      output_price: 2.352
+      supports_function_calling: true
+
+# Links:
+#  - https://openrouter.ai/models
+#  - https://openrouter.ai/docs/api-reference/chat-completion
+- provider: openrouter
+  models:
+    - name: openai/gpt-5.2
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      input_price: 1.75
+      output_price: 14
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-5
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      input_price: 1.25
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-5-mini
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      input_price: 0.25
+      output_price: 2
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-5-nano
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      input_price: 0.05
+      output_price: 0.4
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-4.1
+      max_input_tokens: 1047576
+      max_output_tokens: 32768
+      input_price: 2
+      output_price: 8
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-4o
+      max_input_tokens: 128000
+      input_price: 2.5
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-oss-120b
+      max_input_tokens: 131072
+      input_price: 0.09
+      output_price: 0.45
+      supports_function_calling: true
+    - name: openai/gpt-oss-20b
+      max_input_tokens: 131072
+      input_price: 0.04
+      output_price: 0.16
+      supports_function_calling: true
+    - name: google/gemini-2.5-flash
+      max_input_tokens: 1048576
+      input_price: 0.3
+      output_price: 2.5
+      supports_vision: true
+      supports_function_calling: true
+    - name: google/gemini-2.5-pro
+      max_input_tokens: 1048576
+      input_price: 1.25
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
+    - name: google/gemini-2.5-flash-lite
+      max_input_tokens: 1048576
+      input_price: 0.3
+      output_price: 0.4
+      supports_vision: true
+    - name: google/gemini-2.0-flash-001
+      max_input_tokens: 1000000
+      input_price: 0.15
+      output_price: 0.6
+      supports_vision: true
+      supports_function_calling: true
+    - name: google/gemini-2.0-flash-lite-001
+      max_input_tokens: 1048576
+      input_price: 0.075
+      output_price: 0.3
+      supports_vision: true
+      supports_function_calling: true
+    - name: google/gemma-3-27b-it
+      max_input_tokens: 131072
+      input_price: 0.1
+      output_price: 0.2
+    - name: anthropic/claude-sonnet-4.5
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+    - name: anthropic/claude-haiku-4.5
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
+      supports_vision: true
+      supports_function_calling: true
+    - name: anthropic/claude-opus-4.5
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 5
+      output_price: 25
+      supports_vision: true
+      supports_function_calling: true
+    - name: meta-llama/llama-4-maverick
+      max_input_tokens: 1048576
+      input_price: 0.18
+      output_price: 0.6
+      supports_vision: true
+      supports_function_calling: true
+    - name: meta-llama/llama-4-scout
+      max_input_tokens: 327680
+      input_price: 0.08
+      output_price: 0.3
+      supports_vision: true
+      supports_function_calling: true
+    - name: meta-llama/llama-3.3-70b-instruct
+      max_input_tokens: 131072
+      input_price: 0.12
+      output_price: 0.3
+    - name: mistralai/mistral-large-2512
+      max_input_tokens: 262144
+      input_price: 0.5
+      output_price: 1.5
+      supports_function_calling: true
+    - name: mistralai/mistral-medium-3.1
+      max_input_tokens: 131072
+      input_price: 0.4
+      output_price: 2
+      supports_function_calling: true
+      supports_vision: true
+    - name: mistralai/mistral-small-3.2-24b-instruct
+      max_input_tokens: 131072
+      input_price: 0.1
+      output_price: 0.3
+      supports_vision: true
+    - name: mistralai/devstral-2512
+      max_input_tokens: 262144
+      input_price: 0.5
+      output_price: 0.22
+      supports_function_calling: true
+    - name: mistralai/devstral-small
+      max_input_tokens: 131072
+      input_price: 0.07
+      output_price: 0.28
+      supports_function_calling: true
+    - name: mistralai/codestral-2508
+      max_input_tokens: 256000
+      input_price: 0.3
+      output_price: 0.9
+      supports_function_calling: true
+    - name: mistralai/ministral-14b-2512
+      max_input_tokens: 262144
+      input_price: 0.2
+      output_price: 0.2
+      supports_function_calling: true
+    - name: ai21/jamba-large-1.7
+      max_input_tokens: 256000
+      input_price: 2
+      output_price: 8
+      supports_function_calling: true
+    - name: ai21/jamba-mini-1.7
+      max_input_tokens: 256000
+      input_price: 0.2
+      output_price: 0.4
+      supports_function_calling: true
+    - name: cohere/command-a
+      max_input_tokens: 256000
+      input_price: 2.5
+      output_price: 10
+      supports_function_calling: true
+    - name: cohere/command-r7b-12-2024
+      max_input_tokens: 128000
+      max_output_tokens: 4096
+      input_price: 0.0375
+      output_price: 0.15
+    - name: deepseek/deepseek-v3.2
+      max_input_tokens: 163840
+      input_price: 0.25
+      output_price: 0.38
+    - name: qwen/qwen3-max
+      max_input_tokens: 262144
+      input_price: 1.2
+      output_price: 6
+      supports_function_calling: true
+    - name: qwen/qwen-plus
+      max_input_tokens: 131072
+      max_output_tokens: 8192
+      input_price: 0.4
+      output_price: 1.2
+      supports_function_calling: true
+    - name: qwen/qwen3-next-80b-a3b-instruct
+      max_input_tokens: 262144
+      input_price: 0.1
+      output_price: 0.8
+      supports_function_calling: true
+    - name: qwen/qwen3-next-80b-a3b-thinking
+      max_input_tokens: 262144
+      input_price: 0.1
+      output_price: 0.8
+    - name: qwen/qwen5-235b-a22b-2507 # Qwen3 235B A22B Instruct 2507
+      max_input_tokens: 262144
+      input_price: 0.12
+      output_price: 0.59
+      supports_function_calling: true
+    - name: qwen/qwen3-235b-a22b-thinking-2507
+      max_input_tokens: 262144
+      input_price: 0.118
+      output_price: 0.118
+    - name: qwen/qwen3-30b-a3b-instruct-2507
+      max_input_tokens: 131072
+      input_price: 0.2
+      output_price: 0.8
+    - name: qwen/qwen3-30b-a3b-thinking-2507
+      max_input_tokens: 262144
+      input_price: 0.071
+      output_price: 0.285
+    - name: qwen/qwen3-vl-32b-instruct
+      max_input_tokens: 262144
+      input_price: 0.35
+      output_price: 1.1
+      supports_vision: true
+    - name: qwen/qwen3-vl-8b-instruct
+      max_input_tokens: 262144
+      input_price: 0.08
+      output_price: 0.50
+      supports_vision: true
+    - name: qwen/qwen3-coder-plus
+      max_input_tokens: 128000
+      input_price: 1
+      output_price: 5
+      supports_function_calling: true
+    - name: qwen/qwen3-coder-flash
+      max_input_tokens: 128000
+      input_price: 0.3
+      output_price: 1.5
+      supports_function_calling: true
+    - name: qwen/qwen3-coder  # Qwen3 Coder 480B A35B
+      max_input_tokens: 262144
+      input_price: 0.22
+      output_price: 0.95
+      supports_function_calling: true
+    - name: qwen/qwen3-coder-30b-a3b-instruct
+      max_input_tokens: 262144
+      input_price: 0.052
+      output_price: 0.207
+      supports_function_calling: true
+    - name: moonshotai/kimi-k2.5
+      max_input_tokens: 262144
+      input_price: 0.57
+      output_price: 2.85
+      supports_vision: true
+      supports_function_calling: true
+    - name: moonshotai/kimi-k2-0905
+      max_input_tokens: 262144
+      input_price: 0.296
+      output_price: 1.185
+      supports_vision: true
+      supports_function_calling: true
+    - name: moonshotai/kimi-k2-thinking
+      max_input_tokens: 262144
+      input_price: 0.45
+      output_price: 2.35
+      supports_function_calling: true
+    - name: moonshotai/kimi-dev-72b
+      max_input_tokens: 131072
+      input_price: 0.29
+      output_price: 1.15
+      supports_function_calling: true
+    - name: x-ai/grok-4.1-fast
+      max_input_tokens: 2000000
+      input_price: 0.2
+      output_price: 0.5
+      supports_function_calling: true
+    - name: x-ai/grok-code-fast-1
+      max_input_tokens: 256000
+      input_price: 0.2
+      output_price: 1.5
+      supports_function_calling: true
+    - name: amazon/nova-premier-v1
+      max_input_tokens: 1000000
+      input_price: 2.5
+      output_price: 12.5
+      supports_vision: true
+    - name: amazon/nova-pro-v1
+      max_input_tokens: 300000
+      max_output_tokens: 5120
+      input_price: 0.8
+      output_price: 3.2
+      supports_vision: true
+    - name: amazon/nova-lite-v1
+      max_input_tokens: 300000
+      max_output_tokens: 5120
+      input_price: 0.06
+      output_price: 0.24
+      supports_vision: true
+    - name: amazon/nova-micro-v1
+      max_input_tokens: 128000
+      max_output_tokens: 5120
+      input_price: 0.035
+      output_price: 0.14
+    - name: perplexity/sonar-pro
+      max_input_tokens: 200000
+      input_price: 3
+      output_price: 15
+    - name: perplexity/sonar
+      max_input_tokens: 127072
+      input_price: 1
+      output_price: 1
+    - name: perplexity/sonar-reasoning-pro
+      max_input_tokens: 128000
+      input_price: 2
+      output_price: 8
+      patch:
+        body:
+          include_reasoning: true
+    - name: perplexity/sonar-deep-research
+      max_input_tokens: 200000
+      input_price: 2
+      output_price: 8
+      patch:
+        body:
+          include_reasoning: true
+    - name: minimax/minimax-m2.1
+      max_input_tokens: 196608
+      input_price: 0.12
+      output_price: 0.48
+      supports_function_calling: true
+    - name: z-ai/glm-4.7
+      max_input_tokens: 202752
+      input_price: 0.16
+      output_price: 0.80
+      supports_function_calling: true
+    - name: z-ai/glm-4.7-flash
+      max_input_tokens: 202752
+      input_price: 0.07
+      output_price: 0.40
+      supports_function_calling: true
+    - name: z-ai/glm-4.6v
+      max_input_tokens: 131072
+      input_price: 0.3
+      output_price: 0.9
+      supports_vision: true
+
+# Links:
+#  - https://github.com/marketplace?type=models
+- provider: github
+  models:
+    - name: gpt-5
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-5-mini
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-5-nano
+      max_input_tokens: 400000
+      max_output_tokens: 128000
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-4.1
+      max_input_tokens: 1047576
+      max_output_tokens: 32768
+      supports_vision: true
+      supports_function_calling: true
+    - name: gpt-4o
+      max_input_tokens: 128000
+      max_output_tokens: 16384
+      supports_function_calling: true
+    - name: text-embedding-3-large
+      type: embedding
+      max_tokens_per_chunk: 8191
+      default_chunk_size: 2000
+      max_batch_size: 100
+    - name: text-embedding-3-small
+      type: embedding
+      max_tokens_per_chunk: 8191
+      default_chunk_size: 2000
+      max_batch_size: 100
+    - name: llama-4-maverick-17b-128e-instruct-fp8
+      max_input_tokens: 1048576
+      supports_vision: true
+    - name: llama-4-scout-17b-16e-instruct
+      max_input_tokens: 327680
+      supports_vision: true
+    - name: llama-3.3-70b-instruct
+      max_input_tokens: 131072
+    - name: mistral-medium-2505
+      max_input_tokens: 131072
+      supports_function_calling: true
+    - name: mistral-small-2503
+      max_input_tokens: 131072
+      supports_function_calling: true
+    - name: codestral-2501
+      max_input_tokens: 256000
+      supports_function_calling: true
+    - name: cohere-embed-v3-english
+      type: embedding
+      max_tokens_per_chunk: 512
+      default_chunk_size: 1000
+      max_batch_size: 96
+    - name: cohere-embed-v3-multilingual
+      type: embedding
+      max_tokens_per_chunk: 512
+      default_chunk_size: 1000
+      max_batch_size: 96
+    - name: deepseek-r1-0528
+      max_input_tokens: 163840
+    - name: deepseek-v3-0324
+      max_input_tokens: 163840
+    - name: mai-ds-r1
+      max_input_tokens: 163840
+    - name: phi-4
+      max_input_tokens: 16384
+    - name: phi-4-mini-instruct
+      max_input_tokens: 131072
+    - name: phi-4-reasoning
+      max_input_tokens: 33792
+    - name: phi-4-mini-reasoning
+      max_input_tokens: 131072
+    - name: grok-3
+      max_input_tokens: 131072
+    - name: grok-3-mini
+      max_input_tokens: 131072
+
+# Links:
+#  - https://deepinfra.com/models
+#  - https://deepinfra.com/docs/openai_api
+- provider: deepinfra
+  models:
+    - name: openai/gpt-oss-120b
+      max_input_tokens: 131072
+      input_price: 0.09
+      output_price: 0.45
+      supports_function_calling: true
+    - name: openai/gpt-oss-20b
+      max_input_tokens: 131072
+      input_price: 0.04
+      output_price: 0.16
+      supports_function_calling: true
+    - name: meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8
+      max_input_tokens: 1048576
+      input_price: 0.18
+      output_price: 0.6
+      supports_vision: true
+    - name: meta-llama/Llama-4-Scout-17B-16E-Instruct
+      max_input_tokens: 327680
+      input_price: 0.08
+      output_price: 0.3
+      supports_vision: true
+    - name: Qwen/Qwen3-Next-80B-A3B-Instruct
+      max_input_tokens: 262144
+      input_price: 0.14
+      output_price: 1.4
+      supports_function_calling: true
+    - name: Qwen/Qwen3-Next-80B-A3B-Thinking
+      max_input_tokens: 262144
+      input_price: 0.14
+      output_price: 1.4
+    - name: Qwen/Qwen3-235B-A22B-Instruct-2507
+      max_input_tokens: 131072
+      input_price: 0.13
+      output_price: 0.6
+      supports_function_calling: true
+    - name: Qwen/Qwen3-235B-A22B-Thinking-2507
+      max_input_tokens: 131072
+      input_price: 0.13
+      output_price: 0.6
+    - name: Qwen/Qwen3-Coder-480B-A35B-Instruct
+      max_input_tokens: 131072
+      input_price: 0.4
+      output_price: 1.6
+      supports_function_calling: true
+    - name: Qwen/Qwen3-Coder-30B-A3B-Instruct
+      max_input_tokens: 262144
+      input_price: 0.07
+      output_price: 0.27
+      supports_function_calling: true
+    - name: Qwen/Qwen3-30B-A3B
+      max_input_tokens: 40960
+      input_price: 0.1
+      output_price: 0.3
+    - name: Qwen/Qwen3-VL-8B-Instruct
+      max_input_tokens: 262144
+      input_price: 0.18
+      output_price: 0.69
+      supports_vision: true
+    - name: deepseek-ai/DeepSeek-V3.2
+      max_input_tokens: 163840
+      input_price: 0.26
+      output_price: 0.39
+      supports_function_calling: true
+    - name: google/gemma-3-27b-it
+      max_input_tokens: 131072
+      input_price: 0.1
+      output_price: 0.2
+    - name: mistralai/Mistral-Small-3.2-24B-Instruct-2506
+      max_input_tokens: 32768
+      input_price: 0.06
+      output_price: 0.12
+    - name: moonshotai/Kimi-K2.5
+      max_input_tokens: 262144
+      input_price: 0.5
+      output_price: 2.8
+      supports_function_calling: true
+    - name: moonshotai/Kimi-K2-Instruct-0905
+      max_input_tokens: 262144
+      input_price: 0.5
+      output_price: 2.0
+      supports_function_calling: true
+    - name: moonshotai/Kimi-K2-Thinking
+      max_input_tokens: 262144
+      input_price: 0.55
+      output_price: 2.5
+      supports_function_calling: true
+    - name: MiniMaxAI/MiniMax-M2.1
+      max_input_tokens: 262144
+      input_price: 0.28
+      output_price: 1.2
+      supports_function_calling: true
+    - name: zai-org/GLM-4.7
+      max_input_tokens: 202752
+      input_price: 0.43
+      output_price: 1.75
+      supports_function_calling: true
+    - name: zai-org/GLM-4.6V
+      max_input_tokens: 131072
+      input_price: 0.3
+      output_price: 0.9
+      supports_vision: true
+    - name: BAAI/bge-large-en-v1.5
+      type: embedding
+      input_price: 0.01
+      max_tokens_per_chunk: 512
+      default_chunk_size: 1000
+      max_batch_size: 100
+    - name: BAAI/bge-m3
+      type: embedding
+      input_price: 0.01
+      max_tokens_per_chunk: 8192
+      default_chunk_size: 2000
+      max_batch_size: 100
+    - name: intfloat/e5-large-v2
+      type: embedding
+      input_price: 0.01
+      max_tokens_per_chunk: 512
+      default_chunk_size: 1000
+      max_batch_size: 100
+    - name: intfloat/multilingual-e5-large
+      type: embedding
+      input_price: 0.01
+      max_tokens_per_chunk: 512
+      default_chunk_size: 1000
+      max_batch_size: 100
+    - name: thenlper/gte-large
+      type: embedding
+      input_price: 0.01
+      max_tokens_per_chunk: 512
+      default_chunk_size: 1000
+      max_batch_size: 100
+
+# Links:
+#  - https://jina.ai/models
+#  - https://api.jina.ai/redoc
+- provider: jina
+  models:
+    - name: jina-embeddings-v3
+      type: embedding
+      input_price: 0
+      max_tokens_per_chunk: 8192
+      default_chunk_size: 2000
+      max_batch_size: 100
+    - name: jina-clip-v2
+      type: embedding
+      input_price: 0
+      max_tokens_per_chunk: 8192
+      default_chunk_size: 1500
+      max_batch_size: 100
+    - name: jina-colbert-v2
+      type: embedding
+      input_price: 0
+      max_tokens_per_chunk: 8192
+      default_chunk_size: 1500
+      max_batch_size: 100
+    - name: jina-reranker-v2-base-multilingual
+      type: reranker
+      max_input_tokens: 8192
+      input_price: 0
+    - name: jina-colbert-v2
+      type: reranker
+      max_input_tokens: 8192
+      input_price: 0
+
+# Links:
+#  - https://docs.voyageai.com/docs/embeddings
+#  - https://docs.voyageai.com/docs/pricing
+#  - https://docs.voyageai.com/reference/
+- provider: voyageai
+  models:
+    - name: voyage-3-large
+      type: embedding
+      max_input_tokens: 120000
+      input_price: 0.18
+      max_tokens_per_chunk: 32000
+      default_chunk_size: 2000
+      max_batch_size: 128
+    - name: voyage-3
+      type: embedding
+      max_input_tokens: 320000
+      input_price: 0.06
+      max_tokens_per_chunk: 32000
+      default_chunk_size: 2000
+      max_batch_size: 128
+    - name: voyage-3-lite
+      type: embedding
+      max_input_tokens: 1000000
+      input_price: 0.02
+      max_tokens_per_chunk: 32000
+      default_chunk_size: 1000
+      max_batch_size: 128
+    - name: rerank-2
+      type: reranker
+      max_input_tokens: 16000
+      input_price: 0.05
+    - name: rerank-2-lite
+      type: reranker
+      max_input_tokens: 8000
+      input_price: 0.02

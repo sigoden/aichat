@@ -1,23 +1,24 @@
+use crate::utils::decode_bin;
+
+use ansi_colours::AsRGB;
 use anyhow::{anyhow, Context, Result};
 use crossterm::style::{Color, Stylize};
 use crossterm::terminal;
-use lazy_static::lazy_static;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 use syntect::highlighting::{Color as SyntectColor, FontStyle, Style, Theme};
 use syntect::parsing::SyntaxSet;
 use syntect::{easy::HighlightLines, parsing::SyntaxReference};
 
-/// Comes from https://github.com/sharkdp/bat/raw/5e77ca37e89c873e4490b42ff556370dc5c6ba4f/assets/syntaxes.bin
+/// Comes from <https://github.com/sharkdp/bat/raw/5e77ca37e89c873e4490b42ff556370dc5c6ba4f/assets/syntaxes.bin>
 const SYNTAXES: &[u8] = include_bytes!("../../assets/syntaxes.bin");
 
-lazy_static! {
-    static ref LANG_MAPS: HashMap<String, String> = {
-        let mut m = HashMap::new();
-        m.insert("csharp".into(), "C#".into());
-        m.insert("php".into(), "PHP Source".into());
-        m
-    };
-}
+static LANG_MAPS: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
+    let mut m = HashMap::new();
+    m.insert("csharp".into(), "C#".into());
+    m.insert("php".into(), "PHP Source".into());
+    m
+});
 
 pub struct MarkdownRender {
     options: RenderOptions,
@@ -31,10 +32,13 @@ pub struct MarkdownRender {
 
 impl MarkdownRender {
     pub fn init(options: RenderOptions) -> Result<Self> {
-        let syntax_set: SyntaxSet = bincode::deserialize_from(SYNTAXES)
-            .with_context(|| "MarkdownRender: invalid syntaxes binary")?;
+        let syntax_set: SyntaxSet =
+            decode_bin(SYNTAXES).with_context(|| "MarkdownRender: invalid syntaxes binary")?;
 
-        let code_color = options.theme.as_ref().map(get_code_color);
+        let code_color = options
+            .theme
+            .as_ref()
+            .map(|theme| get_code_color(theme, options.truecolor));
         let md_syntax = syntax_set.find_syntax_by_extension("md").unwrap().clone();
         let line_type = LineType::Normal;
         let wrap_width = match options.wrap.as_deref() {
@@ -136,12 +140,15 @@ impl MarkdownRender {
 
     fn highlight_line(&self, line: &str, syntax: &SyntaxReference, is_code: bool) -> String {
         let ws: String = line.chars().take_while(|c| c.is_whitespace()).collect();
-        let trimed_line: &str = &line[ws.len()..];
+        let trimmed_line: &str = &line[ws.len()..];
         let mut line_highlighted = None;
         if let Some(theme) = &self.options.theme {
             let mut highlighter = HighlightLines::new(syntax, theme);
-            if let Ok(ranges) = highlighter.highlight_line(trimed_line, &self.syntax_set) {
-                line_highlighted = Some(format!("{ws}{}", as_terminal_escaped(&ranges)))
+            if let Ok(ranges) = highlighter.highlight_line(trimmed_line, &self.syntax_set) {
+                line_highlighted = Some(format!(
+                    "{ws}{}",
+                    as_terminal_escaped(&ranges, self.options.truecolor)
+                ))
             }
         }
         let line = line_highlighted.unwrap_or_else(|| line.into());
@@ -195,14 +202,21 @@ pub struct RenderOptions {
     pub theme: Option<Theme>,
     pub wrap: Option<String>,
     pub wrap_code: bool,
+    pub truecolor: bool,
 }
 
 impl RenderOptions {
-    pub(crate) fn new(theme: Option<Theme>, wrap: Option<String>, wrap_code: bool) -> Self {
+    pub(crate) fn new(
+        theme: Option<Theme>,
+        wrap: Option<String>,
+        wrap_code: bool,
+        truecolor: bool,
+    ) -> Self {
         Self {
             theme,
             wrap,
             wrap_code,
+            truecolor,
         }
     }
 }
@@ -215,11 +229,11 @@ pub enum LineType {
     CodeEnd,
 }
 
-fn as_terminal_escaped(ranges: &[(Style, &str)]) -> String {
+fn as_terminal_escaped(ranges: &[(Style, &str)], truecolor: bool) -> String {
     let mut output = String::new();
     for (style, text) in ranges {
         let fg = blend_fg_color(style.foreground, style.background);
-        let mut text = text.with(convert_color(fg));
+        let mut text = text.with(convert_color(fg, truecolor));
         if style.font_style.contains(FontStyle::BOLD) {
             text = text.bold();
         }
@@ -231,11 +245,21 @@ fn as_terminal_escaped(ranges: &[(Style, &str)]) -> String {
     output
 }
 
-const fn convert_color(c: SyntectColor) -> Color {
-    Color::Rgb {
-        r: c.r,
-        g: c.g,
-        b: c.b,
+fn convert_color(c: SyntectColor, truecolor: bool) -> Color {
+    if truecolor {
+        Color::Rgb {
+            r: c.r,
+            g: c.g,
+            b: c.b,
+        }
+    } else {
+        let value = (c.r, c.g, c.b).to_ansi256();
+        // lower contrast
+        let value = match value {
+            7 | 15 | 231 | 252..=255 => 252,
+            _ => value,
+        };
+        Color::AnsiValue(value)
     }
 }
 
@@ -256,18 +280,19 @@ fn blend_fg_color(fg: SyntectColor, bg: SyntectColor) -> SyntectColor {
 }
 
 fn detect_code_block(line: &str) -> Option<String> {
+    let line = line.trim_start();
     if !line.starts_with("```") {
         return None;
     }
     let lang = line
         .chars()
         .skip(3)
-        .take_while(|v| v.is_alphanumeric())
+        .take_while(|v| !v.is_whitespace())
         .collect();
     Some(lang)
 }
 
-fn get_code_color(theme: &Theme) -> Color {
+fn get_code_color(theme: &Theme, truecolor: bool) -> Color {
     let scope = theme.scopes.iter().find(|v| {
         v.scope
             .selectors
@@ -276,7 +301,7 @@ fn get_code_color(theme: &Theme) -> Color {
     });
     scope
         .and_then(|v| v.style.foreground)
-        .map_or_else(|| Color::Yellow, convert_color)
+        .map_or_else(|| Color::Yellow, |c| convert_color(c, truecolor))
 }
 
 #[cfg(test)]
@@ -355,5 +380,14 @@ std::error::Error>> {
         render.wrap_width = Some(80);
         let output = render.render(TEXT);
         assert_eq!(TEXT_WRAP_ALL, output);
+    }
+
+    #[test]
+    fn test_detect_code_block() {
+        assert_eq!(detect_code_block("```rust"), Some("rust".into()));
+        assert_eq!(detect_code_block("```c++"), Some("c++".into()));
+        assert_eq!(detect_code_block("  ```rust"), Some("rust".into()));
+        assert_eq!(detect_code_block("```"), Some("".into()));
+        assert_eq!(detect_code_block("``rust"), None);
     }
 }

@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+  <title>AIChat LLM Playground</title>
+  <link rel="stylesheet" href="//unpkg.com/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="//unpkg.com/github-markdown-css@5.8.1/github-markdown.css">
+  <link rel="stylesheet" href="//unpkg.com/@highlightjs/cdn-assets@11.10.0/styles/github-dark.min.css"
+    media="screen and (prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="//unpkg.com/@highlightjs/cdn-assets@11.10.0/styles/github.min.css"
+    media="screen and (prefers-color-scheme: light)">
+  <script src="//unpkg.com/@highlightjs/cdn-assets@11.10.0/highlight.min.js" defer></script>
+  <script src="//unpkg.com/marked@15.0.3/lib/marked.umd.js" defer></script>
+  <script src="//unpkg.com/katex@0.16.11/dist/katex.min.js" defer></script>
+  <script src="//unpkg.com/@sigodenjs/marked-katex-extension@1.0.0/lib/index.umd.js" defer></script>
+  <script src="//unpkg.com/alpinejs@3.14.6/dist/cdn.min.js" defer></script>
+  <style>
+    :root {
+      --fg-primary: #1652f1;
+      --fg-default: black;
+      --bg-primary: white;
+      --bg-default: #f9f9f9;
+      --bg-toast: rgba(0, 0, 0, 0.7);
+      --bg-cover: rgba(0, 0, 0, 0.5);
+      --bg-hover: #f0f0f0;
+      --border-color: #c3c3c3;
+      --shadow-color: rgba(0, 0, 0, 0.1);
+    }
+
+    [x-cloak] {
+      display: none !important;
+    }
+
+    html {
+      font-family: Noto Sans, SF Pro SC, SF Pro Text, SF Pro Icons, PingFang SC, Helvetica Neue, Helvetica, Arial, sans-serif
+    }
+
+    body,
+    div {
+      padding: 0;
+      margin: 0;
+      box-sizing: border-box;
+    }
+
+    textarea,
+    input,
+    select,
+    option {
+      color: var(--fg-default);
+      background-color: var(--bg-primary);
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 1rem;
+      display: flex;
+      height: 100vh;
+      color: var(--fg-default);
+      background-color: var(--bg-default);
+    }
+
+    .container {
+      width: 100%;
+      padding: 1.25rem;
+      box-sizing: border-box;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 360px;
+      flex-shrink: 0;
+      margin-right: 1.25rem;
+      background-color: var(--bg-primary);
+      box-shadow: 0 0 0.3rem var(--shadow-color);
+      border-radius: 0.3rem;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      padding: 1.25rem;
+    }
+
+    .sidebar-header .title {
+      font-size: 1.25rem;
+      font-weight: bold;
+    }
+
+    .sidebar-header .subtitle {
+      font-size: 0.8rem;
+      padding-top: 0.3rem;
+    }
+
+    .sidebar-right {
+      display: flex;
+      flex-direction: row;
+      margin-left: auto;
+      gap: 6px;
+    }
+
+    .sidebar-btn {
+      cursor: pointer;
+      width: 1.2rem;
+      height: 1.2rem;
+    }
+
+    .hide-sidebar-btn {
+      display: none;
+    }
+
+    .settings {
+      padding: 1.25rem;
+    }
+
+    .settings label {
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .settings select,
+    .settings input[type="number"] {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 0.625rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.25rem;
+      box-sizing: border-box;
+    }
+
+    .settings textarea {
+      width: 100%;
+      height: 150px;
+      padding: 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.25rem;
+      box-sizing: border-box;
+      margin-bottom: 0.625rem;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      margin-left: auto;
+    }
+
+    .main-panel {
+      display: flex;
+      flex-direction: column;
+      width: calc(100vw - 360px - 2.5rem);
+      background-color: var(--bg-primary);
+      box-shadow: 0 0 0.3rem var(--shadow-color);
+      border-radius: 0.3rem;
+    }
+
+    .chat-header {
+      display: flex;
+      flex-direction: row;
+      padding: 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .chat-header select {
+      width: 100%;
+      outline: none;
+      font-size: 1.25rem;
+      border: none;
+    }
+
+    .show-sidebar-btn {
+      display: none;
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .chat-header .toolbar {
+      margin-left: auto;
+    }
+
+    .chat-body {
+      display: flex;
+      flex-direction: column;
+      padding: 0.5rem;
+      flex-grow: 1;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    .chat-message {
+      display: flex;
+      padding: 0.7rem;
+      margin-bottom: 0.7rem;
+    }
+
+    .chat-avatar svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 50%;
+    }
+
+    .chat-message-content {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      width: calc(100% - 1rem);
+      margin-top: -2px;
+      padding-left: 0.625rem;
+      flex-grow: 1;
+    }
+
+    .chat-message-content .error {
+      color: red;
+      background: none;
+      padding: 0;
+    }
+
+    .chat-message-content .message-text {
+      white-space: pre-wrap;
+      padding-top: 0.2rem;
+    }
+
+    .message-image-bar {
+      display: flex;
+      flex-direction: row;
+      overflow-x: auto;
+    }
+
+    .message-image {
+      margin: 0.25rem;
+    }
+
+    .message-image img {
+      width: 10rem;
+      height: 10rem;
+      object-fit: cover;
+    }
+
+    .markdown-body {
+      display: flex;
+      width: 100%;
+      padding: 0;
+      flex-direction: column;
+      background-color: var(--bg-primary);
+    }
+
+    .markdown-body:first-child {
+      margin-top: 0;
+      padding-top: 0;
+    }
+
+    .markdown-body pre {
+      overflow-x: auto;
+      word-wrap: break-word;
+    }
+
+    .code-block {
+      position: relative;
+      width: 100%;
+    }
+
+    .message-toolbox {
+      display: flex;
+      position: absolute;
+      bottom: -1.4rem;
+    }
+
+    .copy-message-btn,
+    .regenerate-message-btn,
+    .tts-message-btn {
+      top: 0.7rem;
+      right: 0.7rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding-right: 4px;
+    }
+
+    .copy-message-btn svg,
+    .regenerate-message-btn svg,
+    .tts-message-btn svg {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    .copy-code-btn {
+      position: absolute;
+      top: 0.7rem;
+      right: 0.7rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .copy-code-btn svg {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    .scroll-to-bottom-btn {
+      position: absolute;
+      text-align: center;
+      cursor: pointer;
+      width: 1.5rem;
+      height: 1.5rem;
+      right: calc(50vw - 180px);
+      bottom: 140px;
+      border-radius: 0.75rem;
+      background-color: var(--bg-primary);
+    }
+
+    .scroll-to-bottom-btn svg {
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+    }
+
+    .input-panel {
+      position: relative;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .input-panel-inner {
+      margin: 1rem;
+      padding: 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+    }
+
+    .input-panel-inner textarea {
+      width: 100%;
+      font-size: 1rem;
+      padding: 0.4rem;
+      box-sizing: border-box;
+      border: none;
+      outline: none;
+      resize: none;
+      max-height: 500px;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    .input-toolbox {
+      position: absolute;
+      display: flex;
+      right: 1.875rem;
+      font-size: 1rem;
+      bottom: 1.875rem;
+      cursor: pointer;
+    }
+
+    .input-toolbox svg {
+      width: 1.875rem;
+      height: 1.875rem;
+      fill: var(--fg-default);
+    }
+
+    .image-btn {
+      position: relative;
+      display: inline-block;
+      margin-right: 0.5rem;
+    }
+
+    .image-btn input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .input-image-bar {
+      display: flex;
+      flex-direction: row;
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .input-image-item {
+      display: flex;
+      margin: 0.25rem;
+      width: 5rem;
+      position: relative;
+    }
+
+    .input-image-item img {
+      width: 5rem;
+      height: 5rem;
+      object-fit: cover;
+    }
+
+    .image-remove-btn {
+      font-size: 1rem;
+      margin-left: -0.8rem;
+      cursor: pointer;
+    }
+
+    .image-remove-btn {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    .input-btn.disabled {
+      opacity: 0.3;
+    }
+
+    .session-list {
+      padding-top: 0.4rem;
+      max-height: 80vh;
+      font-size: 0.8rem;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .session-item {
+      padding: 5px;
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+    }
+
+    .session-item:hover {
+      background-color: var(--bg-hover);
+    }
+
+    .session-title {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-cover);
+      z-index: 1000;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 50px;
+    }
+
+    .modal-content {
+      position: relative;
+      padding: 0.8rem;
+      border-radius: 8px;
+      max-width: 1000px;
+      width: calc(100% - 100px);
+      background-color: var(--bg-primary);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .modal-header .title {
+      font-weight: 500;
+      font-size: 1.5rem;
+    }
+
+    .modal-header .close-btn {
+      margin-left: auto;
+      color: var(--fg-default);
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .spinner {
+      width: 1.1rem;
+      height: 1.1rem;
+      margin-top: 3px;
+      border: 2px solid var(--fg-default);
+      border-bottom-color: transparent;
+      border-radius: 50%;
+      display: inline-block;
+      animation: spinner-rotation 1s linear infinite;
+    }
+
+    .toast {
+      display: none;
+      position: fixed;
+      bottom: 1rem;
+      left: 1rem;
+      text-align: center;
+      background-color: var(--bg-toast);
+      color: var(--bg-primary);
+      padding: 0.5rem;
+      border-radius: 0.3rem;
+      z-index: 9999;
+    }
+
+    @keyframes spinner-rotation {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fg-primary: #1652f1;
+        --fg-default: white;
+        --bg-primary: black;
+        --bg-default: #121212;
+        --bg-toast: rgba(255, 255, 255, 0.7);
+        --bg-cover: rgba(255, 255, 255, 0.5);
+        --bg-hover: #1f1f1f;
+        --border-color: #3c3c3c;
+        --shadow-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+
+    @media screen and (max-width: 768px) {
+      body {
+        height: calc(100vh - 56px);
+        height: 100dvh;
+      }
+
+      .container {
+        padding: 3px;
+      }
+
+      .sidebar {
+        display: none;
+        width: 100%;
+        height: 100%;
+        margin-right: 0;
+      }
+
+      .main-panel {
+        width: 100%;
+      }
+
+      .chat-header {
+        padding: 0.6rem;
+      }
+
+      .chat-header select {
+        font-size: 1rem;
+      }
+
+      .chat-body {
+        padding: 0.6rem;
+      }
+
+      .input-panel-inner {
+        margin: 0.5rem;
+      }
+
+      .scroll-to-bottom-btn {
+        right: 50%;
+      }
+
+      .hide-sidebar-btn {
+        display: block;
+      }
+
+      .show-sidebar-btn {
+        display: block;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container" x-data="app">
+    <div class="sidebar" x-ref="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-left">
+          <div class="title">AIChat</div>
+          <div class="subtitle">All-in-one AI-Powered Chat</div>
+        </div>
+        <div class="sidebar-right">
+          <div class="sidebar-btn new-chat-btn" title="New Chat (Ctrl/Cmd+Shift+O)" @click="handleNewChat">
+            <svg fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+              <path
+                d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4" />
+            </svg>
+          </div>
+          <div class="sidebar-btn list-sessions-btn" title="List Sessions (Ctrl/Cmd+Shift+L)"
+            @click="showModal = 'list-sessions'">
+            <svg fill="currentColor" viewBox="0 0 16 16">
+              <path fill-rule="evenodd"
+                d="M2 2.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5V3a.5.5 0 0 0-.5-.5zM3 3H2v1h1z" />
+              <path
+                d="M5 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M5.5 7a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1zm0 4a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1z" />
+              <path fill-rule="evenodd"
+                d="M1.5 7a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5zM2 7h1v1H2zm0 3.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm1 .5H2v1h1z" />
+            </svg>
+          </div>
+          <div class="sidebar-btn hide-sidebar-btn" @click="handleHideSidebarBtnClick">
+            <svg fill="currentColor" viewBox="0 0 16 16">
+              <path
+                d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="settings">
+        <div class="control">
+          <label for="role">RAG</label>
+          <select id="role" x-model="settings.rag" :disabled="sessionMode">
+            <template x-for="rag in rags">
+              <option :value="rag" :selected="rag == settings.rag" x-text="rag"></option>
+            </template>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="role">Role</label>
+          <select id="role" x-model="settings.role" :disabled="sessionMode">
+            <template x-for="role in roles">
+              <option :value="role.name" :selected="role.name == settings.role" x-text="role.name"></option>
+            </template>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="prompt">System Prompt</label>
+          <textarea id="prompt" x-model="settings.prompt" :disabled="sessionMode"></textarea>
+        </div>
+
+        <div class="control">
+          <label for="max_output_tokens"
+            x-text="'Max Output Tokens' + (modelData.max_output_token ? ' [1, ' + modelData.max_output_token + ']' : '')">Max
+            Output Tokens</label>
+          <input type="number" id="max_output_tokens" x-model.number="settings.max_output_tokens">
+        </div>
+
+        <div class="control">
+          <label for="temperature">Temperature</label>
+          <input type="number" id="temperature" x-model.number="settings.temperature">
+        </div>
+
+        <div class="control">
+          <label for="top_p">Top P</label>
+          <input type="number" id="top_p" x-model.number="settings.top_p">
+        </div>
+
+      </div>
+    </div>
+    <div class="main-panel" x-ref="main-panel">
+      <div class="chat-header">
+        <select id="model" x-model="settings.model">
+          <template x-for="model in models" :key="model.id">
+            <option :value="model.id" :selected="model.id == settings.model" x-text="model.id"></option>
+          </template>
+        </select>
+        <div class="toolbar">
+          <div class="show-sidebar-btn" @click="handleShowSidebarBtnClick">
+            <svg fill="currentColor" viewBox="0 0 16 16">
+              <path
+                d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="chat-body" x-ref="chat-body" @scroll="handleScrollChatBody">
+        <template x-for="(message, index) in messages" :key="message.id">
+          <div class="chat-message" @mouseover="hoveredMessageIndex = index" @mouseleave="messageHoveredIndex = null">
+            <div class="chat-avatar" :class="message.role == 'user' ? 'chat-avatar user' : 'chat-avatar assistant'">
+              <template x-if="message.role == 'user'">
+                <svg fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
+                  <path fill-rule="evenodd"
+                    d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1" />
+                </svg>
+              </template>
+              <template x-if="message.role == 'assistant'">
+                <svg fill="currentColor" viewBox="0 0 16 16">
+                  <path
+                    d="M6 12.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5M3 8.062C3 6.76 4.235 5.765 5.53 5.886a26.6 26.6 0 0 0 4.94 0C11.765 5.765 13 6.76 13 8.062v1.157a.93.93 0 0 1-.765.935c-.845.147-2.34.346-4.235.346s-3.39-.2-4.235-.346A.93.93 0 0 1 3 9.219zm4.542-.827a.25.25 0 0 0-.217.068l-.92.9a25 25 0 0 1-1.871-.183.25.25 0 0 0-.068.495c.55.076 1.232.149 2.02.193a.25.25 0 0 0 .189-.071l.754-.736.847 1.71a.25.25 0 0 0 .404.062l.932-.97a25 25 0 0 0 1.922-.188.25.25 0 0 0-.068-.495c-.538.074-1.207.145-1.98.189a.25.25 0 0 0-.166.076l-.754.785-.842-1.7a.25.25 0 0 0-.182-.135" />
+                  <path
+                    d="M8.5 1.866a1 1 0 1 0-1 0V3h-2A4.5 4.5 0 0 0 1 7.5V8a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1v-.5A4.5 4.5 0 0 0 10.5 3h-2zM14 7.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.5A3.5 3.5 0 0 1 5.5 4h5A3.5 3.5 0 0 1 14 7.5" />
+                </svg>
+              </template>
+            </div>
+            <div class="chat-message-content">
+              <!-- message -->
+              <template x-if="message.role == 'assistant' && message.html">
+                <div class="markdown-body" x-html="message.html"></div>
+              </template>
+              <template x-if="message.role == 'assistant' && message.state == 'loading'">
+                <div class="spinner"></div>
+              </template>
+              <template x-if="message.role == 'user' && Array.isArray(message.content)">
+                <div class="message-text-images">
+                  <template x-if="message.content[0].text">
+                    <div class="message-text" x-text="message.content[0].text"></div>
+                  </template>
+                  <div class="message-image-bar">
+                    <template x-for="part in message.content">
+                      <template x-if="part.type == 'image_url'">
+                        <div class="message-image">
+                          <img :src="part.image_url.url" alt="Image Message Part">
+                        </div>
+                      </template>
+                    </template>
+                  </div>
+                </div>
+              </template>
+              <template
+                x-if="message.role == 'user' && Object.prototype.toString.call(message.content) == '[object String]'">
+                <div class="message-text" x-text="message.content"></div>
+              </template>
+              <!-- toolbox -->
+              <template x-if="index == hoveredMessageIndex">
+                <div class="message-toolbox">
+                  <div class="copy-message-btn" @click="handleCopyMessage(message.content)" title=" Copy">
+                    <svg fill="currentColor" viewBox="0 0 16 16">
+                      <path fill-rule="evenodd"
+                        d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z" />
+                    </svg>
+                  </div>
+                  <template
+                    x-if="index == messages.length - 1 && (message.state == 'succeed' || message.state == 'failed')">
+                    <div class="regenerate-message-btn" @click="handleRegenerateMessage" title="Regenerate">
+                      <svg fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z" />
+                        <path
+                          d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466" />
+                      </svg>
+                    </div>
+                  </template>
+                  <template x-if="message.state == 'succeed' && !!window.speechSynthesis">
+                    <div class="tts-message-btn" @click="handleTTSMessage(message.content)" title="Text to speech">
+                      <svg fill="currentColor" viewBox="0 0 16 16">
+                        <path
+                          d="M11.536 14.01A8.47 8.47 0 0 0 14.026 8a8.47 8.47 0 0 0-2.49-6.01l-.708.707A7.48 7.48 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303z" />
+                        <path
+                          d="M10.121 12.596A6.48 6.48 0 0 0 12.025 8a6.48 6.48 0 0 0-1.904-4.596l-.707.707A5.48 5.48 0 0 1 11.025 8a5.48 5.48 0 0 1-1.61 3.89z" />
+                        <path
+                          d="M10.025 8a4.5 4.5 0 0 1-1.318 3.182L8 10.475A3.5 3.5 0 0 0 9.025 8c0-.966-.392-1.841-1.025-2.475l.707-.707A4.5 4.5 0 0 1 10.025 8M7 4a.5.5 0 0 0-.812-.39L3.825 5.5H1.5A.5.5 0 0 0 1 6v4a.5.5 0 0 0 .5.5h2.325l2.363 1.89A.5.5 0 0 0 7 12zM4.312 6.39 6 5.04v5.92L4.312 9.61A.5.5 0 0 0 4 9.5H2v-3h2a.5.5 0 0 0 .312-.11" />
+                      </svg>
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+      <div class="scroll-to-bottom-btn" x-cloak x-show="isShowScrollToBottomBtn" @click="handleScrollToBottom">
+        <svg fill="currentColor" viewBox="0 0 16 16">
+          <path fill-rule="evenodd"
+            d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8m15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v5.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293z" />
+        </svg>
+      </div>
+      <div class="input-panel">
+        <div class="input-panel-inner">
+          <textarea id="chat-input" x-model="input" x-ref="input" @keydown.enter="handleEnterKeyDown"
+            placeholder="Ask Anything" autofocus></textarea>
+          <div class="input-image-bar" x-show="images.length > 0">
+            <template x-for="(image, index) in images">
+              <div class="input-image-item">
+                <img :src="image" alt="Preview image">
+                <div class="image-remove-btn" @click="images.splice(index, 1);">
+                  <svg fill="currentColor" viewBox="0 0 16 16">
+                    <path
+                      d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z" />
+                    <path
+                      d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z" />
+                  </svg>
+                </div>
+              </div>
+            </template>
+          </div>
+          <template x-if="asking">
+            <div class="input-toolbox">
+              <div class="input-btn" @click="handleCancelAsk">
+                <svg fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                  <path
+                    d="M5 6.5A1.5 1.5 0 0 1 6.5 5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5z" />
+                </svg>
+              </div>
+            </div>
+          </template>
+          <template x-if="!asking">
+            <div class="input-toolbox">
+              <div class="image-btn" x-show="modelData.supports_vision">
+                <input type="file" multiple accept=".jpg,.jpeg,.png,.webp" @change="handleImageUpload">
+                <svg fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                  <path
+                    d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1z" />
+                </svg>
+              </div>
+              <div class="input-btn" :class="(input.trim() || images.length > 0) ? 'input-btn' : 'input-btn disabled'"
+                @click="handleAsk">
+                <svg fill="currentColor" viewBox="0 0 16 16">
+                  <path
+                    d="M2 16a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2zm6.5-4.5V5.707l2.146 2.147a.5.5 0 0 0 .708-.708l-3-3a.5.5 0 0 0-.708 0l-3 3a.5.5 0 1 0 .708.708L7.5 5.707V11.5a.5.5 0 0 0 1 0" />
+                </svg>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+    <div class="modal" x-cloak x-show="showModal == 'list-sessions'"
+      @click="if ($event.target == $el) { showModal = ''}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="title">Sessions</div>
+          <button class="close-btn" @click="showModal = ''">&times;</button>
+        </div>
+        <div class="session-list">
+          <template x-for="session in sessions" :key="session.id">
+            <div class="session-item" @click="handleSelectSession(session.id)">
+              <div class="session-title" x-text="session.sessionTitle"></div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+    <div id="toast" class="toast"></div>
+  </div>
+  <script>
+    const QUERY = parseQueryString();
+    const API_BASE = QUERY.api_base || "./v1";
+    const API_KEY = QUERY.api_key || "";
+    const CHAT_COMPLETIONS_URL = API_BASE + "/chat/completions";
+    const MODELS_API = API_BASE + "/models";
+    const ROLES_API = API_BASE + "/roles";
+    const RAGS_API = API_BASE + "/rags";
+    const SEARCH_RAG_API = API_BASE + "/rags/search";
+
+    document.addEventListener("alpine:init", () => {
+      setupMarked();
+      setupApp();
+    });
+
+    function setupApp() {
+      let msgIdx = 0;
+      let defaultSettings = {
+        model: QUERY.model || "default",
+        rag: QUERY.rag || "",
+        role: QUERY.role || "",
+        prompt: "",
+        max_output_tokens: parseInt(QUERY.max_output_tokens) || null,
+        temperature: QUERY.temperature ? parseFloat(QUERY.temperature) : null,
+        top_p: QUERY.top_p ? parseFloat(QUERY.top_p) : null,
+      };
+
+      Alpine.data("app", () => ({
+        models: [],
+        rags: [""],
+        roles: [{ name: "", prompt: "" }],
+        settings: defaultSettings,
+        modelData: {},
+        messages: [],
+        input: "",
+        images: [],
+        asking: false,
+        askAbortController: null,
+        hoveredMessageIndex: null,
+        shouldScrollChatBodyToBottom: true,
+        isShowScrollToBottomBtn: false,
+        showModal: "",
+        sessionMode: false,
+        sessionTitle: "",
+        selectSessionId: null,
+        sessions: [],
+
+        async init() {
+          await Promise.all([
+            fetchJSON(MODELS_API).then(models => {
+              this.models = models.filter(v => !v.type || v.type === "chat");
+            }).catch(err => {
+              toast("No model available");
+              console.error("Failed to load models", err);
+            }),
+            fetchJSON(RAGS_API).then(rags => {
+              this.rags.push(...rags);
+            }).catch(() => { }),
+            fetchJSON(ROLES_API).then(roles => {
+              this.roles.push(...roles.filter(v => !!v.prompt));
+            }).catch(() => { }),
+          ])
+          this.$refs.input.addEventListener("paste", (e) => this.handlePaste(e));
+          this.$watch("input", () => this.autosizeInput(this.$refs.input));
+          this.$watch("settings", () => this.updateUrl());
+          this.$watch("settings.model", () => this.handleModelChange());
+          if (this.models.find(model => model.id === this.settings.model)) {
+            this.handleModelChange();
+          } else {
+            this.settings.model = "default";
+          }
+          if (!this.rags.find(rag => rag === this.settings.rag)) {
+            this.settings.rag = "";
+          }
+          this.$watch("settings.role", () => this.handleRoleChange())
+          if (this.roles.find(role => role.name === this.settings.role)) {
+            this.handleRoleChange();
+          } else {
+            this.settings.role = "";
+          }
+          document.addEventListener("keydown", (event) => this.handleKeyDown(event))
+        },
+
+        handleAsk() {
+          const isEmptyInput = this.input.trim() === "";
+          const isEmptyImage = this.images.length === 0;
+          if (this.asking || (isEmptyImage && isEmptyInput)) {
+            return;
+          }
+          if (this.messages.length === 0) {
+            let sessionTitle = ""
+            if (this.images.length > 0) {
+              sessionTitle = `🖼️x${this.images.length} `
+            }
+            if (this.input) {
+              sessionTitle += this.input.trim().replace(/\n/g, "↵").slice(0, 200);
+            }
+            this.sessionTitle = sessionTitle;
+          }
+          if (isEmptyImage) {
+            this.messages.push({
+              id: msgIdx++,
+              role: "user",
+              content: this.input,
+            });
+          } else {
+            const parts = [];
+            if (!isEmptyInput) {
+              parts.push({ type: "text", text: this.input });
+            }
+            for (const image of this.images) {
+              parts.push({ type: "image_url", image_url: { url: image } });
+            }
+            this.messages.push({
+              id: msgIdx++,
+              role: "user",
+              content: parts,
+            })
+          }
+          this.messages.push({
+            id: msgIdx++,
+            role: "assistant",
+            content: "",
+            state: "loading", // streaming, succeed, failed
+            error: "",
+            html: "",
+          });
+          this.input = "";
+          this.asking = true;
+          this.images = [];
+          this.ask();
+        },
+
+        handleRegenerateMessage() {
+          const lastIndex = this.messages.length - 1;
+          if (lastIndex !== this.hoveredMessageIndex) {
+            return
+          }
+          let lastMessage = this.messages[lastIndex];
+          lastMessage.content = "";
+          lastMessage.state = "loading";
+          lastMessage.error = "";
+          lastMessage.html = "";
+          this.asking = true;
+          this.ask();
+        },
+
+        /**
+         * @param {string} messageToUtter
+         */
+        handleTTSMessage(messageToUtter) {
+          if (!!window.speechSynthesis) {
+            if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+              window.speechSynthesis.cancel();
+            } else {
+              let utterance = new SpeechSynthesisUtterance(messageToUtter);
+              window.speechSynthesis.speak(utterance);
+            }
+          }
+        },
+
+        handleCancelAsk() {
+          this.askAbortController?.abort();
+        },
+
+        handleModelChange() {
+          this.modelData = retrieveModel(this.models, this.settings.model);
+        },
+
+        handleRoleChange() {
+          if (this.settings.prompt && !this.settings.role) {
+            return;
+          }
+          this.settings.prompt = this.roles.find(role => role.name === this.settings.role).prompt;
+        },
+
+        handleScrollChatBody(event) {
+          const $chatBody = event.target;
+          const { scrollTop, clientHeight, scrollHeight, _prevScrollTop = 0 } = $chatBody;
+          if (scrollTop + clientHeight > scrollHeight - 5) {
+            this.isShowScrollToBottomBtn = false;
+            this.shouldScrollChatBodyToBottom = true;
+          }
+          if (scrollHeight > clientHeight && _prevScrollTop > 1 && _prevScrollTop > scrollTop + 1) {
+            this.shouldScrollChatBodyToBottom = false;
+            this.isShowScrollToBottomBtn = true;
+          }
+          $chatBody._prevScrollTop = scrollTop;
+        },
+
+        handleScrollToBottom() {
+          const $chatBody = this.$refs["chat-body"];
+          $chatBody.scrollTop = $chatBody.scrollHeight;
+          this.isShowScrollToBottomBtn = false;
+          this.shouldScrollChatBodyToBottom = true;
+        },
+
+        handleShowSidebarBtnClick() {
+          this.$refs.sidebar.style.display = 'block';
+          this.$refs["main-panel"]._display = this.$refs["main-panel"].style.display;
+          this.$refs["main-panel"].style.display = "none";
+        },
+
+        handleHideSidebarBtnClick() {
+          this.$refs.sidebar.style.display = 'none';
+          this.$refs["main-panel"].style.display = this.$refs["main-panel"]._display;
+        },
+
+        handleEnterKeyDown(event) {
+          if (event.shiftKey) {
+            return;
+          }
+          event.preventDefault();
+          this.handleAsk();
+        },
+
+        handleCopyCode(event) {
+          const $btn = event.target;
+          const $code = $btn.closest('.code-block').querySelector("code");
+          if ($code) {
+            const range = document.createRange();
+            range.selectNodeContents($code);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand('copy');
+            window.getSelection().removeAllRanges();
+            toast("Copied Code");
+          }
+        },
+
+        handleCopyMessage(content) {
+          if (Array.isArray(content)) {
+            content = content.map(v => v.text || "").join("");
+          }
+
+          const $tempTextArea = document.createElement("textarea");
+          $tempTextArea.value = content;
+          document.body.appendChild($tempTextArea);
+          $tempTextArea.select();
+          $tempTextArea.setSelectionRange(0, 99999); // For mobile devices
+          document.execCommand("copy");
+          document.body.removeChild($tempTextArea);
+          toast("Copied Message")
+        },
+
+        async handleImageUpload(event) {
+          const files = event.target.files;
+          if (!files || files.length === 0) {
+            return;
+          }
+          const urls = await Promise.all(Array.from(files).map(file => convertImageToDataURL(file)));
+          this.images.push(...urls);
+          event.target.value = "";
+        },
+
+        async handlePaste(event) {
+          const files = Array.from(event.clipboardData.items).filter(v => v.type.startsWith('image/')).map(v => v.getAsFile());
+          const urls = await Promise.all(files.map(file => convertImageToDataURL(file)));
+          this.images.push(...urls);
+        },
+
+        handleKeyDown(event) {
+          const isMac = navigator.platform.toUpperCase().indexOf('MAC') > -1;
+          const controlKey = isMac ? event.metaKey : event.ctrlKey;
+          if (controlKey && event.shiftKey && event.key.toLowerCase() === 'o') {
+            event.preventDefault();
+            this.handleNewChat();
+          } else if (controlKey && event.shiftKey && event.key.toLowerCase() === 'l') {
+            event.preventDefault();
+            this.showModal = 'list-sessions'
+          } else if (event.shiftKey && event.key === "Escape") {
+            event.preventDefault();
+            this.focusInput();
+          } else if (this.showModal && event.key === "Escape") {
+            event.preventDefault();
+            this.showModal = "";
+          }
+        },
+
+        handleNewChat() {
+          if (this.asking) {
+            this.askAbortController?.abort();
+          }
+          if (this.sessionTitle) {
+            const lastMessage = this.messages[this.messages.length - 1];
+            if (lastMessage.state === "loading") {
+              lastMessage.state = "failed";
+              lastMessage.error = "Error: Aborted";
+              lastMessage.html = renderMarkdown(lastMessage.content, lastMessage.error);
+            }
+            const sessionData = JSON.parse(JSON.stringify({
+              settings: this.settings,
+              messages: this.messages,
+              sessionMode: this.sessionMode,
+              sessionTitle: this.sessionTitle,
+            }));
+            let session = this.sessions.find(v => v.id === this.selectSessionId);
+            if (session) {
+              Object.assign(session, sessionData);
+            } else {
+              this.sessions.unshift({
+                id: randomUUID(),
+                createdAt: Date.now(),
+                ...sessionData,
+              });
+            }
+          }
+          this.messages = [];
+          this.asking = false;
+          this.askAbortController = null;
+          this.hoveredMessageIndex = null;
+          this.shouldScrollChatBodyToBottom = true;
+          this.isShowScrollToBottomBtn = false;
+          this.showModal = "";
+          this.sessionMode = false;
+          this.sessionTitle = "";
+          this.selectSessionId = null;
+
+          this.focusInput();
+        },
+
+        handleSelectSession(id) {
+          const session = this.sessions.find(v => v.id === id);
+          if (!session || id === this.selectSessionId) {
+            this.showModal = "";
+            this.focusInput();
+            return;
+          }
+          this.handleNewChat();
+          this.settings = session.settings;
+          this.messages = session.messages;
+          this.sessionMode = session.sessionMode;
+          this.sessionTitle = session.sessionTitle;
+          this.selectSessionId = session.id;
+        },
+
+        updateUrl() {
+          const newUrl = new URL(location.href);
+          ["model", "rag", "role", "max_output_tokens", "temperature", "top_p"].forEach(key => {
+            if (this.settings[key] || typeof this.settings[key] === "number") {
+              newUrl.searchParams.set(key, this.settings[key]);
+            } else {
+              newUrl.searchParams.delete(key);
+            }
+          });
+          history.replaceState(null, '', newUrl.toString());
+        },
+
+        autoScrollChatBodyToBottom() {
+          if (this.shouldScrollChatBodyToBottom) {
+            let $chatBody = this.$refs["chat-body"];
+            if (!$chatBody) {
+              $chatBody = document.querySelector('[x-ref="chat-body"]')
+            }
+            $chatBody.scrollTop = $chatBody.scrollHeight;
+          }
+        },
+
+        autosizeInput($input) {
+          $input.style.height = 'auto';
+          $input.style.height = $input.scrollHeight + 'px';
+        },
+
+        focusInput() {
+          this.$refs?.input?.focus();
+        },
+
+        async ask() {
+          this.askAbortController = new AbortController();
+          this.shouldScrollChatBodyToBottom = true;
+          this.$nextTick(() => {
+            this.autoScrollChatBodyToBottom();
+          });
+          const lastMessage = this.messages[this.messages.length - 1];
+          const body = this.buildBody();
+          let succeed = false;
+          try {
+            if (this.settings.rag) {
+              const message = body.messages[body.messages.length - 1];
+              if (message.role === "user" && typeof message.content === "string") {
+                message.content = await this.searchRag(this.settings.rag, message.content);
+              }
+            }
+            const stream = await fetchChatCompletions(CHAT_COMPLETIONS_URL, body, this.askAbortController.signal)
+            for await (const chunk of stream) {
+              lastMessage.state = "streaming";
+              lastMessage.content += chunk?.choices[0]?.delta?.content || "";
+              lastMessage.html = renderMarkdown(lastMessage.content, lastMessage.error);
+              this.$nextTick(() => {
+                this.autoScrollChatBodyToBottom();
+              });
+            }
+            lastMessage.state = "succeed";
+            succeed = true;
+          } catch (err) {
+            lastMessage.state = "failed";
+            if (this.askAbortController?.signal?.aborted) {
+              lastMessage.error = "Error: Aborted";
+            } else {
+              lastMessage.error = err?.message || err;
+            }
+            lastMessage.html = renderMarkdown(lastMessage.content, lastMessage.error);
+          }
+          if (succeed) {
+            this.sessionMode = true;
+          }
+          this.asking = false;
+        },
+
+        async searchRag(name, input) {
+          const res = await fetch(SEARCH_RAG_API, {
+            method: "POST",
+            headers: getHeaders(),
+            signal: this.askAbortController.signal,
+            body: JSON.stringify({
+              name,
+              input
+            })
+          });
+          const data = await res.json();
+          return data.data;
+        },
+
+        buildBody() {
+          let messages = [];
+          for ([userMessage, assistantMessage] of chunkArray(this.messages, 2)) {
+            if (assistantMessage.state === "failed") {
+              continue;
+            } else if (assistantMessage.state === "loading") {
+              messages.push({
+                role: userMessage.role,
+                content: userMessage.content,
+              });
+            } else {
+              messages.push({
+                role: userMessage.role,
+                content: userMessage.content,
+              });
+              messages.push({
+                role: assistantMessage.role,
+                content: assistantMessage.content,
+              });
+            }
+          }
+          const systemPrompt = this.settings.prompt.trim();
+          if (systemPrompt) {
+            if (messages[0]?.content?.indexOf("__INPUT__") > -1) {
+              messages[0].content = systemPrompt.replace("__INPUT__", messages[0].content);
+            } else {
+              const { system, cases } = parseStructurePrompt(systemPrompt);
+              const promptMessages = [];
+              if (system) {
+                promptMessages.push({
+                  role: "system",
+                  content: system,
+                });
+              }
+              for (const item of cases) {
+                promptMessages.push({
+                  role: "user",
+                  content: item.input,
+                });
+                promptMessages.push({
+                  role: "assistant",
+                  content: item.output,
+                });
+              }
+              messages = [...promptMessages, ...messages];
+            }
+          }
+          sanitizeMessages(messages);
+          const body = {
+            model: this.settings.model,
+            messages: messages,
+            stream: true,
+          };
+          [["max_output_tokens", "max_tokens"], ["temperature"], ["top_p"]].forEach(([setting_key, body_key]) => {
+            if (typeof this.settings[setting_key] === "number") {
+              body[body_key || setting_key] = this.settings[setting_key];
+            }
+          });
+          const { max_output_token, require_max_tokens } = this.modelData;
+          if (!body["max_tokens"] && require_max_tokens) {
+            body["max_tokens"] = max_output_token;
+          };
+          return body;
+        },
+      }));
+
+    }
+
+    async function fetchJSON(url) {
+      const res = await fetch(url, { headers: getHeaders() });
+      const data = await res.json()
+      return data.data;
+    }
+
+    async function* fetchChatCompletions(url, body, signal) {
+      const stream = body.stream;
+      const response = await fetch(url, {
+        method: "POST",
+        signal,
+        headers: getHeaders(),
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw error?.error || error;
+      }
+
+      if (!stream) {
+        const data = await response.json();
+        return data;
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let reamingChunkValue = "";
+
+      while (!done) {
+        if (signal?.aborted) {
+          reader.cancel();
+          break;
+        }
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunkValue = decoder.decode(value);
+        const lines = (reamingChunkValue + chunkValue).split("\n").filter(line => line.trim().length > 0);
+        reamingChunkValue = "";
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          const message = line.replace(/^data: /, "");
+          if (message === "[DONE]") {
+            continue
+          }
+          try {
+            const parsed = JSON.parse(message);
+            yield parsed;
+          } catch {
+            if (i === lines.length - 1) {
+              reamingChunkValue += line;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    function getHeaders() {
+      const headers = {
+        "content-type": "application/json",
+      };
+      if (API_KEY) {
+        headers["authorization"] = `Bearer ${API_KEY}`;
+      }
+      return headers
+    }
+
+    function retrieveModel(models, id) {
+      const model = models.find(model => model.id === id);
+      if (!model) return {};
+      const max_output_token = model.max_output_tokens;
+      const supports_vision = !!model.supports_vision;
+      const require_max_tokens = !!model.require_max_tokens;
+      return {
+        id,
+        max_output_token,
+        supports_vision,
+        require_max_tokens,
+      }
+    }
+
+    function toast(text, duration = 2500) {
+      const $toast = document.getElementById("toast");
+      clearTimeout($toast._timer);
+      $toast.textContent = text;
+      $toast.style.display = "block";
+      $toast._timer = setTimeout(function () {
+        $toast.style.display = "none";
+      }, duration);
+    }
+
+    function parseStructurePrompt(prompt) {
+      let text = prompt;
+      let searchInput = true;
+      let system = null;
+      let parts = [];
+
+      while (text) {
+        const search = searchInput ? "### INPUT:" : "### OUTPUT:";
+        const index = text.indexOf(search);
+
+        if (index !== -1) {
+          if (system === null) {
+            system = text.slice(0, index);
+          } else {
+            parts.push(text.slice(0, index));
+          }
+          searchInput = !searchInput;
+          text = text.slice(index + search.length);
+        } else {
+          if (text.trim()) {
+            if (system === null) {
+              system = text;
+            } else {
+              parts.push(text);
+            }
+          }
+          break;
+        }
+      }
+
+      const partsLength = parts.length;
+      if (partsLength > 0 && partsLength % 2 === 0) {
+        const cases = parts.reduce((acc, val, idx) => {
+          if (idx % 2 === 0) {
+            acc.push({ input: val.trim() })
+          } else {
+            acc[acc.length - 1].output = val.trim();
+          }
+          return acc;
+        }, []);
+        system = system ? system.trim() : "";
+        return { system, cases }
+      }
+
+      return { system: prompt, cases: [] }
+    }
+
+    function sanitizeMessages(messages) {
+      let messagesLen = messages.length;
+      for (let i = 0; i < messagesLen; i++) {
+        const message = messages[i];
+        if (typeof message.content === "string" && message.role === "assistant" && i !== messagesLen - 1) {
+          message.content = stripThinkTag(message.content);
+        }
+      }
+    }
+
+    function stripThinkTag(text) {
+      return text.replace(/^\s*<think>([\s\S]*?)<\/think>(\s*|$)/g, '')
+    }
+
+    function convertImageToDataURL(imageFile) {
+      return new Promise((resolve, reject) => {
+        if (!imageFile) {
+          reject(new Error("Please select an image file."));
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.readAsDataURL(imageFile);
+        reader.onload = (event) => resolve(event.target.result);
+        reader.onerror = (error) => reject(error);
+      });
+    }
+
+    function setupMarked() {
+      const renderer = {
+        code({ text, lang }) {
+          const validLang = !!(lang && hljs.getLanguage(lang));
+          const highlighted = validLang
+            ? hljs.highlight(text, { language: lang }).value
+            : escapeForHTML(text);
+
+          return `<div class="code-block">
+        <pre><code class="hljs ${lang}">${highlighted}</code></pre>
+  <div class="copy-code-btn" @click="handleCopyCode" title="Copy code">
+    <svg fill="currentColor" viewBox="0 0 16 16">
+      <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
+    </svg>
+  </div>
+</div>`;
+        }
+      };
+      const thinkExtension = {
+        name: 'think',
+        level: 'block',
+        start(src) {
+          const match = /^(\s*)<think>/.exec(src);
+          if (match) {
+            return match[1].length
+          } else {
+            return -1;
+          }
+        },
+        tokenizer(src, tokens) {
+          const rule = /^\s*<think>([\s\S]*?)(<\/think>|$)/;
+          const match = rule.exec(src);
+          if (match) {
+            return {
+              type: 'think',
+              raw: match[0],
+              text: match[1].trim(),
+            };
+          }
+        },
+        renderer(token) {
+          const text = '<p>' + token.text.trim().replace(/\n+/g, '</p><p>') + '</p>';
+          return `<details open class="think">
+            <summary>Deeply thought</summary>
+            <blockquote>${text}</blockquote>
+          </details>`;
+        },
+      };
+      marked.use({ renderer });
+      marked.use(markedKatex({ throwOnError: false, inlineTolerantNoSpace: true }));
+      marked.use({ extensions: [thinkExtension] })
+    }
+
+    function escapeForHTML(input) {
+      const escapeMap = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      };
+
+      return input.replace(/([&<>'"])/g, char => escapeMap[char]);
+    }
+
+    function parseQueryString() {
+      const params = new URLSearchParams(location.search);
+      const queryObject = {};
+      params.forEach((value, key) => {
+        queryObject[key] = value;
+      });
+      return queryObject;
+    }
+
+    function chunkArray(array, chunkSize) {
+      const chunks = [];
+      for (let i = 0; i < array.length; i += chunkSize) {
+        chunks.push(array.slice(i, i + chunkSize));
+      }
+      return chunks;
+    }
+
+    function randomUUID() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+
+    function renderMarkdown(text, error = '') {
+      return marked.marked(text) + (error ? `<pre class="error">${error}</pre>` : '');
+    }
+  </script>
+</body>
+
+</html>
