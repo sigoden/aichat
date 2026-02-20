@@ -8,6 +8,7 @@ mod repl;
 mod serve;
 #[macro_use]
 mod utils;
+pub mod builtin;
 
 #[macro_use]
 extern crate log;
