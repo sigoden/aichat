@@ -1658,7 +1658,14 @@ impl Config {
     pub fn select_functions(&self, role: &Role) -> Option<Vec<FunctionDeclaration>> {
         let mut functions = vec![];
         if self.function_calling {
-            if let Some(use_tools) = role.use_tools() {
+            let use_tools = role.use_tools().map(|v| v.to_string()).or_else(|| {
+                if role.model().client_name() == "jules" {
+                    Some("all".to_string())
+                } else {
+                    None
+                }
+            });
+            if let Some(use_tools) = &use_tools {
                 let mut tool_names: HashSet<String> = Default::default();
                 let declaration_names: HashSet<String> = self
                     .functions
