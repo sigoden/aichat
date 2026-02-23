@@ -29,6 +29,18 @@ pub fn eval_tool_calls(config: &GlobalConfig, mut calls: Vec<ToolCall>) -> Resul
     }
     let mut is_all_null = true;
     for call in calls {
+        // Check if this tool call is in the prior calls buffer, record or respond accordingly.
+        if let Some(checker) = &config.read().tool_call_tracker {
+            if let Some(msg) = checker.check_loop(&call.clone()) {
+                let dup_msg = format!("{{\"tool_call_loop_alert\":{}}}", &msg.trim());
+                println!("{}", warning_text(format!("{}: ⚠️ Tool-call loop detected! ⚠️", &call.name).as_str()));
+                let val = json!(dup_msg);
+                output.push(ToolResult::new(call, val));
+                is_all_null = false;
+                continue;
+            }
+            // Config is locked here so we can't record the calls quite yet
+        }
         let mut result = call.eval(config)?;
         if result.is_null() {
             result = json!("DONE");
@@ -192,11 +204,14 @@ impl ToolCall {
 
         cmd_args.push(json_data.to_string());
 
-        let output = match run_llm_function(cmd_name, cmd_args, envs)? {
-            Some(contents) => serde_json::from_str(&contents)
+        let output = match run_llm_function(cmd_name, cmd_args, envs) {
+            Ok(Some(contents)) => serde_json::from_str(&contents)
                 .ok()
                 .unwrap_or_else(|| json!({"output": contents})),
-            None => Value::Null,
+            Ok(None) => Value::Null,
+            Err(e) => serde_json::from_str(&e.to_string())
+                .ok()
+                .unwrap_or_else(|| json!({"output": e.to_string()}))
         };
 
         Ok(output)
@@ -279,7 +294,10 @@ pub fn run_llm_function(
     let exit_code = run_command(&cmd_name, &cmd_args, Some(envs))
         .map_err(|err| anyhow!("Unable to run {cmd_name}, {err}"))?;
     if exit_code != 0 {
-        bail!("Tool call exit with {exit_code}");
+        let tool_error_message = format!("⚠️ Tool call '{cmd_name}' threw exit code {exit_code} ⚠️");
+        println!("{}", warning_text(&tool_error_message));
+        let tool_error_json = format!("{{\"tool_call_error\":\"{}\"}}", &tool_error_message);
+        return Ok(Some(tool_error_json));
     }
     let mut output = None;
     if temp_file.exists() {
@@ -306,4 +324,100 @@ fn polyfill_cmd_name<T: AsRef<Path>>(cmd_name: &str, bin_dir: &[T]) -> String {
         }
     }
     cmd_name
+}
+
+use std::collections::VecDeque;
+
+#[derive(Debug, Clone)]
+pub struct ToolCallTracker {
+    last_calls: VecDeque<ToolCall>,
+    max_repeats: usize,
+    chain_len: usize,
+}
+
+impl ToolCallTracker {
+    pub fn new(max_repeats: usize, chain_len: usize) -> Self {
+        Self {
+            last_calls: VecDeque::new(),
+            max_repeats,
+            chain_len,
+        }
+    }
+
+    pub fn default() -> Self {
+        Self::new(2, 3)
+    }
+
+    pub fn check_loop(&self, new_call: &ToolCall) -> Option<String> {
+        if self.last_calls.len() < self.max_repeats {
+            return None;
+        }
+
+        // Check if new call matches last call
+        if let Some(last) = self.last_calls.back() {
+            if self.calls_match(last, new_call) {
+                let mut repeat_count = 1;
+                for i in (1..self.last_calls.len()).rev() {
+                    if self.calls_match(&self.last_calls[i-1], &self.last_calls[i]) {
+                        repeat_count += 1;
+                        if repeat_count >= self.max_repeats {
+                            return Some(self.create_loop_message());
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Check for repeating chain
+        let start = self.last_calls.len().saturating_sub(self.chain_len);
+        let chain: Vec<_> = self.last_calls.iter().skip(start).collect();
+        if chain.len() == self.chain_len {
+            let mut is_repeating = true;
+            for i in 0..chain.len() - 1 {
+                if !self.calls_match(chain[i], chain[i + 1]) {
+                    is_repeating = false;
+                    break;
+                }
+            }
+            if is_repeating && self.calls_match(chain[chain.len() - 1], new_call) {
+                return Some(self.create_loop_message());
+            }
+        }
+
+        None
+    }
+
+    fn calls_match(&self, a: &ToolCall, b: &ToolCall) -> bool {
+        a.name == b.name && a.arguments == b.arguments
+    }
+
+    fn create_loop_message(&self) -> String {
+        let message = r#"{"error":{"message":"⚠️ Tool-call loop detected! ⚠️","code":400,"param":"Use the output of the last call to this function and parameter-set then move on to the next step of workflow, change tools/parameters called, or request assistance in the conversation sream"}}"#;
+
+        if self.last_calls.len() >= self.chain_len {
+            let start = self.last_calls.len().saturating_sub(self.chain_len);
+            let chain: Vec<_> = self.last_calls.iter().skip(start).collect();
+            let mut loopset = "[".to_string();
+            for (_i, c) in chain.iter().enumerate() {
+                loopset += format!("{{\"name\":{},\"parameters\":{}}},", c.name, c.arguments).as_str();
+            };
+            // Adjust history info array
+            let _ = loopset.pop();
+            loopset.push(']');
+            return format!("{},\"call_history\":{}}}}}", &message[..(&message.len() - 2)], loopset);
+            // return serde_json::to_string(&history_message).unwrap_or("⚠️ Tool-call loop detected! ⚠️".to_string())
+        } else {
+            return message.to_string();
+            // return serde_json::to_string(&message).unwrap_or("⚠️ Tool-call loop detected! ⚠️".to_string())
+        }
+    }
+
+    pub fn record_call(&mut self, call: ToolCall) {
+        if self.last_calls.len() >= self.chain_len * self.max_repeats {
+            self.last_calls.pop_front();
+        }
+        self.last_calls.push_back(call);
+    }
 }
