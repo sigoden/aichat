@@ -12,6 +12,7 @@ const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta";
 pub struct GeminiConfig {
     pub name: Option<String>,
     pub api_key: Option<String>,
+    pub api_key_helper: Option<String>,
     pub api_base: Option<String>,
     #[serde(default)]
     pub models: Vec<ModelData>,
@@ -20,10 +21,32 @@ pub struct GeminiConfig {
 }
 
 impl GeminiClient {
-    config_get_fn!(api_key, get_api_key);
+    config_get_fn_with_helper!(api_key, get_api_key);
     config_get_fn!(api_base, get_api_base);
 
-    pub const PROMPTS: [PromptAction<'static>; 1] = [("api_key", "API Key", None)];
+    pub const PROMPTS: [PromptAction<'static>; 3] = [
+        PromptAction {
+            key: "api_key",
+            description: "API Key",
+            help_message: Some("Leave empty if you want to use api_key_helper instead"),
+            required: false,
+            default: None,
+        },
+        PromptAction {
+            key: "api_key_helper",
+            description: "API Key Helper",
+            help_message: Some("Leave empty if you have provided api_key"),
+            required: false,
+            default: None,
+        },
+        PromptAction {
+            key: "api_base",
+            description: "API Base",
+            help_message: None,
+            required: false,
+            default: Some(API_BASE),
+        },
+    ];
 }
 
 impl_client_trait!(
