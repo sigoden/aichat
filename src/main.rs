@@ -98,6 +98,9 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     if cli.dry_run {
         config.write().dry_run = true;
     }
+    if cli.hide_thinking {
+        config.write().hide_thinking = true;
+    }
 
     if let Some(agent) = &cli.agent {
         let session = cli.session.as_ref().map(|v| match v {
