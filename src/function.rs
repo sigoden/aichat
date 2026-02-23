@@ -1,5 +1,10 @@
+mod permission;
+
+pub use permission::ToolPermission;
+
 use crate::{
-    config::{Agent, Config, GlobalConfig},
+    config::{Agent, Config, GlobalConfig, ToolPermissions},
+    mcp,
     utils::*,
 };
 
@@ -18,7 +23,12 @@ const PATH_SEP: &str = ";";
 #[cfg(not(windows))]
 const PATH_SEP: &str = ":";
 
-pub fn eval_tool_calls(config: &GlobalConfig, mut calls: Vec<ToolCall>) -> Result<Vec<ToolResult>> {
+pub fn eval_tool_calls(
+    config: &GlobalConfig,
+    mut calls: Vec<ToolCall>,
+    role_tool_call_permission: Option<String>,
+    role_tool_permissions: Option<ToolPermissions>,
+) -> Result<Vec<ToolResult>> {
     let mut output = vec![];
     if calls.is_empty() {
         return Ok(output);
@@ -27,9 +37,27 @@ pub fn eval_tool_calls(config: &GlobalConfig, mut calls: Vec<ToolCall>) -> Resul
     if calls.is_empty() {
         bail!("The request was aborted because an infinite loop of function calls was detected.")
     }
+
+    // Check permissions for each tool call
+    let mut permission_checker =
+        ToolPermission::new_with_role(config, role_tool_call_permission, role_tool_permissions);
     let mut is_all_null = true;
+
     for call in calls {
-        let mut result = call.eval(config)?;
+        // Check if this tool call is permitted
+        let permitted = permission_checker.check_permission(&call)?;
+
+        let mut result = if permitted {
+            call.eval(config)?
+        } else {
+            // Tool call was denied by permission check
+            json!({
+                "error": "Permission denied",
+                "tool": call.name,
+                "message": format!("The tool '{}' was not permitted to execute", call.name)
+            })
+        };
+
         if result.is_null() {
             result = json!("DONE");
         } else {
@@ -37,6 +65,7 @@ pub fn eval_tool_calls(config: &GlobalConfig, mut calls: Vec<ToolCall>) -> Resul
         }
         output.push(ToolResult::new(call, result));
     }
+
     if is_all_null {
         output = vec![];
     }
@@ -58,10 +87,14 @@ impl ToolResult {
 #[derive(Debug, Clone, Default)]
 pub struct Functions {
     declarations: Vec<FunctionDeclaration>,
+    mcp_declarations: Vec<FunctionDeclaration>,
 }
 
 impl Functions {
-    pub fn init(declarations_path: &Path) -> Result<Self> {
+    pub fn init(
+        declarations_path: &Path,
+        mcp_tools: Option<Vec<FunctionDeclaration>>,
+    ) -> Result<Self> {
         let declarations: Vec<FunctionDeclaration> = if declarations_path.exists() {
             let ctx = || {
                 format!(
@@ -75,23 +108,41 @@ impl Functions {
             vec![]
         };
 
-        Ok(Self { declarations })
+        Ok(Self {
+            declarations,
+            mcp_declarations: mcp_tools.unwrap_or_default(),
+        })
+    }
+
+    pub fn init_from_mcp(mcp_tools: Option<Vec<FunctionDeclaration>>) -> Self {
+        Self {
+            declarations: vec![],
+            mcp_declarations: mcp_tools.unwrap_or_default(),
+        }
     }
 
     pub fn find(&self, name: &str) -> Option<&FunctionDeclaration> {
-        self.declarations.iter().find(|v| v.name == name)
+        self.declarations
+            .iter()
+            .chain(self.mcp_declarations.iter())
+            .find(|v| v.name == name)
     }
 
     pub fn contains(&self, name: &str) -> bool {
         self.declarations.iter().any(|v| v.name == name)
+            || self.mcp_declarations.iter().any(|v| v.name == name)
     }
 
-    pub fn declarations(&self) -> &[FunctionDeclaration] {
-        &self.declarations
+    pub fn declarations(&self) -> Vec<FunctionDeclaration> {
+        self.declarations
+            .iter()
+            .chain(self.mcp_declarations.iter())
+            .cloned()
+            .collect()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.declarations.is_empty()
+        self.declarations.is_empty() && self.mcp_declarations.is_empty()
     }
 }
 
@@ -171,6 +222,11 @@ impl ToolCall {
     }
 
     pub fn eval(&self, config: &GlobalConfig) -> Result<Value> {
+        // Check if this is an MCP tool call
+        if mcp::is_mcp_tool(&self.name) {
+            return self.eval_mcp(config);
+        }
+
         let (call_name, cmd_name, mut cmd_args, envs) = match &config.read().agent {
             Some(agent) => self.extract_call_config_from_agent(config, agent)?,
             None => self.extract_call_config_from_config(config)?,
@@ -200,6 +256,41 @@ impl ToolCall {
         };
 
         Ok(output)
+    }
+
+    fn eval_mcp(&self, config: &GlobalConfig) -> Result<Value> {
+        let mcp_manager = config.read().mcp_manager.clone();
+        let manager = match mcp_manager {
+            Some(m) => m,
+            None => bail!("MCP is not configured"),
+        };
+
+        // Parse arguments
+        let json_data = if self.arguments.is_object() {
+            self.arguments.clone()
+        } else if let Some(arguments) = self.arguments.as_str() {
+            serde_json::from_str(arguments).map_err(|_| {
+                anyhow!(
+                    "The call '{}' has invalid arguments: {arguments}",
+                    self.name
+                )
+            })?
+        } else {
+            bail!(
+                "The call '{}' has invalid arguments: {}",
+                self.name,
+                self.arguments
+            );
+        };
+
+        // Call MCP tool asynchronously using block_in_place to avoid blocking the runtime
+        let tool_name = self.name.clone();
+        let result = tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current()
+                .block_on(async { manager.call_tool(&tool_name, json_data).await })
+        })?;
+
+        Ok(result)
     }
 
     fn extract_call_config_from_agent(

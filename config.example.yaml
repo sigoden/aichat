@@ -18,6 +18,51 @@ mapping_tools:                   # Alias for a tool or toolset
   fs: 'fs_cat,fs_ls,fs_mkdir,fs_rm,fs_write'
 use_tools: null                  # Which tools to use by default. (e.g. 'fs,web_search')
 
+# ---- tool permissions ----
+# Control which tools can be called and whether to prompt for permission
+# tool_call_permission: ask      # Global permission level: 'always' (default), 'ask', or 'never'
+# verbose_tool_calls: false      # Print tool calls even when automatically approved
+# tool_permissions:              # Fine-grained control over individual tools
+#   allowed:                     # Tools that are always allowed (no prompt)
+#     - fs_cat
+#     - fs_ls
+#     - mcp__filesystem__read_file
+#   denied:                      # Tools that are always denied
+#     - fs_rm
+#     - mcp__*__delete_*         # Supports wildcards
+#   ask:                         # Tools that always prompt for permission
+#     - fs_write
+#     - fs_mkdir
+#     - mcp__*__write_*          # Pattern: any MCP server's write operations
+tool_call_permission: always
+verbose_tool_calls: false
+
+# ---- mcp servers ----
+# function_calling must be set to true to enable tool calling in MCP servers.
+mcp_servers:
+  # - name: custom
+  #   command: /path/to/custom-mcp-server
+  #   args:
+  #     - "--config"
+  #     - "/path/to/config.json"
+  #   env:
+  #     API_KEY: "your-api-key-here"
+  #     CUSTOM_SETTING: "value"
+  #   enabled: false
+  #   trusted: false             # If true, bypasses tool permission checks
+  #   description: "Custom MCP server"
+  # Filesystem server - provides file read/write operations
+  - name: filesystem             # Name of the server
+    command: npx                 # Command that starts the server
+    args:                        # Arguments to pass to the command
+      - "-y"
+      - "@modelcontextprotocol/server-filesystem"
+      - "/tmp"                   # Root directory for filesystem operations
+    enabled: true                # Enable or disable the server
+    trusted: false # If true, bypasses tool permission checks (use with caution!)
+    description: "File system operations (read, write, list)"
+
+
 # ---- prelude ----
 repl_prelude: null               # Set a default role or session for REPL mode (e.g. role:<name>, session:<name>, <session>:<role>)
 cmd_prelude: null                # Set a default role or session for CMD mode (e.g. role:<name>, session:<name>, <session>:<role>)

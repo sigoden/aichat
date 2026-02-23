@@ -9,3 +9,19 @@ agent_prelude: null              # Set a session to use when starting the agent.
 instructions: null               # Override the instructions for the agent, have no effect for dynamic instructions
 variables:                       # Custom default values for the agent variables
   <key>: <value>
+
+# ---- tool permissions ----
+# Control which tools this agent can call and whether to prompt for permission
+# tool_call_permission: ask      # Permission level for this agent: 'always', 'ask', or 'never'
+# tool_permissions:              # Fine-grained control over individual tools for this agent
+#   allowed:                     # Tools that are always allowed (no prompt)
+#     - fs_cat
+#     - fs_ls
+#   denied:                      # Tools that are always denied
+#     - fs_rm
+#     - mcp__*__delete_*         # Supports wildcards
+#   ask:                         # Tools that always prompt for permission
+#     - fs_write
+#     - fs_mkdir
+tool_call_permission: null       # If null, inherits from global config
+tool_permissions: null           # If null, inherits from global config

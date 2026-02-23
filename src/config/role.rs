@@ -29,10 +29,14 @@ pub trait RoleLike {
     fn temperature(&self) -> Option<f64>;
     fn top_p(&self) -> Option<f64>;
     fn use_tools(&self) -> Option<String>;
+    fn tool_call_permission(&self) -> Option<String>;
+    fn tool_permissions(&self) -> Option<ToolPermissions>;
     fn set_model(&mut self, model: Model);
     fn set_temperature(&mut self, value: Option<f64>);
     fn set_top_p(&mut self, value: Option<f64>);
     fn set_use_tools(&mut self, value: Option<String>);
+    fn set_tool_call_permission(&mut self, value: Option<String>);
+    fn set_tool_permissions(&mut self, value: Option<ToolPermissions>);
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -51,6 +55,10 @@ pub struct Role {
     top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     use_tools: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tool_call_permission: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    tool_permissions: Option<ToolPermissions>,
 
     #[serde(skip)]
     model: Model,
@@ -82,6 +90,14 @@ impl Role {
                             "temperature" => role.temperature = value.as_f64(),
                             "top_p" => role.top_p = value.as_f64(),
                             "use_tools" => role.use_tools = value.as_str().map(|v| v.to_string()),
+                            "tool_call_permission" => {
+                                role.tool_call_permission = value.as_str().map(|v| v.to_string())
+                            }
+                            "tool_permissions" => {
+                                if let Ok(perms) = serde_json::from_value(value.clone()) {
+                                    role.tool_permissions = Some(perms);
+                                }
+                            }
                             _ => (),
                         }
                     }
@@ -127,6 +143,18 @@ impl Role {
         }
         if let Some(use_tools) = self.use_tools() {
             metadata.push(format!("use_tools: {use_tools}"));
+        }
+        if let Some(tool_call_permission) = self.tool_call_permission() {
+            metadata.push(format!("tool_call_permission: {tool_call_permission}"));
+        }
+        if let Some(tool_permissions) = self.tool_permissions() {
+            if let Ok(yaml) = serde_yaml::to_string(&tool_permissions) {
+                let yaml = yaml.trim();
+                metadata.push(format!(
+                    "tool_permissions:\n  {}",
+                    yaml.replace('\n', "\n  ")
+                ));
+            }
         }
         if metadata.is_empty() {
             format!("{}\n", self.prompt)
@@ -184,6 +212,24 @@ impl Role {
         }
         if use_tools.is_some() {
             self.set_use_tools(use_tools);
+        }
+    }
+
+    pub fn batch_set_with_permissions(
+        &mut self,
+        model: &Model,
+        temperature: Option<f64>,
+        top_p: Option<f64>,
+        use_tools: Option<String>,
+        tool_call_permission: Option<String>,
+        tool_permissions: Option<ToolPermissions>,
+    ) {
+        self.batch_set(model, temperature, top_p, use_tools);
+        if tool_call_permission.is_some() {
+            self.set_tool_call_permission(tool_call_permission);
+        }
+        if tool_permissions.is_some() {
+            self.set_tool_permissions(tool_permissions);
         }
     }
 
@@ -280,6 +326,14 @@ impl RoleLike for Role {
         self.use_tools.clone()
     }
 
+    fn tool_call_permission(&self) -> Option<String> {
+        self.tool_call_permission.clone()
+    }
+
+    fn tool_permissions(&self) -> Option<ToolPermissions> {
+        self.tool_permissions.clone()
+    }
+
     fn set_model(&mut self, model: Model) {
         if !self.model().id().is_empty() {
             self.model_id = Some(model.id().to_string());
@@ -297,6 +351,14 @@ impl RoleLike for Role {
 
     fn set_use_tools(&mut self, value: Option<String>) {
         self.use_tools = value;
+    }
+
+    fn set_tool_call_permission(&mut self, value: Option<String>) {
+        self.tool_call_permission = value;
+    }
+
+    fn set_tool_permissions(&mut self, value: Option<ToolPermissions>) {
+        self.tool_permissions = value;
     }
 }
 
