@@ -38,6 +38,14 @@ impl BedrockClient {
         ("region", "AWS Region", None),
     ];
 
+    fn encode_model_name_if_needed(model_name: &str) -> String {
+        if model_name.contains('%') {
+            model_name.to_string()
+        } else {
+            urlencoding::encode(model_name).into_owned()
+        }
+    }
+
     fn chat_completions_builder(
         &self,
         client: &ReqwestClient,
@@ -49,7 +57,7 @@ impl BedrockClient {
         let session_token = self.get_session_token().ok();
         let host = format!("bedrock-runtime.{region}.amazonaws.com");
 
-        let model_name = &self.model.real_name();
+        let model_name = Self::encode_model_name_if_needed(self.model.real_name());
 
         let uri = if data.stream {
             format!("/model/{model_name}/converse-stream")
@@ -100,7 +108,8 @@ impl BedrockClient {
         let session_token = self.get_session_token().ok();
         let host = format!("bedrock-runtime.{region}.amazonaws.com");
 
-        let uri = format!("/model/{}/invoke", self.model.real_name());
+        let model_name = Self::encode_model_name_if_needed(self.model.real_name());
+        let uri = format!("/model/{}/invoke", model_name);
 
         let input_type = match data.query {
             true => "search_query",
