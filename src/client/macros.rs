@@ -231,6 +231,14 @@ macro_rules! config_get_fn {
                 format!("{}_{}", env_prefix, stringify!($field_name)).to_ascii_uppercase();
             std::env::var(&env_name)
                 .ok()
+                .or_else(|| {
+                    if env_prefix.contains("claude") {
+                        let alt_env_name = format!("ANTHROPIC_{}", stringify!($field_name)).to_ascii_uppercase();
+                        std::env::var(&alt_env_name).ok()
+                    } else {
+                        None
+                    }
+                })
                 .or_else(|| self.config.$field_name.clone())
                 .ok_or_else(|| anyhow::anyhow!("Miss '{}'", stringify!($field_name)))
         }
