@@ -38,16 +38,11 @@ use std::{
     process,
     sync::{Arc, OnceLock},
 };
-use syntect::highlighting::ThemeSet;
 use terminal_colorsaurus::{color_scheme, ColorScheme, QueryOptions};
 
 pub const TEMP_ROLE_NAME: &str = "%%";
 pub const TEMP_RAG_NAME: &str = "temp";
 pub const TEMP_SESSION_NAME: &str = "temp";
-
-/// Monokai Extended
-const DARK_THEME: &[u8] = include_bytes!("../../assets/monokai-extended.theme.bin");
-const LIGHT_THEME: &[u8] = include_bytes!("../../assets/monokai-extended-light.theme.bin");
 
 const CONFIG_FILE_NAME: &str = "config.yaml";
 const ROLES_DIR_NAME: &str = "roles";
@@ -1909,35 +1904,12 @@ impl Config {
     }
 
     pub fn render_options(&self) -> Result<RenderOptions> {
-        let theme = if self.highlight {
-            let theme_mode = if self.light_theme() { "light" } else { "dark" };
-            let theme_filename = format!("{theme_mode}.tmTheme");
-            let theme_path = Self::local_path(&theme_filename);
-            if theme_path.exists() {
-                let theme = ThemeSet::get_theme(&theme_path)
-                    .with_context(|| format!("Invalid theme at '{}'", theme_path.display()))?;
-                Some(theme)
-            } else {
-                let theme = if self.light_theme() {
-                    decode_bin(LIGHT_THEME).context("Invalid builtin light theme")?
-                } else {
-                    decode_bin(DARK_THEME).context("Invalid builtin dark theme")?
-                };
-                Some(theme)
-            }
-        } else {
-            None
-        };
         let wrap = if *IS_STDOUT_TERMINAL {
             self.wrap.clone()
         } else {
             None
         };
-        let truecolor = matches!(
-            env::var("COLORTERM").as_ref().map(|v| v.as_str()),
-            Ok("truecolor")
-        );
-        Ok(RenderOptions::new(theme, wrap, self.wrap_code, truecolor))
+        Ok(RenderOptions::new(wrap, self.light_theme()))
     }
 
     pub fn render_prompt_left(&self) -> String {
@@ -1956,7 +1928,13 @@ impl Config {
         if *IS_STDOUT_TERMINAL {
             let render_options = self.render_options()?;
             let mut markdown_render = MarkdownRender::init(render_options)?;
-            println!("{}", markdown_render.render(text));
+            let mut output = markdown_render.render(text);
+            let flushed = markdown_render.flush();
+            if !flushed.is_empty() {
+                output.push('\n');
+                output.push_str(&flushed);
+            }
+            println!("{}", output);
         } else {
             println!("{text}");
         }

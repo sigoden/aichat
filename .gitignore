@@ -2,3 +2,7 @@
 /tmp
 /.env
 *.log
+/docs
+/.claude
+/.mcp.json
+CLAUDE.md

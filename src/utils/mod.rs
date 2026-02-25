@@ -216,11 +216,6 @@ pub fn set_proxy(
     Ok(builder)
 }
 
-pub fn decode_bin<T: serde::de::DeserializeOwned>(data: &[u8]) -> Result<T> {
-    let (v, _) = bincode::serde::decode_from_slice(data, bincode::config::legacy())?;
-    Ok(v)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

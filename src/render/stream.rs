@@ -11,7 +11,7 @@ use std::{
     io::{self, stdout, Stdout, Write},
     time::Duration,
 };
-use textwrap::core::display_width;
+use streamdown_ansi::utils::visible_length;
 use tokio::sync::mpsc::UnboundedReceiver;
 
 pub async fn markdown_stream(
@@ -101,7 +101,7 @@ async fn markdown_stream_inner(
                     };
 
                     // Fix unexpected duplicate lines on kitty, see https://github.com/sigoden/aichat/issues/105
-                    if col == 0 && row > 0 && display_width(&buffer) == columns as usize {
+                    if col == 0 && row > 0 && visible_length(&buffer) == columns as usize {
                         row -= 1;
                     }
 
@@ -146,6 +146,11 @@ async fn markdown_stream_inner(
                     writer.flush()?;
                 }
                 SseEvent::Done => {
+                    let flushed = render.flush();
+                    if !flushed.is_empty() {
+                        queue!(writer, style::Print(&flushed))?;
+                        writer.flush()?;
+                    }
                     break 'outer;
                 }
             }
@@ -204,14 +209,10 @@ fn print_block(writer: &mut Stdout, text: &str, columns: u16) -> Result<u16> {
 }
 
 fn split_line_tail(text: &str) -> (&str, &str) {
-    if let Some((head, tail)) = text.rsplit_once('\n') {
-        (head, tail)
-    } else {
-        ("", text)
-    }
+    text.rsplit_once('\n').unwrap_or(("", text))
 }
 
 fn need_rows(text: &str, columns: u16) -> u16 {
-    let buffer_width = display_width(text).max(1) as u16;
+    let buffer_width = visible_length(text).max(1) as u16;
     buffer_width.div_ceil(columns)
 }
