@@ -1,8 +1,10 @@
 mod completer;
+mod hinter;
 mod highlighter;
 mod prompt;
 
 use self::completer::ReplCompleter;
+use self::hinter::ReplHinter;
 use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
@@ -19,6 +21,7 @@ use crate::utils::{
 use anyhow::{bail, Context, Result};
 use crossterm::cursor::SetCursorStyle;
 use fancy_regex::Regex;
+use inquire::Select;
 use reedline::CursorConfig;
 use reedline::{
     default_emacs_keybindings, default_vi_insert_keybindings, default_vi_normal_keybindings,
@@ -31,7 +34,7 @@ use std::{env, process};
 
 const MENU_NAME: &str = "completion_menu";
 
-static REPL_COMMANDS: LazyLock<[ReplCommand; 36]> = LazyLock::new(|| {
+static REPL_COMMANDS: LazyLock<[ReplCommand; 40]> = LazyLock::new(|| {
     [
         ReplCommand::new(".help", "Show this help guide", AssertState::pass()),
         ReplCommand::new(".info", "Show system info", AssertState::pass()),
@@ -79,6 +82,18 @@ static REPL_COMMANDS: LazyLock<[ReplCommand; 36]> = LazyLock::new(|| {
             "Start or switch to a session",
             AssertState::False(StateFlags::SESSION_EMPTY | StateFlags::SESSION),
         ),
+        ReplCommand::new(
+            ".start",
+            "Start or switch to a session (alias of .session)",
+            AssertState::pass(),
+        ),
+        ReplCommand::new(
+            ".list sessions",
+            "List available sessions",
+            AssertState::pass(),
+        ),
+        ReplCommand::new(".resume", "Resume a session (picker)", AssertState::pass()),
+        ReplCommand::new(".rename", "Rename current session", AssertState::pass()),
         ReplCommand::new(
             ".empty session",
             "Clear session messages",
@@ -262,6 +277,7 @@ Type ".help" for additional help.
 
     fn create_editor(config: &GlobalConfig) -> Result<Reedline> {
         let completer = ReplCompleter::new(config);
+        let hinter = ReplHinter::new();
         let highlighter = ReplHighlighter::new(config);
         let menu = Self::create_menu();
         let edit_mode = Self::create_edit_mode(config);
@@ -272,6 +288,7 @@ Type ".help" for additional help.
         };
         let mut editor = Reedline::create()
             .with_completer(Box::new(completer))
+            .with_hinter(Box::new(hinter))
             .with_highlighter(Box::new(highlighter))
             .with_menu(menu)
             .with_edit_mode(edit_mode)
@@ -376,6 +393,27 @@ pub async fn run_repl_command(
     abort_signal: AbortSignal,
     mut line: &str,
 ) -> Result<bool> {
+    let trimmed = line.trim();
+    if trimmed == ".resume" {
+        if config.read().session.is_some() {
+            config.write().exit_session()?;
+        }
+        if let Some(name) = select_session(config)? {
+            config.write().use_session(Some(&name))?;
+            Config::maybe_autoname_session(config.clone());
+            print_session_messages(config)?;
+        }
+        return Ok(false);
+    }
+    if let Some(rest) = trimmed.strip_prefix(".rename") {
+        let new_name = rest.trim();
+        if new_name.is_empty() {
+            println!("Usage: .rename <new-name>");
+        } else {
+            config.write().rename_session(new_name)?;
+        }
+        return Ok(false);
+    }
     if let Ok(Some(captures)) = MULTILINE_RE.captures(line) {
         if let Some(text_match) = captures.get(1) {
             line = text_match.as_str();
@@ -445,7 +483,27 @@ pub async fn run_repl_command(
             ".session" => {
                 config.write().use_session(args)?;
                 Config::maybe_autoname_session(config.clone());
+                print_session_messages(config)?;
             }
+            ".start" => {
+                if config.read().session.is_some() {
+                    config.write().exit_session()?;
+                }
+                config.write().use_session(args)?;
+                Config::maybe_autoname_session(config.clone());
+                print_session_messages(config)?;
+            }
+            ".list" => match args {
+                Some("sessions") => {
+                    let sessions = list_all_sessions(config);
+                    if sessions.is_empty() {
+                        println!("No sessions");
+                    } else {
+                        println!("{}", sessions.join("\n"));
+                    }
+                }
+                _ => println!(r#"Usage: .list sessions"#),
+            },
             ".rag" => {
                 Config::use_rag(config, args, abort_signal.clone()).await?;
             }
@@ -775,6 +833,45 @@ Type ::: to start multi-line editing, type ::: to finish it.
 Press Ctrl+O to open an editor for editing the input buffer.
 Press Ctrl+C to cancel the response, Ctrl+D to exit the REPL."###,
     );
+}
+
+fn list_all_sessions(config: &GlobalConfig) -> Vec<String> {
+    let mut sessions = config.read().list_sessions();
+    let autoname = config.read().list_autoname_sessions();
+    sessions.extend(autoname.into_iter().map(|v| format!("_/{v}")));
+    sessions.sort_unstable();
+    sessions
+}
+
+fn select_session(config: &GlobalConfig) -> Result<Option<String>> {
+    let sessions = list_all_sessions(config);
+    if sessions.is_empty() {
+        println!("No sessions");
+        return Ok(None);
+    }
+    let mut options = vec!["<cancel>".to_string()];
+    options.extend(sessions);
+    let selected = Select::new("Resume session:", options).prompt()?;
+    if selected == "<cancel>" {
+        Ok(None)
+    } else {
+        Ok(Some(selected))
+    }
+}
+
+fn print_session_messages(config: &GlobalConfig) -> Result<()> {
+    let has_messages = config
+        .read()
+        .session
+        .as_ref()
+        .map(|s| !s.is_empty())
+        .unwrap_or(false);
+    if !has_messages {
+        return Ok(());
+    }
+    let info = config.read().session_info()?;
+    print!("{info}");
+    Ok(())
 }
 
 fn parse_command(line: &str) -> Option<(&str, Option<&str>)> {
