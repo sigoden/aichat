@@ -1221,6 +1221,29 @@ impl Config {
         list_file_names(self.sessions_dir().join("_"), ".yaml")
     }
 
+    pub fn rename_session(&mut self, new_name: &str) -> Result<()> {
+        if new_name.trim().is_empty() {
+            bail!("Session name cannot be empty");
+        }
+        let new_path = self.session_file(new_name);
+        if new_path.exists() {
+            bail!("Session '{new_name}' already exists");
+        }
+        let session = match self.session.as_mut() {
+            Some(session) => session,
+            None => bail!("No session"),
+        };
+        if session.name() == new_name {
+            return Ok(());
+        }
+        if session.path().is_some() {
+            session.rename(new_name, &new_path)?;
+        } else {
+            session.save(new_name, &new_path, self.working_mode.is_repl())?;
+        }
+        Ok(())
+    }
+
     pub fn maybe_compress_session(config: GlobalConfig) {
         let mut need_compress = false;
         {
@@ -1750,7 +1773,7 @@ impl Config {
                     .into_iter()
                     .map(|v| (v.id(), Some(v.description())))
                     .collect(),
-                ".session" => {
+                ".session" | ".start" => {
                     if args[0].starts_with("_/") {
                         map_completion_values(
                             self.list_autoname_sessions()
@@ -1763,6 +1786,7 @@ impl Config {
                         map_completion_values(self.list_sessions())
                     }
                 }
+                ".list" => map_completion_values(vec!["sessions"]),
                 ".rag" => map_completion_values(Self::list_rags()),
                 ".agent" => map_completion_values(list_agents()),
                 ".macro" => map_completion_values(Self::list_macros()),

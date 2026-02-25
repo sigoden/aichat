@@ -10,7 +10,7 @@ use inquire::{validator::Validation, Confirm, Text};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
-use std::fs::{read_to_string, write};
+use std::fs::{read_to_string, rename, write};
 use std::path::Path;
 use std::sync::LazyLock;
 
@@ -113,6 +113,10 @@ impl Session {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn path(&self) -> Option<&str> {
+        self.path.as_deref()
     }
 
     pub fn role_name(&self) -> Option<&str> {
@@ -456,6 +460,25 @@ impl Session {
 
         self.dirty = false;
 
+        Ok(())
+    }
+
+    pub fn rename(&mut self, new_name: &str, new_path: &Path) -> Result<()> {
+        ensure_parent_exists(new_path)?;
+        if let Some(old_path) = &self.path {
+            let old_path = Path::new(old_path);
+            if old_path.exists() {
+                rename(old_path, new_path).with_context(|| {
+                    format!(
+                        "Failed to rename session '{}' to '{}'",
+                        old_path.display(),
+                        new_path.display()
+                    )
+                })?;
+            }
+        }
+        self.path = Some(new_path.display().to_string());
+        self.name = new_name.to_string();
         Ok(())
     }
 
