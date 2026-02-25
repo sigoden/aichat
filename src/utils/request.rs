@@ -56,6 +56,7 @@ static PRESET: LazyLock<Vec<(Regex, CrawlOptions)>> = LazyLock::new(|| {
 static EXTENSION_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\.[^.]+$").unwrap());
 static GITHUB_REPO_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^https://github\.com/([^/]+)/([^/]+)/tree/([^/]+)").unwrap());
+static LINK_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("a").unwrap());
 
 pub async fn fetch(url: &str) -> Result<String> {
     let client = match *CLIENT {
@@ -197,6 +198,7 @@ pub struct CrawlOptions {
     extract: Option<String>,
     exclude: Vec<String>,
     no_log: bool,
+    pub(crate) extract_selector: Option<Arc<Selector>>,
 }
 
 impl CrawlOptions {
@@ -208,9 +210,19 @@ impl CrawlOptions {
         }
         CrawlOptions::default()
     }
+
+    pub fn prepare(&mut self) -> Result<()> {
+        if let Some(extract) = &self.extract {
+            let selector = Selector::parse(extract)
+                .map_err(|err| anyhow!("Invalid extract selector, {}", err))?;
+            self.extract_selector = Some(Arc::new(selector));
+        }
+        Ok(())
+    }
 }
 
-pub async fn crawl_website(start_url: &str, options: CrawlOptions) -> Result<Vec<Page>> {
+pub async fn crawl_website(start_url: &str, mut options: CrawlOptions) -> Result<Vec<Page>> {
+    options.prepare()?;
     let start_url = Url::parse(start_url)?;
     let mut paths = vec![start_url.path().to_string()];
     let normalized_start_url = normalize_start_url(&start_url);
@@ -391,9 +403,9 @@ async fn crawl_page(
 
     let mut links = HashSet::new();
     let document = Html::parse_document(&body);
-    let selector = Selector::parse("a").map_err(|err| anyhow!("Invalid link selector, {}", err))?;
+    let selector = &LINK_SELECTOR;
 
-    for element in document.select(&selector) {
+    for element in document.select(selector) {
         if let Some(href) = element.value().attr("href") {
             let href = Url::parse(href).ok().or_else(|| location.join(href).ok());
             match href {
@@ -409,11 +421,9 @@ async fn crawl_page(
         }
     }
 
-    let text = if let Some(selector) = &options.extract {
-        let selector = Selector::parse(selector)
-            .map_err(|err| anyhow!("Invalid extract selector, {}", err))?;
+    let text = if let Some(selector) = &options.extract_selector {
         document
-            .select(&selector)
+            .select(selector)
             .map(|v| html_to_md(&v.html()))
             .collect::<Vec<String>>()
             .join("\n\n")
