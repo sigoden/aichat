@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="//unpkg.com/@highlightjs/cdn-assets@11.10.0/styles/github.min.css"
     media="screen and (prefers-color-scheme: light)">
   <script src="//unpkg.com/@highlightjs/cdn-assets@11.10.0/highlight.min.js" defer></script>
+  <script src="//unpkg.com/dompurify@3.3.1/dist/purify.min.js" defer></script>
   <script src="//unpkg.com/marked@15.0.3/lib/marked.umd.js" defer></script>
   <script src="//unpkg.com/katex@0.16.11/dist/katex.min.js" defer></script>
   <script src="//unpkg.com/@sigodenjs/marked-katex-extension@1.0.0/lib/index.umd.js" defer></script>
@@ -693,7 +694,7 @@
             <div class="chat-message-content">
               <!-- message -->
               <template x-if="message.role == 'assistant' && message.html">
-                <div class="markdown-body" x-html="message.html"></div>
+                <div class="markdown-body" x-html="message.html" @click="handleMarkdownClick($event)"></div>
               </template>
               <template x-if="message.role == 'assistant' && message.state == 'loading'">
                 <div class="spinner"></div>
@@ -877,6 +878,13 @@
         sessionTitle: "",
         selectSessionId: null,
         sessions: [],
+
+        handleMarkdownClick(event) {
+          const $copyBtn = event.target.closest('.copy-code-btn');
+          if ($copyBtn) {
+            this.handleCopyCode(event);
+          }
+        },
 
         async init() {
           await Promise.all([
@@ -1500,7 +1508,7 @@
 
           return `<div class="code-block">
         <pre><code class="hljs ${lang}">${highlighted}</code></pre>
-  <div class="copy-code-btn" @click="handleCopyCode" title="Copy code">
+  <div class="copy-code-btn" title="Copy code">
     <svg fill="currentColor" viewBox="0 0 16 16">
       <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
     </svg>
@@ -1581,7 +1589,13 @@
     }
 
     function renderMarkdown(text, error = '') {
-      return marked.marked(text) + (error ? `<pre class="error">${error}</pre>` : '');
+      const html = marked.marked(text);
+      const sanitizedHtml = DOMPurify.sanitize(html);
+      let errorHtml = '';
+      if (error) {
+        errorHtml = `<pre class="error">${DOMPurify.sanitize(String(error))}</pre>`;
+      }
+      return sanitizedHtml + errorHtml;
     }
   </script>
 </body>
