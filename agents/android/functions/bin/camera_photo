@@ -1,0 +1,5 @@
+#!/bin/bash
+CAMERA=$(echo "$1" | jq -r .camera)
+FILENAME=$(echo "$1" | jq -r .filename)
+termux-camera-photo -c "$CAMERA" "$FILENAME"
+echo "Photo taken and saved to $FILENAME"

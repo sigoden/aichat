@@ -1,0 +1,9 @@
+#!/bin/bash
+CONTENT=$(echo "$1" | jq -r .content)
+TITLE=$(echo "$1" | jq -r .title)
+if [ "$TITLE" != "null" ]; then
+    termux-notification --content "$CONTENT" --title "$TITLE"
+else
+    termux-notification --content "$CONTENT"
+fi
+echo "Notification shown"

@@ -21,6 +21,7 @@ register_client!(
         OpenAICompatibleClient
     ),
     (gemini, "gemini", GeminiConfig, GeminiClient),
+    (jules, "jules", JulesConfig, JulesClient),
     (claude, "claude", ClaudeConfig, ClaudeClient),
     (cohere, "cohere", CohereConfig, CohereClient),
     (

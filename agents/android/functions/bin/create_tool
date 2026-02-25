@@ -1,0 +1,41 @@
+#!/bin/bash
+set -e
+
+BIN_DIR=$(dirname "$(realpath "$0")")
+FUNCTIONS_DIR=$(dirname "$BIN_DIR")
+FUNCTIONS_FILE="$FUNCTIONS_DIR/functions.json"
+
+ARGS="$1"
+NAME=$(echo "$ARGS" | jq -r .name)
+DESCRIPTION=$(echo "$ARGS" | jq -r .description)
+PARAMETERS=$(echo "$ARGS" | jq -r .parameters)
+SCRIPT=$(echo "$ARGS" | jq -r .script)
+
+if [ ! -f "$FUNCTIONS_FILE" ]; then
+    echo "Error: functions.json not found at $FUNCTIONS_FILE"
+    exit 1
+fi
+
+# Validate parameters is valid JSON
+if ! echo "$PARAMETERS" | jq . >/dev/null 2>&1; then
+    echo "Error: parameters is not valid JSON"
+    exit 1
+fi
+
+# Create new tool JSON object
+NEW_TOOL=$(jq -n \
+    --arg name "$NAME" \
+    --arg description "$DESCRIPTION" \
+    --argjson parameters "$PARAMETERS" \
+    '{name: $name, description: $description, parameters: $parameters}')
+
+# Append to functions.json (or update if exists)
+# First remove existing tool with same name if any
+jq "map(select(.name != \"$NAME\")) + [$NEW_TOOL]" "$FUNCTIONS_FILE" > "$FUNCTIONS_FILE.tmp" && mv "$FUNCTIONS_FILE.tmp" "$FUNCTIONS_FILE"
+
+# Write script
+SCRIPT_PATH="$BIN_DIR/$NAME"
+echo "$SCRIPT" > "$SCRIPT_PATH"
+chmod +x "$SCRIPT_PATH"
+
+echo "Tool '$NAME' created successfully."

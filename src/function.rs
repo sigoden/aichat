@@ -1,4 +1,5 @@
 use crate::{
+    builtin,
     config::{Agent, Config, GlobalConfig},
     utils::*,
 };
@@ -62,7 +63,7 @@ pub struct Functions {
 
 impl Functions {
     pub fn init(declarations_path: &Path) -> Result<Self> {
-        let declarations: Vec<FunctionDeclaration> = if declarations_path.exists() {
+        let mut declarations: Vec<FunctionDeclaration> = if declarations_path.exists() {
             let ctx = || {
                 format!(
                     "Failed to load functions at {}",
@@ -74,6 +75,7 @@ impl Functions {
         } else {
             vec![]
         };
+        declarations.extend(builtin::declarations());
 
         Ok(Self { declarations })
     }
@@ -171,6 +173,20 @@ impl ToolCall {
     }
 
     pub fn eval(&self, config: &GlobalConfig) -> Result<Value> {
+        let mut arguments = self.arguments.clone();
+        if let Some(arguments_str) = arguments.as_str() {
+            if let Ok(v) = serde_json::from_str(arguments_str) {
+                arguments = v;
+            }
+        }
+        if let Some(output) = builtin::run(&self.name, &arguments)? {
+            if *IS_STDOUT_TERMINAL {
+                let prompt = format!("Call builtin {} {}", self.name, arguments);
+                println!("{}", dimmed_text(&prompt));
+            }
+            return Ok(output);
+        }
+
         let (call_name, cmd_name, mut cmd_args, envs) = match &config.read().agent {
             Some(agent) => self.extract_call_config_from_agent(config, agent)?,
             None => self.extract_call_config_from_config(config)?,

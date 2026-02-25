@@ -1,0 +1,24 @@
+#first you will need to set up your termux
+$ termux-setup-storage 
+#update and add repositories 
+$ pkg update && pkg -y upgrade && pkg install ruby python-pip python python2 python3 termux-api
+# get cargo && npm 
+$ ruby fetch cargo && ruby install cargo && pip install npm
+# install aichat
+$ cargo install aichat --force  # alternative $ cargo --locked install aichat
+#useage
+$ ./aichat "your comment"
+#fun useage 
+$ aichat "give it a prompt here and say you are in a cowsay bubble" | cowsay
+## can also be used as a coding copilot via copy paste 
+$ aichat "will you please check this code <paste code>
+######
+# 👀 #
+######
+# to get the roles working using this method run $   
+# aichat --info and run file editor of choice 
+# $ nano /data/data/termux(probably)/use/bin/aichat/ 
+#  your file edit proper format... 
+
+# as of this moment 21 June 2023 I can not get 
+# temperature: working 

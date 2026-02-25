@@ -1,0 +1,4 @@
+#!/bin/bash
+PROVIDER=$(echo "$1" | jq -r .provider)
+REQUEST=$(echo "$1" | jq -r .request)
+termux-location -p "$PROVIDER" -r "$REQUEST"
