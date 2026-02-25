@@ -259,4 +259,14 @@ mod tests {
             "<think>b</think>c"
         );
     }
+
+    #[test]
+    fn test_estimate_token_length() {
+        assert_eq!(estimate_token_length(""), 0);
+        assert_eq!(estimate_token_length("hello"), 2);
+        assert_eq!(estimate_token_length("hello world"), 3);
+        assert_eq!(estimate_token_length("你好"), 2);
+        assert_eq!(estimate_token_length("hello 你好"), 4);
+        assert_eq!(estimate_token_length("hello, world!"), 3);
+    }
 }
