@@ -27,14 +27,11 @@ tokio-graceful = "0.2.2"
 tokio-stream = { version = "0.1.15", default-features = false, features = ["sync"] }
 crossterm = "0.28.1"
 chrono = "0.4.23"
-bincode = { version = "2.0.0", features = ["serde", "std"], default-features = false }
 parking_lot = "0.12.1"
 fancy-regex = "0.14.0"
 base64 = "0.22.0"
 nu-ansi-term = "0.50.0"
 async-trait = "0.1.74"
-textwrap = "0.16.0"
-ansi_colours = "1.2.2"
 reqwest-eventsource = "0.6.0"
 simplelog = "0.12.1"
 log = "0.4.20"
@@ -68,16 +65,18 @@ which = "8.0.0"
 fuzzy-matcher = "0.3.7"
 terminal-colorsaurus = "0.4.8"
 duct = "1.0.0"
+toml = "0.8"
+streamdown-core = { path = "../streamdown-rs/crates/streamdown-core" }
+streamdown-ansi = { path = "../streamdown-rs/crates/streamdown-ansi" }
+streamdown-config = { path = "../streamdown-rs/crates/streamdown-config" }
+streamdown-parser = { path = "../streamdown-rs/crates/streamdown-parser" }
+streamdown-render = { path = "../streamdown-rs/crates/streamdown-render" }
+streamdown-plugin = { path = "../streamdown-rs/crates/streamdown-plugin" }
 
 [dependencies.reqwest]
 version = "0.12.0"
 features = ["json", "multipart", "socks", "rustls-tls", "rustls-tls-native-roots"]
 default-features = false
-
-[dependencies.syntect]
-version = "5.0.0"
-default-features = false
-features = ["parsing", "regex-onig", "plist-load"]
 
 [target.'cfg(target_os = "macos")'.dependencies]
 crossterm = { version = "0.28.1", features = ["use-dev-tty"] }
