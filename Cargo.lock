@@ -101,6 +101,7 @@ dependencies = [
  "tokio",
  "tokio-graceful",
  "tokio-stream",
+ "toml",
  "unicode-segmentation",
  "unicode-width 0.2.1",
  "urlencoding",

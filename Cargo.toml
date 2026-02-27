@@ -65,6 +65,7 @@ which = "8.0.0"
 fuzzy-matcher = "0.3.7"
 terminal-colorsaurus = "0.4.8"
 duct = "1.0.0"
+toml = "0.8"
 streamdown-core = { path = "../streamdown-rs/crates/streamdown-core" }
 streamdown-ansi = { path = "../streamdown-rs/crates/streamdown-ansi" }
 streamdown-config = { path = "../streamdown-rs/crates/streamdown-config" }

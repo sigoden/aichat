@@ -3,7 +3,7 @@ use crossterm::terminal;
 use streamdown_config::ComputedStyle;
 use streamdown_parser::Parser;
 use streamdown_plugin::{PluginAction, PluginManager};
-use streamdown_render::{RenderState, Renderer};
+use streamdown_render::{RenderState, RenderStyle, Renderer, Theme};
 
 pub struct MarkdownRender {
     parser: Parser,
@@ -12,6 +12,8 @@ pub struct MarkdownRender {
     computed_style: ComputedStyle,
     width: usize,
     light_theme: bool,
+    custom_style: Option<RenderStyle>,
+    custom_theme: Option<Theme>,
 }
 
 impl MarkdownRender {
@@ -35,6 +37,8 @@ impl MarkdownRender {
             computed_style: ComputedStyle::default(),
             width,
             light_theme: options.light_theme,
+            custom_style: options.custom_style,
+            custom_theme: options.custom_theme,
         })
     }
 
@@ -124,8 +128,13 @@ impl MarkdownRender {
 
     fn new_renderer<'a>(&self, output: &'a mut Vec<u8>) -> Renderer<&'a mut Vec<u8>> {
         let mut renderer = Renderer::new(output, self.width);
-        if self.light_theme {
-            renderer.set_theme("light");
+        if let Some(style) = self.custom_style.clone() {
+            renderer.set_style(style);
+        }
+        if let Some(theme) = self.custom_theme.clone() {
+            renderer.set_custom_theme(theme);
+        } else if self.light_theme {
+            renderer.set_theme("base16-ocean.light");
         }
         renderer.set_pretty_pad(true);
         renderer.restore_state(self.render_state.clone());
@@ -137,10 +146,12 @@ impl MarkdownRender {
 pub struct RenderOptions {
     pub wrap: Option<String>,
     pub light_theme: bool,
+    pub custom_style: Option<RenderStyle>,
+    pub custom_theme: Option<Theme>,
 }
 
 impl RenderOptions {
-    pub(crate) fn new(wrap: Option<String>, light_theme: bool) -> Self {
-        Self { wrap, light_theme }
+    pub(crate) fn new(wrap: Option<String>, light_theme: bool, custom_style: Option<RenderStyle>, custom_theme: Option<Theme>) -> Self {
+        Self { wrap, light_theme, custom_style, custom_theme }
     }
 }

@@ -21,6 +21,8 @@ use crate::repl::{run_repl_command, split_args_text};
 use crate::utils::*;
 
 use anyhow::{anyhow, bail, Context, Result};
+use streamdown_render;
+use toml;
 use indexmap::IndexMap;
 use inquire::{list_option::ListOption, validator::Validation, Confirm, MultiSelect, Select, Text};
 use parking_lot::RwLock;
@@ -55,6 +57,7 @@ const FUNCTIONS_DIR_NAME: &str = "functions";
 const FUNCTIONS_FILE_NAME: &str = "functions.json";
 const FUNCTIONS_BIN_DIR_NAME: &str = "bin";
 const AGENTS_DIR_NAME: &str = "agents";
+const THEMES_DIR_NAME: &str = "themes";
 
 const CLIENTS_FIELD: &str = "clients";
 
@@ -133,6 +136,7 @@ pub struct Config {
 
     pub highlight: bool,
     pub theme: Option<String>,
+    pub themes_dir: Option<PathBuf>,
     pub left_prompt: Option<String>,
     pub right_prompt: Option<String>,
 
@@ -208,6 +212,7 @@ impl Default for Config {
 
             highlight: true,
             theme: None,
+            themes_dir: None,
             left_prompt: None,
             right_prompt: None,
 
@@ -307,6 +312,16 @@ impl Config {
         match env::var(get_env_name("roles_dir")) {
             Ok(value) => PathBuf::from(value),
             Err(_) => Self::local_path(ROLES_DIR_NAME),
+        }
+    }
+
+    pub fn themes_dir(&self) -> PathBuf {
+        match self.themes_dir.clone() {
+            Some(dir) => dir,
+            None => match env::var(get_env_name("themes_dir")) {
+                Ok(value) => PathBuf::from(value),
+                Err(_) => Self::local_path(THEMES_DIR_NAME),
+            },
         }
     }
 
@@ -601,6 +616,7 @@ impl Config {
             ("wrap_code", self.wrap_code.to_string()),
             ("highlight", self.highlight.to_string()),
             ("theme", format_option_value(&self.theme)),
+            ("themes_dir", display_path(&self.themes_dir())),
             ("config_file", display_path(&Self::config_file())),
             ("env_file", display_path(&Self::env_file())),
             ("roles_dir", display_path(&Self::roles_dir())),
@@ -1903,13 +1919,50 @@ impl Config {
         matches!(self.theme.as_deref(), Some("light"))
     }
 
+    pub fn load_theme(&self) -> Result<(Option<streamdown_render::RenderStyle>, Option<streamdown_render::Theme>)> {
+        let theme_name = match self.theme.as_deref() {
+            Some("light") | None => return Ok((None, None)),
+            Some(name) => name,
+        };
+        let theme_dir = self.themes_dir().join(theme_name);
+        let style = {
+            let path = theme_dir.join("style.toml");
+            if path.exists() {
+                let content = read_to_string(&path)
+                    .with_context(|| format!("Failed to read '{}'", path.display()))?;
+                let style: streamdown_render::RenderStyle = toml::from_str(&content)
+                    .with_context(|| format!("Invalid style.toml in theme '{theme_name}'"))?;
+                Some(style)
+            } else {
+                None
+            }
+        };
+        let syntax_theme = {
+            let path = theme_dir.join("syntax.bin");
+            if path.exists() {
+                let theme = streamdown_render::load_theme_from_file(&path)
+                    .map_err(|e| anyhow!("Invalid syntax.bin in theme '{theme_name}': {e}"))?;
+                Some(theme)
+            } else {
+                None
+            }
+        };
+        Ok((style, syntax_theme))
+    }
+
     pub fn render_options(&self) -> Result<RenderOptions> {
         let wrap = if *IS_STDOUT_TERMINAL {
             self.wrap.clone()
         } else {
             None
         };
-        Ok(RenderOptions::new(wrap, self.light_theme()))
+        let (custom_style, custom_theme) = if self.highlight {
+            self.load_theme()?
+        } else {
+            (None, None)
+        };
+        let light_theme = self.light_theme() && custom_theme.is_none();
+        Ok(RenderOptions::new(wrap, light_theme, custom_style, custom_theme))
     }
 
     pub fn render_prompt_left(&self) -> String {
@@ -2329,11 +2382,13 @@ impl Config {
                 self.theme = v;
             } else if *IS_STDOUT_TERMINAL {
                 if let Ok(color_scheme) = color_scheme(QueryOptions::default()) {
-                    let theme = match color_scheme {
+                    let theme_name = match color_scheme {
                         ColorScheme::Dark => "dark",
                         ColorScheme::Light => "light",
                     };
-                    self.theme = Some(theme.into());
+                    if self.themes_dir().join(theme_name).is_dir() {
+                        self.theme = Some(theme_name.into());
+                    }
                 }
             }
         }
