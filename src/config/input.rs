@@ -9,7 +9,7 @@ use crate::utils::{base64_encode, is_loader_protocol, sha256, AbortSignal};
 
 use anyhow::{bail, Context, Result};
 use indexmap::IndexSet;
-use std::{collections::HashMap, fs::File, io::Read};
+use std::collections::HashMap;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 const IMAGE_EXTS: [&str; 5] = ["png", "jpeg", "jpg", "webp", "gif"];
@@ -466,6 +466,7 @@ async fn load_documents(
     for file_path in local_files {
         if is_image(&file_path) {
             let contents = read_media_to_data_url(&file_path)
+                .await
                 .with_context(|| format!("Unable to read media '{file_path}'"))?;
             data_urls.insert(sha256(&contents), file_path);
             medias.push(contents)
@@ -520,7 +521,7 @@ fn is_image(path: &str) -> bool {
         .unwrap_or_default()
 }
 
-fn read_media_to_data_url(image_path: &str) -> Result<String> {
+async fn read_media_to_data_url(image_path: &str) -> Result<String> {
     let extension = get_patch_extension(image_path).unwrap_or_default();
     let mime_type = match extension.as_str() {
         "png" => "image/png",
@@ -529,9 +530,7 @@ fn read_media_to_data_url(image_path: &str) -> Result<String> {
         "gif" => "image/gif",
         _ => bail!("Unexpected media type"),
     };
-    let mut file = File::open(image_path)?;
-    let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer)?;
+    let buffer = tokio::fs::read(image_path).await?;
 
     let encoded_image = base64_encode(buffer);
     let data_url = format!("data:{mime_type};base64,{encoded_image}");

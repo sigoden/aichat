@@ -246,4 +246,27 @@ mod tests {
         assert!(safe_join_path("C:\\Users\\user\\dir1", "/files/file1").is_none());
         assert!(safe_join_path("C:\\Users\\user\\dir1", "../file1").is_none());
     }
+
+    #[test]
+    fn test_strip_think_tag() {
+        assert_eq!(strip_think_tag("<think>a</think>b"), "b");
+        assert_eq!(strip_think_tag("  <think>a</think>  b"), "b");
+        assert_eq!(strip_think_tag("<think>\nline\n</think>\nb"), "b");
+        assert_eq!(strip_think_tag("b"), "b");
+        assert_eq!(strip_think_tag("a <think>b</think>"), "a <think>b</think>");
+        assert_eq!(
+            strip_think_tag("<think>a</think><think>b</think>c"),
+            "<think>b</think>c"
+        );
+    }
+
+    #[test]
+    fn test_estimate_token_length() {
+        assert_eq!(estimate_token_length(""), 0);
+        assert_eq!(estimate_token_length("hello"), 2);
+        assert_eq!(estimate_token_length("hello world"), 3);
+        assert_eq!(estimate_token_length("你好"), 2);
+        assert_eq!(estimate_token_length("hello 你好"), 4);
+        assert_eq!(estimate_token_length("hello, world!"), 3);
+    }
 }
