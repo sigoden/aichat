@@ -315,7 +315,7 @@ To unzip a file in Rust, you can use the `zip` crate. Here's an example code tha
 use std::fs::File;
 
 fn unzip_file(path: &str, output_dir: &str) -> Result<(), Box<dyn std::error::Error>> {
-    todo!()
+    // ...
 }
 ```
 "#;
@@ -327,7 +327,7 @@ that shows how to unzip a file:
 use std::fs::File;
 
 fn unzip_file(path: &str, output_dir: &str) -> Result<(), Box<dyn std::error::Error>> {
-    todo!()
+    // ...
 }
 ```
 "#;
@@ -341,7 +341,7 @@ use std::fs::File;
 
 fn unzip_file(path: &str, output_dir: &str) -> Result<(), Box<dyn
 std::error::Error>> {
-    todo!()
+    // ...
 }
 ```
 "#;

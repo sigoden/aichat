@@ -108,19 +108,17 @@ pub fn run_command_with_output<T: AsRef<OsStr>>(
 pub fn run_loader_command(path: &str, extension: &str, loader_command: &str) -> Result<String> {
     let cmd_args = shell_words::split(loader_command)
         .with_context(|| anyhow!("Invalid document loader '{extension}': `{loader_command}`"))?;
-    let mut use_stdout = true;
     let outpath = temp_file("-output-", "").display().to_string();
+    let safe_path = sanitize_path(path);
+    let mut use_stdout = true;
     let cmd_args: Vec<_> = cmd_args
         .into_iter()
-        .map(|mut v| {
-            if v.contains("$1") {
-                v = v.replace("$1", path);
-            }
-            if v.contains("$2") {
+        .map(|v| {
+            let (replaced, has_outpath) = replace_placeholders(&v, &safe_path, &outpath);
+            if has_outpath {
                 use_stdout = false;
-                v = v.replace("$2", &outpath);
             }
-            v
+            replaced
         })
         .collect();
     let cmd_eval = shell_words::join(&cmd_args);
@@ -180,6 +178,42 @@ pub fn append_to_shell_history(shell: &str, command: &str, exit_code: i32) -> io
     Ok(())
 }
 
+fn sanitize_path(path: &str) -> String {
+    if path.starts_with('-') && !Path::new(path).is_absolute() {
+        format!("./{path}")
+    } else {
+        path.to_string()
+    }
+}
+
+fn replace_placeholders(template: &str, path: &str, outpath: &str) -> (String, bool) {
+    let mut has_outpath = false;
+    let mut result = String::new();
+    let mut i = 0;
+    let chars: Vec<char> = template.chars().collect();
+    while i < chars.len() {
+        if chars[i] == '$' && i + 1 < chars.len() {
+            match chars[i + 1] {
+                '1' => {
+                    result.push_str(path);
+                    i += 2;
+                    continue;
+                }
+                '2' => {
+                    result.push_str(outpath);
+                    has_outpath = true;
+                    i += 2;
+                    continue;
+                }
+                _ => {}
+            }
+        }
+        result.push(chars[i]);
+        i += 1;
+    }
+    (result, has_outpath)
+}
+
 fn get_history_file(shell: &str) -> Option<PathBuf> {
     match shell {
         "bash" | "sh" => env::var("HISTFILE")
@@ -225,5 +259,37 @@ fn get_history_file(shell: &str) -> Option<PathBuf> {
         "ksh" => Some(home_dir()?.join(".ksh_history")),
         "tcsh" => Some(home_dir()?.join(".history")),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sanitize_path() {
+        assert_eq!(sanitize_path("-v"), "./-v");
+        assert_eq!(sanitize_path("file.txt"), "file.txt");
+        assert_eq!(sanitize_path("/tmp/-v"), "/tmp/-v");
+    }
+
+    #[test]
+    fn test_replace_placeholders() {
+        let path = "./-v";
+        let outpath = "/tmp/out";
+
+        let (res, has_out) = replace_placeholders("cat $1", path, outpath);
+        assert_eq!(res, "cat ./-v");
+        assert!(!has_out);
+
+        let (res, has_out) = replace_placeholders("cmd $1 $2", path, outpath);
+        assert_eq!(res, "cmd ./-v /tmp/out");
+        assert!(has_out);
+
+        // Test double expansion prevention
+        let path_with_placeholder = "foo$2bar";
+        let (res, has_out) = replace_placeholders("$1", path_with_placeholder, outpath);
+        assert_eq!(res, "foo$2bar");
+        assert!(!has_out);
     }
 }

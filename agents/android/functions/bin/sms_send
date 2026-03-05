@@ -1,0 +1,5 @@
+#!/bin/bash
+NUMBER=$(echo "$1" | jq -r .number)
+MESSAGE=$(echo "$1" | jq -r .message)
+termux-sms-send -n "$NUMBER" "$MESSAGE"
+echo "SMS sent to $NUMBER"
