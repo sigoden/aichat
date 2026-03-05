@@ -17,7 +17,7 @@ use crate::utils::{
 };
 
 use anyhow::{bail, Context, Result};
-use crossterm::cursor::SetCursorStyle;
+use crossterm::{cursor::SetCursorStyle, terminal};
 use fancy_regex::Regex;
 use reedline::CursorConfig;
 use reedline::{
@@ -31,10 +31,11 @@ use std::{env, process};
 
 const MENU_NAME: &str = "completion_menu";
 
-static REPL_COMMANDS: LazyLock<[ReplCommand; 36]> = LazyLock::new(|| {
+static REPL_COMMANDS: LazyLock<[ReplCommand; 37]> = LazyLock::new(|| {
     [
         ReplCommand::new(".help", "Show this help guide", AssertState::pass()),
         ReplCommand::new(".info", "Show system info", AssertState::pass()),
+        ReplCommand::new(".clear", "Clear screen", AssertState::pass()),
         ReplCommand::new(
             ".edit config",
             "Modify configuration file",
@@ -699,7 +700,10 @@ pub async fn run_repl_command(
                 Some("messages") => {
                     bail!("Use '.empty session' instead");
                 }
-                _ => unknown_command()?,
+                _ => {
+                    let terminal_height = terminal::size()?.1 as usize;
+                    println!("{}", "\n".repeat(terminal_height))
+                }
             },
             _ => unknown_command()?,
         },
