@@ -44,7 +44,7 @@ pub async fn raw_stream(
         }
         if let Some(evt) = rx.recv().await {
             if let Some(spinner) = spinner.take() {
-                spinner.stop();
+                spinner.stop().await;
             }
 
             match evt {
@@ -59,7 +59,7 @@ pub async fn raw_stream(
         }
     }
     if let Some(spinner) = spinner.take() {
-        spinner.stop();
+        spinner.stop().await;
     }
     Ok(())
 }
@@ -83,7 +83,7 @@ async fn markdown_stream_inner(
         }
         for reply_event in gather_events(&mut rx).await {
             if let Some(spinner) = spinner.take() {
-                spinner.stop();
+                spinner.stop().await;
             }
 
             match reply_event {
@@ -157,7 +157,7 @@ async fn markdown_stream_inner(
     }
 
     if let Some(spinner) = spinner.take() {
-        spinner.stop();
+        spinner.stop().await;
     }
     Ok(())
 }
