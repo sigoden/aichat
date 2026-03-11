@@ -230,6 +230,7 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
         top_p,
         functions,
         stream,
+        extra_body,
     } = data;
 
     let messages_len = messages.len();
@@ -339,6 +340,9 @@ pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Mod
                 })
             })
             .collect();
+    }
+    if let Some(extra_body) = extra_body {
+        json_patch::merge(&mut body, &extra_body);
     }
     body
 }

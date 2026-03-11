@@ -239,6 +239,7 @@ impl Input {
         patch_messages(&mut messages, model);
         model.guard_max_input_tokens(&messages)?;
         let (temperature, top_p) = (self.role().temperature(), self.role().top_p());
+        let extra_body = self.role().extra_body().cloned();
         let functions = self.config.read().select_functions(self.role());
         Ok(ChatCompletionsData {
             messages,
@@ -246,6 +247,7 @@ impl Input {
             top_p,
             functions,
             stream,
+            extra_body,
         })
     }
 

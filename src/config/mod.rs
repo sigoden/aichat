@@ -537,6 +537,7 @@ impl Config {
                 self.temperature,
                 self.top_p,
                 self.use_tools.clone(),
+                None,
             );
             role
         }

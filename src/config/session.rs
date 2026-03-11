@@ -8,7 +8,7 @@ use anyhow::{bail, Context, Result};
 use fancy_regex::Regex;
 use inquire::{validator::Validation, Confirm, Text};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::fs::{read_to_string, write};
 use std::path::Path;
@@ -579,6 +579,10 @@ impl RoleLike for Session {
 
     fn use_tools(&self) -> Option<String> {
         self.use_tools.clone()
+    }
+
+    fn extra_body(&self) -> Option<Value> {
+        None
     }
 
     fn set_model(&mut self, model: Model) {

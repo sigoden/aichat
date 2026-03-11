@@ -10,6 +10,7 @@ use inquire::{validator::Validation, Text};
 use std::{fs::read_to_string, path::Path};
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 const DEFAULT_AGENT_NAME: &str = "rag";
 
@@ -346,6 +347,10 @@ impl RoleLike for Agent {
 
     fn use_tools(&self) -> Option<String> {
         self.config.use_tools.clone()
+    }
+
+    fn extra_body(&self) -> Option<Value> {
+        None
     }
 
     fn set_model(&mut self, model: Model) {

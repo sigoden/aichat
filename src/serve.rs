@@ -318,6 +318,7 @@ impl Server {
             top_p,
             functions,
             stream,
+            extra_body: None,
         };
 
         if stream {

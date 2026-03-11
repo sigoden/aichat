@@ -325,6 +325,7 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
         top_p,
         functions,
         stream: _,
+        extra_body,
     } = data;
 
     let system_message = extract_system_message(&mut messages);
@@ -473,6 +474,9 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
         body["toolConfig"] = json!({
             "tools": tools,
         })
+    }
+    if let Some(extra_body) = extra_body {
+        json_patch::merge(&mut body, &extra_body);
     }
     Ok(body)
 }

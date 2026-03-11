@@ -284,6 +284,7 @@ pub struct ChatCompletionsData {
     pub top_p: Option<f64>,
     pub functions: Option<Vec<FunctionDeclaration>>,
     pub stream: bool,
+    pub extra_body: Option<Value>,
 }
 
 #[derive(Debug, Clone, Default)]
