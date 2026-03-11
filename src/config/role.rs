@@ -29,6 +29,7 @@ pub trait RoleLike {
     fn temperature(&self) -> Option<f64>;
     fn top_p(&self) -> Option<f64>;
     fn use_tools(&self) -> Option<String>;
+    fn extra_body(&self) -> Option<Value>;
     fn set_model(&mut self, model: Model);
     fn set_temperature(&mut self, value: Option<f64>);
     fn set_top_p(&mut self, value: Option<f64>);
@@ -51,6 +52,8 @@ pub struct Role {
     top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     use_tools: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    extra_body: Option<Value>,
 
     #[serde(skip)]
     model: Model,
@@ -82,6 +85,10 @@ impl Role {
                             "temperature" => role.temperature = value.as_f64(),
                             "top_p" => role.top_p = value.as_f64(),
                             "use_tools" => role.use_tools = value.as_str().map(|v| v.to_string()),
+                            "extra_body" => {
+                                let json_value = serde_json::to_value(value).ok();
+                                role.extra_body = json_value;
+                            }
                             _ => (),
                         }
                     }
@@ -128,6 +135,12 @@ impl Role {
         if let Some(use_tools) = self.use_tools() {
             metadata.push(format!("use_tools: {use_tools}"));
         }
+        if let Some(extra_body) = &self.extra_body {
+            if let Ok(yaml_str) = serde_yaml::to_string(extra_body) {
+                let yaml_str = yaml_str.trim();
+                metadata.push(format!("extra_body:\n  {}", yaml_str.replace('\n', "\n  ")));
+            }
+        }
         if metadata.is_empty() {
             format!("{}\n", self.prompt)
         } else if self.prompt.is_empty() {
@@ -165,7 +178,8 @@ impl Role {
         let temperature = role_like.temperature();
         let top_p = role_like.top_p();
         let use_tools = role_like.use_tools();
-        self.batch_set(model, temperature, top_p, use_tools);
+        let extra_body = role_like.extra_body();
+        self.batch_set(model, temperature, top_p, use_tools, extra_body);
     }
 
     pub fn batch_set(
@@ -174,6 +188,7 @@ impl Role {
         temperature: Option<f64>,
         top_p: Option<f64>,
         use_tools: Option<String>,
+        extra_body: Option<Value>,
     ) {
         self.set_model(model.clone());
         if temperature.is_some() {
@@ -185,6 +200,13 @@ impl Role {
         if use_tools.is_some() {
             self.set_use_tools(use_tools);
         }
+        if extra_body.is_some() {
+            self.extra_body = extra_body;
+        }
+    }
+
+    pub fn extra_body(&self) -> Option<&Value> {
+        self.extra_body.as_ref()
     }
 
     pub fn is_derived(&self) -> bool {
@@ -278,6 +300,10 @@ impl RoleLike for Role {
 
     fn use_tools(&self) -> Option<String> {
         self.use_tools.clone()
+    }
+
+    fn extra_body(&self) -> Option<Value> {
+        self.extra_body.clone()
     }
 
     fn set_model(&mut self, model: Model) {

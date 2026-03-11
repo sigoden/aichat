@@ -316,6 +316,7 @@ pub fn gemini_build_chat_completions_body(
         top_p,
         functions,
         stream: _,
+        extra_body,
     } = data;
 
     let system_message = extract_system_message(&mut messages);
@@ -419,6 +420,9 @@ pub fn gemini_build_chat_completions_body(
             })
             .collect();
         body["tools"] = json!([{ "functionDeclarations": function_declarations }]);
+    }
+    if let Some(extra_body) = extra_body {
+        json_patch::merge(&mut body, &extra_body);
     }
 
     Ok(body)
