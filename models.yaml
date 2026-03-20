@@ -1182,10 +1182,22 @@
       input_price: 0.112
 
 # Links:
-# - https://platform.minimaxi.com/docs/guides/pricing-paygo
-# - https://platform.minimaxi.com/document/ChatCompletion%20v2
+# - https://platform.minimax.io/docs/api-reference/text-openai-api
+# - https://platform.minimax.io/docs/guides/pricing-paygo
 - provider: minimax
   models:
+    - name: MiniMax-M2.7
+      max_input_tokens: 204800
+      max_output_tokens: 192000
+      input_price: 0.3
+      output_price: 1.2
+      supports_function_calling: true
+    - name: MiniMax-M2.7-highspeed
+      max_input_tokens: 204800
+      max_output_tokens: 192000
+      input_price: 0.6
+      output_price: 2.4
+      supports_function_calling: true
     - name: minimax-m2.5
       max_input_tokens: 204800
       input_price: 0.294
