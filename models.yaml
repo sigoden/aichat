@@ -1208,6 +1208,34 @@
       supports_function_calling: true
 
 # Links:
+#  - https://ofox.ai
+#  - https://docs.ofox.ai/zh/api
+- provider: ofoxai
+  models:
+    - name: gpt-4o-mini
+      max_input_tokens: 128000
+      max_output_tokens: 16384
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-sonnet-4-20250514
+      max_input_tokens: 200000
+      max_output_tokens: 64000
+      supports_vision: true
+      supports_function_calling: true
+    - name: gemini-2.5-flash
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      supports_vision: true
+      supports_function_calling: true
+    - name: deepseek-chat
+      max_input_tokens: 64000
+      max_output_tokens: 64000
+      supports_function_calling: true
+    - name: deepseek-reasoner
+      max_input_tokens: 64000
+      max_output_tokens: 64000
+
+# Links:
 #  - https://openrouter.ai/models
 #  - https://openrouter.ai/docs/api-reference/chat-completion
 - provider: openrouter
