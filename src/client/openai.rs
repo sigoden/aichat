@@ -157,25 +157,27 @@ pub async fn openai_chat_completions_streaming(
                 handler.text("\n</think>\n\n")?;
                 reasoning_state = 0;
             }
-            let maybe_call_id = format!("{}/{}", id.unwrap_or_default(), index.unwrap_or_default());
-            if maybe_call_id != call_id && maybe_call_id.len() >= call_id.len() {
-                if !function_name.is_empty() {
-                    if function_arguments.is_empty() {
-                        function_arguments = String::from("{}");
+            if let Some(call_id_str) = id {
+                let maybe_call_id = format!("{}/{}", call_id_str, index.unwrap_or_default());
+                if maybe_call_id != call_id {
+                    if !function_name.is_empty() {
+                        if function_arguments.is_empty() {
+                            function_arguments = String::from("{}");
+                        }
+                        let arguments: Value = function_arguments.parse().with_context(|| {
+                            format!("Tool call '{function_name}' have non-JSON arguments '{function_arguments}'")
+                        })?;
+                        handler.tool_call(ToolCall::new(
+                            function_name.clone(),
+                            arguments,
+                            normalize_function_id(&function_id),
+                        ))?;
                     }
-                    let arguments: Value = function_arguments.parse().with_context(|| {
-                        format!("Tool call '{function_name}' have non-JSON arguments '{function_arguments}'")
-                    })?;
-                    handler.tool_call(ToolCall::new(
-                        function_name.clone(),
-                        arguments,
-                        normalize_function_id(&function_id),
-                    ))?;
+                    function_name.clear();
+                    function_arguments.clear();
+                    function_id.clear();
+                    call_id = maybe_call_id;
                 }
-                function_name.clear();
-                function_arguments.clear();
-                function_id.clear();
-                call_id = maybe_call_id;
             }
             if let Some(name) = function.get("name").and_then(|v| v.as_str()) {
                 if name.starts_with(&function_name) {
