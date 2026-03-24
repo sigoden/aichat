@@ -33,7 +33,7 @@ register_client!(
     (bedrock, "bedrock", BedrockConfig, BedrockClient),
 );
 
-pub const OPENAI_COMPATIBLE_PROVIDERS: [(&str, &str); 18] = [
+pub const OPENAI_COMPATIBLE_PROVIDERS: [(&str, &str); 19] = [
     ("ai21", "https://api.ai21.com/studio/v1"),
     (
         "cloudflare",
@@ -46,6 +46,7 @@ pub const OPENAI_COMPATIBLE_PROVIDERS: [(&str, &str); 18] = [
     ("groq", "https://api.groq.com/openai/v1"),
     ("hunyuan", "https://api.hunyuan.cloud.tencent.com/v1"),
     ("minimax", "https://api.minimax.chat/v1"),
+    ("novita", "https://api.novita.ai/openai"),
     ("mistral", "https://api.mistral.ai/v1"),
     ("moonshot", "https://api.moonshot.cn/v1"),
     ("openrouter", "https://openrouter.ai/api/v1"),
