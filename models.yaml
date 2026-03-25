@@ -438,48 +438,103 @@
 #  - https://console.groq.com/docs/api-reference#chat
 - provider: groq
   models:
-    - name: openai/gpt-oss-120b
-      max_input_tokens: 131072
+    - name: allam-2-7b
+      max_input_tokens: 4096
+      max_output_tokens: 4096
       input_price: 0
       output_price: 0
-      supports_function_calling: true
-    - name: openai/gpt-oss-20b
-      max_input_tokens: 131072
+    - name: canopylabs/orpheus-arabic-saudi
+      max_input_tokens: 4000
+      max_output_tokens: 50000
       input_price: 0
       output_price: 0
-      supports_function_calling: true
-    - name: meta-llama/llama-4-maverick-17b-128e-instruct
-      max_input_tokens: 131072
+    - name: canopylabs/orpheus-v1-english
+      max_input_tokens: 4000
+      max_output_tokens: 50000
       input_price: 0
       output_price: 0
-      supports_vision: true
-      supports_function_calling: true
-    - name: meta-llama/llama-4-scout-17b-16e-instruct
+    - name: groq/compound
       max_input_tokens: 131072
+      max_output_tokens: 8192
       input_price: 0
       output_price: 0
-      supports_vision: true
+    - name: groq/compound-mini
+      max_input_tokens: 131072
+      max_output_tokens: 8192
+      input_price: 0
+      output_price: 0
+    - name: llama-3.1-8b-instant
+      max_input_tokens: 131072
+      max_output_tokens: 131072
+      input_price: 0
+      output_price: 0
       supports_function_calling: true
     - name: llama-3.3-70b-versatile
       max_input_tokens: 131072
+      max_output_tokens: 32768
+      input_price: 0
+      output_price: 0
+      supports_function_calling: true
+    - name: meta-llama/llama-4-scout-17b-16e-instruct
+      max_input_tokens: 131072
+      max_output_tokens: 8192
+      input_price: 0
+      output_price: 0
+      supports_vision: true
+      supports_function_calling: true
+    - name: meta-llama/llama-prompt-guard-2-22m
+      max_input_tokens: 512
+      max_output_tokens: 512
+      input_price: 0
+      output_price: 0
+    - name: meta-llama/llama-prompt-guard-2-86m
+      max_input_tokens: 512
+      max_output_tokens: 512
+      input_price: 0
+      output_price: 0
+    - name: moonshotai/kimi-k2-instruct
+      max_input_tokens: 131072
+      max_output_tokens: 16384
       input_price: 0
       output_price: 0
       supports_function_calling: true
     - name: moonshotai/kimi-k2-instruct-0905
       max_input_tokens: 262144
+      max_output_tokens: 16384
+      input_price: 0
+      output_price: 0
+      supports_function_calling: true
+    - name: openai/gpt-oss-120b
+      max_input_tokens: 131072
+      max_output_tokens: 65536
+      input_price: 0
+      output_price: 0
+      supports_function_calling: true
+    - name: openai/gpt-oss-20b
+      max_input_tokens: 131072
+      max_output_tokens: 65536
+      input_price: 0
+      output_price: 0
+      supports_function_calling: true
+    - name: openai/gpt-oss-safeguard-20b
+      max_input_tokens: 131072
+      max_output_tokens: 65536
       input_price: 0
       output_price: 0
       supports_function_calling: true
     - name: qwen/qwen3-32b
       max_input_tokens: 131072
+      max_output_tokens: 40960
       input_price: 0
       output_price: 0
-    - name: groq/compound
-      max_input_tokens: 131072
+    - name: whisper-large-v3
+      max_input_tokens: 448
+      max_output_tokens: 448
       input_price: 0
       output_price: 0
-    - name: groq/compound-mini
-      max_input_tokens: 131072
+    - name: whisper-large-v3-turbo
+      max_input_tokens: 448
+      max_output_tokens: 448
       input_price: 0
       output_price: 0
 
