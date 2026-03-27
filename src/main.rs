@@ -152,6 +152,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
     if cli.save_session {
         config.write().set_save_session_this_time()?;
     }
+    config.write().apply_prelude()?;
     if cli.info {
         let info = config.read().info()?;
         println!("{info}");
@@ -176,7 +177,6 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         shell_execute(&config, &SHELL, input, abort_signal.clone()).await?;
         return Ok(());
     }
-    config.write().apply_prelude()?;
     match is_repl {
         false => {
             let mut input = create_input(&config, text, &cli.file, abort_signal.clone()).await?;
