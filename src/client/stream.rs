@@ -293,4 +293,32 @@ mod tests {
 {"key": "value3"}"#;
         assert_json_stream!(input, output);
     }
+
+    #[tokio::test]
+    async fn test_sse_handler() {
+        let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+        let abort_signal = crate::utils::create_abort_signal();
+        let mut handler = SseHandler::new(sender, abort_signal);
+
+        let tool_call = ToolCall::new("test_tool".into(), serde_json::json!({"arg": 1}), Some("id1".into()));
+        handler.tool_call(tool_call.clone()).unwrap();
+        assert_eq!(handler.tool_calls(), &[tool_call.clone()]);
+
+        handler.text("hello").unwrap();
+        assert_eq!(handler.buffer, "hello");
+        match receiver.recv().await.unwrap() {
+            SseEvent::Text(text) => assert_eq!(text, "hello"),
+            _ => panic!("Expected SseEvent::Text"),
+        }
+
+        handler.done();
+        match receiver.recv().await.unwrap() {
+            SseEvent::Done => {}
+            _ => panic!("Expected SseEvent::Done"),
+        }
+
+        let (buffer, tool_calls) = handler.take();
+        assert_eq!(buffer, "hello");
+        assert_eq!(tool_calls, vec![tool_call]);
+    }
 }
