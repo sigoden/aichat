@@ -324,6 +324,7 @@ _argc_before() {
         perplexity,llama-3.1-8b-instruct,https://api.perplexity.ai \
         qianwen,qwen-turbo-latest,https://dashscope.aliyuncs.com/compatible-mode/v1 \
         xai,grok-beta,https://api.x.ai/v1 \
+        zai,glm-4.7-flash,https://api.z.ai/api/paas/v4 \
         zhipuai,glm-4-0520,https://open.bigmodel.cn/api/paas/v4 \
     )
 
