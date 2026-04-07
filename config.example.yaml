@@ -277,6 +277,13 @@ clients:
     api_base: https://open.bigmodel.cn/api/paas/v4
     api_key: xxx
 
+  # See https://z.ai
+  # For coding scenarios, use https://api.z.ai/api/coding/paas/v4 instead
+  - type: openai-compatible
+    name: zai
+    api_base: https://api.z.ai/api/paas/v4
+    api_key: xxx
+
   # See https://platform.minimaxi.com/document/Fast%20access
   - type: openai-compatible
     name: minimax

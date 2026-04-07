@@ -1182,6 +1182,39 @@
       input_price: 0.112
 
 # Links:
+#  - https://docs.z.ai
+- provider: zai
+  models:
+    - name: glm-5
+      max_input_tokens: 200000
+      max_output_tokens: 128000
+      supports_function_calling: true
+    - name: glm-5-turbo
+      max_input_tokens: 200000
+      max_output_tokens: 128000
+      supports_function_calling: true
+    - name: glm-4.7
+      max_input_tokens: 200000
+      max_output_tokens: 128000
+      supports_function_calling: true
+    - name: glm-4.6
+      max_input_tokens: 200000
+      max_output_tokens: 128000
+      supports_function_calling: true
+    - name: glm-4.5
+      max_input_tokens: 128000
+      max_output_tokens: 96000
+      input_price: 0.2
+      output_price: 1.1
+      supports_function_calling: true
+    - name: glm-4-32b-0414-128k
+      max_input_tokens: 128000
+      max_output_tokens: 16000
+      input_price: 0.1
+      output_price: 0.1
+      supports_function_calling: true
+
+# Links:
 # - https://platform.minimaxi.com/docs/guides/pricing-paygo
 # - https://platform.minimaxi.com/document/ChatCompletion%20v2
 - provider: minimax
