@@ -33,6 +33,7 @@ impl_client_trait!(
     ),
     (prepare_embeddings, openai_embeddings),
     (prepare_rerank, generic_rerank),
+    (openai_compatible_client_audio_transcriptions),
 );
 
 fn prepare_chat_completions(
@@ -139,6 +140,24 @@ pub async fn generic_rerank(builder: RequestBuilder, _model: &Model) -> Result<R
 #[derive(Deserialize)]
 pub struct GenericRerankResBody {
     pub results: RerankOutput,
+}
+
+pub async fn openai_compatible_client_audio_transcriptions(
+    self_: &OpenAICompatibleClient,
+    client: &reqwest::Client,
+    data: TranscriptionData,
+) -> Result<String> {
+    let api_key = self_.get_api_key().ok();
+    let api_base = get_api_base_ext(self_)?;
+    let model_name = self_.model.real_name().to_string();
+    openai_compatible_audio_transcriptions(
+        client,
+        &api_base,
+        api_key.as_deref(),
+        &model_name,
+        data,
+    )
+    .await
 }
 
 pub fn generic_build_rerank_body(data: &RerankData, model: &Model) -> Value {

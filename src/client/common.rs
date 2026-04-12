@@ -148,6 +148,21 @@ pub trait Client: Sync + Send {
         bail!("The client doesn't support rerank api")
     }
 
+    async fn audio_transcriptions(&self, data: TranscriptionData) -> Result<String> {
+        let client = self.build_client()?;
+        self.audio_transcriptions_inner(&client, data)
+            .await
+            .context("Failed to call audio-transcriptions api")
+    }
+
+    async fn audio_transcriptions_inner(
+        &self,
+        _client: &ReqwestClient,
+        _data: TranscriptionData,
+    ) -> Result<String> {
+        bail!("The client doesn't support audio transcriptions api")
+    }
+
     fn request_builder(
         &self,
         client: &reqwest::Client,
@@ -341,6 +356,19 @@ pub type RerankOutput = Vec<RerankResult>;
 pub struct RerankResult {
     pub index: usize,
     pub relevance_score: f64,
+}
+
+pub struct TranscriptionData {
+    pub path: std::path::PathBuf,
+    pub prompt: Option<String>,
+}
+
+pub async fn noop_audio_transcriptions<T: Client>(
+    _self: &T,
+    _client: &ReqwestClient,
+    _data: TranscriptionData,
+) -> Result<String> {
+    bail!("The client doesn't support audio transcriptions api")
 }
 
 pub type PromptAction<'a> = (&'a str, &'a str, Option<&'a str>);
