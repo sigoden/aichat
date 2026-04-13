@@ -173,6 +173,7 @@ macro_rules! impl_client_trait {
         ($prepare_chat_completions:path, $chat_completions:path, $chat_completions_streaming:path),
         ($prepare_embeddings:path, $embeddings:path),
         ($prepare_rerank:path, $rerank:path),
+        ($audio_transcriptions:path),
     ) => {
         #[async_trait::async_trait]
         impl $crate::client::Client for $crate::client::$client {
@@ -217,6 +218,14 @@ macro_rules! impl_client_trait {
                 let request_data = $prepare_rerank(self, data)?;
                 let builder = self.request_builder(client, request_data);
                 $rerank(builder, self.model()).await
+            }
+
+            async fn audio_transcriptions_inner(
+                &self,
+                client: &reqwest::Client,
+                data: $crate::client::TranscriptionData,
+            ) -> Result<String> {
+                $audio_transcriptions(self, client, data).await
             }
         }
     };

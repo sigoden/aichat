@@ -6,11 +6,12 @@ use self::completer::ReplCompleter;
 use self::highlighter::ReplHighlighter;
 use self::prompt::ReplPrompt;
 
-use crate::client::{call_chat_completions, call_chat_completions_streaming};
+use crate::client::{call_chat_completions, call_chat_completions_streaming, init_client, TranscriptionData};
 use crate::config::{
     macro_execute, AgentVariables, AssertState, Config, GlobalConfig, Input, LastMessage,
     StateFlags,
 };
+use crate::function::ToolResult;
 use crate::render::render_error;
 use crate::utils::{
     abortable_run_with_spinner, create_abort_signal, dimmed_text, set_text, temp_file, AbortSignal,
@@ -31,7 +32,7 @@ use std::{env, process};
 
 const MENU_NAME: &str = "completion_menu";
 
-static REPL_COMMANDS: LazyLock<[ReplCommand; 36]> = LazyLock::new(|| {
+static REPL_COMMANDS: LazyLock<[ReplCommand; 37]> = LazyLock::new(|| {
     [
         ReplCommand::new(".help", "Show this help guide", AssertState::pass()),
         ReplCommand::new(".info", "Show system info", AssertState::pass()),
@@ -164,6 +165,11 @@ static REPL_COMMANDS: LazyLock<[ReplCommand; 36]> = LazyLock::new(|| {
         ReplCommand::new(
             ".file",
             "Include files, directories, URLs or commands",
+            AssertState::pass(),
+        ),
+        ReplCommand::new(
+            ".transcript",
+            "Transcribe an audio file",
             AssertState::pass(),
         ),
         ReplCommand::new(
@@ -612,6 +618,37 @@ pub async fn run_repl_command(
 .file `git diff` -- Generate git commit message
 .file jina:https://example.com
 .file %% -- translate last reply to english"#
+                ),
+            },
+            ".transcript" => match args {
+                Some(args) => {
+                    let (files, text) = split_args_text(args, cfg!(windows));
+                    if files.is_empty() {
+                        println!("Usage: .transcript <audio-file> [-- <prompt>]");
+                    } else {
+                        let path = std::path::PathBuf::from(&files[0]);
+                        let prompt = if text.is_empty() { None } else { Some(text.to_string()) };
+                        let data = TranscriptionData { path, prompt };
+                        let model = config.read().current_model().clone();
+                        let client = init_client(config, Some(model))?;
+                        let transcript = abortable_run_with_spinner(
+                            client.audio_transcriptions(data),
+                            "Transcribing",
+                            abort_signal.clone(),
+                        )
+                        .await?;
+                        config.read().print_markdown(&transcript)?;
+                        let input = Input::from_str(config, &files[0], None);
+                        config
+                            .write()
+                            .after_chat_completion(&input, &transcript, &[] as &[ToolResult])?;
+                    }
+                }
+                None => println!(
+                    r#"Usage: .transcript <audio-file> [-- <prompt>]
+
+.transcript meeting.mp3
+.transcript interview.wav -- Interview about Rust programming"#
                 ),
             },
             ".continue" => {

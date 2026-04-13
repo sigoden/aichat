@@ -37,6 +37,7 @@ impl_client_trait!(
     ),
     (prepare_embeddings, openai_embeddings),
     (noop_prepare_rerank, noop_rerank),
+    (openai_audio_transcriptions),
 );
 
 fn prepare_chat_completions(
@@ -405,4 +406,91 @@ fn normalize_function_id(value: &str) -> Option<String> {
     } else {
         Some(value.to_string())
     }
+}
+
+pub async fn openai_audio_transcriptions(
+    self_: &OpenAIClient,
+    client: &reqwest::Client,
+    data: TranscriptionData,
+) -> Result<String> {
+    let api_key = self_.get_api_key()?;
+    let api_base = self_
+        .get_api_base()
+        .unwrap_or_else(|_| API_BASE.to_string());
+    let model_name = self_.model.real_name().to_string();
+    openai_compatible_audio_transcriptions(client, &api_base, Some(&api_key), &model_name, data)
+        .await
+}
+
+pub async fn openai_compatible_audio_transcriptions(
+    client: &reqwest::Client,
+    api_base: &str,
+    api_key: Option<&str>,
+    model_name: &str,
+    data: TranscriptionData,
+) -> Result<String> {
+    let url = format!("{}/audio/transcriptions", api_base.trim_end_matches('/'));
+
+    let file_bytes = tokio::fs::read(&data.path)
+        .await
+        .with_context(|| format!("Failed to read audio file '{}'", data.path.display()))?;
+
+    let file_name = data
+        .path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("audio")
+        .to_string();
+
+    let mime_type = audio_mime_type(&data.path);
+
+    let file_part = reqwest::multipart::Part::bytes(file_bytes)
+        .file_name(file_name)
+        .mime_str(&mime_type)
+        .context("Invalid MIME type for audio file")?;
+
+    let mut form = reqwest::multipart::Form::new()
+        .part("file", file_part)
+        .text("model", model_name.to_string());
+
+    if let Some(prompt) = data.prompt {
+        form = form.text("prompt", prompt);
+    }
+
+    let mut request = client.post(&url).multipart(form);
+    if let Some(key) = api_key {
+        request = request.bearer_auth(key);
+    }
+
+    let res = request.send().await?;
+    let status = res.status();
+    let body: serde_json::Value = res.json().await?;
+
+    if !status.is_success() {
+        catch_error(&body, status.as_u16())?;
+    }
+
+    body["text"]
+        .as_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| anyhow::anyhow!("Invalid transcription response: {body}"))
+}
+
+fn audio_mime_type(path: &std::path::Path) -> String {
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+    match ext.as_str() {
+        "mp3" | "mpeg" | "mpga" => "audio/mpeg",
+        "mp4" => "audio/mp4",
+        "m4a" => "audio/m4a",
+        "ogg" | "oga" => "audio/ogg",
+        "wav" => "audio/wav",
+        "webm" => "audio/webm",
+        "flac" => "audio/flac",
+        _ => "application/octet-stream",
+    }
+    .to_string()
 }

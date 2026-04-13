@@ -36,6 +36,7 @@ impl_client_trait!(
     ),
     (noop_prepare_embeddings, noop_embeddings),
     (noop_prepare_rerank, noop_rerank),
+    (noop_audio_transcriptions),
 );
 
 fn prepare_chat_completions(
