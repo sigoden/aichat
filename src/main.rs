@@ -171,15 +171,32 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         macro_execute(&config, name, text.as_deref(), abort_signal.clone()).await?;
         return Ok(());
     }
+    // When shell glob expansion places multiple file paths after a single `--file` flag,
+    // clap captures only the first as a file; the rest end up in the trailing text args.
+    // Detect those extra file paths and strip them from the text.
+    let extra_files = cli.extra_file_args();
+    let (text, files) = if extra_files.is_empty() {
+        (text, cli.file.clone())
+    } else {
+        let prefix = extra_files.join(" ");
+        let adjusted_text = text.map(|t| {
+            let rest = t.strip_prefix(&prefix).unwrap_or(&t).trim_start().to_string();
+            if rest.is_empty() { None } else { Some(rest) }
+        }).flatten();
+        let mut files = cli.file.clone();
+        files.extend(extra_files);
+        (adjusted_text, files)
+    };
+
     if cli.execute && !is_repl {
-        let input = create_input(&config, text, &cli.file, abort_signal.clone()).await?;
+        let input = create_input(&config, text, &files, abort_signal.clone()).await?;
         shell_execute(&config, &SHELL, input, abort_signal.clone()).await?;
         return Ok(());
     }
     config.write().apply_prelude()?;
     match is_repl {
         false => {
-            let mut input = create_input(&config, text, &cli.file, abort_signal.clone()).await?;
+            let mut input = create_input(&config, text, &files, abort_signal.clone()).await?;
             input.use_embeddings(abort_signal.clone()).await?;
             start_directive(&config, input, cli.code, abort_signal).await
         }

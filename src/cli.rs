@@ -126,4 +126,25 @@ impl Cli {
             }
         }
     }
+
+    /// When `--file` is specified and shell glob expansion adds multiple files after a single
+    /// `--file` flag, clap only captures the first file; the rest flow into the trailing text
+    /// args. This method detects those extra file paths from the leading text args so callers
+    /// can add them to the file list and remove them from the text.
+    ///
+    /// Returns the extra file paths found at the start of the trailing text args.
+    pub fn extra_file_args(&self) -> Vec<String> {
+        if self.file.is_empty() {
+            return vec![];
+        }
+        let mut extra = vec![];
+        for arg in &self.text {
+            if std::path::Path::new(arg.as_str()).exists() {
+                extra.push(arg.clone());
+            } else {
+                break;
+            }
+        }
+        extra
+    }
 }
