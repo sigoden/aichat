@@ -315,3 +315,25 @@ clients:
     name: voyageai
     api_base: https://api.voyageai.com/v1
     api_key: xxx
+
+  # See https://github.com/CommonstackAI/UncommonRoute
+  # Intelligent LLM cost optimizer - routes requests to the cheapest capable model
+  # Install: pipx install uncommon-route && uncommon-route init && uncommon-route serve
+  - type: openai-compatible
+    name: uncommonroute
+    api_base: http://localhost:8403/v1
+    api_key: not-needed
+    models:
+      - name: uncommon-route/auto
+        max_input_tokens: 200000
+        max_output_tokens: 8192
+        supports_function_calling: true
+      - name: uncommon-route/fast
+        max_input_tokens: 200000
+        max_output_tokens: 8192
+        supports_function_calling: true
+      - name: uncommon-route/best
+        max_input_tokens: 200000
+        max_output_tokens: 8192
+        supports_vision: true
+        supports_function_calling: true
