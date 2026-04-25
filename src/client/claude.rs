@@ -144,6 +144,13 @@ pub async fn claude_chat_completions_streaming(
                         ))?;
                     }
                 }
+                "error" => {
+                    let err_type = data["error"]["type"].as_str().unwrap_or("unknown");
+                    let err_msg = data["error"]["message"]
+                        .as_str()
+                        .unwrap_or("Unknown error");
+                    bail!("{err_msg} (type: {err_type})");
+                }
                 _ => {}
             }
         }

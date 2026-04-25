@@ -524,6 +524,8 @@ pub fn catch_error(data: &Value, status: u16) -> Result<()> {
     } else if let (Some(detail), Some(status)) = (data["detail"].as_str(), data["status"].as_i64())
     {
         bail!("{detail} (status: {status})");
+    } else if let (Some(detail), Some(code)) = (data["detail"].as_str(), data["code"].as_i64()) {
+        bail!("{detail} (status: {code})");
     } else if let Some(error) = data["error"].as_str() {
         bail!("{error}");
     } else if let Some(message) = data["message"].as_str() {
