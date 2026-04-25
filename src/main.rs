@@ -261,7 +261,7 @@ async fn shell_execute(
     }
     if *IS_STDOUT_TERMINAL {
         let options = ["execute", "revise", "describe", "copy", "quit"];
-        let command = color_text(eval_str.trim(), nu_ansi_term::Color::Rgb(255, 165, 0));
+        let command = warning_text(eval_str.trim());
         let first_letter_color = nu_ansi_term::Color::Cyan;
         let prompt_text = options
             .iter()
