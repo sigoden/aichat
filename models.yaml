@@ -1115,7 +1115,7 @@
 
 # Links:
 #  - https://api-docs.deepseek.com/quick_start/pricing
-#  - https://platform.deepseek.com/api-docs/api/create-chat-completion
+#  - https://api-docs.deepseek.com/api/create-chat-completion
 - provider: deepseek
   models:
     - name: deepseek-chat
@@ -1129,6 +1129,18 @@
       max_output_tokens: 32768
       input_price: 0.56
       output_price: 1.68
+    - name: deepseek-v4-flash
+      max_input_tokens: 1000000
+      max_output_tokens: 384000
+      input_price: 0.14
+      output_price: 0.28
+      supports_function_calling: true
+    - name: deepseek-v4-pro
+      max_input_tokens: 1000000
+      max_output_tokens: 384000
+      input_price: 1.74
+      output_price: 3.48
+      supports_function_calling: true
 
 # Links:
 #  - https://open.bigmodel.cn/pricing
