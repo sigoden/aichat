@@ -8,6 +8,12 @@
 SEARXNG_URL="${SEARXNG_URL:-http://localhost:8080}"
 TIMEOUT=10
 
+# Resolve the manage_searxng.sh script path relative to this script's location.
+# This script lives in <repo>/functions/bin/, so the repo root is two levels up.
+SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." 2>/dev/null && pwd)"
+MANAGE_SCRIPT="${REPO_ROOT}/scripts/searxng/manage_searxng.sh"
+
 # Extract the query
 if command -v jq >/dev/null 2>&1; then
     query=$(echo "$1" | jq -r '.query')
@@ -21,8 +27,13 @@ if [ -z "$query" ] || [ "$query" = "null" ]; then
     exit 1
 fi
 
-# URL encode the query
-encoded_query=$(printf '%s' "$query" | sed 's/ /+/g; s/[^a-zA-Z0-9+_.~-]/%&/g' | tr '[:lower:]' '[:upper:]' | sed 's/%\(..\)/%\L\1/g')
+# URL-encode the query using python3 (already required by the project) for correctness.
+# Falls back to a basic sed replacement if python3 is unavailable.
+if command -v python3 >/dev/null 2>&1; then
+    encoded_query=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote_plus(sys.argv[1]))" "$query")
+else
+    encoded_query=$(printf '%s' "$query" | sed 's/ /+/g')
+fi
 
 # Make the request to SearXNG
 response=$(curl -s --connect-timeout 5 --max-time "$TIMEOUT" \
@@ -30,28 +41,23 @@ response=$(curl -s --connect-timeout 5 --max-time "$TIMEOUT" \
     "${SEARXNG_URL}/search?q=${encoded_query}&format=json" 2>/dev/null)
 
 if [ $? -ne 0 ] || [ -z "$response" ]; then
-    # SearXNG not available - try to auto-start
-    SCRIPT_PATH="scripts/searxng/manage_searxng.sh"
-    
-    # Check if we can find the management script
-    if [ ! -f "$SCRIPT_PATH" ]; then
-        # Try looking one level up or in common locations if needed, but for now stick to CWD assumption from main.rs
+    # SearXNG not available - try to auto-start using the resolved script path
+    if [ ! -f "$MANAGE_SCRIPT" ]; then
         cat <<EOF
 {
-  "error": "SearXNG not available at ${SEARXNG_URL}. Could not find ${SCRIPT_PATH} to auto-start it.",
+  "error": "SearXNG not available at ${SEARXNG_URL}. Could not find the management script at ${MANAGE_SCRIPT}.",
   "results": []
 }
 EOF
         exit 0
     fi
 
-    # Auto-start SearXNG
-    # We output a message to stderr so it doesn't break JSON output for the tool user (but user on CLI sees it)
-    echo "SearXNG not reachable. Attempting to start it via ${SCRIPT_PATH}..." >&2
-    bash "$SCRIPT_PATH" start >&2
-    
+    # Auto-start SearXNG (stderr so it doesn't corrupt JSON output)
+    echo "SearXNG not reachable. Attempting to start it via ${MANAGE_SCRIPT}..." >&2
+    bash "$MANAGE_SCRIPT" start >&2
+
     if [ $? -ne 0 ]; then
-         cat <<EOF
+        cat <<EOF
 {
   "error": "Failed to auto-start SearXNG.",
   "results": []
@@ -63,7 +69,7 @@ EOF
     # Wait for it to be ready (up to 20 seconds)
     echo "Waiting for SearXNG to be ready..." >&2
     for i in $(seq 1 20); do
-        curl -s -m 1 "${SEARXNG_URL}" >/dev/null
+        curl -s -m 1 "${SEARXNG_URL}" >/dev/null 2>&1
         if [ $? -eq 0 ]; then
             echo "SearXNG is up!" >&2
             break
@@ -75,7 +81,7 @@ EOF
     response=$(curl -s --connect-timeout 5 --max-time "$TIMEOUT" \
         -H "Accept: application/json" \
         "${SEARXNG_URL}/search?q=${encoded_query}&format=json" 2>/dev/null)
-        
+
     if [ $? -ne 0 ] || [ -z "$response" ]; then
         cat <<EOF
 {

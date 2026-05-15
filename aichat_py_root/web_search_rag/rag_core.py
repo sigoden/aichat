@@ -1,6 +1,7 @@
 # rag_core.py for AIChat Integration
 
 import os
+import subprocess
 import sys
 import time
 import random
@@ -22,11 +23,15 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 # --- Configuration Loading ---
 CONFIG_PATH = os.path.expanduser("~/.config/aichat/config.yaml")
 
+DEFAULT_OLLAMA_MODEL = "huihui_ai/granite4.0-3b-a800m-instruct:Q8_0"
+DEFAULT_EMBEDDING_MODEL = "nomic-embed-text"
+OLLAMA_BASE_URL = "http://localhost:11434"
+
 def load_config():
     config = {
         "searxng_url": "http://localhost:8080",
-        "ollama_model": "huihui_ai/jan-nano-abliterated:latest",
-        "ollama_embedding_model": "nomic-embed-text",
+        "ollama_model": DEFAULT_OLLAMA_MODEL,
+        "ollama_embedding_model": DEFAULT_EMBEDDING_MODEL,
         "chunk_size": 1000,
         "chunk_overlap": 200,
         "k_retriever": 20,
@@ -36,7 +41,7 @@ def load_config():
         try:
             with open(CONFIG_PATH, 'r') as f:
                 yaml_conf = yaml.safe_load(f)
-                if 'websearch' in yaml_conf:
+                if yaml_conf and 'websearch' in yaml_conf:
                     ws = yaml_conf['websearch']
                     config["searxng_url"] = ws.get("searxng_url", config["searxng_url"])
                     if "ollama" in ws:
@@ -52,17 +57,141 @@ SEARXNG_URL = CONF["searxng_url"]
 SEARXNG_MAX_RESULTS = 20
 REQUEST_TIMEOUT = 10
 # Max threads for parallel scraping
-MAX_WORKERS = 10 
+MAX_WORKERS = 10
 USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36',
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36',
 ]
 
-# --- Initialize LangChain Components ---
-llm = OllamaLLM(model=CONF["ollama_model"])
-embeddings = OllamaEmbeddings(model=CONF["ollama_embedding_model"])
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=CONF["chunk_size"], chunk_overlap=CONF["chunk_overlap"], length_function=len)
+# --- Lazy-initialized LangChain components ---
+_llm = None
+_embeddings = None
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=CONF["chunk_size"],
+    chunk_overlap=CONF["chunk_overlap"],
+    length_function=len,
+)
+
+OLLAMA_STARTUP_TIMEOUT_SECONDS = 20
+
+
+def _is_ollama_running():
+    """Return True if the Ollama API is reachable."""
+    try:
+        r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=3)
+        return r.status_code == 200
+    except Exception:
+        return False
+
+
+def _start_ollama():
+    """Attempt to start the Ollama daemon, trying systemctl first then `ollama serve`."""
+    print("Ollama not running. Attempting to start...", file=sys.stderr)
+    # Try systemctl (typical on Linux with a system install)
+    try:
+        result = subprocess.run(
+            ["systemctl", "--user", "start", "ollama"],
+            timeout=10,
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            print("Started Ollama via systemctl --user.", file=sys.stderr)
+            return
+    except Exception:
+        pass
+    try:
+        result = subprocess.run(
+            ["sudo", "systemctl", "start", "ollama"],
+            timeout=10,
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            print("Started Ollama via sudo systemctl.", file=sys.stderr)
+            return
+    except Exception:
+        pass
+    # Last resort: start `ollama serve` as a detached background process
+    try:
+        subprocess.Popen(
+            ["ollama", "serve"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        print("Launched `ollama serve` in background.", file=sys.stderr)
+    except FileNotFoundError:
+        print(
+            "Error: `ollama` binary not found. Install Ollama from https://ollama.com/install.sh",
+            file=sys.stderr,
+        )
+
+
+def _pull_model_if_missing(model_name: str):
+    """Pull a model via `ollama pull` if it is not already available locally."""
+    try:
+        r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=5)
+        if r.status_code == 200:
+            installed = [m.get("name", "") for m in r.json().get("models", [])]
+            # Normalize installed names to "name:tag" form and check for an exact match.
+            # Fall back to matching "name" without a tag against the base name.
+            base = model_name.split(":")[0]
+            tag = model_name.split(":")[1] if ":" in model_name else "latest"
+            normalized = model_name if ":" in model_name else f"{model_name}:latest"
+            if any(
+                (name == normalized or name == f"{base}:latest" and tag == "latest")
+                for name in installed
+            ):
+                return  # already present
+    except Exception:
+        pass
+    print(f"Pulling Ollama model '{model_name}' (this may take a while)...", file=sys.stderr)
+    try:
+        subprocess.run(["ollama", "pull", model_name], check=True)
+        print(f"Model '{model_name}' pulled successfully.", file=sys.stderr)
+    except Exception as e:
+        print(f"Warning: Could not pull model '{model_name}': {e}", file=sys.stderr)
+
+
+def ensure_ollama_ready():
+    """
+    Ensure the Ollama daemon is running and the configured model is available.
+    Starts Ollama automatically if it is not reachable, then pulls the model when missing.
+    """
+    if not _is_ollama_running():
+        _start_ollama()
+        # Wait up to OLLAMA_STARTUP_TIMEOUT_SECONDS for Ollama to become available
+        for _ in range(OLLAMA_STARTUP_TIMEOUT_SECONDS):
+            time.sleep(1)
+            if _is_ollama_running():
+                print("Ollama is now running.", file=sys.stderr)
+                break
+        else:
+            print(
+                "Warning: Ollama did not start in time. Proceeding anyway.",
+                file=sys.stderr,
+            )
+
+    _pull_model_if_missing(CONF["ollama_model"])
+    _pull_model_if_missing(CONF["ollama_embedding_model"])
+
+
+def get_llm():
+    """Return the (lazily-initialised) Ollama LLM, ensuring Ollama is ready first."""
+    global _llm
+    if _llm is None:
+        ensure_ollama_ready()
+        _llm = OllamaLLM(model=CONF["ollama_model"])
+    return _llm
+
+
+def get_embeddings():
+    """Return the (lazily-initialised) Ollama embeddings, ensuring Ollama is ready first."""
+    global _embeddings
+    if _embeddings is None:
+        ensure_ollama_ready()
+        _embeddings = OllamaEmbeddings(model=CONF["ollama_embedding_model"])
+    return _embeddings
 
 def make_polite_request(url):
     headers = {'User-Agent': random.choice(USER_AGENTS)}
@@ -183,7 +312,7 @@ def rag_pipeline(query):
         return "No text content extracted."
 
     print(f"Indexing {len(all_texts)} chunks from {len(scraped_data)} pages...")
-    vectorstore = FAISS.from_texts(all_texts, embeddings, metadatas=all_metadatas)
+    vectorstore = FAISS.from_texts(all_texts, get_embeddings(), metadatas=all_metadatas)
     
     retriever = vectorstore.as_retriever(search_kwargs={"k": CONF["k_retriever"]})
     context_docs = retriever.invoke(query)
@@ -200,7 +329,7 @@ def rag_pipeline(query):
         "Detailed Answer:"
     )
     
-    chain = prompt | llm
+    chain = prompt | get_llm()
     answer = chain.invoke({"context": context_text, "question": query})
     
     # Format sources list

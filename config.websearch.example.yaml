@@ -6,7 +6,7 @@ websearch:
   
   # Ollama Configuration for RAG
   ollama:
-    model: "huihui_ai/jan-nano-abliterated:latest"
+    model: "huihui_ai/granite4.0-3b-a800m-instruct:Q8_0"
     embedding_model: "nomic-embed-text"
   
   # RAG Parameters
