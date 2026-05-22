@@ -2679,7 +2679,11 @@ where
     T: std::str::FromStr,
 {
     let value = env::var(key).ok()?;
-    let value = parse_value(&value).ok()?;
+    let trimmed = value.trim();
+    if trimmed.len() != value.len() {
+        tracing::warn!("Environment variable '{key}' has trailing whitespace; trimming automatically");
+    }
+    let value = parse_value(trimmed).ok()?;
     Some(value)
 }
 
@@ -2701,7 +2705,7 @@ where
 
 fn read_env_bool(key: &str) -> Option<Option<bool>> {
     let value = env::var(key).ok()?;
-    Some(parse_bool(&value))
+    Some(parse_bool(value.trim()))
 }
 
 fn complete_bool(value: bool) -> Vec<String> {
