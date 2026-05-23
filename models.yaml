@@ -137,6 +137,30 @@
 #  - https://docs.anthropic.com/en/api/messages
 - provider: claude
   models:
+    - name: claude-opus-4-7
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 5
+      output_price: 25
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-opus-4-7:thinking
+      real_name: claude-opus-4-7
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 5
+      output_price: 25
+      supports_vision: true
+      supports_function_calling: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
+          thinking:
+            type: enabled
+            budget_tokens: 16000
     - name: claude-opus-4-6
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -532,6 +556,29 @@
       output_price: 0.3
       supports_vision: true
       supports_function_calling: true
+    - name: claude-opus-4-7
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 5
+      output_price: 25
+      supports_vision: true
+      supports_function_calling: true
+    - name: claude-opus-4-7:thinking
+      real_name: claude-opus-4-7
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 5
+      output_price: 25
+      supports_vision: true
+      patch:
+        body:
+          temperature: null
+          top_p: null
+          thinking:
+            type: enabled
+            budget_tokens: 16000
     - name: claude-opus-4-6
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -669,6 +716,31 @@
 #  - https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-call.html
 - provider: bedrock
   models:
+    - name: us.anthropic.claude-opus-4-7-v1
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 5
+      output_price: 25
+      supports_vision: true
+      supports_function_calling: true
+    - name: us.anthropic.claude-opus-4-7-v1:thinking
+      real_name: us.anthropic.claude-opus-4-7-v1
+      max_input_tokens: 200000
+      max_output_tokens: 24000
+      require_max_tokens: true
+      input_price: 5
+      output_price: 25
+      supports_vision: true
+      patch:
+        body:
+          inferenceConfig:
+            temperature: null
+            topP: null
+          additionalModelRequestFields:
+            thinking:
+              type: enabled
+              budget_tokens: 16000
     - name: us.anthropic.claude-opus-4-6-v1
       max_input_tokens: 200000
       max_output_tokens: 8192
@@ -1296,6 +1368,14 @@
       max_input_tokens: 131072
       input_price: 0.1
       output_price: 0.2
+    - name: anthropic/claude-opus-4.7
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 5
+      output_price: 25
+      supports_vision: true
+      supports_function_calling: true
     - name: anthropic/claude-opus-4.6
       max_input_tokens: 200000
       max_output_tokens: 8192
