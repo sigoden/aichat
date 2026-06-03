@@ -47,7 +47,7 @@ pub const OPENAI_COMPATIBLE_PROVIDERS: [(&str, &str); 18] = [
     ("hunyuan", "https://api.hunyuan.cloud.tencent.com/v1"),
     ("minimax", "https://api.minimax.chat/v1"),
     ("mistral", "https://api.mistral.ai/v1"),
-    ("moonshot", "https://api.moonshot.cn/v1"),
+    ("moonshot", "https://api.moonshot.ai/v1"),
     ("openrouter", "https://openrouter.ai/api/v1"),
     ("perplexity", "https://api.perplexity.ai"),
     (
