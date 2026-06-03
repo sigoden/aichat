@@ -259,10 +259,10 @@ clients:
     api_base: https://api.hunyuan.cloud.tencent.com/v1
     api_key: xxx
 
-  # See https://platform.moonshot.cn/docs/intro
+  # See https://platform.moonshot.ai/docs/intro
   - type: openai-compatible
     name: moonshot
-    api_base: https://api.moonshot.cn/v1
+    api_base: https://api.moonshot.ai/v1
     api_key: xxx
 
   # See https://platform.deepseek.com/api-docs/
