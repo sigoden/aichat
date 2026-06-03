@@ -105,6 +105,38 @@ AI Agent = Instructions (Prompt) + Tools (Function Callings) + Documents (RAG).
 
 ![aichat-agent](https://github.com/user-attachments/assets/0b7e687d-e642-4e8a-b1c1-d2d9b2da2b6b)
 
+A minimal local agent requires both an agent definition and an entry in `agents.txt` under the functions directory. The agent-specific `config.yaml` is optional and only overrides runtime configuration such as model, temperature, or default variables.
+
+```text
+<aichat-config-dir>/
+  functions/
+    agents.txt                  # contains: my-agent
+    agents/
+      my-agent/
+        index.yaml              # required agent definition
+        functions.json          # optional tools
+  agents/
+    my-agent/
+      config.yaml               # optional agent-specific config
+```
+
+Example `functions/agents.txt`:
+
+```text
+my-agent
+```
+
+Example `functions/agents/my-agent/index.yaml`:
+
+```yaml
+name: my-agent
+description: Helps with local project tasks.
+instructions: |
+  You are a concise assistant for this project.
+```
+
+After creating these files, run `aichat --list-agents` to confirm the agent is discoverable, then use it with `aichat -a my-agent`.
+
 ### Local Server Capabilities
 
 AIChat includes a lightweight built-in HTTP server for easy deployment.
