@@ -33,7 +33,7 @@ register_client!(
     (bedrock, "bedrock", BedrockConfig, BedrockClient),
 );
 
-pub const OPENAI_COMPATIBLE_PROVIDERS: [(&str, &str); 18] = [
+pub const OPENAI_COMPATIBLE_PROVIDERS: [(&str, &str); 19] = [
     ("ai21", "https://api.ai21.com/studio/v1"),
     (
         "cloudflare",
@@ -54,6 +54,7 @@ pub const OPENAI_COMPATIBLE_PROVIDERS: [(&str, &str); 18] = [
         "qianwen",
         "https://dashscope.aliyuncs.com/compatible-mode/v1",
     ),
+    ("requesty", "https://router.requesty.ai/v1"),
     ("xai", "https://api.x.ai/v1"),
     ("zhipuai", "https://open.bigmodel.cn/api/paas/v4"),
     // RAG-dedicated

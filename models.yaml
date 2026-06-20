@@ -1593,6 +1593,61 @@
       supports_vision: true
 
 # Links:
+#  - https://app.requesty.ai/router/list
+#  - https://docs.requesty.ai
+- provider: requesty
+  models:
+    - name: openai/gpt-4o-mini
+      max_input_tokens: 128000
+      max_output_tokens: 16384
+      input_price: 0.15
+      output_price: 0.6
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-4o
+      max_input_tokens: 128000
+      max_output_tokens: 16384
+      input_price: 2.5
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-4.1
+      max_input_tokens: 1047576
+      max_output_tokens: 32768
+      input_price: 2
+      output_price: 8
+      supports_vision: true
+      supports_function_calling: true
+    - name: anthropic/claude-sonnet-4-5
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+    - name: anthropic/claude-haiku-4-5
+      max_input_tokens: 200000
+      max_output_tokens: 8192
+      require_max_tokens: true
+      input_price: 1
+      output_price: 5
+      supports_vision: true
+      supports_function_calling: true
+    - name: google/gemini-2.5-pro
+      max_input_tokens: 1048576
+      input_price: 1.25
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
+    - name: google/gemini-2.5-flash
+      max_input_tokens: 1048576
+      input_price: 0.3
+      output_price: 2.5
+      supports_vision: true
+      supports_function_calling: true
+
+# Links:
 #  - https://github.com/marketplace?type=models
 - provider: github
   models:

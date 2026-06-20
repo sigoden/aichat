@@ -323,6 +323,7 @@ _argc_before() {
         openrouter,openai/gpt-4o-mini,https://openrouter.ai/api/v1 \
         perplexity,llama-3.1-8b-instruct,https://api.perplexity.ai \
         qianwen,qwen-turbo-latest,https://dashscope.aliyuncs.com/compatible-mode/v1 \
+        requesty,openai/gpt-4o-mini,https://router.requesty.ai/v1 \
         xai,grok-beta,https://api.x.ai/v1 \
         zhipuai,glm-4-0520,https://open.bigmodel.cn/api/paas/v4 \
     )
