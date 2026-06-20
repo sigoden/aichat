@@ -289,6 +289,12 @@ clients:
     api_base: https://openrouter.ai/api/v1
     api_key: xxx
 
+  # See https://docs.requesty.ai
+  - type: openai-compatible
+    name: requesty
+    api_base: https://router.requesty.ai/v1
+    api_key: xxx
+
   # See https://github.com/marketplace/models
   - type: openai-compatible
     name: github
