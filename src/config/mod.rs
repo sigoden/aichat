@@ -1172,6 +1172,34 @@ impl Config {
         Ok(())
     }
 
+    pub fn export_session(&self, name: Option<&str>) -> Result<()> {
+        let session = match &self.session {
+            Some(session) => session,
+            None => bail!("No session"),
+        };
+        let file_name = match name {
+            Some(v) => v.to_string(),
+            None => format!(
+                "{}.md",
+                session.autoname().unwrap_or_else(|| session.name())
+            ),
+        };
+        let path = PathBuf::from(&file_name);
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                std::fs::create_dir_all(parent).with_context(|| {
+                    format!("Failed to create directory '{}'", parent.display())
+                })?;
+            }
+        }
+        std::fs::write(&path, session.to_markdown())
+            .with_context(|| format!("Failed to export session to '{}'", path.display()))?;
+        if self.working_mode.is_repl() {
+            println!("✓ Exported the session to '{}'.", path.display());
+        }
+        Ok(())
+    }
+
     pub fn edit_session(&mut self) -> Result<()> {
         let name = match &self.session {
             Some(session) => session.name().to_string(),

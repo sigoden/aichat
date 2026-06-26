@@ -255,6 +255,31 @@ impl Session {
         Ok(lines.join("\n"))
     }
 
+    /// Render the whole session as a human-readable markdown document.
+    pub fn to_markdown(&self) -> String {
+        let resolve_url_fn = |url: &str| resolve_data_url(&self.data_urls, url.to_string());
+        let agent_info: Option<(String, Vec<String>)> = None;
+        let title = self.autoname().unwrap_or_else(|| self.name());
+        let mut lines: Vec<String> = vec![format!("# {title}"), String::new()];
+        for message in &self.messages {
+            let heading = match message.role {
+                MessageRole::System => "## System",
+                MessageRole::User => "## User",
+                MessageRole::Assistant => "## Assistant",
+                MessageRole::Tool => "## Tool",
+            };
+            lines.push(heading.to_string());
+            lines.push(String::new());
+            let body = match (&message.role, &message.content) {
+                (MessageRole::Assistant, MessageContent::Text(text)) => text.clone(),
+                _ => message.content.render_input(resolve_url_fn, &agent_info),
+            };
+            lines.push(body);
+            lines.push(String::new());
+        }
+        lines.join("\n")
+    }
+
     pub fn tokens_usage(&self) -> (usize, f32) {
         let tokens = self.tokens();
         let max_input_tokens = self.model().max_input_tokens().unwrap_or_default();
