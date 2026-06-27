@@ -284,7 +284,13 @@ Type ".help" for additional help.
 
         if let Ok(cmd) = config.read().editor() {
             let temp_file = temp_file("-repl-", ".md");
-            let command = process::Command::new(cmd);
+            let parts = shell_words::split(&cmd)
+                .with_context(|| format!("Invalid editor command '{cmd}'"))?;
+            let (program, args) = parts
+                .split_first()
+                .ok_or_else(|| anyhow::anyhow!("Invalid editor command '{cmd}'"))?;
+            let mut command = process::Command::new(program);
+            command.args(args);
             editor = editor.with_buffer_editor(command, temp_file);
         }
 

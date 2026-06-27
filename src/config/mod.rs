@@ -1719,20 +1719,18 @@ impl Config {
     }
 
     pub fn editor(&self) -> Result<String> {
-        EDITOR.get_or_init(move || {
-            let editor = self.editor.clone()
-                .or_else(|| env::var("VISUAL").ok().or_else(|| env::var("EDITOR").ok()))
-                .unwrap_or_else(|| {
-                    if cfg!(windows) {
-                        "notepad".to_string()
-                    } else {
-                        "nano".to_string()
-                    }
+        if let Some(editor) = EDITOR.get() {
+            return editor
+                .clone()
+                .ok_or_else(|| {
+                    anyhow!(
+                        "Editor not found. Please add the `editor` configuration or set the $EDITOR or $VISUAL environment variable."
+                    )
                 });
-            which::which(&editor).ok().map(|_| editor)
-        })
-        .clone()
-        .ok_or_else(|| anyhow!("Editor not found. Please add the `editor` configuration or set the $EDITOR or $VISUAL environment variable."))
+        }
+        let editor = resolve_editor(self.editor.as_deref())?;
+        let _ = EDITOR.set(Some(editor.clone()));
+        Ok(editor)
     }
 
     pub fn repl_complete(
