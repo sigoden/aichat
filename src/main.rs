@@ -153,6 +153,7 @@ async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()>
         config.write().set_save_session_this_time()?;
     }
     if cli.info {
+        config.write().apply_info_prelude()?;
         let info = config.read().info()?;
         println!("{info}");
         return Ok(());

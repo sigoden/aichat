@@ -1614,18 +1614,27 @@ impl Config {
             return Ok(());
         }
         let prelude = match self.working_mode {
-            WorkingMode::Repl => self.repl_prelude.as_ref(),
-            WorkingMode::Cmd => self.cmd_prelude.as_ref(),
+            WorkingMode::Repl => self.repl_prelude.clone(),
+            WorkingMode::Cmd => self.cmd_prelude.clone(),
             WorkingMode::Serve => return Ok(()),
         };
-        let prelude = match prelude {
-            Some(v) => {
-                if v.is_empty() {
-                    return Ok(());
-                }
-                v.to_string()
-            }
-            None => return Ok(()),
+        self.apply_prelude_value(prelude.as_deref())
+    }
+
+    pub fn apply_info_prelude(&mut self) -> Result<()> {
+        if self.macro_flag || !self.state().is_empty() {
+            return Ok(());
+        }
+        let prelude = self
+            .cmd_prelude
+            .clone()
+            .or_else(|| self.repl_prelude.clone());
+        self.apply_prelude_value(prelude.as_deref())
+    }
+
+    fn apply_prelude_value(&mut self, prelude: Option<&str>) -> Result<()> {
+        let Some(prelude) = prelude.filter(|v| !v.is_empty()) else {
+            return Ok(());
         };
 
         let err_msg = || format!("Invalid prelude '{prelude}");
