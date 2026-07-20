@@ -313,6 +313,7 @@ _argc_before() {
         cloudflare,@cf/meta/llama-3.1-8b-instruct,https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/v1 \
         deepinfra,meta-llama/Meta-Llama-3.1-8B-Instruct,https://api.deepinfra.com/v1/openai \
         deepseek,deepseek-chat,https://api.deepseek.com \
+        edenai,openai/gpt-4o-mini,https://api.edenai.run/v3 \
         ernie,ernie-4.0-turbo-8k-latest,https://qianfan.baidubce.com/v2 \
         github,gpt-4o-mini,https://models.inference.ai.azure.com \
         groq,llama-3.1-8b-instant,https://api.groq.com/openai/v1 \
