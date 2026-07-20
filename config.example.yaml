@@ -271,6 +271,12 @@ clients:
     api_base: https://api.deepseek.com
     api_key: xxx
 
+  # See https://www.edenai.co/docs (EU endpoint: https://api.eu.edenai.run/v3)
+  - type: openai-compatible
+    name: edenai
+    api_base: https://api.edenai.run/v3
+    api_key: xxx
+
   # See https://open.bigmodel.cn/dev/howuse/introduction
   - type: openai-compatible
     name: zhipuai

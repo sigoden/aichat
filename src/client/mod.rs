@@ -33,7 +33,7 @@ register_client!(
     (bedrock, "bedrock", BedrockConfig, BedrockClient),
 );
 
-pub const OPENAI_COMPATIBLE_PROVIDERS: [(&str, &str); 18] = [
+pub const OPENAI_COMPATIBLE_PROVIDERS: [(&str, &str); 19] = [
     ("ai21", "https://api.ai21.com/studio/v1"),
     (
         "cloudflare",
@@ -41,6 +41,7 @@ pub const OPENAI_COMPATIBLE_PROVIDERS: [(&str, &str); 18] = [
     ),
     ("deepinfra", "https://api.deepinfra.com/v1/openai"),
     ("deepseek", "https://api.deepseek.com"),
+    ("edenai", "https://api.edenai.run/v3"),
     ("ernie", "https://qianfan.baidubce.com/v2"),
     ("github", "https://models.inference.ai.azure.com"),
     ("groq", "https://api.groq.com/openai/v1"),

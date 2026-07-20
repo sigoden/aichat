@@ -1131,6 +1131,59 @@
       output_price: 1.68
 
 # Links:
+#  - https://www.edenai.co/docs
+#  - https://www.edenai.co/pricing
+- provider: edenai
+  models:
+    - name: openai/gpt-4o-mini
+      max_input_tokens: 128000
+      input_price: 0.15
+      output_price: 0.6
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-4o
+      max_input_tokens: 128000
+      input_price: 2.5
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
+    - name: openai/gpt-4.1
+      max_input_tokens: 1047576
+      input_price: 2
+      output_price: 8
+      supports_vision: true
+      supports_function_calling: true
+    - name: anthropic/claude-sonnet-4-5
+      max_input_tokens: 1000000
+      input_price: 3
+      output_price: 15
+      supports_vision: true
+      supports_function_calling: true
+    - name: anthropic/claude-haiku-4-5
+      max_input_tokens: 200000
+      input_price: 1
+      output_price: 5
+      supports_vision: true
+      supports_function_calling: true
+    - name: google/gemini-2.5-pro
+      max_input_tokens: 1048576
+      input_price: 1.25
+      output_price: 10
+      supports_vision: true
+      supports_function_calling: true
+    - name: mistral/mistral-large-latest
+      max_input_tokens: 262144
+      input_price: 2
+      output_price: 6
+      supports_vision: true
+      supports_function_calling: true
+    - name: cohere/command-a-03-2025
+      max_input_tokens: 288000
+      input_price: 2.5
+      output_price: 10
+      supports_function_calling: true
+
+# Links:
 #  - https://open.bigmodel.cn/pricing
 #  - https://open.bigmodel.cn/dev/api#glm-4
 - provider: zhipuai
