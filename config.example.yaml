@@ -213,7 +213,7 @@ clients:
     # Specifies a application-default-credentials (adc) file
     # Run `gcloud auth application-default login` to init the adc file
     # see https://cloud.google.com/docs/authentication/external/set-up-adc
-    adc_file: <gcloud-config-dir>/application_default_credentials.json>  # Optional field
+    adc_file: <gcloud-config-dir>/application_default_credentials.json  # Optional field
     patch:
       chat_completions:
         'gemini-.*':
