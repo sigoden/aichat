@@ -49,6 +49,31 @@ impl Agent {
             AgentConfig::new(&config.read())
         };
         let mut definition = AgentDefinition::load(&definition_file_path)?;
+        if let Some(role_name) = agent_config.role.as_deref() {
+            let role = config.read().retrieve_role(role_name)?;
+            if agent_config.instructions.is_none() {
+                definition.instructions = role.prompt().to_string();
+            }
+            if agent_config.model_id.is_none()
+                || agent_config.temperature.is_none()
+                || agent_config.top_p.is_none()
+                || agent_config.use_tools.is_none()
+            {
+                let model_id = role.model_id().map(str::to_string);
+                if agent_config.model_id.is_none() {
+                    agent_config.model_id = model_id;
+                }
+                if agent_config.temperature.is_none() {
+                    agent_config.temperature = role.temperature();
+                }
+                if agent_config.top_p.is_none() {
+                    agent_config.top_p = role.top_p();
+                }
+                if agent_config.use_tools.is_none() {
+                    agent_config.use_tools = role.use_tools();
+                }
+            }
+        }
         let functions = if functions_file_path.exists() {
             Functions::init(&functions_file_path)?
         } else {
@@ -368,6 +393,8 @@ impl RoleLike for Agent {
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct AgentConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub role: Option<String>,
     #[serde(rename(serialize = "model", deserialize = "model"))]
     pub model_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -556,4 +583,16 @@ pub fn complete_agent_variables(agent_name: &str) -> Vec<(String, Option<String>
             (format!("{}=", v.name), Some(description))
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AgentConfig;
+
+    #[test]
+    fn agent_config_accepts_role() {
+        let config: AgentConfig = serde_yaml::from_str("role: coder\n").unwrap();
+
+        assert_eq!(config.role.as_deref(), Some("coder"));
+    }
 }
