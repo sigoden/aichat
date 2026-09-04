@@ -138,6 +138,16 @@ clients:
         default_chunk_size: 1000
         max_batch_size: 50
 
+  # See https://github.com/llmmanorg/llmman
+  - type: openai-compatible
+    name: llmman
+    api_base: http://localhost:17434/v1
+    api_key: xxx                                      # Optional
+    models:
+      - name: gemma4
+      - name: qwen3.8
+      - name: hf.co/unsloth/Qwen3.5-0.8B-GGUF
+
   # See https://ai.google.dev/docs
   - type: gemini
     api_base: https://generativelanguage.googleapis.com/v1beta
