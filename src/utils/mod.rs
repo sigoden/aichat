@@ -37,6 +37,8 @@ pub static CODE_BLOCK_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?ms)```\w*(.*)```").unwrap());
 pub static THINK_TAG_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?s)^\s*<think>.*?</think>(\s*|$)").unwrap());
+pub static THINK_CLOSE_ONLY_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?s)^\s*.*?</think>\s*").unwrap());
 pub static IS_STDOUT_TERMINAL: LazyLock<bool> = LazyLock::new(|| std::io::stdout().is_terminal());
 pub static NO_COLOR: LazyLock<bool> = LazyLock::new(|| {
     env::var("NO_COLOR")
@@ -89,7 +91,17 @@ pub fn estimate_token_length(text: &str) -> usize {
 }
 
 pub fn strip_think_tag(text: &str) -> Cow<'_, str> {
-    THINK_TAG_RE.replace_all(text, "")
+    let stripped = THINK_TAG_RE.replace_all(text, "");
+    if stripped.len() < text.len() {
+        return stripped;
+    }
+    // Qwen3.6 (and similar local models) embed the opening think tag in the chat
+    // template, so streamed output only contains the reasoning body followed by
+    // a closing </think> tag.
+    if !text.contains("<think>") && text.contains("</think>") {
+        return THINK_CLOSE_ONLY_RE.replace_all(text, "");
+    }
+    stripped
 }
 
 pub fn extract_code_block(text: &str) -> &str {
@@ -245,5 +257,23 @@ mod tests {
         );
         assert!(safe_join_path("C:\\Users\\user\\dir1", "/files/file1").is_none());
         assert!(safe_join_path("C:\\Users\\user\\dir1", "../file1").is_none());
+    }
+
+    #[test]
+    fn test_strip_think_tag_with_opening_tag() {
+        let text = "<think>\nreasoning\n</think>\n\nanswer";
+        assert_eq!(strip_think_tag(text), "answer");
+    }
+
+    #[test]
+    fn test_strip_think_tag_close_only_qwen36() {
+        let text = "reasoning without opening tag\n</think>\n\nanswer";
+        assert_eq!(strip_think_tag(text), "answer");
+    }
+
+    #[test]
+    fn test_strip_think_tag_without_thinking() {
+        let text = "plain answer";
+        assert_eq!(strip_think_tag(text), "plain answer");
     }
 }
