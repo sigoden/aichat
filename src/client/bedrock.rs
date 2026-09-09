@@ -318,6 +318,18 @@ struct EmbeddingsResBody {
     embeddings: Vec<Vec<f32>>,
 }
 
+/// Bedrock Converse requires `toolResult.content[].json` to be a JSON object.
+/// Non-object tool outputs (arrays, strings, scalars) must use a text block instead.
+fn bedrock_tool_result_content(output: &Value) -> Value {
+    if output.is_object() {
+        json!({ "json": output })
+    } else if let Some(text) = output.as_str() {
+        json!({ "text": text })
+    } else {
+        json!({ "text": output.to_string() })
+    }
+}
+
 fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Result<Value> {
     let ChatCompletionsData {
         mut messages,
@@ -404,11 +416,7 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
                         user_parts.push(json!({
                             "toolResult": {
                                 "toolUseId": tool_result.call.id,
-                                "content": [
-                                    {
-                                        "json": tool_result.output,
-                                    }
-                                ]
+                                "content": [bedrock_tool_result_content(&tool_result.output)]
                             }
                         }));
                     }
@@ -640,4 +648,36 @@ fn gen_signing_key(key: &str, date_stamp: &str, region: &str, service: &str) -> 
     let k_region = hmac_sha256(&k_date, region);
     let k_service = hmac_sha256(&k_region, service);
     hmac_sha256(&k_service, "aws4_request")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bedrock_tool_result_content_uses_json_for_objects() {
+        let output = json!({ "status": "ok", "count": 2 });
+        let block = bedrock_tool_result_content(&output);
+        assert_eq!(block["json"], output);
+        assert!(block.get("text").is_none());
+    }
+
+    #[test]
+    fn bedrock_tool_result_content_uses_text_for_arrays() {
+        let output = json!([{ "id": "cloud-1" }, { "id": "cloud-2" }]);
+        let block = bedrock_tool_result_content(&output);
+        assert_eq!(block["text"], output.to_string());
+        assert!(block.get("json").is_none());
+    }
+
+    #[test]
+    fn bedrock_tool_result_content_uses_text_for_scalars() {
+        assert_eq!(
+            bedrock_tool_result_content(&json!("done"))["text"],
+            "done"
+        );
+        assert_eq!(bedrock_tool_result_content(&json!(42))["text"], "42");
+        assert_eq!(bedrock_tool_result_content(&json!(null))["text"], "null");
+        assert_eq!(bedrock_tool_result_content(&json!({}))["json"], json!({}));
+    }
 }
