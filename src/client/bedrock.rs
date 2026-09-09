@@ -401,14 +401,18 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
                                 "input": tool_result.call.arguments,
                             }
                         }));
+                        // The Converse API only accepts a JSON object under
+                        // `toolResult.content[].json`; array/string/number/null
+                        // outputs must be sent as a text block instead (#1542).
+                        let tool_result_content = if tool_result.output.is_object() {
+                            json!({ "json": tool_result.output })
+                        } else {
+                            json!({ "text": tool_result.output.to_string() })
+                        };
                         user_parts.push(json!({
                             "toolResult": {
                                 "toolUseId": tool_result.call.id,
-                                "content": [
-                                    {
-                                        "json": tool_result.output,
-                                    }
-                                ]
+                                "content": [tool_result_content]
                             }
                         }));
                     }
