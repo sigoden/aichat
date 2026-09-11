@@ -231,7 +231,13 @@ macro_rules! config_get_fn {
                 format!("{}_{}", env_prefix, stringify!($field_name)).to_ascii_uppercase();
             std::env::var(&env_name)
                 .ok()
-                .or_else(|| self.config.$field_name.clone())
+                .map($crate::client::trim_config_value)
+                .or_else(|| {
+                    self.config
+                        .$field_name
+                        .clone()
+                        .map($crate::client::trim_config_value)
+                })
                 .ok_or_else(|| anyhow::anyhow!("Miss '{}'", stringify!($field_name)))
         }
     };

@@ -674,3 +674,23 @@ fn prompt_input_string(
     let text = text.prompt()?;
     Ok(text)
 }
+
+pub(crate) fn trim_config_value(value: String) -> String {
+    value.trim().to_string()
+}
+
+#[cfg(test)]
+mod trim_config_value_tests {
+    use super::trim_config_value;
+
+    #[test]
+    fn trims_leading_and_trailing_whitespace() {
+        assert_eq!(trim_config_value("sk-test\n".into()), "sk-test");
+        assert_eq!(trim_config_value("  sk-test  ".into()), "sk-test");
+    }
+
+    #[test]
+    fn preserves_internal_whitespace() {
+        assert_eq!(trim_config_value("sk test".into()), "sk test");
+    }
+}
