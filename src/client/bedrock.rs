@@ -404,11 +404,7 @@ fn build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Resu
                         user_parts.push(json!({
                             "toolResult": {
                                 "toolUseId": tool_result.call.id,
-                                "content": [
-                                    {
-                                        "json": tool_result.output,
-                                    }
-                                ]
+                                "content": [bedrock_tool_result_content(&tool_result.output)]
                             }
                         }));
                     }
@@ -640,4 +636,51 @@ fn gen_signing_key(key: &str, date_stamp: &str, region: &str, service: &str) -> 
     let k_region = hmac_sha256(&k_date, region);
     let k_service = hmac_sha256(&k_region, service);
     hmac_sha256(&k_service, "aws4_request")
+}
+
+fn bedrock_tool_result_content(output: &Value) -> Value {
+    if output.is_object() {
+        json!({ "json": output })
+    } else {
+        json!({ "text": output.to_string() })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bedrock_tool_result_content_uses_json_for_objects() {
+        let output = json!({ "issues": [] });
+        assert_eq!(
+            bedrock_tool_result_content(&output),
+            json!({ "json": { "issues": [] } })
+        );
+    }
+
+    #[test]
+    fn bedrock_tool_result_content_uses_text_for_arrays() {
+        let output = json!([{ "id": "1" }]);
+        assert_eq!(
+            bedrock_tool_result_content(&output),
+            json!({ "text": "[{\"id\":\"1\"}]" })
+        );
+    }
+
+    #[test]
+    fn bedrock_tool_result_content_uses_text_for_scalars() {
+        assert_eq!(
+            bedrock_tool_result_content(&json!("done")),
+            json!({ "text": "\"done\"" })
+        );
+        assert_eq!(
+            bedrock_tool_result_content(&json!(42)),
+            json!({ "text": "42" })
+        );
+        assert_eq!(
+            bedrock_tool_result_content(&json!(null)),
+            json!({ "text": "null" })
+        );
+    }
 }
