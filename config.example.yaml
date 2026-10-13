@@ -301,6 +301,12 @@ clients:
     api_base: https://api.deepinfra.com/v1/openai
     api_key: xxx
 
+  # See https://livepairai.com/docs/openai-compatible
+  - type: openai-compatible
+    name: livepair
+    api_base: https://livepairai.com/v1/agent
+    api_key: xxx                                   # lp_ key
+
 
   # ----- RAG dedicated -----
 
