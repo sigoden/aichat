@@ -1904,3 +1904,123 @@
       type: reranker
       max_input_tokens: 8000
       input_price: 0.02
+# Links:
+#  - https://fikraapi.co.ke/pricing
+#  - https://fikraapi.co.ke/docs
+# Model ids mirror GET https://api.fikraapi.co.ke/v1/models; prices verified 2026-10-19.
+- provider: fikra
+  models:
+    - name: deepseek-v4.1-flash
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 0.045
+      output_price: 0.09
+      supports_function_calling: true
+    - name: deepseek-v4.1-flash-1017
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 0.05
+      output_price: 0.11
+      supports_function_calling: true
+    - name: deepseek-v4-flash-0731
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 0.045
+      output_price: 0.1
+      supports_function_calling: true
+    - name: glm-5.3
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 1.05
+      output_price: 3.35
+      supports_function_calling: true
+    - name: glm-5.3-flash
+      max_input_tokens: 327680
+      max_output_tokens: 65536
+      input_price: 0.155
+      output_price: 0.49
+      supports_function_calling: true
+    - name: glm-5.2
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 0.75
+      output_price: 1.65
+      supports_function_calling: true
+    - name: kimi-k3
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 2.1
+      output_price: 10.5
+      supports_function_calling: true
+    - name: step-5-preview
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 1.25
+      output_price: 3.3
+      supports_function_calling: true
+    - name: qwen3.8-27b
+      max_input_tokens: 1001536
+      max_output_tokens: 65536
+      input_price: 0.045
+      output_price: 0.35
+      supports_function_calling: true
+    - name: mimo-v2.6-pro
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 0.6
+      output_price: 1.2
+      supports_function_calling: true
+    - name: nvidia-nemotron-3.5-super-vl
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 0.5
+      output_price: 1.25
+      supports_function_calling: true
+    - name: gemini-4-argon
+      max_input_tokens: 1048576
+      max_output_tokens: 65536
+      input_price: 2.5
+      output_price: 12
+      supports_function_calling: true
+    - name: fikra-pro-20b
+      max_input_tokens: 131072
+      max_output_tokens: 65536
+      input_price: 0.2
+      output_price: 0.2
+      supports_function_calling: true
+    - name: fikra-pro-120b
+      max_input_tokens: 131072
+      max_output_tokens: 65536
+      input_price: 0.3
+      output_price: 0.3
+      supports_function_calling: true
+    - name: fikra-code-35b
+      max_input_tokens: 262144
+      max_output_tokens: 65536
+      input_price: 0.045
+      output_price: 0.33
+      supports_function_calling: true
+    - name: fikra-qwen-27b
+      max_input_tokens: 262144
+      max_output_tokens: 65536
+      input_price: 0.045
+      output_price: 0.35
+      supports_function_calling: true
+    - name: fikra-qwen-max
+      max_input_tokens: 1048576
+      max_output_tokens: 256000
+      input_price: 6
+      output_price: 12
+      supports_function_calling: true
+    - name: fikra-auto
+      max_input_tokens: 262144
+      max_output_tokens: 65536
+      input_price: 0.045
+      output_price: 0.35
+      supports_function_calling: true
+    - name: fikra-auto-pro
+      max_input_tokens: 1048576
+      max_output_tokens: 256000
+      input_price: 6
+      output_price: 12
+      supports_function_calling: true
