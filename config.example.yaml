@@ -289,10 +289,10 @@ clients:
     api_base: https://openrouter.ai/api/v1
     api_key: xxx
 
-  # See https://ai.topxea.com/docs/api-reference
+  # See https://api.topxai.xyz/docs/api-reference
   - type: openai-compatible
     name: topxai
-    api_base: https://ai.topxea.com/v1
+    api_base: https://api.topxai.xyz/v1
     api_key: xxx
 
   # See https://github.com/marketplace/models
