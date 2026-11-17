@@ -294,6 +294,13 @@ clients:
     name: topxai
     api_base: https://api.topxai.xyz/v1
     api_key: xxx
+    models:
+      - name: gpt-6.2-sol
+        supports_vision: true
+        supports_function_calling: true
+      - name: gpt-6.2-astra
+        supports_vision: true
+        supports_function_calling: true
 
   # See https://github.com/marketplace/models
   - type: openai-compatible
