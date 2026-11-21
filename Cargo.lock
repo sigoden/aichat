@@ -72,6 +72,7 @@ dependencies = [
  "inquire",
  "is-terminal",
  "json-patch",
+ "llm-resilience",
  "log",
  "nu-ansi-term 0.50.1",
  "os_info",
@@ -1741,6 +1742,17 @@ name = "litemap"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "241eaef5fd12c88705a01fc1066c48c4b36e0dd4377dcdc7ec3942cea7a69956"
+
+[[package]]
+name = "llm-resilience"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4fafca5201b2933a00b87b97c03a73d0e577e504cd53a50781b05be9d119b3c"
+dependencies = [
+ "parking_lot",
+ "tokio",
+ "tracing",
+]
 
 [[package]]
 name = "lock_api"
