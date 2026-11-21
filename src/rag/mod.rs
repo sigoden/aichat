@@ -12,10 +12,14 @@ use bm25::{Language, SearchEngine, SearchEngineBuilder};
 use hnsw_rs::prelude::*;
 use indexmap::{IndexMap, IndexSet};
 use inquire::{required, validator::Validation, Confirm, Select, Text};
+use llm_resilience::{CircuitBreaker, CircuitBreakerError};
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{collections::HashMap, env, fmt::Debug, fs, hash::Hash, path::Path, time::Duration};
+use std::{
+    collections::HashMap, env, fmt::Debug, fs, future::Future, hash::Hash, path::Path,
+    time::Duration,
+};
 use tokio::time::sleep;
 
 pub struct Rag {
@@ -27,6 +31,9 @@ pub struct Rag {
     bm25: SearchEngine<DocumentId>,
     data: RagData,
     last_sources: RwLock<Option<String>>,
+    /// Shared by clones, so index builds and searches on the same RAG see one
+    /// view of the embedding provider's health.
+    embeddings_breaker: CircuitBreaker,
 }
 
 impl Debug for Rag {
@@ -51,6 +58,7 @@ impl Clone for Rag {
             bm25: self.data.build_bm25(),
             data: self.data.clone(),
             last_sources: RwLock::new(None),
+            embeddings_breaker: self.embeddings_breaker.clone(),
         }
     }
 }
@@ -120,6 +128,7 @@ impl Rag {
             hnsw,
             bm25,
             last_sources: RwLock::new(None),
+            embeddings_breaker: new_embeddings_breaker(),
         };
         Ok(rag)
     }
@@ -666,23 +675,10 @@ impl Rag {
                 texts: texts.to_vec(),
                 query,
             };
-            let mut retry = 0;
-            let chunk_output = loop {
-                retry += 1;
-                match embedding_client.embeddings(&chunk_data).await {
-                    Ok(v) => break v,
-                    Err(e) if retry < retry_limit => {
-                        debug!("retry {retry} failed: {e}");
-                        sleep(Duration::from_secs(2u64.pow(retry - 1))).await;
-                        continue;
-                    }
-                    Err(e) => {
-                        return Err(e).with_context(|| {
-                            format!("Failed to create embedding after {retry_limit} attempts")
-                        })?
-                    }
-                }
-            };
+            let chunk_output = embed_with_retry(&self.embeddings_breaker, retry_limit, || {
+                embedding_client.embeddings(&chunk_data)
+            })
+            .await?;
             output.extend(chunk_output);
         }
         Ok(output)
@@ -1010,4 +1006,100 @@ fn reciprocal_rank_fusion(
         .take(top_k)
         .map(|(v, _)| v)
         .collect()
+}
+
+/// Consecutive failed embedding requests that open the breaker.
+const EMBEDDINGS_BREAKER_FAILURES: usize = 3;
+/// How long an open breaker refuses requests before letting one probe through.
+const EMBEDDINGS_BREAKER_COOLDOWN: Duration = Duration::from_secs(30);
+
+fn new_embeddings_breaker() -> CircuitBreaker {
+    CircuitBreaker::new(
+        EMBEDDINGS_BREAKER_FAILURES,
+        1.0,
+        EMBEDDINGS_BREAKER_COOLDOWN,
+    )
+}
+
+/// Run one embeddings request with up to `retry_limit` attempts behind `breaker`.
+///
+/// Once the provider has failed `EMBEDDINGS_BREAKER_FAILURES` attempts in a row
+/// (across batches and across searches on the same RAG), further requests fail
+/// at once instead of each paying the full retry and backoff sequence again.
+async fn embed_with_retry<T, F, Fut>(
+    breaker: &CircuitBreaker,
+    retry_limit: u32,
+    mut request: F,
+) -> Result<T>
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<T>>,
+{
+    let mut retry = 0;
+    loop {
+        retry += 1;
+        match breaker.call(&mut request).await {
+            Ok(v) => return Ok(v),
+            Err(CircuitBreakerError::Open) => {
+                let wait = breaker.retry_after_sync().unwrap_or_default();
+                bail!(
+                    "Embedding provider failed {EMBEDDINGS_BREAKER_FAILURES} requests in a row; not sending another for {}s",
+                    wait.as_secs().max(1)
+                )
+            }
+            Err(CircuitBreakerError::Failed(e)) if retry < retry_limit => {
+                debug!("retry {retry} failed: {e}");
+                sleep(Duration::from_secs(2u64.pow(retry - 1))).await;
+            }
+            Err(CircuitBreakerError::Failed(e)) => {
+                return Err(e)
+                    .with_context(|| format!("Failed to create embedding after {retry} attempts"))
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod embeddings_retry_tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[tokio::test]
+    async fn open_breaker_stops_sending_requests() {
+        let breaker = new_embeddings_breaker();
+        let sent = AtomicUsize::new(0);
+        let failing = || async {
+            sent.fetch_add(1, Ordering::SeqCst);
+            Err::<Vec<f32>, _>(anyhow!("503 Service Unavailable"))
+        };
+        for _ in 0..EMBEDDINGS_BREAKER_FAILURES {
+            let err = embed_with_retry(&breaker, 1, failing).await.unwrap_err();
+            assert!(err.to_string().contains("after 1 attempts"));
+        }
+        assert_eq!(sent.load(Ordering::SeqCst), EMBEDDINGS_BREAKER_FAILURES);
+
+        // Provider is down: the next ten batches or searches send nothing.
+        for _ in 0..10 {
+            let err = embed_with_retry(&breaker, 2, failing).await.unwrap_err();
+            assert!(err.to_string().contains("in a row"), "{err}");
+        }
+        assert_eq!(sent.load(Ordering::SeqCst), EMBEDDINGS_BREAKER_FAILURES);
+    }
+
+    #[tokio::test]
+    async fn success_after_transient_failure_keeps_breaker_closed() {
+        let breaker = new_embeddings_breaker();
+        let sent = AtomicUsize::new(0);
+        let flaky = || async {
+            if sent.fetch_add(1, Ordering::SeqCst) == 0 {
+                Err(anyhow!("timeout"))
+            } else {
+                Ok(vec![1.0f32])
+            }
+        };
+        let out = embed_with_retry(&breaker, 2, flaky).await.unwrap();
+        assert_eq!(out, vec![1.0]);
+        assert_eq!(sent.load(Ordering::SeqCst), 2);
+        assert!(breaker.is_closed_sync());
+    }
 }
